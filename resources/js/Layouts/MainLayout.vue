@@ -130,15 +130,15 @@
                     <Link v-if="hasModulePermission('secretaria', 'ver')" href="/citas"
                         class="group flex items-center text-sm font-semibold rounded-xl transition-all duration-200 ease-in-out relative"
                         :class="[
-                            $page.component.startsWith('Citas/') ? 'bg-gradient-to-r from-pink-600 to-rose-600 text-white shadow-lg shadow-pink-500/30 ring-1 ring-pink-400/50' : 'text-slate-300 hover:bg-slate-800/80 hover:text-white',
+                            $page.component.startsWith('Appointments/') ? 'bg-gradient-to-r from-pink-600 to-rose-600 text-white shadow-lg shadow-pink-500/30 ring-1 ring-pink-400/50' : 'text-slate-300 hover:bg-slate-800/80 hover:text-white',
                             isCollapsed ? 'justify-center py-3 px-0' : 'px-4 py-3.5'
                         ]" :title="isCollapsed ? 'Gestión de Citas' : ''">
                         <div class="rounded-lg transition-colors duration-200 ease-in-out flex-shrink-0" :class="[
-                            $page.component.startsWith('Citas/') ? 'bg-white/20' : 'bg-slate-700/80 group-hover:bg-slate-600',
+                            $page.component.startsWith('Appointments/') ? 'bg-white/20' : 'bg-slate-700/80 group-hover:bg-slate-600',
                             isCollapsed ? 'p-2' : 'mr-4 p-2'
                         ]">
                             <Calendar class="h-5 w-5"
-                                :class="$page.component.startsWith('Citas/') ? 'text-white' : 'text-slate-400 group-hover:text-white'" />
+                                :class="$page.component.startsWith('Appointments/') ? 'text-white' : 'text-slate-400 group-hover:text-white'" />
                         </div>
                         <span v-if="!isCollapsed" class="whitespace-nowrap transition-opacity duration-200">Gestión de
                             Citas</span>
@@ -266,6 +266,13 @@
                             <Car class="h-5 w-5" />
                             Control Vehicular
                         </Link>
+                        <Link v-if="hasModulePermission('recursos_humanos', 'ver')" href="/hr"
+                            @click="mobileMenuOpen = false"
+                            class="flex items-center gap-3 px-4 py-3 rounded-xl text-base font-semibold transition-all duration-200"
+                            :class="$page.component.startsWith('HR/') ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-lg' : 'text-slate-300 hover:bg-slate-700/50 hover:text-white'">
+                            <Users class="h-5 w-5" />
+                            Recursos Humanos
+                        </Link>
 
                         <button @click="logout"
                             class="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-base font-semibold text-slate-300 hover:bg-red-600 hover:text-white transition-all duration-200 mt-6 pt-6 border-t border-slate-700">
@@ -287,8 +294,9 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, onMounted, onUnmounted } from 'vue';
 import { Link, router, usePage } from '@inertiajs/vue3';
+import axios from 'axios';
 import {
     ChevronLeft,
     ChevronRight,
@@ -302,7 +310,8 @@ import {
     ClipboardList,
     FileText,
     LogOut,
-    Menu
+    Menu,
+    Bell
 } from 'lucide-vue-next';
 
 const UserGroup = Users;
@@ -310,6 +319,7 @@ const UserGroup = Users;
 const isCollapsed = ref(false);
 const mobileMenuOpen = ref(false);
 const page = usePage();
+const pendingAppointmentsCount = ref(0);
 
 // SweetAlert Toast Configuration
 const Toast = window.Swal.mixin({
@@ -377,6 +387,123 @@ const hasModulePermission = (module, action = 'ver') => {
 
     return dbKeys.some(key => permisos[key] !== undefined);
 };
+
+// Real-time Appointment Notifications using WebSockets (Echo/Reverb)
+let echoChannel = null;
+let appointmentPollingInterval = null;
+const useWebSockets = ref(false);
+
+const showNewAppointmentNotification = (appointmentData) => {
+    // Skip if we're already on the appointments page
+    if (page.component.startsWith('Appointments/')) return;
+
+    window.Swal.fire({
+        icon: 'info',
+        title: '📅 Nueva cita registrada',
+        html: `<p><strong>${appointmentData.nombres} ${appointmentData.apellidos}</strong></p>
+               <p class="text-sm text-gray-600">${appointmentData.oficina} - ${appointmentData.fecha} ${appointmentData.hora}</p>
+               <p class="text-sm text-gray-500 mt-2">Haga clic en "Ir a Citas" para gestionarla.</p>`,
+        showCancelButton: true,
+        confirmButtonText: 'Ir a Citas',
+        cancelButtonText: 'Cerrar',
+        confirmButtonColor: '#db2777',
+    }).then((result) => {
+        if (result.isConfirmed) {
+            router.visit('/citas');
+        }
+    });
+};
+
+const setupWebSocketListener = () => {
+    // Only setup if user has secretaria permission
+    if (!hasModulePermission('secretaria', 'ver')) return;
+
+    if (typeof window.Echo !== 'undefined') {
+        try {
+            echoChannel = window.Echo.channel('appointments')
+                .listen('.new-appointment', (e) => {
+                    console.log('🔔 New appointment received via WebSocket:', e);
+                    showNewAppointmentNotification(e);
+                });
+
+            useWebSockets.value = true;
+            console.log('✅ WebSocket connection established for appointments');
+        } catch (error) {
+            console.warn('WebSocket setup failed, falling back to polling:', error);
+            useWebSockets.value = false;
+            startPollingFallback();
+        }
+    } else {
+        console.warn('Echo not available, using polling fallback');
+        startPollingFallback();
+    }
+};
+
+// Polling fallback (used when WebSockets are not available)
+const checkNewAppointments = async () => {
+    if (!hasModulePermission('secretaria', 'ver')) return;
+    if (page.component.startsWith('Appointments/')) return;
+
+    try {
+        const response = await axios.get('/citas/list');
+        const appointments = response.data;
+        const newPendingCount = appointments.filter(c => c.estado === 'PENDIENTE').length;
+
+        if (pendingAppointmentsCount.value > 0 && newPendingCount > pendingAppointmentsCount.value) {
+            const diff = newPendingCount - pendingAppointmentsCount.value;
+            window.Swal.fire({
+                icon: 'info',
+                title: '📅 Nueva cita registrada',
+                html: `<p>Se ha registrado <strong>${diff}</strong> nueva(s) cita(s) pendiente(s).</p>
+                       <p class="text-sm text-gray-500 mt-2">Haga clic en "Ir a Citas" para gestionarlas.</p>`,
+                showCancelButton: true,
+                confirmButtonText: 'Ir a Citas',
+                cancelButtonText: 'Cerrar',
+                confirmButtonColor: '#db2777',
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    router.visit('/citas');
+                }
+            });
+        }
+
+        pendingAppointmentsCount.value = newPendingCount;
+    } catch (error) {
+        console.warn('Failed to check appointments:', error);
+    }
+};
+
+const startPollingFallback = () => {
+    if (!hasModulePermission('secretaria', 'ver')) return;
+
+    checkNewAppointments();
+    appointmentPollingInterval = setInterval(() => {
+        checkNewAppointments();
+    }, 15000);
+};
+
+const stopNotificationListeners = () => {
+    // Stop WebSocket listener
+    if (echoChannel && typeof window.Echo !== 'undefined') {
+        window.Echo.leave('appointments');
+        echoChannel = null;
+    }
+
+    // Stop polling
+    if (appointmentPollingInterval) {
+        clearInterval(appointmentPollingInterval);
+        appointmentPollingInterval = null;
+    }
+};
+
+onMounted(() => {
+    // Try WebSockets first, fallback to polling
+    setupWebSocketListener();
+});
+
+onUnmounted(() => {
+    stopNotificationListeners();
+});
 </script>
 
 <style scoped>
