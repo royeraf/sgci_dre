@@ -1,66 +1,104 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# SGCI DRE - Sistema de Gestión de Control Interno
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Sistema de gestión integral para la Dirección Regional de Educación (DRE), diseñado para controlar accesos, visitas y ocurrencias, proporcionando herramientas modernas para la administración de seguridad y personal.
 
-## About Laravel
+![Laravel](https://img.shields.io/badge/Laravel-10-FF2D20?style=for-the-badge&logo=laravel&logoColor=white)
+![Vue.js](https://img.shields.io/badge/Vue.js-3-4FC08D?style=for-the-badge&logo=vue.js&logoColor=white)
+![Inertia.js](https://img.shields.io/badge/Inertia.js-2.0-9553E9?style=for-the-badge&logo=inertia&logoColor=white)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## 📋 Características Principales
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+- **Control de Acceso (Entradas/Salidas)**: Registro y monitoreo de entradas y salidas del personal.
+- **Gestión de Visitas Externas**: Registro detallado de visitantes, incluyendo datos personales y motivos de visita.
+- **Registro de Ocurrencias**: Sistema para reportar incidentes o eventos relevantes.
+- **Gestión de Usuarios y Roles**: Sistema robusto de permisos utilizando `spatie/laravel-permission`.
+- **Generación de Reportes PDF**:
+  - Papeletas de salida.
+  - Pases de visita.
+  - Reportes de ocurrencias.
+- **Dashboard Interactivo**: Vista general de métricas y actividades recientes.
+- **Logs de Auditoría**: Rastro de acciones importantes dentro del sistema para seguridad y control.
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+## 🛠️ Tecnologías
 
-## Learning Laravel
+### Backend
+- **Framework**: Laravel 10
+- **Base de Datos**: MySQL
+- **Autenticación**: Laravel Sanctum / Fortify (implementación estándar de Laravel)
+- **Roles y Permisos**: Spatie Laravel Permission
+- **PDFs**: Laravel DomPDF
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+### Frontend
+- **JavaScript Framework**: Vue.js 3
+- **Adaptador**: Inertia.js (Monolito Moderno)
+- **Estilos**: Tailwind CSS
+- **Iconos**: Lucide Vue Next
+- **Alertas**: SweetAlert2
+- **PDF Cliente**: jsPDF / jsPDF-AutoTable
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+## 🚀 Requisitos de Instalación
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+1.  **Requisitos del Sistema**:
+    - PHP >= 8.1
+    - Composer
+    - Node.js & NPM
+    - MySQL
 
-## Laravel Sponsors
+2.  **Pasos de Instalación**:
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+    ```bash
+    # Clonar el repositorio
+    git clone https://github.com/royeraf/sgci_dre.git
 
-### Premium Partners
+    # Ir al directorio del proyecto
+    cd sgci_dre
 
-- **[Vehikl](https://vehikl.com/)**
-- **[Tighten Co.](https://tighten.co)**
-- **[WebReinvent](https://webreinvent.com/)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel/)**
-- **[Cyber-Duck](https://cyber-duck.co.uk)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Jump24](https://jump24.co.uk)**
-- **[Redberry](https://redberry.international/laravel/)**
-- **[Active Logic](https://activelogic.com)**
-- **[byte5](https://byte5.de)**
-- **[OP.GG](https://op.gg)**
+    # Instalar dependencias de PHP
+    composer install
 
-## Contributing
+    # Instalar dependencias de JavaScript
+    npm install
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+    # Copiar archivo de entorno
+    cp .env.example .env
 
-## Code of Conduct
+    # Generar clave de aplicación
+    php artisan key:generate
+    ```
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+3.  **Configuración**:
+    - Crea una base de datos en MySQL.
+    - Edita el archivo `.env` con tus credenciales de base de datos (`DB_DATABASE`, `DB_USERNAME`, `DB_PASSWORD`).
 
-## Security Vulnerabilities
+4.  **Ejecución**:
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+    ```bash
+    # Correr migraciones y seeders (si aplica)
+    php artisan migrate
 
-## License
+    # Compilar assets y correr servidor de desarrollo
+    npm run dev
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+    # En otra terminal, servir la aplicación
+    php artisan serve
+    ```
+
+## 📄 Estructura del Proyecto
+
+- `app/Models`: Modelos de Eloquent (EntryExit, ExternalVisit, Occurrence, etc.).
+- `app/Http/Controllers`: Lógica del negocio.
+- `resources/js/Pages`: Vistas de Vue.js organizadas por módulo.
+- `resources/js/Components`: Componentes reutilizables.
+- `database/migrations`: Definición de esquema de base de datos.
+
+## 🤝 Contribución
+
+1.  Haz un Fork del proyecto.
+2.  Crea tu rama de funcionalidad (`git checkout -b feature/AmazingFeature`).
+3.  Haz Commit de tus cambios (`git commit -m 'Add some AmazingFeature'`).
+4.  Haz Push a la rama (`git push origin feature/AmazingFeature`).
+5.  Abre un Pull Request.
+
+---
+Desarrollado para la Dirección Regional de Educación.
