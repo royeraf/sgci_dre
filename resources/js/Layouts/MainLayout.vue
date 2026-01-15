@@ -1,0 +1,395 @@
+<template>
+    <div class="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex">
+        <!-- Sidebar -->
+        <aside
+            :class="[isCollapsed ? 'w-20' : 'w-72', 'bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 text-white flex-shrink-0 hidden md:flex flex-col transition-all duration-300 ease-in-out shadow-2xl h-screen sticky top-0']">
+
+            <!-- Toggle Button -->
+            <button @click="toggleSidebar"
+                class="absolute -right-3 top-24 bg-blue-600 text-white p-1 rounded-full shadow-lg hover:bg-blue-700 focus:outline-none z-50 transform hover:scale-110 transition-all duration-200">
+                <ChevronLeft v-if="!isCollapsed" class="h-4 w-4" />
+                <ChevronRight v-else class="h-4 w-4" />
+            </button>
+
+            <!-- Logo Header -->
+            <div class="h-24 flex items-center border-b border-slate-700/50 bg-slate-900/80 backdrop-blur-sm transition-all duration-300"
+                :class="isCollapsed ? 'justify-center px-0' : 'justify-center px-4'">
+                <div class="flex items-center font-bold text-xl tracking-wider transition-all duration-300"
+                    :class="isCollapsed ? 'space-x-0' : 'space-x-3'">
+                    <div class="bg-white p-1.5 rounded-xl shadow-lg ring-2 ring-blue-400/30">
+                        <img src="/images/logo.png" alt="DRE Huánuco" class="h-12 w-12 object-contain" />
+                    </div>
+                    <div class="flex flex-col transition-opacity duration-200" v-if="!isCollapsed">
+                        <span
+                            class="bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent font-extrabold whitespace-nowrap uppercase">SGCI-DREH</span>
+                        <span
+                            class="text-[9px] text-slate-500 font-medium tracking-wide uppercase whitespace-nowrap leading-tight">Sistema
+                            de Gestión<br />y Control Institucional</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Navigation - Scrollable area -->
+            <div
+                class="flex-1 overflow-y-auto py-6 scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent">
+                <div class="px-4 mb-4 transition-opacity duration-200" v-if="!isCollapsed">
+                    <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest px-3">Menú Principal</p>
+                </div>
+                <nav class="space-y-1.5" :class="isCollapsed ? 'px-2' : 'px-4'">
+                    <!-- Dashboard Link -->
+                    <Link href="/dashboard"
+                        class="group flex items-center text-sm font-semibold rounded-xl transition-all duration-200 ease-in-out relative"
+                        :class="[
+                            $page.component === 'Dashboard' ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/30 ring-1 ring-blue-400/50' : 'text-slate-300 hover:bg-slate-800/80 hover:text-white',
+                            isCollapsed ? 'justify-center py-3 px-0' : 'px-4 py-3.5'
+                        ]" :title="isCollapsed ? 'Dashboard' : ''">
+                        <div class="rounded-lg transition-colors duration-200 ease-in-out flex-shrink-0" :class="[
+                            $page.component === 'Dashboard' ? 'bg-white/20' : 'bg-slate-700/80 group-hover:bg-slate-600',
+                            isCollapsed ? 'p-2' : 'mr-4 p-2'
+                        ]">
+                            <LayoutDashboard class="h-5 w-5"
+                                :class="$page.component === 'Dashboard' ? 'text-white' : 'text-slate-400 group-hover:text-white'" />
+                        </div>
+                        <span v-if="!isCollapsed"
+                            class="whitespace-nowrap transition-opacity duration-200">Dashboard</span>
+                    </Link>
+
+                    <!-- Occurrences Link -->
+                    <Link v-if="hasModulePermission('vigilancia', 'ver')" href="/occurrences"
+                        class="group flex items-center text-sm font-semibold rounded-xl transition-all duration-200 ease-in-out relative"
+                        :class="[
+                            $page.component.startsWith('Occurrences/') ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/30 ring-1 ring-blue-400/50' : 'text-slate-300 hover:bg-slate-800/80 hover:text-white',
+                            isCollapsed ? 'justify-center py-3 px-0' : 'px-4 py-3.5'
+                        ]" :title="isCollapsed ? 'Libro de Ocurrencias' : ''">
+                        <div class="rounded-lg transition-colors duration-200 ease-in-out flex-shrink-0" :class="[
+                            $page.component.startsWith('Occurrences/') ? 'bg-white/20' : 'bg-slate-700/80 group-hover:bg-slate-600',
+                            isCollapsed ? 'p-2' : 'mr-4 p-2'
+                        ]">
+                            <ClipboardList class="h-5 w-5"
+                                :class="$page.component.startsWith('Occurrences/') ? 'text-white' : 'text-slate-400 group-hover:text-white'" />
+                        </div>
+                        <span v-if="!isCollapsed" class="whitespace-nowrap transition-opacity duration-200">Libro de
+                            Ocurrencias</span>
+                    </Link>
+
+                    <!-- Entry/Exit Link -->
+                    <Link v-if="hasModulePermission('vigilancia', 'ver')" href="/entry-exits"
+                        class="group flex items-center text-sm font-semibold rounded-xl transition-all duration-200 ease-in-out relative"
+                        :class="[
+                            $page.component.startsWith('EntryExits/') ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-lg shadow-emerald-500/30 ring-1 ring-emerald-400/50' : 'text-slate-300 hover:bg-slate-800/80 hover:text-white',
+                            isCollapsed ? 'justify-center py-3 px-0' : 'px-4 py-3.5'
+                        ]" :title="isCollapsed ? 'Control de Personal' : ''">
+                        <div class="rounded-lg transition-colors duration-200 ease-in-out flex-shrink-0" :class="[
+                            $page.component.startsWith('EntryExits/') ? 'bg-white/20' : 'bg-slate-700/80 group-hover:bg-slate-600',
+                            isCollapsed ? 'p-2' : 'mr-4 p-2'
+                        ]">
+                            <UserCheck class="h-5 w-5"
+                                :class="$page.component.startsWith('EntryExits/') ? 'text-white' : 'text-slate-400 group-hover:text-white'" />
+                        </div>
+                        <span v-if="!isCollapsed" class="whitespace-nowrap transition-opacity duration-200">Control de
+                            Personal</span>
+                    </Link>
+
+                    <!-- Visitas Externas -->
+                    <Link v-if="hasModulePermission('vigilancia', 'ver')" href="/visitors"
+                        class="group flex items-center text-sm font-semibold rounded-xl transition-all duration-200 ease-in-out relative"
+                        :class="[
+                            $page.component.startsWith('Visitors/') ? 'bg-gradient-to-r from-purple-600 to-fuchsia-600 text-white shadow-lg shadow-purple-500/30 ring-1 ring-purple-400/50' : 'text-slate-300 hover:bg-slate-800/80 hover:text-white',
+                            isCollapsed ? 'justify-center py-3 px-0' : 'px-4 py-3.5'
+                        ]" :title="isCollapsed ? 'Visitas Externas' : ''">
+                        <div class="rounded-lg transition-colors duration-200 ease-in-out flex-shrink-0" :class="[
+                            $page.component.startsWith('Visitors/') ? 'bg-white/20' : 'bg-slate-700/80 group-hover:bg-slate-600',
+                            isCollapsed ? 'p-2' : 'mr-4 p-2'
+                        ]">
+                            <Users class="h-5 w-5"
+                                :class="$page.component.startsWith('Visitors/') ? 'text-white' : 'text-slate-400 group-hover:text-white'" />
+                        </div>
+                        <span v-if="!isCollapsed" class="whitespace-nowrap transition-opacity duration-200">Visitas
+                            Externas</span>
+                    </Link>
+
+                    <!-- Control Vehicular -->
+                    <Link v-if="hasModulePermission('vigilancia', 'ver')" href="/vehicles"
+                        class="group flex items-center text-sm font-semibold rounded-xl transition-all duration-200 ease-in-out relative"
+                        :class="[
+                            $page.component.startsWith('Vehicles/') ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-lg shadow-cyan-500/30 ring-1 ring-cyan-400/50' : 'text-slate-300 hover:bg-slate-800/80 hover:text-white',
+                            isCollapsed ? 'justify-center py-3 px-0' : 'px-4 py-3.5'
+                        ]" :title="isCollapsed ? 'Control Vehicular' : ''">
+                        <div class="rounded-lg transition-colors duration-200 ease-in-out flex-shrink-0" :class="[
+                            $page.component.startsWith('Vehicles/') ? 'bg-white/20' : 'bg-slate-700/80 group-hover:bg-slate-600',
+                            isCollapsed ? 'p-2' : 'mr-4 p-2'
+                        ]">
+                            <Car class="h-5 w-5"
+                                :class="$page.component.startsWith('Vehicles/') ? 'text-white' : 'text-slate-400 group-hover:text-white'" />
+                        </div>
+                        <span v-if="!isCollapsed" class="whitespace-nowrap transition-opacity duration-200">Control
+                            Vehicular</span>
+                    </Link>
+
+                    <!-- Gestión de Citas -->
+                    <Link v-if="hasModulePermission('secretaria', 'ver')" href="/citas"
+                        class="group flex items-center text-sm font-semibold rounded-xl transition-all duration-200 ease-in-out relative"
+                        :class="[
+                            $page.component.startsWith('Citas/') ? 'bg-gradient-to-r from-pink-600 to-rose-600 text-white shadow-lg shadow-pink-500/30 ring-1 ring-pink-400/50' : 'text-slate-300 hover:bg-slate-800/80 hover:text-white',
+                            isCollapsed ? 'justify-center py-3 px-0' : 'px-4 py-3.5'
+                        ]" :title="isCollapsed ? 'Gestión de Citas' : ''">
+                        <div class="rounded-lg transition-colors duration-200 ease-in-out flex-shrink-0" :class="[
+                            $page.component.startsWith('Citas/') ? 'bg-white/20' : 'bg-slate-700/80 group-hover:bg-slate-600',
+                            isCollapsed ? 'p-2' : 'mr-4 p-2'
+                        ]">
+                            <Calendar class="h-5 w-5"
+                                :class="$page.component.startsWith('Citas/') ? 'text-white' : 'text-slate-400 group-hover:text-white'" />
+                        </div>
+                        <span v-if="!isCollapsed" class="whitespace-nowrap transition-opacity duration-200">Gestión de
+                            Citas</span>
+                    </Link>
+
+                    <!-- Control de Licencias -->
+                    <Link v-if="hasModulePermission('recursos_humanos', 'ver')" href="/licenses"
+                        class="group flex items-center text-sm font-semibold rounded-xl transition-all duration-200 ease-in-out relative"
+                        :class="[
+                            $page.component.startsWith('Licenses/') ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-lg shadow-purple-500/30 ring-1 ring-purple-400/50' : 'text-slate-300 hover:bg-slate-800/80 hover:text-white',
+                            isCollapsed ? 'justify-center py-3 px-0' : 'px-4 py-3.5'
+                        ]" :title="isCollapsed ? 'Control de Licencias' : ''">
+                        <div class="rounded-lg transition-colors duration-200 ease-in-out flex-shrink-0" :class="[
+                            $page.component.startsWith('Licenses/') ? 'bg-white/20' : 'bg-slate-700/80 group-hover:bg-slate-600',
+                            isCollapsed ? 'p-2' : 'mr-4 p-2'
+                        ]">
+                            <BookOpen class="h-5 w-5"
+                                :class="$page.component.startsWith('Licenses/') ? 'text-white' : 'text-slate-400 group-hover:text-white'" />
+                        </div>
+                        <span v-if="!isCollapsed" class="whitespace-nowrap transition-opacity duration-200">Control de
+                            Licencias</span>
+                    </Link>
+
+                    <!-- Recursos Humanos -->
+                    <Link v-if="hasModulePermission('recursos_humanos', 'ver')" href="/hr"
+                        class="group flex items-center text-sm font-semibold rounded-xl transition-all duration-200 ease-in-out relative"
+                        :class="[
+                            $page.component.startsWith('HR/') ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-lg shadow-emerald-500/30 ring-1 ring-emerald-400/50' : 'text-slate-300 hover:bg-slate-800/80 hover:text-white',
+                            isCollapsed ? 'justify-center py-3 px-0' : 'px-4 py-3.5'
+                        ]" :title="isCollapsed ? 'Recursos Humanos' : ''">
+                        <div class="rounded-lg transition-colors duration-200 ease-in-out flex-shrink-0" :class="[
+                            $page.component.startsWith('HR/') ? 'bg-white/20' : 'bg-slate-700/80 group-hover:bg-slate-600',
+                            isCollapsed ? 'p-2' : 'mr-4 p-2'
+                        ]">
+                            <UserGroup class="h-5 w-5"
+                                :class="$page.component.startsWith('HR/') ? 'text-white' : 'text-slate-400 group-hover:text-white'" />
+                        </div>
+                        <span v-if="!isCollapsed" class="whitespace-nowrap transition-opacity duration-200">Recursos
+                            Humanos</span>
+                    </Link>
+                </nav>
+            </div>
+
+            <!-- User Profile - Fixed at bottom -->
+            <div class="flex-shrink-0 border-t border-slate-700/50 p-4 bg-gradient-to-t from-slate-900 to-slate-800/80 backdrop-blur-sm transition-all duration-300"
+                :class="isCollapsed ? 'items-center justify-center p-2' : 'p-4'">
+                <div class="flex items-center gap-3 rounded-xl bg-slate-800/50 hover:bg-slate-700/50 transition-colors duration-200"
+                    :class="isCollapsed ? 'p-2 justify-center' : 'p-3'">
+                    <div class="flex-shrink-0">
+                        <div
+                            class="h-11 w-11 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-sm font-bold text-white shadow-lg ring-2 ring-blue-400/30 uppercase">
+                            {{ $page.props.auth?.user?.name?.charAt(0) || 'U' }}
+                        </div>
+                    </div>
+                    <div class="flex-1 min-w-0 transition-opacity duration-200" v-if="!isCollapsed">
+                        <p class="text-sm font-bold text-white truncate">{{ $page.props.auth?.user?.name || 'Usuario' }}
+                        </p>
+                        <p class="text-xs text-slate-400 flex items-center gap-1">
+                            <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                            {{ $page.props.auth?.user?.customRole?.nombre || 'Usuario' }}
+                        </p>
+                    </div>
+                    <button @click="logout"
+                        class="flex-shrink-0 bg-slate-700/80 rounded-lg text-slate-400 hover:text-white hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 transition-all duration-200 ease-in-out"
+                        :class="isCollapsed ? 'hidden group-hover:block absolute left-full ml-2 p-2' : 'p-2.5'"
+                        title="Cerrar Sesión">
+                        <LogOut class="h-5 w-5" />
+                    </button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Mobile Header -->
+        <div
+            class="md:hidden fixed top-0 w-full bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white z-40 flex items-center justify-between px-4 h-16 shadow-lg">
+            <div class="flex items-center space-x-2 font-bold text-lg">
+                <div class="bg-gradient-to-br from-blue-500 to-indigo-600 p-1.5 rounded-lg border border-white/20">
+                    <img src="/images/logo.png" alt="DREH" class="h-6 w-6 object-contain brightness-0 invert" />
+                </div>
+                <span class="tracking-tight uppercase">DRE Huánuco</span>
+            </div>
+            <button @click="mobileMenuOpen = !mobileMenuOpen"
+                class="text-slate-300 hover:text-white focus:outline-none p-2 rounded-lg hover:bg-slate-700 transition-colors duration-200 ease-in-out">
+                <Menu v-if="!mobileMenuOpen" class="h-6 w-6" />
+                <X v-else class="h-6 w-6" />
+            </button>
+        </div>
+
+        <!-- Mobile Menu Overlay -->
+        <Transition enter-active-class="transition-opacity duration-300 ease-in-out" enter-from-class="opacity-0"
+            enter-to-class="opacity-100" leave-active-class="transition-opacity duration-300 ease-in-out"
+            leave-from-class="opacity-100" leave-to-class="opacity-0">
+            <div v-if="mobileMenuOpen" class="fixed inset-0 z-40 md:hidden flex">
+                <div class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm" @click="mobileMenuOpen = false"></div>
+                <div
+                    class="relative flex-1 flex flex-col max-w-xs w-full bg-gradient-to-b from-slate-900 to-slate-800 shadow-2xl">
+                    <div class="pt-20 pb-4 px-4 overflow-y-auto h-full space-y-2">
+                        <Link href="/dashboard" @click="mobileMenuOpen = false"
+                            class="flex items-center gap-3 px-4 py-3 rounded-xl text-base font-semibold transition-all duration-200"
+                            :class="$page.component === 'Dashboard' ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg' : 'text-slate-300 hover:bg-slate-700/50 hover:text-white'">
+                            <LayoutDashboard class="h-5 w-5" />
+                            Dashboard
+                        </Link>
+                        <Link href="/occurrences" @click="mobileMenuOpen = false"
+                            class="flex items-center gap-3 px-4 py-3 rounded-xl text-base font-semibold transition-all duration-200"
+                            :class="$page.component.startsWith('Occurrences/') ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg' : 'text-slate-300 hover:bg-slate-700/50 hover:text-white'">
+                            <ClipboardList class="h-5 w-5" />
+                            Libro de Ocurrencias
+                        </Link>
+                        <Link href="/entry-exits" @click="mobileMenuOpen = false"
+                            class="flex items-center gap-3 px-4 py-3 rounded-xl text-base font-semibold transition-all duration-200"
+                            :class="$page.component.startsWith('EntryExits/') ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-lg' : 'text-slate-300 hover:bg-slate-700/50 hover:text-white'">
+                            <UserCheck class="h-5 w-5" />
+                            Control de Personal
+                        </Link>
+                        <Link href="/visitors" @click="mobileMenuOpen = false"
+                            class="flex items-center gap-3 px-4 py-3 rounded-xl text-base font-semibold transition-all duration-200"
+                            :class="$page.component.startsWith('Visitors/') ? 'bg-gradient-to-r from-purple-600 to-fuchsia-600 text-white shadow-lg' : 'text-slate-300 hover:bg-slate-700/50 hover:text-white'">
+                            <Users class="h-5 w-5" />
+                            Visitas Externas
+                        </Link>
+                        <Link href="/vehicles" @click="mobileMenuOpen = false"
+                            class="flex items-center gap-3 px-4 py-3 rounded-xl text-base font-semibold transition-all duration-200"
+                            :class="$page.component.startsWith('Vehicles/') ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-lg' : 'text-slate-300 hover:bg-slate-700/50 hover:text-white'">
+                            <Car class="h-5 w-5" />
+                            Control Vehicular
+                        </Link>
+
+                        <button @click="logout"
+                            class="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-base font-semibold text-slate-300 hover:bg-red-600 hover:text-white transition-all duration-200 mt-6 pt-6 border-t border-slate-700">
+                            <LogOut class="h-5 w-5" />
+                            Cerrar Sesión
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </Transition>
+
+        <!-- Main Content -->
+        <main class="flex-1 overflow-y-auto pt-16 md:pt-0">
+            <div class="h-full">
+                <slot />
+            </div>
+        </main>
+    </div>
+</template>
+
+<script setup>
+import { ref } from 'vue';
+import { Link, router, usePage } from '@inertiajs/vue3';
+import {
+    ChevronLeft,
+    ChevronRight,
+    LayoutDashboard,
+    X,
+    Users,
+    Car,
+    Calendar,
+    BookOpen,
+    UserCheck,
+    ClipboardList,
+    FileText,
+    LogOut,
+    Menu
+} from 'lucide-vue-next';
+
+const UserGroup = Users;
+
+const isCollapsed = ref(false);
+const mobileMenuOpen = ref(false);
+const page = usePage();
+
+// SweetAlert Toast Configuration
+const Toast = window.Swal.mixin({
+    toast: true,
+    position: 'top-end',
+    showConfirmButton: false,
+    timer: 3000,
+    timerProgressBar: true,
+    didOpen: (toast) => {
+        toast.addEventListener('mouseenter', window.Swal.stopTimer)
+        toast.addEventListener('mouseleave', window.Swal.resumeTimer)
+    }
+});
+
+import { watch } from 'vue';
+
+// Watch for flash messages
+watch(() => page.props.flash?.success, (success) => {
+    if (success) {
+        Toast.fire({
+            icon: 'success',
+            title: success
+        });
+    }
+}, { immediate: true });
+
+watch(() => page.props.flash?.error, (error) => {
+    if (error) {
+        Toast.fire({
+            icon: 'error',
+            title: error
+        });
+    }
+}, { immediate: true });
+
+const toggleSidebar = () => {
+    isCollapsed.value = !isCollapsed.value;
+};
+
+const logout = () => {
+    router.post('/logout');
+};
+
+const hasModulePermission = (module, action = 'ver') => {
+    const user = page.props.auth?.user;
+    if (!user) return false;
+
+    // Admin has access to everything
+    if (user.rol_id === 'ROL001' || user.rol_id === '1') return true;
+
+    const permisos = user.customRole?.permisos_json || {};
+
+    // Mapping sidebar modules to database permission keys
+    const mapping = {
+        'dashboard': true, // Everyone has dashboard
+        'vigilancia': ['ocurrencias', 'visitas', 'vehiculos'],
+        'secretaria': ['visitas'],
+        'recursos_humanos': ['personal', 'licencias'],
+    };
+
+    if (module === 'dashboard') return true;
+
+    const dbKeys = mapping[module];
+    if (!dbKeys) return false;
+
+    return dbKeys.some(key => permisos[key] !== undefined);
+};
+</script>
+
+<style scoped>
+.scrollbar-thin::-webkit-scrollbar {
+    width: 4px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+    background: #334155;
+    border-radius: 20px;
+}
+</style>
