@@ -35,7 +35,7 @@
                         <td class="px-6 py-4">
                             <div class="flex items-center">
                                 <div
-                                    class="h-10 w-10 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white font-bold text-sm mr-3">
+                                    class="h-10 w-10 flex-shrink-0 aspect-square rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white font-bold text-sm mr-3">
                                     {{ getInitials(emp.nombres + ' ' + emp.apellidos) }}
                                 </div>
                                 <div>

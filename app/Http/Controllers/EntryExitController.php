@@ -181,4 +181,60 @@ class EntryExitController extends Controller
             'entries' => $pending,
         ]);
     }
+    /**
+     * Get absent personnel (Vacations and Licenses).
+     */
+    public function getAbsentPersonnel()
+    {
+        $today = now()->toDateString();
+
+        $vacations = \App\Models\Vacation::with('employee')
+            ->where('fecha_inicio', '<=', $today)
+            ->where('fecha_fin', '>=', $today)
+            ->whereIn('estado', ['PROGRAMADO', 'EN CURSO'])
+            ->get()
+            ->map(function ($v) {
+                $employee = $v->employee;
+                $nombres = $employee
+                    ? trim($employee->nombres . ' ' . $employee->apellidos)
+                    : 'Empleado no encontrado';
+
+                return [
+                    'id' => 'vac-' . $v->id,
+                    'type' => 'Vacaciones',
+                    'class' => 'bg-blue-100 text-blue-700',
+                    'dni' => $v->dni,
+                    'nombres' => $nombres,
+                    'desde' => $v->fecha_inicio->format('d/m/Y'),
+                    'hasta' => $v->fecha_fin->format('d/m/Y'),
+                    'motivo' => $v->observaciones ?? 'Vacaciones programadas',
+                    'area' => $employee->area ?? '-',
+                ];
+            });
+
+        $licenses = \App\Models\License::with('employee')
+            ->where('fecha_inicio', '<=', $today)
+            ->where('fecha_fin', '>=', $today)
+            ->get()
+            ->map(function ($l) {
+                $employee = $l->employee;
+                $nombres = $employee
+                    ? trim($employee->nombres . ' ' . $employee->apellidos)
+                    : 'Empleado no encontrado';
+
+                return [
+                    'id' => 'lic-' . $l->id,
+                    'type' => 'Licencia (' . $l->tipo_licencia . ')',
+                    'class' => 'bg-purple-100 text-purple-700',
+                    'dni' => $l->dni,
+                    'nombres' => $nombres,
+                    'desde' => $l->fecha_inicio->format('d/m/Y'),
+                    'hasta' => $l->fecha_fin->format('d/m/Y'),
+                    'motivo' => $l->motivo,
+                    'area' => $employee->area ?? '-',
+                ];
+            });
+
+        return response()->json(array_merge($vacations->toArray(), $licenses->toArray()));
+    }
 }

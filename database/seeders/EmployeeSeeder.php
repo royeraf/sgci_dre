@@ -4,6 +4,8 @@ namespace Database\Seeders;
 
 use App\Models\Employee;
 use App\Models\Vacation;
+use App\Models\HRArea;
+use App\Models\HRPosition;
 use Illuminate\Database\Seeder;
 use Carbon\Carbon;
 
@@ -14,7 +16,35 @@ class EmployeeSeeder extends Seeder
      */
     public function run(): void
     {
-        // Crear empleados de ejemplo
+        // 1. Crear Áreas
+        $areas = [
+            ['nombre' => 'Administración', 'descripcion' => 'Oficina de Administración General'],
+            ['nombre' => 'Dirección Regional', 'descripcion' => 'Despacho de la Dirección Regional'],
+            ['nombre' => 'Gestión Pedagógica', 'descripcion' => 'Área de Gestión Pedagógica'],
+            ['nombre' => 'Recursos Humanos', 'descripcion' => 'Oficina de Recursos Humanos'],
+            ['nombre' => 'Informática', 'descripcion' => 'Oficina de Tecnologías de la Información'],
+            ['nombre' => 'Contabilidad', 'descripcion' => 'Oficina de Contabilidad y Presupuesto'],
+        ];
+
+        foreach ($areas as $area) {
+            HRArea::updateOrCreate(['nombre' => $area['nombre']], $area);
+        }
+
+        // 2. Crear Cargos
+        $positions = [
+            ['nombre' => 'Técnico Administrativo', 'descripcion' => 'Soporte técnico en oficina'],
+            ['nombre' => 'Secretaria Ejecutiva', 'descripcion' => 'Gestión de agenda y documentos'],
+            ['nombre' => 'Especialista en Educación', 'descripcion' => 'Asesoría pedagógica'],
+            ['nombre' => 'Contador', 'descripcion' => 'Gestión financiera y contable'],
+            ['nombre' => 'Asistente de RRHH', 'descripcion' => 'Soporte en gestión de personal'],
+            ['nombre' => 'Especialista en Sistemas', 'descripcion' => 'Soporte informático'],
+        ];
+
+        foreach ($positions as $pos) {
+            HRPosition::updateOrCreate(['nombre' => $pos['nombre']], $pos);
+        }
+
+        // 3. Crear empleados de ejemplo
         $employees = [
             [
                 'dni' => '12345678',
@@ -70,8 +100,8 @@ class EmployeeSeeder extends Seeder
                 'direccion' => 'Jr. Leoncio Prado 321',
                 'telefono' => '965432109',
                 'correo' => 'afernandez@drehco.gob.pe',
-                'cargo' => 'Contadora',
-                'area' => 'Oficina de Administración',
+                'cargo' => 'Contador',
+                'area' => 'Contabilidad',
                 'fecha_ingreso' => '2019-01-02',
                 'tipo_contrato' => 'CAS',
                 'estado' => 'ACTIVO',
@@ -95,14 +125,15 @@ class EmployeeSeeder extends Seeder
 
         $createdEmployees = [];
         foreach ($employees as $empData) {
-            $createdEmployees[] = Employee::create($empData);
+            $createdEmployees[] = Employee::updateOrCreate(['dni' => $empData['dni']], $empData);
         }
 
-        // Crear vacaciones de ejemplo
-        Vacation::create([
+        // 4. Crear vacaciones de ejemplo
+        Vacation::firstOrCreate([
             'empleado_id' => $createdEmployees[0]->id,
             'dni' => $createdEmployees[0]->dni,
             'periodo' => '2026',
+        ], [
             'fecha_inicio' => Carbon::now()->addDays(15)->toDateString(),
             'fecha_fin' => Carbon::now()->addDays(29)->toDateString(),
             'dias_tomados' => 15,
@@ -111,10 +142,11 @@ class EmployeeSeeder extends Seeder
             'observaciones' => 'Vacaciones programadas para febrero',
         ]);
 
-        Vacation::create([
+        Vacation::firstOrCreate([
             'empleado_id' => $createdEmployees[2]->id,
             'dni' => $createdEmployees[2]->dni,
             'periodo' => '2025',
+        ], [
             'fecha_inicio' => '2025-12-01',
             'fecha_fin' => '2025-12-30',
             'dias_tomados' => 30,
@@ -123,7 +155,6 @@ class EmployeeSeeder extends Seeder
             'observaciones' => 'Vacaciones del periodo 2025',
         ]);
 
-        $this->command->info('Seeder de empleados ejecutado correctamente.');
-        $this->command->info('Se crearon ' . count($createdEmployees) . ' empleados de ejemplo.');
+        $this->command->info('Seeder de RRHH (Áreas, Cargos, Empleados, Vacaciones) ejecutado correctamente.');
     }
 }

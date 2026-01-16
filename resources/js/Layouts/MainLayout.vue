@@ -144,22 +144,22 @@
                             Citas</span>
                     </Link>
 
-                    <!-- Control de Licencias -->
-                    <Link v-if="hasModulePermission('recursos_humanos', 'ver')" href="/licenses"
+                    <!-- Bienestar Social - Licencias -->
+                    <Link href="/bienestar"
                         class="group flex items-center text-sm font-semibold rounded-xl transition-all duration-200 ease-in-out relative"
                         :class="[
-                            $page.component.startsWith('Licenses/') ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-lg shadow-purple-500/30 ring-1 ring-purple-400/50' : 'text-slate-300 hover:bg-slate-800/80 hover:text-white',
+                            $page.component.startsWith('Bienestar/') ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-lg shadow-purple-500/30 ring-1 ring-purple-400/50' : 'text-slate-300 hover:bg-slate-800/80 hover:text-white',
                             isCollapsed ? 'justify-center py-3 px-0' : 'px-4 py-3.5'
-                        ]" :title="isCollapsed ? 'Control de Licencias' : ''">
+                        ]" :title="isCollapsed ? 'Bienestar Social' : ''">
                         <div class="rounded-lg transition-colors duration-200 ease-in-out flex-shrink-0" :class="[
-                            $page.component.startsWith('Licenses/') ? 'bg-white/20' : 'bg-slate-700/80 group-hover:bg-slate-600',
+                            $page.component.startsWith('Bienestar/') ? 'bg-white/20' : 'bg-slate-700/80 group-hover:bg-slate-600',
                             isCollapsed ? 'p-2' : 'mr-4 p-2'
                         ]">
-                            <BookOpen class="h-5 w-5"
-                                :class="$page.component.startsWith('Licenses/') ? 'text-white' : 'text-slate-400 group-hover:text-white'" />
+                            <Heart class="h-5 w-5"
+                                :class="$page.component.startsWith('Bienestar/') ? 'text-white' : 'text-slate-400 group-hover:text-white'" />
                         </div>
-                        <span v-if="!isCollapsed" class="whitespace-nowrap transition-opacity duration-200">Control de
-                            Licencias</span>
+                        <span v-if="!isCollapsed" class="whitespace-nowrap transition-opacity duration-200">Bienestar
+                            Social</span>
                     </Link>
 
                     <!-- Recursos Humanos -->
@@ -311,7 +311,8 @@ import {
     FileText,
     LogOut,
     Menu,
-    Bell
+    Bell,
+    Heart
 } from 'lucide-vue-next';
 
 const UserGroup = Users;
@@ -377,7 +378,8 @@ const hasModulePermission = (module, action = 'ver') => {
         'dashboard': true, // Everyone has dashboard
         'vigilancia': ['ocurrencias', 'visitas', 'vehiculos'],
         'secretaria': ['visitas'],
-        'recursos_humanos': ['personal', 'licencias'],
+        'recursos_humanos': ['personal'],
+        'bienestar': ['licencias'],
     };
 
     if (module === 'dashboard') return true;

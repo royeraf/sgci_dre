@@ -24,6 +24,8 @@ class Employee extends Model
         'tipo_contrato',
         'estado',
         'observaciones',
+        'licencias_totales',
+        'licencias_usadas',
     ];
 
     protected $casts = [
@@ -37,6 +39,14 @@ class Employee extends Model
     public function vacations()
     {
         return $this->hasMany(Vacation::class, 'empleado_id');
+    }
+
+    /**
+     * Relación con licencias
+     */
+    public function licenses()
+    {
+        return $this->hasMany(License::class, 'employee_id');
     }
 
     /**

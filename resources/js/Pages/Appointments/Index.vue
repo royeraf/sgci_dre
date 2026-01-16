@@ -1,77 +1,81 @@
 <template>
     <MainLayout>
-        <div class="container mx-auto px-4 py-8">
-            <!-- Header -->
-            <div class="sm:flex sm:items-center sm:justify-between mb-8">
-                <div>
-                    <h1 class="text-3xl font-bold text-slate-900">Gestión de Citas</h1>
-                    <p class="mt-2 text-sm text-slate-700">Administra las reservas de citas realizadas por usuarios
-                        externos.</p>
-                </div>
-                <div class="mt-4 sm:mt-0 flex items-center gap-3">
-                    <div class="flex items-center gap-2 text-sm text-gray-600">
-                        <div class="flex items-center gap-1.5">
+        <div class="p-4 sm:p-6 lg:p-8">
+            <div class="max-w-7xl mx-auto">
+                <!-- Header -->
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+                    <div>
+                        <h1
+                            class="text-3xl font-extrabold bg-gradient-to-r from-pink-600 to-rose-600 bg-clip-text text-transparent tracking-tight">
+                            Gestión de Citas
+                        </h1>
+                        <p class="mt-1 text-slate-500 font-medium">
+                            Administra las reservas de citas realizadas por usuarios externos.
+                        </p>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <div class="hidden sm:flex items-center gap-2 text-sm text-gray-500 mr-2">
                             <span class="relative flex h-2 w-2">
                                 <span
                                     class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
                                 <span class="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
                             </span>
-                            <span class="text-xs font-medium">Actualización automática</span>
+                            <span class="text-xs font-bold uppercase tracking-wider">En vivo</span>
                         </div>
+                        <button @click="fetchCitas(true)"
+                            class="inline-flex items-center px-6 py-3 border border-transparent text-sm font-bold rounded-xl shadow-lg shadow-pink-600/20 text-white bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-700 hover:to-rose-700 focus:outline-none focus:ring-4 focus:ring-pink-300 transition-all duration-300 transform hover:scale-105 active:scale-95">
+                            <RefreshCw class="h-5 w-5 mr-2" :class="{ 'animate-spin': loading }" />
+                            Actualizar
+                        </button>
                     </div>
-                    <button @click="fetchCitas(true)"
-                        class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-700 hover:to-rose-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 shadow-lg shadow-pink-500/30">
-                        <RefreshCw class="h-5 w-5 mr-2" />
-                        Actualizar
-                    </button>
-                </div>
-            </div>
-
-            <!-- Loading State -->
-            <div v-if="loading && citas.length === 0"
-                class="bg-white rounded-xl shadow-md border border-gray-200 px-6 py-24 text-center">
-                <div class="flex flex-col items-center justify-center">
-                    <LoaderCircle class="animate-spin h-12 w-12 text-pink-600 mb-4" />
-                    <p class="text-lg font-medium text-slate-600">Cargando citas...</p>
-                </div>
-            </div>
-
-            <!-- Content with Tabs -->
-            <div v-else>
-                <!-- Tabs Navigation -->
-                <div class="border-b border-gray-200 mb-6">
-                    <nav class="-mb-px flex space-x-8">
-                        <button @click="activeTab = 'pending'"
-                            :class="[activeTab === 'pending'
-                                ? 'border-pink-500 text-pink-600'
-                                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300',
-                                'whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2 transition-colors']">
-                            <Clock class="w-5 h-5" />
-                            Pendientes
-                            <span v-if="pendingCitas.length > 0"
-                                class="inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white bg-gradient-to-r from-pink-500 to-rose-500 rounded-full">
-                                {{ pendingCitas.length }}
-                            </span>
-                        </button>
-                        <button @click="activeTab = 'completed'"
-                            :class="[activeTab === 'completed'
-                                ? 'border-rose-500 text-rose-600'
-                                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300',
-                                'whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2 transition-colors']">
-                            <CheckCircle class="w-5 h-5" />
-                            Finalizadas
-                        </button>
-                    </nav>
                 </div>
 
-                <!-- Tab Content -->
-                <div v-show="activeTab === 'pending'">
-                    <PendingAppointmentList :citas="pendingCitas" @attend="(id) => updateStatus(id, 'ATENDIDO')"
-                        @cancel="(id) => updateStatus(id, 'CANCELADO')" />
+                <!-- Loading State -->
+                <div v-if="loading && citas.length === 0"
+                    class="bg-white rounded-2xl shadow-xl border border-slate-200 px-6 py-24 text-center">
+                    <div class="flex flex-col items-center justify-center">
+                        <LoaderCircle class="animate-spin h-12 w-12 text-pink-600 mb-4" />
+                        <p class="text-lg font-bold text-slate-600">Cargando citas...</p>
+                    </div>
                 </div>
 
-                <div v-show="activeTab === 'completed'">
-                    <CompletedAppointmentList :citas="completedCitas" />
+                <!-- Content with Tabs -->
+                <div v-else>
+                    <!-- Tabs Navigation -->
+                    <div class="border-b border-slate-200 mb-8">
+                        <nav class="-mb-px flex space-x-8">
+                            <button @click="activeTab = 'pending'"
+                                :class="[activeTab === 'pending'
+                                    ? 'border-pink-600 text-pink-600'
+                                    : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300',
+                                    'whitespace-nowrap py-4 px-1 border-b-2 font-bold text-sm flex items-center gap-2 transition-all duration-200']">
+                                <Clock class="w-5 h-5" />
+                                Pendientes
+                                <span v-if="pendingCitas.length > 0"
+                                    class="inline-flex items-center justify-center px-2 py-0.5 text-xs font-black leading-none text-white bg-gradient-to-r from-pink-500 to-rose-500 rounded-full shadow-sm ml-1">
+                                    {{ pendingCitas.length }}
+                                </span>
+                            </button>
+                            <button @click="activeTab = 'completed'"
+                                :class="[activeTab === 'completed'
+                                    ? 'border-rose-600 text-rose-600'
+                                    : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300',
+                                    'whitespace-nowrap py-4 px-1 border-b-2 font-bold text-sm flex items-center gap-2 transition-all duration-200']">
+                                <CheckCircle class="w-5 h-5" />
+                                Finalizadas
+                            </button>
+                        </nav>
+                    </div>
+
+                    <!-- Tab Content -->
+                    <div v-show="activeTab === 'pending'">
+                        <PendingAppointmentList :citas="pendingCitas" @attend="(id) => updateStatus(id, 'ATENDIDO')"
+                            @cancel="(id) => updateStatus(id, 'CANCELADO')" />
+                    </div>
+
+                    <div v-show="activeTab === 'completed'">
+                        <CompletedAppointmentList :citas="completedCitas" />
+                    </div>
                 </div>
             </div>
         </div>

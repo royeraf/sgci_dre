@@ -6,6 +6,8 @@ use App\Http\Controllers\EntryExitController;
 use App\Http\Controllers\ExternalVisitController;
 use App\Http\Controllers\AppointmentController;
 use App\Http\Controllers\HRController;
+use App\Http\Controllers\LicenseController;
+use App\Http\Controllers\VehicleController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -47,9 +49,12 @@ Route::middleware('auth')->group(function () {
     Route::prefix('entry-exits')->name('entry-exits.')->group(function () {
         Route::get('/', [EntryExitController::class, 'index'])->name('index');
         Route::post('/', [EntryExitController::class, 'store'])->name('store');
+        // API routes must come BEFORE dynamic parameter routes
+        Route::get('/api/pending', [EntryExitController::class, 'pendingReturns'])->name('pending');
+        Route::get('/api/absent', [EntryExitController::class, 'getAbsentPersonnel'])->name('absent');
+        // Dynamic parameter routes after static routes
         Route::patch('/{entryExit}/return', [EntryExitController::class, 'registerReturn'])->name('return');
         Route::get('/{entryExit}/pdf', [EntryExitController::class, 'generatePdf'])->name('pdf');
-        Route::get('/api/pending', [EntryExitController::class, 'pendingReturns'])->name('pending');
     });
 
     // Placeholder routes for migrated modules
@@ -60,7 +65,34 @@ Route::middleware('auth')->group(function () {
         Route::patch('/{visit}/exit', [ExternalVisitController::class, 'registerExit'])->name('exit');
         Route::get('/{visit}/ticket', [ExternalVisitController::class, 'generateTicket'])->name('ticket');
     });
-    Route::get('/vehicles', function () { return Inertia::render('Placeholder', ['module' => 'Control Vehicular']); })->name('vehicles.index');
+    // Control Vehicular
+    Route::prefix('vehicles')->name('vehicles.')->group(function () {
+        Route::get('/', [VehicleController::class, 'index'])->name('index');
+        Route::get('/summary', [VehicleController::class, 'getSummary'])->name('summary');
+        
+        // Vehicles (Inventory)
+        Route::get('/inventory', [VehicleController::class, 'getVehicles'])->name('inventory.list');
+        Route::post('/inventory', [VehicleController::class, 'storeVehicle'])->name('inventory.store');
+        Route::put('/inventory/{id}', [VehicleController::class, 'updateVehicle'])->name('inventory.update');
+        Route::delete('/inventory/{id}', [VehicleController::class, 'deleteVehicle'])->name('inventory.delete');
+        
+        // Commissions
+        Route::get('/commissions', [VehicleController::class, 'getCommissions'])->name('commissions.list');
+        Route::post('/commissions', [VehicleController::class, 'storeCommission'])->name('commissions.store');
+        Route::put('/commissions/{id}', [VehicleController::class, 'updateCommission'])->name('commissions.update');
+        
+        // Maintenance
+        Route::get('/maintenance', [VehicleController::class, 'getMaintenances'])->name('maintenance.list');
+        Route::post('/maintenance', [VehicleController::class, 'storeMaintenance'])->name('maintenance.store');
+        
+        // Handovers
+        Route::get('/handovers', [VehicleController::class, 'getHandovers'])->name('handovers.list');
+        Route::post('/handovers', [VehicleController::class, 'storeHandover'])->name('handovers.store');
+        
+        // Service Requirements
+        Route::get('/service-requirements', [VehicleController::class, 'getServiceRequirements'])->name('service-requirements.list');
+        Route::post('/service-requirements', [VehicleController::class, 'storeServiceRequirement'])->name('service-requirements.store');
+    });
     
     // Gestión de Citas
     Route::prefix('citas')->name('citas.')->group(function () {
@@ -69,7 +101,15 @@ Route::middleware('auth')->group(function () {
         Route::put('/{id}/status', [AppointmentController::class, 'updateStatus'])->name('update-status');
     });
 
-    Route::get('/licenses', function () { return Inertia::render('Placeholder', ['module' => 'Control de Licencias']); })->name('licenses.index');
+    // Bienestar Social / Licencias
+    Route::prefix('bienestar')->name('bienestar.')->group(function () {
+        Route::get('/', [LicenseController::class, 'index'])->name('index');
+        Route::get('/api/licenses', [LicenseController::class, 'getLicenses'])->name('licenses.list');
+        Route::get('/api/employees', [LicenseController::class, 'getEmployeesBalance'])->name('employees.list');
+        Route::get('/api/summary', [LicenseController::class, 'getSummary'])->name('summary');
+        Route::get('/api/employee/{dni}', [LicenseController::class, 'getEmployeeByDni'])->name('employee.by-dni');
+        Route::post('/api/register', [LicenseController::class, 'store'])->name('register');
+    });
     
     // Recursos Humanos
     Route::prefix('hr')->name('hr.')->group(function () {
@@ -85,6 +125,20 @@ Route::middleware('auth')->group(function () {
         // Vacations
         Route::get('/vacations', [HRController::class, 'getVacations'])->name('vacations.list');
         Route::post('/vacations', [HRController::class, 'storeVacation'])->name('vacations.store');
+        Route::put('/vacations/{id}', [HRController::class, 'updateVacation'])->name('vacations.update');
+        Route::delete('/vacations/{id}', [HRController::class, 'deleteVacation'])->name('vacations.delete');
+        
+        // Areas
+        Route::get('/areas', [HRController::class, 'getAreas'])->name('areas.list');
+        Route::post('/areas', [HRController::class, 'storeArea'])->name('areas.store');
+        Route::put('/areas/{id}', [HRController::class, 'updateArea'])->name('areas.update');
+        Route::delete('/areas/{id}', [HRController::class, 'deleteArea'])->name('areas.delete');
+        
+        // Positions
+        Route::get('/positions', [HRController::class, 'getPositions'])->name('positions.list');
+        Route::post('/positions', [HRController::class, 'storePosition'])->name('positions.store');
+        Route::put('/positions/{id}', [HRController::class, 'updatePosition'])->name('positions.update');
+        Route::delete('/positions/{id}', [HRController::class, 'deletePosition'])->name('positions.delete');
         
         // Summary
         Route::get('/summary', [HRController::class, 'getSummary'])->name('summary');

@@ -11,6 +11,11 @@
                     <p class="mt-1 text-slate-500 font-medium">Gestión de entradas, salidas y papeletas oficiales</p>
                 </div>
                 <div class="flex gap-3">
+                    <button @click="showAbsentModal = true"
+                        class="inline-flex items-center px-4 py-3 border border-slate-200 text-sm font-bold rounded-xl text-slate-600 bg-white hover:bg-slate-50 transition-all shadow-sm">
+                        <UserMinus class="w-5 h-5 mr-2 text-slate-500" />
+                        Personal Ausente
+                    </button>
                     <Link href="/dashboard"
                         class="inline-flex items-center px-4 py-2.5 border border-slate-200 text-sm font-bold rounded-xl text-slate-600 bg-white hover:bg-slate-50 transition-all shadow-sm">
                         <ArrowLeft class="w-4 h-4 mr-2" />
@@ -248,6 +253,9 @@
 
             <!-- Register Modal -->
             <EntryExitModal v-if="showModal" :staff="staff" :entry="selectedEntry" @close="closeModal" />
+
+            <!-- Absent Personnel Modal -->
+            <AbsentPersonnelModal v-if="showAbsentModal" :show="showAbsentModal" @close="showAbsentModal = false" />
         </div>
     </div>
 </template>
@@ -273,9 +281,11 @@ import {
     ArrowLeft,
     ChevronLeft,
     ChevronRight,
-    Filter
+    Filter,
+    UserMinus
 } from 'lucide-vue-next';
 import EntryExitModal from '@/Components/EntryExit/EntryExitModal.vue';
+import AbsentPersonnelModal from '@/Components/EntryExit/AbsentPersonnelModal.vue';
 import Pagination from '@/Components/Common/Pagination.vue';
 
 const props = defineProps({
@@ -294,6 +304,7 @@ const props = defineProps({
 });
 
 const showModal = ref(false);
+const showAbsentModal = ref(false);
 const selectedEntry = ref(null);
 
 // Local filters

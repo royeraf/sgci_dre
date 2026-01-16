@@ -5,10 +5,16 @@
 
         <!-- Empty State -->
         <div v-if="citas.length === 0"
-            class="col-span-full text-center py-12 bg-white rounded-xl shadow-sm border border-gray-200">
-            <Clock class="mx-auto h-12 w-12 text-pink-400" />
-            <h3 class="mt-2 text-sm font-medium text-gray-900">No hay citas pendientes</h3>
-            <p class="mt-1 text-sm text-gray-500">Las citas pendientes aparecerán aquí.</p>
+            class="col-span-full text-center py-20 bg-white rounded-2xl shadow-xl border border-slate-200">
+            <div class="flex flex-col items-center">
+                <div class="bg-slate-100 rounded-full p-4 mb-4">
+                    <Clock class="h-12 w-12 text-slate-400" />
+                </div>
+                <h3 class="text-lg font-black text-slate-900 mb-1">No hay citas pendientes</h3>
+                <p class="text-sm text-slate-500 font-medium max-w-xs mx-auto">
+                    Las citas que sean registradas por el portal aparecerán aquí automáticamente.
+                </p>
+            </div>
         </div>
     </div>
 </template>

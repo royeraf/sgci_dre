@@ -10,6 +10,7 @@
                         <th class="px-6 py-4 text-left text-xs font-bold text-slate-600 uppercase">Fecha Fin</th>
                         <th class="px-6 py-4 text-center text-xs font-bold text-slate-600 uppercase">Días</th>
                         <th class="px-6 py-4 text-center text-xs font-bold text-slate-600 uppercase">Estado</th>
+                        <th class="px-6 py-4 text-center text-xs font-bold text-slate-600 uppercase">Acciones</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100">
@@ -29,9 +30,28 @@
                                 {{ vac.estado }}
                             </span>
                         </td>
+                        <td class="px-6 py-4 text-center">
+                            <div class="flex items-center justify-center gap-2">
+                                <button @click="$emit('viewDetail', vac)"
+                                    class="p-2 text-orange-600 hover:bg-orange-100 rounded-lg transition-colors"
+                                    title="Ver detalle de vacación">
+                                    <Eye class="w-5 h-5" />
+                                </button>
+                                <button @click="$emit('edit', vac)"
+                                    class="p-2 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors"
+                                    title="Editar vacación">
+                                    <Pencil class="w-5 h-5" />
+                                </button>
+                                <button @click="$emit('delete', vac.id)"
+                                    class="p-2 text-red-600 hover:bg-red-100 rounded-lg transition-colors"
+                                    title="Eliminar vacación">
+                                    <Trash2 class="w-5 h-5" />
+                                </button>
+                            </div>
+                        </td>
                     </tr>
                     <tr v-if="vacations.length === 0">
-                        <td colspan="6" class="px-6 py-12 text-center text-slate-500">
+                        <td colspan="7" class="px-6 py-12 text-center text-slate-500">
                             <div class="flex flex-col items-center">
                                 <Calendar class="w-16 h-16 text-slate-300 mb-4" />
                                 <p>No hay vacaciones registradas.</p>
@@ -45,7 +65,9 @@
 </template>
 
 <script setup>
-import { Calendar } from 'lucide-vue-next';
+import { Calendar, Eye, Pencil, Trash2 } from 'lucide-vue-next';
+
+defineEmits(['viewDetail', 'edit', 'delete']);
 
 defineProps({
     vacations: {
@@ -56,7 +78,10 @@ defineProps({
 
 const formatDate = (date) => {
     if (!date) return '-';
-    return new Date(date).toLocaleDateString('es-PE');
+    // Forzar interpretación local agregando 'T00:00:00' para evitar problemas de zona horaria
+    const [year, month, day] = date.split('-');
+    const localDate = new Date(year, month - 1, day);
+    return localDate.toLocaleDateString('es-PE');
 };
 
 const statusClass = (estado) => ({

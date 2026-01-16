@@ -68,6 +68,18 @@ class DatabaseSeeder extends Seeder
                     'vehiculos' => ['crear', 'leer'],
                 ],
             ],
+            [
+                'rol_id' => 'ROL008',
+                'codigo' => 'jefe_bienestar',
+                'nombre' => 'Jefe de Bienestar Social',
+                'descripcion' => 'Gestión de bienestar del personal (Licencias)',
+                'nivel_acceso' => 7,
+                'permisos_json' => [
+                    'personal' => ['leer'],
+                    'licencias' => ['crear', 'leer', 'editar', 'eliminar', 'aprobar'],
+                    'reportes' => ['ver'],
+                ],
+            ],
         ];
 
         foreach ($roles as $role) {
@@ -114,6 +126,17 @@ class DatabaseSeeder extends Seeder
                 'rol_id' => 'ROL006',
                 'cargo' => 'Coordinador de Vigilancia',
                 'area' => 'Seguridad',
+                'is_active' => true,
+            ],
+            [
+                'dni' => '12345672',
+                'name' => 'Ana Sofía',
+                'apellidos' => 'Mendoza Portillo',
+                'email' => 'asofia@dre.gob.pe',
+                'password' => Hash::make('bienestar123'),
+                'rol_id' => 'ROL008',
+                'cargo' => 'Jefe de Bienestar Social',
+                'area' => 'Bienestar Social',
                 'is_active' => true,
             ],
         ];
