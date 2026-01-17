@@ -1,10 +1,11 @@
 <template>
-    <MainLayout>
-        <div class="py-8 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+    <div class="p-4 sm:p-6 lg:p-8">
+        <div class="max-w-7xl mx-auto">
             <!-- Header -->
             <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
                 <div>
-                    <h1 class="text-3xl font-extrabold text-slate-900 tracking-tight">
+                    <h1
+                        class="text-3xl font-extrabold bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent tracking-tight">
                         Bienestar Social
                     </h1>
                     <p class="mt-1 text-slate-500 font-medium">
@@ -12,8 +13,16 @@
                     </p>
                 </div>
                 <div class="flex gap-3">
+                    <a href="/dashboard"
+                        class="inline-flex items-center px-4 py-2.5 border border-slate-200 text-sm font-bold rounded-xl text-slate-600 bg-white hover:bg-slate-50 transition-all shadow-sm">
+                        <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                        </svg>
+                        Volver
+                    </a>
                     <button @click="showRegisterModal = true"
-                        class="inline-flex items-center px-6 py-3 border border-transparent text-sm font-bold rounded-xl shadow-lg shadow-purple-200 text-white bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 focus:outline-none focus:ring-4 focus:ring-purple-300 transition-all duration-300 transform hover:scale-105 active:scale-95">
+                        class="inline-flex items-center px-6 py-3 border border-transparent text-sm font-bold rounded-xl shadow-lg shadow-purple-600/20 text-white bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 focus:outline-none focus:ring-4 focus:ring-purple-300 transition-all duration-300 transform hover:scale-105 active:scale-95">
                         <Plus class="w-5 h-5 mr-2" />
                         Registrar Licencia
                     </button>
@@ -23,61 +32,53 @@
             <!-- Summary Cards -->
             <BienestarStats :summary="summary" />
 
-            <!-- Tabs Section -->
-            <div class="bg-white shadow-sm border border-slate-200 rounded-2xl overflow-hidden">
-                <div class="border-b border-slate-200">
-                    <nav class="flex -mb-px">
-                        <button @click="activeTab = 'licenses'"
-                            :class="[activeTab === 'licenses'
-                                ? 'border-purple-600 text-purple-700 bg-purple-50/50'
-                                : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300',
-                                'flex-1 py-4 px-1 text-center border-b-2 font-bold text-sm transition-all duration-200']">
-                            <div class="flex items-center justify-center gap-2">
-                                <BookOpen class="w-4 h-4" />
-                                Historial de Licencias
-                            </div>
-                        </button>
-                        <button @click="activeTab = 'balances'"
-                            :class="[activeTab === 'balances'
-                                ? 'border-indigo-600 text-indigo-700 bg-indigo-50/50'
-                                : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300',
-                                'flex-1 py-4 px-1 text-center border-b-2 font-bold text-sm transition-all duration-200']">
-                            <div class="flex items-center justify-center gap-2">
-                                <CalendarDays class="w-4 h-4" />
-                                Saldos y Cuotas
-                            </div>
-                        </button>
-                    </nav>
-                </div>
+            <!-- Tabs Navigation -->
+            <div class="border-b border-slate-200 mb-8">
+                <nav class="-mb-px flex space-x-8">
+                    <button @click="activeTab = 'licenses'"
+                        :class="[activeTab === 'licenses' ? 'border-purple-600 text-purple-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300', 'whitespace-nowrap py-4 px-1 border-b-2 font-bold text-sm flex items-center gap-2 transition-all duration-200']">
+                        <BookOpen class="w-5 h-5" />
+                        Historial de Licencias
+                    </button>
+                    <button @click="activeTab = 'balances'"
+                        :class="[activeTab === 'balances' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300', 'whitespace-nowrap py-4 px-1 border-b-2 font-bold text-sm flex items-center gap-2 transition-all duration-200']">
+                        <CalendarDays class="w-5 h-5" />
+                        Saldos y Cuotas
+                    </button>
+                </nav>
+            </div>
 
-                <!-- Historial de Licencias Tab -->
-                <div v-show="activeTab === 'licenses'" class="p-0">
-                    <LicenseHistoryTable :licenses="licenses" :loading="loading" />
-                </div>
+            <!-- Historial de Licencias Tab -->
+            <div v-if="activeTab === 'licenses'" class="space-y-6">
+                <LicenseHistoryTable :licenses="licenses" :loading="loading" />
+            </div>
 
-                <!-- Saldos Tab -->
-                <div v-show="activeTab === 'balances'" class="p-0">
-                    <BalanceTable :employeeBalances="employeeBalances" />
-                </div>
+            <!-- Saldos Tab -->
+            <div v-if="activeTab === 'balances'" class="space-y-6">
+                <BalanceTable :employeeBalances="employeeBalances" />
             </div>
         </div>
 
         <!-- Register License Modal -->
         <LicenseModal :show="showRegisterModal" :employees="employeeBalances" @close="showRegisterModal = false"
             @success="fetchData" />
-    </MainLayout>
+    </div>
 </template>
+
+<script>
+import MainLayout from '@/Layouts/MainLayout.vue';
+export default { layout: MainLayout }
+</script>
 
 <script setup>
 import { ref, onMounted } from 'vue';
-import MainLayout from '@/Layouts/MainLayout.vue';
 import axios from 'axios';
 import { Plus, BookOpen, CalendarDays } from 'lucide-vue-next';
 
-import BienestarStats from '@/Components/Bienestar/BienestarStats.vue';
-import LicenseHistoryTable from '@/Components/Bienestar/LicenseHistoryTable.vue';
-import BalanceTable from '@/Components/Bienestar/BalanceTable.vue';
-import LicenseModal from '@/Components/Bienestar/LicenseModal.vue';
+import BienestarStats from '@/Components/Bienestar/Stats/BienestarStats.vue';
+import LicenseHistoryTable from '@/Components/Bienestar/Licenses/LicenseHistoryTable.vue';
+import BalanceTable from '@/Components/Bienestar/Balances/BalanceTable.vue';
+import LicenseModal from '@/Components/Bienestar/Licenses/LicenseModal.vue';
 
 const activeTab = ref('licenses');
 const loading = ref(false);
@@ -109,14 +110,3 @@ onMounted(() => {
     fetchData();
 });
 </script>
-
-<style scoped>
-.scrollbar-hide::-webkit-scrollbar {
-    display: none;
-}
-
-.scrollbar-hide {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
-}
-</style>

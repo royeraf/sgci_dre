@@ -1,6 +1,6 @@
 import './bootstrap';
 import { createApp, h } from 'vue';
-import { createInertiaApp } from '@inertiajs/vue3';
+import { createInertiaApp, router } from '@inertiajs/vue3';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import '../css/app.css';
 
@@ -24,4 +24,16 @@ createInertiaApp({
     progress: {
         color: '#0ea5e9',
     },
+});
+
+// Reset scroll position when navigating between pages
+router.on('navigate', () => {
+    // Reset main content scroll to top
+    window.scrollTo(0, 0);
+    
+    // Also reset any scrollable container within main content
+    const mainContent = document.querySelector('main');
+    if (mainContent) {
+        mainContent.scrollTop = 0;
+    }
 });

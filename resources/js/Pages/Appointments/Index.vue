@@ -1,89 +1,98 @@
 <template>
-    <MainLayout>
-        <div class="p-4 sm:p-6 lg:p-8">
-            <div class="max-w-7xl mx-auto">
-                <!-- Header -->
-                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
-                    <div>
-                        <h1
-                            class="text-3xl font-extrabold bg-gradient-to-r from-pink-600 to-rose-600 bg-clip-text text-transparent tracking-tight">
-                            Gestión de Citas
-                        </h1>
-                        <p class="mt-1 text-slate-500 font-medium">
-                            Administra las reservas de citas realizadas por usuarios externos.
-                        </p>
+    <div class="p-4 sm:p-6 lg:p-8">
+        <div class="max-w-7xl mx-auto">
+            <!-- Header -->
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+                <div>
+                    <h1
+                        class="text-3xl font-extrabold bg-gradient-to-r from-pink-600 to-rose-600 bg-clip-text text-transparent tracking-tight">
+                        Gestión de Citas
+                    </h1>
+                    <p class="mt-1 text-slate-500 font-medium">
+                        Administra las reservas de citas realizadas por usuarios externos.
+                    </p>
+                </div>
+                <div class="flex items-center gap-3">
+                    <a href="/dashboard"
+                        class="inline-flex items-center px-4 py-2.5 border border-slate-200 text-sm font-bold rounded-xl text-slate-600 bg-white hover:bg-slate-50 transition-all shadow-sm">
+                        <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                        </svg>
+                        Volver
+                    </a>
+                    <div class="hidden sm:flex items-center gap-2 text-sm text-gray-500 mr-2">
+                        <span class="relative flex h-2 w-2">
+                            <span
+                                class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                            <span class="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                        </span>
+                        <span class="text-xs font-bold uppercase tracking-wider">En vivo</span>
                     </div>
-                    <div class="flex items-center gap-3">
-                        <div class="hidden sm:flex items-center gap-2 text-sm text-gray-500 mr-2">
-                            <span class="relative flex h-2 w-2">
-                                <span
-                                    class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                                <span class="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                    <button @click="fetchCitas(true)"
+                        class="inline-flex items-center px-6 py-3 border border-transparent text-sm font-bold rounded-xl shadow-lg shadow-pink-600/20 text-white bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-700 hover:to-rose-700 focus:outline-none focus:ring-4 focus:ring-pink-300 transition-all duration-300 transform hover:scale-105 active:scale-95">
+                        <RefreshCw class="h-5 w-5 mr-2" :class="{ 'animate-spin': loading }" />
+                        Actualizar
+                    </button>
+                </div>
+            </div>
+
+            <!-- Loading State -->
+            <div v-if="loading && citas.length === 0"
+                class="bg-white rounded-2xl shadow-xl border border-slate-200 px-6 py-24 text-center">
+                <div class="flex flex-col items-center justify-center">
+                    <LoaderCircle class="animate-spin h-12 w-12 text-pink-600 mb-4" />
+                    <p class="text-lg font-bold text-slate-600">Cargando citas...</p>
+                </div>
+            </div>
+
+            <!-- Content with Tabs -->
+            <div v-else>
+                <!-- Tabs Navigation -->
+                <div class="border-b border-slate-200 mb-8">
+                    <nav class="-mb-px flex space-x-8">
+                        <button @click="activeTab = 'pending'"
+                            :class="[activeTab === 'pending'
+                                ? 'border-pink-600 text-pink-600'
+                                : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300',
+                                'whitespace-nowrap py-4 px-1 border-b-2 font-bold text-sm flex items-center gap-2 transition-all duration-200']">
+                            <Clock class="w-5 h-5" />
+                            Pendientes
+                            <span v-if="pendingCitas.length > 0"
+                                class="inline-flex items-center justify-center px-2 py-0.5 text-xs font-black leading-none text-white bg-gradient-to-r from-pink-500 to-rose-500 rounded-full shadow-sm ml-1">
+                                {{ pendingCitas.length }}
                             </span>
-                            <span class="text-xs font-bold uppercase tracking-wider">En vivo</span>
-                        </div>
-                        <button @click="fetchCitas(true)"
-                            class="inline-flex items-center px-6 py-3 border border-transparent text-sm font-bold rounded-xl shadow-lg shadow-pink-600/20 text-white bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-700 hover:to-rose-700 focus:outline-none focus:ring-4 focus:ring-pink-300 transition-all duration-300 transform hover:scale-105 active:scale-95">
-                            <RefreshCw class="h-5 w-5 mr-2" :class="{ 'animate-spin': loading }" />
-                            Actualizar
                         </button>
-                    </div>
+                        <button @click="activeTab = 'completed'"
+                            :class="[activeTab === 'completed'
+                                ? 'border-rose-600 text-rose-600'
+                                : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300',
+                                'whitespace-nowrap py-4 px-1 border-b-2 font-bold text-sm flex items-center gap-2 transition-all duration-200']">
+                            <CheckCircle class="w-5 h-5" />
+                            Finalizadas
+                        </button>
+                    </nav>
                 </div>
 
-                <!-- Loading State -->
-                <div v-if="loading && citas.length === 0"
-                    class="bg-white rounded-2xl shadow-xl border border-slate-200 px-6 py-24 text-center">
-                    <div class="flex flex-col items-center justify-center">
-                        <LoaderCircle class="animate-spin h-12 w-12 text-pink-600 mb-4" />
-                        <p class="text-lg font-bold text-slate-600">Cargando citas...</p>
-                    </div>
+                <!-- Tab Content -->
+                <div v-show="activeTab === 'pending'">
+                    <PendingAppointmentList :citas="pendingCitas" @attend="(id) => updateStatus(id, 'ATENDIDO')"
+                        @cancel="(id) => updateStatus(id, 'CANCELADO')" />
                 </div>
 
-                <!-- Content with Tabs -->
-                <div v-else>
-                    <!-- Tabs Navigation -->
-                    <div class="border-b border-slate-200 mb-8">
-                        <nav class="-mb-px flex space-x-8">
-                            <button @click="activeTab = 'pending'"
-                                :class="[activeTab === 'pending'
-                                    ? 'border-pink-600 text-pink-600'
-                                    : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300',
-                                    'whitespace-nowrap py-4 px-1 border-b-2 font-bold text-sm flex items-center gap-2 transition-all duration-200']">
-                                <Clock class="w-5 h-5" />
-                                Pendientes
-                                <span v-if="pendingCitas.length > 0"
-                                    class="inline-flex items-center justify-center px-2 py-0.5 text-xs font-black leading-none text-white bg-gradient-to-r from-pink-500 to-rose-500 rounded-full shadow-sm ml-1">
-                                    {{ pendingCitas.length }}
-                                </span>
-                            </button>
-                            <button @click="activeTab = 'completed'"
-                                :class="[activeTab === 'completed'
-                                    ? 'border-rose-600 text-rose-600'
-                                    : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300',
-                                    'whitespace-nowrap py-4 px-1 border-b-2 font-bold text-sm flex items-center gap-2 transition-all duration-200']">
-                                <CheckCircle class="w-5 h-5" />
-                                Finalizadas
-                            </button>
-                        </nav>
-                    </div>
-
-                    <!-- Tab Content -->
-                    <div v-show="activeTab === 'pending'">
-                        <PendingAppointmentList :citas="pendingCitas" @attend="(id) => updateStatus(id, 'ATENDIDO')"
-                            @cancel="(id) => updateStatus(id, 'CANCELADO')" />
-                    </div>
-
-                    <div v-show="activeTab === 'completed'">
-                        <CompletedAppointmentList :citas="completedCitas" />
-                    </div>
+                <div v-show="activeTab === 'completed'">
+                    <CompletedAppointmentList :citas="completedCitas" />
                 </div>
             </div>
         </div>
-    </MainLayout>
+    </div>
 </template>
 
-<script setup>
+<script>
 import MainLayout from '@/Layouts/MainLayout.vue';
+export default { layout: MainLayout }
+</script>
+
+<script setup>
 import PendingAppointmentList from '@/Components/Appointments/Pending/AppointmentList.vue';
 import CompletedAppointmentList from '@/Components/Appointments/Completed/AppointmentList.vue';
 import { ref, onMounted, onUnmounted, computed } from 'vue';
