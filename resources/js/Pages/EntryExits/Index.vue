@@ -252,7 +252,7 @@
             </div>
 
             <!-- Register Modal -->
-            <EntryExitModal v-if="showModal" :staff="staff" :entry="selectedEntry" @close="closeModal" />
+            <EntryExitModal v-if="showModal" :personnel="personnel" :entry="selectedEntry" @close="closeModal" />
 
             <!-- Absent Personnel Modal -->
             <AbsentPersonnelModal v-if="showAbsentModal" :show="showAbsentModal" @close="showAbsentModal = false" />
@@ -293,7 +293,7 @@ const props = defineProps({
         type: Array,
         default: () => []
     },
-    staff: {
+    personnel: {
         type: Array,
         default: () => []
     },

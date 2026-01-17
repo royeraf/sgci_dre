@@ -54,23 +54,69 @@ class EntryExitController extends Controller
             ];
         });
 
-        // Get staff list for the form
-        $staff = Staff::active()->orderBy('apellidos')->get()->map(function ($s) {
-            return [
-                'id' => $s->id,
-                'dni' => $s->dni,
-                'nombre' => $s->full_name,
-                'cargo' => $s->cargo,
-                'area' => $s->area,
-                'regimen' => $s->regimen,
-            ];
-        });
-
         return Inertia::render('EntryExits/Index', [
             'entries' => $entries,
-            'staff' => $staff,
             'filters' => $request->only(['turno', 'fecha', 'estado']),
         ]);
+    }
+
+    /**
+     * Search personnel (Staff and Employees) for autocomplete.
+     */
+    public function searchPersonnel(Request $request)
+    {
+        $query = $request->input('query');
+        
+        if (!$query || strlen($query) < 2) {
+            return response()->json([]);
+        }
+
+        // Search in Staff (Vigilantes)
+        $staff = Staff::active()
+            ->where(function($q) use ($query) {
+                $q->where('dni', 'like', "%{$query}%")
+                  ->orWhere('nombres', 'like', "%{$query}%")
+                  ->orWhere('apellidos', 'like', "%{$query}%");
+            })
+            ->limit(10)
+            ->get()
+            ->map(function ($s) {
+                return [
+                    'id' => $s->id,
+                    'dni' => $s->dni,
+                    'nombre' => $s->full_name,
+                    'cargo' => $s->cargo,
+                    'area' => $s->area,
+                    'regimen' => $s->regimen,
+                    'tipo' => 'vigilante',
+                ];
+            });
+
+        // Search in Employees (RRHH)
+        $employees = \App\Models\Employee::where('estado', 'ACTIVO')
+            ->where(function($q) use ($query) {
+                $q->where('dni', 'like', "%{$query}%")
+                  ->orWhere('nombres', 'like', "%{$query}%")
+                  ->orWhere('apellidos', 'like', "%{$query}%");
+            })
+            ->limit(10)
+            ->get()
+            ->map(function ($e) {
+                return [
+                    'id' => 'emp-' . $e->id,
+                    'dni' => $e->dni,
+                    'nombre' => trim($e->nombres . ' ' . $e->apellidos),
+                    'cargo' => $e->cargo,
+                    'area' => $e->area,
+                    'regimen' => $e->tipo_contrato ?? 'N/A',
+                    'tipo' => 'empleado',
+                ];
+            });
+
+        // Combine and limit total results
+        $results = $staff->concat($employees)->take(15)->values();
+
+        return response()->json($results);
     }
 
     /**

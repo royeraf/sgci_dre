@@ -3,20 +3,21 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <!-- DNI -->
             <div>
-                <label class="block text-sm font-medium text-gray-700">DNI <span class="text-red-500">*</span></label>
+                <label class="block text-sm font-bold text-slate-700 mb-2">DNI <span
+                        class="text-red-500">*</span></label>
                 <input v-model="dni" v-bind="dniProps" type="text" maxlength="8"
-                    :class="['mt-1 block w-full rounded-md shadow-sm sm:text-sm border p-2 transition-colors',
-                        formErrors.dni ? 'border-red-500 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500']">
+                    class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
+                    :class="formErrors.dni ? 'border-red-400' : 'border-slate-200'">
                 <p v-if="formErrors.dni" class="mt-1 text-sm text-red-600">{{ formErrors.dni }}</p>
             </div>
 
             <!-- Oficina -->
             <div>
-                <label class="block text-sm font-medium text-gray-700">Oficina de Destino <span
+                <label class="block text-sm font-bold text-slate-700 mb-2">Oficina de Destino <span
                         class="text-red-500">*</span></label>
                 <select v-model="oficina" v-bind="oficinaProps"
-                    :class="['mt-1 block w-full rounded-md shadow-sm sm:text-sm border p-2 transition-colors',
-                        formErrors.oficina ? 'border-red-500 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500']">
+                    class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white outline-none transition-colors"
+                    :class="formErrors.oficina ? 'border-red-400' : 'border-slate-200'">
                     <option value="">Seleccione una oficina</option>
                     <option>Dirección</option>
                     <option>Administración</option>
@@ -31,61 +32,63 @@
 
             <!-- Apellidos -->
             <div>
-                <label class="block text-sm font-medium text-gray-700">Apellidos <span
+                <label class="block text-sm font-bold text-slate-700 mb-2">Apellidos <span
                         class="text-red-500">*</span></label>
                 <input v-model="apellidos" v-bind="apellidosProps" type="text"
-                    :class="['mt-1 block w-full rounded-md shadow-sm sm:text-sm border p-2 transition-colors',
-                        formErrors.apellidos ? 'border-red-500 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500']">
+                    @input="apellidos = $event.target.value.toUpperCase()"
+                    class="uppercase w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
+                    :class="formErrors.apellidos ? 'border-red-400' : 'border-slate-200'">
                 <p v-if="formErrors.apellidos" class="mt-1 text-sm text-red-600">{{ formErrors.apellidos }}</p>
             </div>
 
             <!-- Nombres -->
             <div>
-                <label class="block text-sm font-medium text-gray-700">Nombres <span
+                <label class="block text-sm font-bold text-slate-700 mb-2">Nombres <span
                         class="text-red-500">*</span></label>
                 <input v-model="nombres" v-bind="nombresProps" type="text"
-                    :class="['mt-1 block w-full rounded-md shadow-sm sm:text-sm border p-2 transition-colors',
-                        formErrors.nombres ? 'border-red-500 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500']">
+                    @input="nombres = $event.target.value.toUpperCase()"
+                    class="uppercase w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
+                    :class="formErrors.nombres ? 'border-red-400' : 'border-slate-200'">
                 <p v-if="formErrors.nombres" class="mt-1 text-sm text-red-600">{{ formErrors.nombres }}</p>
             </div>
 
             <!-- Celular -->
             <div>
-                <label class="block text-sm font-medium text-gray-700">Número de Celular <span
+                <label class="block text-sm font-bold text-slate-700 mb-2">Número de Celular <span
                         class="text-red-500">*</span></label>
                 <input v-model="celular" v-bind="celularProps" type="tel" maxlength="9" placeholder="9XXXXXXXX"
-                    :class="['mt-1 block w-full rounded-md shadow-sm sm:text-sm border p-2 transition-colors',
-                        formErrors.celular ? 'border-red-500 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500']">
+                    class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
+                    :class="formErrors.celular ? 'border-red-400' : 'border-slate-200'">
                 <p v-if="formErrors.celular" class="mt-1 text-sm text-red-600">{{ formErrors.celular }}</p>
             </div>
 
             <!-- Correo -->
             <div>
-                <label class="block text-sm font-medium text-gray-700">Correo Electrónico <span
+                <label class="block text-sm font-bold text-slate-700 mb-2">Correo Electrónico <span
                         class="text-red-500">*</span></label>
                 <input v-model="correo" v-bind="correoProps" type="email" placeholder="ejemplo@correo.com"
-                    :class="['mt-1 block w-full rounded-md shadow-sm sm:text-sm border p-2 transition-colors',
-                        formErrors.correo ? 'border-red-500 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500']">
+                    class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
+                    :class="formErrors.correo ? 'border-red-400' : 'border-slate-200'">
                 <p v-if="formErrors.correo" class="mt-1 text-sm text-red-600">{{ formErrors.correo }}</p>
             </div>
 
             <!-- Fecha -->
             <div>
-                <label class="block text-sm font-medium text-gray-700">Fecha de Cita <span
+                <label class="block text-sm font-bold text-slate-700 mb-2">Fecha de Cita <span
                         class="text-red-500">*</span></label>
                 <input v-model="fecha" v-bind="fechaProps" type="date" :min="today"
-                    :class="['mt-1 block w-full rounded-md shadow-sm sm:text-sm border p-2 transition-colors',
-                        formErrors.fecha ? 'border-red-500 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500']">
+                    class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
+                    :class="formErrors.fecha ? 'border-red-400' : 'border-slate-200'">
                 <p v-if="formErrors.fecha" class="mt-1 text-sm text-red-600">{{ formErrors.fecha }}</p>
             </div>
 
             <!-- Hora -->
             <div>
-                <label class="block text-sm font-medium text-gray-700">Horario Disponible <span
+                <label class="block text-sm font-bold text-slate-700 mb-2">Horario Disponible <span
                         class="text-red-500">*</span></label>
                 <select v-model="hora" v-bind="horaProps"
-                    :class="['mt-1 block w-full rounded-md shadow-sm sm:text-sm border p-2 transition-colors',
-                        formErrors.hora ? 'border-red-500 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500']">
+                    class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white outline-none transition-colors"
+                    :class="formErrors.hora ? 'border-red-400' : 'border-slate-200'">
                     <option value="">Seleccione una hora</option>
                     <option v-for="time in timeSlots" :key="time" :value="time">{{ time }}</option>
                 </select>
@@ -94,11 +97,11 @@
 
             <!-- Asunto -->
             <div class="md:col-span-2">
-                <label class="block text-sm font-medium text-gray-700">Asunto de la Reserva <span
+                <label class="block text-sm font-bold text-slate-700 mb-2">Asunto de la Reserva <span
                         class="text-red-500">*</span></label>
-                <textarea v-model="asunto" v-bind="asuntoProps" rows="3" placeholder="Describa el motivo de su cita..."
-                    :class="['mt-1 block w-full rounded-md shadow-sm sm:text-sm border p-2 transition-colors',
-                        formErrors.asunto ? 'border-red-500 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500']"></textarea>
+                <textarea v-model="asunto" v-bind="asuntoProps" rows="4" placeholder="Describa el motivo de su cita..."
+                    class="w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none resize-none transition-colors"
+                    :class="formErrors.asunto ? 'border-red-400' : 'border-slate-200'"></textarea>
                 <p v-if="formErrors.asunto" class="mt-1 text-sm text-red-600">{{ formErrors.asunto }}</p>
             </div>
 
@@ -120,17 +123,17 @@
                     </div>
                     <div>
                         <input v-model="captchaAnswer" type="number" placeholder="Respuesta" @keyup.enter="handleSubmit"
-                            :class="['w-28 rounded-md shadow-sm sm:text-sm border p-2 text-center font-semibold transition-colors',
-                                captchaError ? 'border-red-500 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500']">
+                            class="w-28 rounded-xl shadow-sm sm:text-sm border p-2 text-center font-semibold outline-none transition-colors"
+                            :class="captchaError ? 'border-red-400 focus:ring-red-400' : 'border-slate-200 focus:ring-blue-500'">
                         <p v-if="captchaError" class="mt-1 text-sm text-red-600">{{ captchaError }}</p>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="flex justify-end pt-4">
+        <div class="flex justify-end pt-6 border-t border-slate-100">
             <button type="submit" :disabled="loading"
-                class="ml-3 inline-flex justify-center py-3 px-6 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50">
+                class="px-8 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold rounded-xl hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-4 focus:ring-blue-300 transition-all shadow-lg shadow-blue-500/20 disabled:opacity-50 transform active:scale-95 flex items-center">
                 <LoaderCircle v-if="loading" class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" />
                 {{ loading ? 'Procesando...' : 'Reservar Cita' }}
             </button>

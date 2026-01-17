@@ -1,43 +1,65 @@
 <template>
-    <div class="min-h-screen bg-slate-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
-        <div class="sm:mx-auto sm:w-full sm:max-w-4xl">
-            <!-- Header -->
-            <div class="text-center mb-8">
-                <img src="/images/logo.png" alt="DRE Huánuco" class="mx-auto h-20 w-auto">
-                <h2 class="mt-6 text-3xl font-extrabold text-slate-900">
-                    Portal de Citas en Línea
-                </h2>
-                <p class="mt-2 text-sm text-slate-600">
-                    Dirección Regional de Educación Huánuco
-                </p>
+    <div class="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 py-12 px-4 sm:px-6 lg:px-8">
+        <div class="max-w-4xl mx-auto">
+            <!-- Premium Header Card -->
+            <div
+                class="relative overflow-hidden rounded-[2rem] p-8 md:p-12 text-white mb-10 shadow-2xl shadow-blue-500/20 border border-white/10 ring-1 ring-white/5">
+                <!-- Background Image with Premium Overlay -->
+                <img src="/images/login-bg.png" alt="Background"
+                    class="absolute inset-0 w-full h-full object-cover transform scale-105" />
+                <div class="absolute inset-0 bg-gradient-to-r from-blue-900/95 via-blue-900/75 to-indigo-900/40"></div>
+
+                <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-8">
+                    <div>
+                        <h2
+                            class="text-4xl md:text-5xl font-black mb-4 tracking-tight drop-shadow-lg text-center md:text-left">
+                            Portal de <span
+                                class="bg-gradient-to-r from-blue-300 to-indigo-200 bg-clip-text text-transparent">Citas</span>
+                        </h2>
+                        <p class="text-blue-100/90 text-lg font-semibold text-center md:text-left">
+                            Dirección Regional de Educación Huánuco
+                        </p>
+                    </div>
+
+                    <div class="flex justify-center">
+                        <div class="bg-white/10 backdrop-blur-2xl p-4 rounded-3xl border border-white/20 shadow-2xl">
+                            <img src="/images/logo.png" alt="Logo"
+                                class="w-20 h-20 object-contain brightness-0 invert opacity-90" />
+                        </div>
+                    </div>
+                </div>
             </div>
 
-            <!-- Card -->
-            <div class="bg-white py-8 px-4 shadow-xl sm:rounded-xl sm:px-10 border border-slate-100">
+            <!-- Content Container -->
+            <div
+                class="bg-white/80 backdrop-blur-md pb-8 px-4 shadow-2xl sm:rounded-[2.5rem] sm:px-10 border-2 border-white relative">
                 <!-- Tabs -->
-                <div class="border-b border-gray-200 mb-6">
-                    <nav class="-mb-px flex space-x-8" aria-label="Tabs">
+                <div class="border-b border-slate-100 mb-8 z-10 rounded-t-[2.5rem]">
+                    <nav class="-mb-px flex justify-center space-x-12" aria-label="Tabs">
                         <button @click="activeTab = 'register'"
-                            :class="[activeTab === 'register' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300', 'whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center']">
+                            :class="[activeTab === 'register' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-400 hover:text-slate-600 hover:border-slate-300', 'whitespace-nowrap py-6 px-1 border-b-4 font-bold text-base flex items-center transition-all duration-200']">
                             <Plus class="w-5 h-5 mr-2" />
                             Nueva Cita
                         </button>
                         <button @click="activeTab = 'consult'"
-                            :class="[activeTab === 'consult' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300', 'whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center']">
+                            :class="[activeTab === 'consult' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-400 hover:text-slate-600 hover:border-slate-300', 'whitespace-nowrap py-6 px-1 border-b-4 font-bold text-base flex items-center transition-all duration-200']">
                             <Search class="w-5 h-5 mr-2" />
                             Consultar Estado
                         </button>
                     </nav>
                 </div>
 
-                <!-- Tab Content: Nueva Cita -->
-                <div v-if="activeTab === 'register'">
-                    <NewAppointmentForm @success="generateVoucher" />
-                </div>
+                <!-- Content -->
+                <div class="relative z-0">
+                    <!-- Tab Content: Nueva Cita -->
+                    <div v-if="activeTab === 'register'" class="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                        <NewAppointmentForm @success="generateVoucher" />
+                    </div>
 
-                <!-- Tab Content: Consultar Estado -->
-                <div v-if="activeTab === 'consult'">
-                    <StatusConsultation @generate-voucher="generateVoucher" />
+                    <!-- Tab Content: Consultar Estado -->
+                    <div v-if="activeTab === 'consult'" class="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                        <StatusConsultation @generate-voucher="generateVoucher" />
+                    </div>
                 </div>
             </div>
         </div>
@@ -60,15 +82,15 @@ const generateVoucher = (cita) => {
     const doc = new jsPDF();
     const imgId = new Image();
     imgId.src = logoUrl;
-    imgId.onload = function() {
+    imgId.onload = function () {
         try {
             doc.addImage(imgId, 'PNG', 20, 10, 25, 25);
-        } catch(e) {
+        } catch (e) {
             console.warn(e);
         }
         generatePdfContent(doc, cita);
     }
-    imgId.onerror = function() {
+    imgId.onerror = function () {
         console.warn("Could not load logo");
         generatePdfContent(doc, cita);
     }

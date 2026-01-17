@@ -52,6 +52,7 @@ Route::middleware('auth')->group(function () {
         // API routes must come BEFORE dynamic parameter routes
         Route::get('/api/pending', [EntryExitController::class, 'pendingReturns'])->name('pending');
         Route::get('/api/absent', [EntryExitController::class, 'getAbsentPersonnel'])->name('absent');
+        Route::get('/api/search-personnel', [EntryExitController::class, 'searchPersonnel'])->name('search-personnel');
         // Dynamic parameter routes after static routes
         Route::patch('/{entryExit}/return', [EntryExitController::class, 'registerReturn'])->name('return');
         Route::get('/{entryExit}/pdf', [EntryExitController::class, 'generatePdf'])->name('pdf');

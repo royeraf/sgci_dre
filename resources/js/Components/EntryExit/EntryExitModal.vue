@@ -21,7 +21,7 @@
                 </div>
 
                 <!-- Form -->
-                <form @submit.prevent="submitForm" class="p-6 space-y-6">
+                <form @submit.prevent="handleSubmit" class="p-6 space-y-6">
                     <!-- Return mode: just show entry info and ask for return time -->
                     <template v-if="entry">
                         <div class="bg-slate-50 rounded-xl p-4 border border-slate-200">
@@ -42,29 +42,61 @@
                             <label class="block text-sm font-bold text-slate-700 mb-2">
                                 Hora de Retorno <span class="text-red-500">*</span>
                             </label>
-                            <input type="time" v-model="returnForm.hora_retorno"
-                                class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                                :class="{ 'border-red-300': returnForm.errors.hora_retorno }" />
-                            <p v-if="returnForm.errors.hora_retorno" class="mt-1 text-sm text-red-600">{{
-                                returnForm.errors.hora_retorno }}</p>
+                            <input type="time" v-model="horaRetorno" v-bind="horaRetornoProps"
+                                class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
+                                :class="returnFormErrors.hora_retorno ? 'border-red-400' : 'border-slate-200'" />
+                            <p v-if="returnFormErrors.hora_retorno" class="mt-1 text-sm text-red-600">{{
+                                returnFormErrors.hora_retorno }}</p>
                         </div>
                     </template>
 
                     <!-- New entry mode -->
                     <template v-else>
-                        <!-- Staff Selection -->
+                        <!-- Staff Selection with Search -->
                         <div>
                             <label class="block text-sm font-bold text-slate-700 mb-2">
-                                Seleccionar Personal
+                                Buscar Personal (DNI o Nombre)
                             </label>
-                            <select v-model="selectedStaffId" @change="onStaffSelect"
-                                class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-white">
-                                <option value="">-- Seleccionar del listado --</option>
-                                <option v-for="s in staff" :key="s.id" :value="s.id">
-                                    {{ s.nombre }} (DNI: {{ s.dni }})
-                                </option>
-                            </select>
-                            <p class="text-xs text-slate-500 mt-1">O ingrese los datos manualmente</p>
+                            <div class="relative" ref="dropdownContainerRef">
+                                <input v-model="searchQuery" @input="showDropdown = true" @focus="showDropdown = true"
+                                    type="text" placeholder="Buscar por DNI o nombre..."
+                                    class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-white" />
+
+                                <!-- Dropdown with filtered results -->
+                                <div v-if="showDropdown"
+                                    class="absolute z-10 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg max-h-60 overflow-y-auto">
+                                    <div v-if="isSearching"
+                                        class="px-4 py-3 text-center text-slate-500 text-sm flex items-center justify-center gap-2">
+                                        <Loader2 class="w-4 h-4 animate-spin" /> Buscando...
+                                    </div>
+                                    <div v-else-if="searchResults.length === 0 && searchQuery.length >= 2"
+                                        class="px-4 py-3 text-center text-slate-500 text-sm">
+                                        No se encontraron resultados.
+                                    </div>
+                                    <div v-else-if="searchResults.length === 0"
+                                        class="px-4 py-3 text-center text-slate-400 text-sm">
+                                        Escriba para buscar...
+                                    </div>
+
+                                    <button v-for="person in searchResults" :key="person.id" type="button"
+                                        @click="selectPerson(person)"
+                                        class="w-full px-4 py-3 text-left hover:bg-green-50 transition-colors border-b border-slate-100 last:border-b-0">
+                                        <div class="flex justify-between items-start">
+                                            <div class="flex-1">
+                                                <p class="font-semibold text-slate-900">{{ person.nombre }}</p>
+                                                <p class="text-sm text-slate-600">DNI: {{ person.dni }}</p>
+                                                <p class="text-xs text-slate-500">{{ person.cargo }} - {{ person.area }}
+                                                </p>
+                                            </div>
+                                            <span class="text-xs px-2 py-1 rounded-full"
+                                                :class="person.tipo === 'empleado' ? 'bg-blue-100 text-blue-700' : 'bg-emerald-100 text-emerald-700'">
+                                                {{ person.tipo === 'empleado' ? 'RRHH' : 'Vigilancia' }}
+                                            </span>
+                                        </div>
+                                    </button>
+                                </div>
+                            </div>
+                            <p class="text-xs text-slate-500 mt-1">O ingrese los datos manualmente abajo</p>
                         </div>
 
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -73,27 +105,29 @@
                                 <label class="block text-sm font-bold text-slate-700 mb-2">
                                     DNI <span class="text-red-500">*</span>
                                 </label>
-                                <input type="text" v-model="form.dni" maxlength="8" placeholder="12345678"
-                                    class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                                    :class="{ 'border-red-300': form.errors.dni }" />
-                                <p v-if="form.errors.dni" class="mt-1 text-sm text-red-600">{{ form.errors.dni }}</p>
+                                <input type="text" v-model="dni" v-bind="dniProps" maxlength="8" placeholder="12345678"
+                                    class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
+                                    :class="formErrors.dni ? 'border-red-400' : 'border-slate-200'" />
+                                <p v-if="formErrors.dni" class="mt-1 text-sm text-red-600">{{ formErrors.dni }}</p>
                             </div>
 
-                            <!-- Turno -->
+                            <!-- Turno (Automático) -->
                             <div>
                                 <label class="block text-sm font-bold text-slate-700 mb-2">
-                                    Turno <span class="text-red-500">*</span>
+                                    Turno <span class="text-green-500 text-xs font-normal">(automático)</span>
                                 </label>
-                                <select v-model="form.turno"
-                                    class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-white"
-                                    :class="{ 'border-red-300': form.errors.turno }">
-                                    <option value="">Seleccione turno</option>
-                                    <option value="Mañana">Mañana</option>
-                                    <option value="Tarde">Tarde</option>
-                                    <option value="Noche">Noche</option>
-                                </select>
-                                <p v-if="form.errors.turno" class="mt-1 text-sm text-red-600">{{ form.errors.turno }}
-                                </p>
+                                <div class="relative">
+                                    <div
+                                        class="w-full px-4 py-2.5 border border-slate-200 rounded-xl bg-slate-50 flex items-center gap-2">
+                                        <Clock class="w-4 h-4 text-slate-400" />
+                                        <span class="font-medium" :class="{
+                                            'text-amber-600': turno === 'Mañana',
+                                            'text-orange-600': turno === 'Tarde',
+                                            'text-indigo-600': turno === 'Noche'
+                                        }">{{ turno || 'Seleccione una hora' }}</span>
+                                    </div>
+                                </div>
+                                <p class="mt-1 text-xs text-slate-500">El turno se determina según la hora de salida</p>
                             </div>
                         </div>
 
@@ -102,11 +136,12 @@
                             <label class="block text-sm font-bold text-slate-700 mb-2">
                                 Nombre del Personal <span class="text-red-500">*</span>
                             </label>
-                            <input type="text" v-model="form.nombre_personal" placeholder="Nombres y Apellidos"
-                                class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                                :class="{ 'border-red-300': form.errors.nombre_personal }" />
-                            <p v-if="form.errors.nombre_personal" class="mt-1 text-sm text-red-600">{{
-                                form.errors.nombre_personal }}</p>
+                            <input type="text" v-model="nombrePersonal" v-bind="nombrePersonalProps"
+                                placeholder="Nombres y Apellidos"
+                                class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
+                                :class="formErrors.nombre_personal ? 'border-red-400' : 'border-slate-200'" />
+                            <p v-if="formErrors.nombre_personal" class="mt-1 text-sm text-red-600">{{
+                                formErrors.nombre_personal }}</p>
                         </div>
 
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -115,11 +150,11 @@
                                 <label class="block text-sm font-bold text-slate-700 mb-2">
                                     Hora de Salida <span class="text-red-500">*</span>
                                 </label>
-                                <input type="time" v-model="form.hora_salida"
-                                    class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                                    :class="{ 'border-red-300': form.errors.hora_salida }" />
-                                <p v-if="form.errors.hora_salida" class="mt-1 text-sm text-red-600">{{
-                                    form.errors.hora_salida }}</p>
+                                <input type="time" v-model="horaSalida" v-bind="horaSalidaProps"
+                                    class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
+                                    :class="formErrors.hora_salida ? 'border-red-400' : 'border-slate-200'" />
+                                <p v-if="formErrors.hora_salida" class="mt-1 text-sm text-red-600">{{
+                                    formErrors.hora_salida }}</p>
                             </div>
 
                             <!-- Regimen -->
@@ -127,7 +162,7 @@
                                 <label class="block text-sm font-bold text-slate-700 mb-2">
                                     Régimen Laboral
                                 </label>
-                                <select v-model="form.regimen"
+                                <select v-model="regimen" v-bind="regimenProps"
                                     class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-white">
                                     <option value="">Seleccione régimen</option>
                                     <option value="276">D.L. 276</option>
@@ -147,22 +182,22 @@
                             </label>
                             <div class="flex gap-4">
                                 <label
-                                    class="flex items-center p-3 border border-slate-200 rounded-xl cursor-pointer hover:bg-slate-50 transition-colors flex-1"
-                                    :class="{ 'ring-2 ring-green-500 border-green-500 bg-green-50': form.tipo_motivo === 'comision' }">
-                                    <input type="radio" v-model="form.tipo_motivo" value="comision"
+                                    class="flex items-center p-3 border rounded-xl cursor-pointer hover:bg-slate-50 transition-colors flex-1"
+                                    :class="tipoMotivo === 'comision' ? 'ring-2 ring-green-500 border-green-500 bg-green-50' : 'border-slate-200'">
+                                    <input type="radio" v-model="tipoMotivo" value="comision"
                                         class="w-4 h-4 text-green-600 focus:ring-green-500 border-slate-300">
                                     <span class="ml-2 text-sm font-medium text-slate-700">Comisión de Servicios</span>
                                 </label>
                                 <label
-                                    class="flex items-center p-3 border border-slate-200 rounded-xl cursor-pointer hover:bg-slate-50 transition-colors flex-1"
-                                    :class="{ 'ring-2 ring-green-500 border-green-500 bg-green-50': form.tipo_motivo === 'permiso' }">
-                                    <input type="radio" v-model="form.tipo_motivo" value="permiso"
+                                    class="flex items-center p-3 border rounded-xl cursor-pointer hover:bg-slate-50 transition-colors flex-1"
+                                    :class="tipoMotivo === 'permiso' ? 'ring-2 ring-green-500 border-green-500 bg-green-50' : 'border-slate-200'">
+                                    <input type="radio" v-model="tipoMotivo" value="permiso"
                                         class="w-4 h-4 text-green-600 focus:ring-green-500 border-slate-300">
                                     <span class="ml-2 text-sm font-medium text-slate-700">Permiso Personal</span>
                                 </label>
                             </div>
-                            <p v-if="form.errors.tipo_motivo" class="mt-1 text-sm text-red-600">{{
-                                form.errors.tipo_motivo }}</p>
+                            <p v-if="formErrors.tipo_motivo" class="mt-1 text-sm text-red-600">{{
+                                formErrors.tipo_motivo }}</p>
                         </div>
 
                         <!-- Motivo -->
@@ -170,10 +205,11 @@
                             <label class="block text-sm font-bold text-slate-700 mb-2">
                                 Descripción del Motivo <span class="text-red-500">*</span>
                             </label>
-                            <textarea v-model="form.motivo" rows="3" placeholder="Indique el motivo de la salida..."
-                                class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 resize-none"
-                                :class="{ 'border-red-300': form.errors.motivo }"></textarea>
-                            <p v-if="form.errors.motivo" class="mt-1 text-sm text-red-600">{{ form.errors.motivo }}</p>
+                            <textarea v-model="motivo" v-bind="motivoProps" rows="3"
+                                placeholder="Indique el motivo de la salida..."
+                                class="w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 resize-none transition-colors"
+                                :class="formErrors.motivo ? 'border-red-400' : 'border-slate-200'"></textarea>
+                            <p v-if="formErrors.motivo" class="mt-1 text-sm text-red-600">{{ formErrors.motivo }}</p>
                         </div>
                     </template>
 
@@ -183,9 +219,9 @@
                             class="px-6 py-2.5 border-2 border-slate-300 text-slate-600 font-bold rounded-xl hover:bg-slate-50 transition-all">
                             Cancelar
                         </button>
-                        <button type="submit" :disabled="isProcessing"
+                        <button type="submit" :disabled="isSubmitting"
                             class="px-6 py-2.5 bg-gradient-to-r from-green-600 to-emerald-600 text-white font-bold rounded-xl hover:from-green-700 hover:to-emerald-700 transition-all disabled:opacity-50">
-                            <Loader2 v-if="isProcessing" class="w-5 h-5 animate-spin inline mr-2" />
+                            <Loader2 v-if="isSubmitting" class="w-5 h-5 animate-spin inline mr-2" />
                             {{ entry ? 'Registrar Retorno' : 'Registrar Salida' }}
                         </button>
                     </div>
@@ -196,15 +232,14 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
-import { useForm } from '@inertiajs/vue3';
-import { Plus, X, Loader2, LogIn } from 'lucide-vue-next';
+import { ref, watch, computed, onMounted, onUnmounted } from 'vue';
+import { useForm } from 'vee-validate';
+import { toTypedSchema } from '@vee-validate/yup';
+import * as yup from 'yup';
+import { router } from '@inertiajs/vue3';
+import { Plus, X, Loader2, LogIn, Clock } from 'lucide-vue-next';
 
 const props = defineProps({
-    staff: {
-        type: Array,
-        default: () => []
-    },
     entry: {
         type: Object,
         default: null
@@ -213,58 +248,193 @@ const props = defineProps({
 
 const emit = defineEmits(['close']);
 
-const selectedStaffId = ref('');
+const staffId = ref(null);
+const isSubmitting = ref(false);
+const searchQuery = ref('');
+const showDropdown = ref(false);
+const dropdownContainerRef = ref(null);
+const searchResults = ref([]);
+const isSearching = ref(false);
+let searchTimeout = null;
 
-// Get current shift
-const getCurrentShift = () => {
-    const hour = new Date().getHours();
+// Perform async search
+const performSearch = async (query) => {
+    if (!query || query.length < 2) {
+        searchResults.value = [];
+        return;
+    }
+
+    isSearching.value = true;
+    try {
+        // Using native fetch to avoid dependencies, but assumes relative path works relative to base URL
+        const response = await fetch(`/entry-exits/api/search-personnel?query=${encodeURIComponent(query)}`);
+        if (response.ok) {
+            searchResults.value = await response.json();
+        }
+    } catch (e) {
+        console.error("Search error:", e);
+    } finally {
+        isSearching.value = false;
+    }
+};
+
+// Watch search query with debounce
+watch(searchQuery, (val) => {
+    if (searchTimeout) clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => {
+        performSearch(val);
+    }, 300);
+});
+
+// Select person from dropdown
+const selectPerson = (person) => {
+    dni.value = person.dni;
+    nombrePersonal.value = person.nombre;
+    regimen.value = person.regimen || '';
+    staffId.value = person.tipo === 'vigilante' ? person.id : null;
+    searchQuery.value = person.nombre;
+    showDropdown.value = false;
+};
+
+// Click outside handler
+const handleClickOutside = (event) => {
+    if (dropdownContainerRef.value && !dropdownContainerRef.value.contains(event.target)) {
+        showDropdown.value = false;
+    }
+};
+
+onMounted(() => {
+    document.addEventListener('click', handleClickOutside);
+});
+
+onUnmounted(() => {
+    document.removeEventListener('click', handleClickOutside);
+});
+
+// Get shift based on hour (HH:mm format or hour number)
+const getShiftFromHour = (timeValue) => {
+    let hour;
+    if (typeof timeValue === 'string' && timeValue.includes(':')) {
+        hour = parseInt(timeValue.split(':')[0], 10);
+    } else {
+        hour = typeof timeValue === 'number' ? timeValue : new Date().getHours();
+    }
+
     if (hour >= 6 && hour < 14) return 'Mañana';
     if (hour >= 14 && hour < 22) return 'Tarde';
     return 'Noche';
 };
 
+// Get current shift based on current time
+const getCurrentShift = () => getShiftFromHour(new Date().getHours());
+
 const currentTime = new Date().toTimeString().slice(0, 5);
 
-// Form for new entry
-const form = useForm({
-    dni: '',
-    nombre_personal: '',
-    hora_salida: currentTime,
-    turno: getCurrentShift(),
-    regimen: '',
-    tipo_motivo: 'comision',
-    motivo: '',
-    staff_id: null,
-});
+// Validation Schema for exit form
+const exitSchema = toTypedSchema(
+    yup.object({
+        dni: yup.string()
+            .required('El DNI es obligatorio')
+            .matches(/^\d{8}$/, 'El DNI debe tener 8 dígitos numéricos'),
+        nombre_personal: yup.string()
+            .required('El nombre es obligatorio')
+            .min(3, 'El nombre debe tener al menos 3 caracteres'),
+        hora_salida: yup.string().required('La hora de salida es obligatoria'),
+        turno: yup.string().required('El turno es obligatorio'),
+        regimen: yup.string().nullable(),
+        tipo_motivo: yup.string().required('Debe seleccionar el tipo de motivo'),
+        motivo: yup.string()
+            .required('La descripción del motivo es obligatoria')
+            .min(5, 'El motivo debe tener al menos 5 caracteres'),
+    })
+);
 
-// Form for return
-const returnForm = useForm({
-    hora_retorno: currentTime,
-});
+// Validation Schema for return form
+const returnSchema = toTypedSchema(
+    yup.object({
+        hora_retorno: yup.string().required('La hora de retorno es obligatoria'),
+    })
+);
 
-const isProcessing = computed(() => form.processing || returnForm.processing);
-
-const onStaffSelect = () => {
-    const selected = props.staff.find(s => s.id === selectedStaffId.value);
-    if (selected) {
-        form.dni = selected.dni;
-        form.nombre_personal = selected.nombre;
-        form.regimen = selected.regimen || '';
-        form.staff_id = selected.id;
+// Exit form
+const { errors: formErrors, defineField: defineExitField, handleSubmit: validateExitForm, resetForm, setFieldValue } = useForm({
+    validationSchema: exitSchema,
+    initialValues: {
+        dni: '',
+        nombre_personal: '',
+        hora_salida: currentTime,
+        turno: getCurrentShift(),
+        regimen: '',
+        tipo_motivo: 'comision',
+        motivo: '',
     }
-};
+});
 
-const submitForm = () => {
+const [dni, dniProps] = defineExitField('dni');
+const [nombrePersonal, nombrePersonalProps] = defineExitField('nombre_personal');
+const [horaSalida, horaSalidaProps] = defineExitField('hora_salida');
+const [turno, turnoProps] = defineExitField('turno');
+const [regimen, regimenProps] = defineExitField('regimen');
+const [tipoMotivo, tipoMotivoProps] = defineExitField('tipo_motivo');
+const [motivo, motivoProps] = defineExitField('motivo');
+
+// Return form
+const { errors: returnFormErrors, defineField: defineReturnField, handleSubmit: validateReturnForm, resetForm: resetReturnForm } = useForm({
+    validationSchema: returnSchema,
+    initialValues: {
+        hora_retorno: currentTime,
+    }
+});
+
+const [horaRetorno, horaRetornoProps] = defineReturnField('hora_retorno');
+
+// Watch for hour changes and automatically update the shift
+watch(horaSalida, (newHora) => {
+    if (newHora) {
+        turno.value = getShiftFromHour(newHora);
+    }
+});
+
+// Submit exit form
+const onSubmitExit = validateExitForm(async (values) => {
+    isSubmitting.value = true;
+
+    const payload = {
+        ...values,
+        staff_id: staffId.value,
+    };
+
+    router.post('/entry-exits', payload, {
+        onSuccess: () => {
+            resetForm();
+            emit('close');
+        },
+        onFinish: () => {
+            isSubmitting.value = false;
+        }
+    });
+});
+
+// Submit return form
+const onSubmitReturn = validateReturnForm(async (values) => {
+    isSubmitting.value = true;
+
+    router.patch(`/entry-exits/${props.entry.id}/return`, values, {
+        onSuccess: () => {
+            resetReturnForm();
+            emit('close');
+        },
+        onFinish: () => {
+            isSubmitting.value = false;
+        }
+    });
+});
+
+const handleSubmit = () => {
     if (props.entry) {
-        // Register return
-        returnForm.patch(`/entry-exits/${props.entry.id}/return`, {
-            onSuccess: () => emit('close'),
-        });
+        onSubmitReturn();
     } else {
-        // Create new entry
-        form.post('/entry-exits', {
-            onSuccess: () => emit('close'),
-        });
+        onSubmitExit();
     }
 };
 </script>

@@ -18,7 +18,7 @@
                     </button>
                 </div>
 
-                <form @submit.prevent="registerLicense" class="p-6 space-y-6">
+                <form @submit.prevent="handleSubmit" class="p-6 space-y-6">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div class="space-y-2">
                             <label class="block text-sm font-bold text-slate-700">
@@ -28,8 +28,9 @@
                                 <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                     <Users class="h-4 w-4 text-slate-400" />
                                 </div>
-                                <select v-model="form.dni" required @change="onEmployeeSelect"
-                                    class="w-full pl-10 pr-8 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 bg-white transition-all font-medium appearance-none">
+                                <select v-model="dni" @change="onEmployeeSelect"
+                                    class="w-full pl-10 pr-8 py-2.5 border rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 bg-white transition-all font-medium appearance-none"
+                                    :class="formErrors.dni ? 'border-red-400' : 'border-slate-200'">
                                     <option value="" disabled>Seleccione un empleado...</option>
                                     <option v-for="emp in employees" :key="emp.id" :value="emp.dni">
                                         {{ emp.apellidos }} {{ emp.nombres }} ({{ emp.dni }})
@@ -39,13 +40,15 @@
                                     <ChevronDown class="h-4 w-4 text-slate-400" />
                                 </div>
                             </div>
+                            <p v-if="formErrors.dni" class="text-sm text-red-600">{{ formErrors.dni }}</p>
                         </div>
                         <div class="space-y-2">
                             <label class="block text-sm font-bold text-slate-700">
                                 Tipo de Licencia <span class="text-red-500">*</span>
                             </label>
-                            <select v-model="form.tipo_licencia" required
-                                class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 bg-white transition-all font-medium">
+                            <select v-model="tipoLicencia"
+                                class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 bg-white transition-all font-medium"
+                                :class="formErrors.tipo_licencia ? 'border-red-400' : 'border-slate-200'">
                                 <option value="" disabled>Seleccione un tipo</option>
                                 <option value="Enfermedad">Enfermedad</option>
                                 <option value="Maternidad">Maternidad</option>
@@ -53,18 +56,20 @@
                                 <option value="Personal">Personal</option>
                                 <option value="Otros">Otros</option>
                             </select>
+                            <p v-if="formErrors.tipo_licencia" class="text-sm text-red-600">{{ formErrors.tipo_licencia
+                                }}</p>
                         </div>
                     </div>
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6" v-if="employeeFound">
                         <div class="space-y-2">
                             <label class="block text-sm font-bold text-slate-700">Nombres</label>
-                            <input v-model="form.nombres" type="text" readOnly
+                            <input v-model="nombres" type="text" readOnly
                                 class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-600 font-medium cursor-not-allowed">
                         </div>
                         <div class="space-y-2">
                             <label class="block text-sm font-bold text-slate-700">Apellidos</label>
-                            <input v-model="form.apellidos" type="text" readOnly
+                            <input v-model="apellidos" type="text" readOnly
                                 class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-600 font-medium cursor-not-allowed">
                         </div>
                     </div>
@@ -74,15 +79,20 @@
                             <label class="block text-sm font-bold text-slate-700">
                                 Fecha Inicio <span class="text-red-500">*</span>
                             </label>
-                            <input v-model="form.fecha_inicio" type="date" required
-                                class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all font-medium">
+                            <input v-model="fechaInicio" type="date"
+                                class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all font-medium"
+                                :class="formErrors.fecha_inicio ? 'border-red-400' : 'border-slate-200'">
+                            <p v-if="formErrors.fecha_inicio" class="text-sm text-red-600">{{ formErrors.fecha_inicio }}
+                            </p>
                         </div>
                         <div class="space-y-2">
                             <label class="block text-sm font-bold text-slate-700">
                                 Fecha Fin <span class="text-red-500">*</span>
                             </label>
-                            <input v-model="form.fecha_fin" type="date" required
-                                class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all font-medium">
+                            <input v-model="fechaFin" type="date"
+                                class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all font-medium"
+                                :class="formErrors.fecha_fin ? 'border-red-400' : 'border-slate-200'">
+                            <p v-if="formErrors.fecha_fin" class="text-sm text-red-600">{{ formErrors.fecha_fin }}</p>
                         </div>
                     </div>
 
@@ -118,7 +128,7 @@
                         <label class="block text-sm font-bold text-slate-700">
                             Motivo / Justificación
                         </label>
-                        <textarea v-model="form.motivo" rows="3"
+                        <textarea v-model="motivo" rows="3"
                             class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all font-medium resize-none"
                             placeholder="Detalle el motivo institucional de la licencia..."></textarea>
                     </div>
@@ -128,10 +138,10 @@
                             class="px-6 py-2.5 border-2 border-slate-300 text-slate-600 font-bold rounded-xl hover:bg-slate-50 transition-all">
                             Cancelar
                         </button>
-                        <button type="submit" :disabled="submitting || !hasEnoughDays"
+                        <button type="submit" :disabled="isSubmitting || !hasEnoughDays"
                             class="px-6 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-bold rounded-xl hover:from-purple-700 hover:to-indigo-700 transition-all shadow-lg shadow-purple-200 disabled:opacity-50 disabled:shadow-none flex items-center justify-center gap-2">
-                            <Loader2 v-if="submitting" class="w-5 h-5 animate-spin" />
-                            <span>{{ submitting ? 'Guardando...' : 'Confirmar Licencia' }}</span>
+                            <Loader2 v-if="isSubmitting" class="w-5 h-5 animate-spin" />
+                            <span>{{ isSubmitting ? 'Guardando...' : 'Confirmar Licencia' }}</span>
                         </button>
                     </div>
                 </form>
@@ -142,6 +152,9 @@
 
 <script setup>
 import { ref, computed } from 'vue';
+import { useForm } from 'vee-validate';
+import { toTypedSchema } from '@vee-validate/yup';
+import * as yup from 'yup';
 import axios from 'axios';
 import Swal from 'sweetalert2';
 import {
@@ -159,25 +172,51 @@ const props = defineProps({
 
 const emit = defineEmits(['close', 'success']);
 
-const submitting = ref(false);
+const isSubmitting = ref(false);
 const employeeFound = ref(null);
 
-const form = ref({
-    dni: '',
-    nombres: '',
-    apellidos: '',
-    tipo_licencia: '',
-    fecha_inicio: '',
-    fecha_fin: '',
-    motivo: '',
-    cargo: '',
-    area: ''
+// Validation Schema
+const licenseSchema = toTypedSchema(
+    yup.object({
+        dni: yup.string().required('Debe seleccionar un empleado'),
+        nombres: yup.string().nullable(),
+        apellidos: yup.string().nullable(),
+        tipo_licencia: yup.string().required('Debe seleccionar un tipo de licencia'),
+        fecha_inicio: yup.string().required('La fecha de inicio es obligatoria'),
+        fecha_fin: yup.string().required('La fecha de fin es obligatoria'),
+        motivo: yup.string().nullable(),
+        cargo: yup.string().nullable(),
+        area: yup.string().nullable(),
+    })
+);
+
+const { errors: formErrors, defineField, handleSubmit: validateForm, resetForm, setFieldValue, values } = useForm({
+    validationSchema: licenseSchema,
+    initialValues: {
+        dni: '',
+        nombres: '',
+        apellidos: '',
+        tipo_licencia: '',
+        fecha_inicio: '',
+        fecha_fin: '',
+        motivo: '',
+        cargo: '',
+        area: '',
+    }
 });
 
+const [dni] = defineField('dni');
+const [nombres] = defineField('nombres');
+const [apellidos] = defineField('apellidos');
+const [tipoLicencia] = defineField('tipo_licencia');
+const [fechaInicio] = defineField('fecha_inicio');
+const [fechaFin] = defineField('fecha_fin');
+const [motivo] = defineField('motivo');
+
 const calculatedDays = computed(() => {
-    if (!form.value.fecha_inicio || !form.value.fecha_fin) return 0;
-    const start = new Date(form.value.fecha_inicio);
-    const end = new Date(form.value.fecha_fin);
+    if (!values.fecha_inicio || !values.fecha_fin) return 0;
+    const start = new Date(values.fecha_inicio);
+    const end = new Date(values.fecha_fin);
     const diffTime = Math.abs(end - start);
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
     return diffDays > 0 ? diffDays : 0;
@@ -189,26 +228,26 @@ const hasEnoughDays = computed(() => {
 });
 
 const onEmployeeSelect = () => {
-    const emp = props.employees.find(e => e.dni === form.value.dni);
+    const emp = props.employees.find(e => e.dni === dni.value);
     if (emp) {
         employeeFound.value = emp;
-        form.value.nombres = emp.nombres;
-        form.value.apellidos = emp.apellidos;
-        form.value.cargo = emp.cargo;
-        form.value.area = emp.area;
+        setFieldValue('nombres', emp.nombres);
+        setFieldValue('apellidos', emp.apellidos);
+        setFieldValue('cargo', emp.cargo);
+        setFieldValue('area', emp.area);
     } else {
         employeeFound.value = null;
-        form.value.nombres = '';
-        form.value.apellidos = '';
+        setFieldValue('nombres', '');
+        setFieldValue('apellidos', '');
     }
 };
 
-const registerLicense = async () => {
+const onSubmitForm = validateForm(async (formValues) => {
     if (!hasEnoughDays.value) return;
 
-    submitting.value = true;
+    isSubmitting.value = true;
     try {
-        const res = await axios.post('/bienestar/api/register', form.value);
+        const res = await axios.post('/bienestar/api/register', formValues);
 
         Swal.fire({
             icon: 'success',
@@ -223,6 +262,7 @@ const registerLicense = async () => {
         emit('success');
         emit('close');
         resetForm();
+        employeeFound.value = null;
     } catch (error) {
         Swal.fire({
             icon: 'error',
@@ -230,15 +270,11 @@ const registerLicense = async () => {
             text: error.response?.data?.message || 'No se pudo registrar la licencia'
         });
     } finally {
-        submitting.value = false;
+        isSubmitting.value = false;
     }
-};
+});
 
-const resetForm = () => {
-    form.value = {
-        dni: '', nombres: '', apellidos: '', tipo_licencia: '',
-        fecha_inicio: '', fecha_fin: '', motivo: '', cargo: '', area: ''
-    };
-    employeeFound.value = null;
+const handleSubmit = () => {
+    onSubmitForm();
 };
 </script>

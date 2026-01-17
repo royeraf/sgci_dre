@@ -16,8 +16,10 @@
                 :class="isCollapsed ? 'justify-center px-0' : 'justify-center px-4'">
                 <div class="flex items-center font-bold text-xl tracking-wider transition-all duration-300"
                     :class="isCollapsed ? 'space-x-0' : 'space-x-3'">
-                    <div class="bg-white p-1.5 rounded-xl shadow-lg ring-2 ring-blue-400/30">
-                        <img src="/images/logo.png" alt="DRE Huánuco" class="h-12 w-12 object-contain" />
+                    <div
+                        class="bg-gradient-to-br from-blue-600 to-indigo-700 p-2 rounded-xl shadow-lg ring-2 ring-blue-400/30 transform hover:scale-105 transition-transform duration-200">
+                        <img src="/images/logo.png" alt="DRE Huánuco"
+                            class="h-10 w-10 object-contain brightness-0 invert" />
                     </div>
                     <div class="flex flex-col transition-opacity duration-200" v-if="!isCollapsed">
                         <span

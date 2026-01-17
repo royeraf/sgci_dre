@@ -2,27 +2,44 @@
   <div class="p-4 sm:p-6 lg:p-8">
     <!-- Welcome Card -->
     <div
-      class="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-3xl p-8 text-white mb-10 shadow-xl shadow-blue-500/20 relative overflow-hidden">
-      <div class="relative z-10">
-        <h2 class="text-3xl md:text-4xl font-extrabold mb-3 tracking-tight">¡Bienvenido al SGCI!</h2>
-        <p class="text-blue-100 text-lg md:text-xl font-medium opacity-90">Gestión y Control Institucional - DRE Huánuco
-        </p>
-        <div class="flex items-center gap-4 mt-8">
-          <div
-            class="bg-white/10 backdrop-blur-md px-4 py-2 rounded-xl text-sm font-bold flex items-center border border-white/20">
-            <Clock class="w-4 h-4 mr-2 text-blue-300" />
-            {{ currentDateTime }}
-          </div>
-          <div
-            class="bg-white/10 backdrop-blur-md px-4 py-2 rounded-xl text-sm font-bold flex items-center border border-white/20 uppercase">
-            <Sun class="w-4 h-4 mr-2 text-yellow-300" />
-            Turno: {{ currentShift }}
+      class="relative overflow-hidden rounded-[2rem] p-8 md:p-12 text-white mb-10 shadow-2xl shadow-blue-500/20 border border-white/10 ring-1 ring-white/5">
+      <!-- Background Image with Premium Overlay -->
+      <img src="/images/login-bg.png" alt="Background"
+        class="absolute inset-0 w-full h-full object-cover transform scale-105 transition-transform duration-1000 ease-out" />
+      <div class="absolute inset-0 bg-gradient-to-r from-blue-900/95 via-blue-900/70 to-indigo-900/40"></div>
+
+      <!-- Glossy Effect Overlay -->
+      <div class="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-white/10"></div>
+
+      <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-8">
+        <div class="max-w-2xl">
+          <h2 class="text-4xl md:text-5xl font-black mb-4 tracking-tight drop-shadow-lg">
+            ¡Bienvenido al <span
+              class="bg-gradient-to-r from-blue-300 to-indigo-200 bg-clip-text text-transparent">SGCI</span>!
+          </h2>
+          <p class="text-blue-100/90 text-lg md:text-xl font-semibold mb-8 max-w-lg leading-relaxed">
+            Gestión y Control Institucional - DRE Huánuco
+          </p>
+
+          <div class="flex flex-wrap items-center gap-4">
+            <div
+              class="bg-white/10 backdrop-blur-xl px-5 py-2.5 rounded-2xl text-sm font-bold flex items-center border border-white/20 shadow-xl shadow-black/10">
+              <Clock class="w-4 h-4 mr-2.5 text-blue-300" />
+              {{ currentDateTime }}
+            </div>
+            <div
+              class="bg-white/10 backdrop-blur-xl px-5 py-2.5 rounded-2xl text-sm font-bold flex items-center border border-white/20 shadow-xl shadow-black/10 uppercase">
+              <Sun class="w-4 h-4 mr-2.5 text-yellow-300" />
+              Turno: {{ currentShift }}
+            </div>
           </div>
         </div>
+
+        <!-- Decorative Logo/Icon for balance -->
+        <div class="hidden lg:block opacity-80 drop-shadow-2xl">
+          <img src="/images/logo.png" alt="Logo" class="w-40 h-40 object-contain brightness-0 invert" />
+        </div>
       </div>
-      <!-- Background Decorative Elements -->
-      <div class="absolute -right-20 -top-20 w-64 h-64 bg-white/10 rounded-full blur-3xl"></div>
-      <div class="absolute -left-20 -bottom-20 w-64 h-64 bg-indigo-500/20 rounded-full blur-3xl"></div>
     </div>
 
     <!-- Quick Actions -->
