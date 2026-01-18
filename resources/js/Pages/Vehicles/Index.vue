@@ -15,47 +15,33 @@
                 <div class="flex gap-3">
                     <a href="/dashboard"
                         class="inline-flex items-center px-4 py-2.5 border border-slate-200 text-sm font-bold rounded-xl text-slate-600 bg-white hover:bg-slate-50 transition-all shadow-sm">
-                        <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                        </svg>
+                        <ArrowLeft class="w-4 h-4 mr-2" />
                         Volver
                     </a>
                     <!-- Dynamic action button based on active tab -->
                     <button v-if="activeTab === 'commissions'" @click="openCommissionModal()"
                         class="inline-flex items-center px-6 py-3 border border-transparent text-sm font-bold rounded-xl shadow-lg shadow-blue-600/20 text-white bg-gradient-to-r from-blue-600 to-sky-500 hover:from-blue-700 hover:to-sky-600 focus:outline-none focus:ring-4 focus:ring-blue-300 transition-all duration-300 transform hover:scale-105 active:scale-95">
-                        <svg class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-                        </svg>
+                        <Plus class="w-5 h-5 mr-2" />
                         Nueva Comisión
                     </button>
                     <button v-if="activeTab === 'inventory'" @click="openVehicleModal()"
                         class="inline-flex items-center px-6 py-3 border border-transparent text-sm font-bold rounded-xl shadow-lg shadow-indigo-600/20 text-white bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 focus:outline-none focus:ring-4 focus:ring-indigo-300 transition-all duration-300 transform hover:scale-105 active:scale-95">
-                        <svg class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-                        </svg>
+                        <Plus class="w-5 h-5 mr-2" />
                         Registrar Vehículo
                     </button>
                     <button v-if="activeTab === 'maintenance'" @click="openMaintenanceModal()"
                         class="inline-flex items-center px-6 py-3 border border-transparent text-sm font-bold rounded-xl shadow-lg shadow-emerald-600/20 text-white bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-700 hover:to-teal-600 focus:outline-none focus:ring-4 focus:ring-emerald-300 transition-all duration-300 transform hover:scale-105 active:scale-95">
-                        <svg class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-                        </svg>
+                        <Plus class="w-5 h-5 mr-2" />
                         Registrar Gasto
                     </button>
                     <button v-if="activeTab === 'handover'" @click="openHandoverModal()"
                         class="inline-flex items-center px-6 py-3 border border-transparent text-sm font-bold rounded-xl shadow-lg shadow-amber-600/20 text-white bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 focus:outline-none focus:ring-4 focus:ring-amber-300 transition-all duration-300 transform hover:scale-105 active:scale-95">
-                        <svg class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                        </svg>
+                        <FilePlus class="w-5 h-5 mr-2" />
                         Nueva Acta
                     </button>
                     <button v-if="activeTab === 'service'" @click="openServiceReqModal()"
                         class="inline-flex items-center px-6 py-3 border border-transparent text-sm font-bold rounded-xl shadow-lg shadow-pink-600/20 text-white bg-gradient-to-r from-pink-600 to-rose-500 hover:from-pink-700 hover:to-rose-600 focus:outline-none focus:ring-4 focus:ring-pink-300 transition-all duration-300 transform hover:scale-105 active:scale-95">
-                        <svg class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-                        </svg>
+                        <Plus class="w-5 h-5 mr-2" />
                         Nuevo Requerimiento
                     </button>
                 </div>
@@ -66,46 +52,27 @@
                 <nav class="-mb-px flex space-x-8 overflow-x-auto">
                     <button @click="activeTab = 'commissions'"
                         :class="[activeTab === 'commissions' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300', 'whitespace-nowrap py-4 px-1 border-b-2 font-bold text-sm flex items-center gap-2 transition-all duration-200']">
-                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                        </svg>
+                        <MapPin class="w-5 h-5" />
                         Comisiones
                     </button>
                     <button @click="activeTab = 'inventory'"
                         :class="[activeTab === 'inventory' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300', 'whitespace-nowrap py-4 px-1 border-b-2 font-bold text-sm flex items-center gap-2 transition-all duration-200']">
-                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z" />
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0" />
-                        </svg>
+                        <Car class="w-5 h-5" />
                         Inventario
                     </button>
                     <button @click="activeTab = 'maintenance'"
                         :class="[activeTab === 'maintenance' ? 'border-emerald-600 text-emerald-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300', 'whitespace-nowrap py-4 px-1 border-b-2 font-bold text-sm flex items-center gap-2 transition-all duration-200']">
-                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                        </svg>
+                        <Wrench class="w-5 h-5" />
                         Gastos
                     </button>
                     <button @click="activeTab = 'handover'"
                         :class="[activeTab === 'handover' ? 'border-amber-600 text-amber-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300', 'whitespace-nowrap py-4 px-1 border-b-2 font-bold text-sm flex items-center gap-2 transition-all duration-200']">
-                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                        </svg>
+                        <FileText class="w-5 h-5" />
                         Actas de Entrega
                     </button>
                     <button @click="activeTab = 'service'"
                         :class="[activeTab === 'service' ? 'border-pink-600 text-pink-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300', 'whitespace-nowrap py-4 px-1 border-b-2 font-bold text-sm flex items-center gap-2 transition-all duration-200']">
-                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                        </svg>
+                        <Settings class="w-5 h-5" />
                         Requerimientos
                     </button>
                 </nav>
@@ -116,11 +83,7 @@
                 <!-- Search Filter -->
                 <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4">
                     <div class="relative max-w-md">
-                        <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" fill="none"
-                            viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                        </svg>
+                        <Search class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                         <input type="text" v-model="searchCommission"
                             class="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                             placeholder="Buscar por dependencia, chofer o placa...">
@@ -136,11 +99,7 @@
                         <p class="text-lg font-medium text-slate-600">Cargando comisiones...</p>
                     </div>
                     <div v-else-if="filteredCommissions.length === 0" class="text-center py-20">
-                        <svg class="w-16 h-16 mx-auto text-slate-300 mb-4" fill="none" viewBox="0 0 24 24"
-                            stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                                d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                        </svg>
+                        <MapPin class="w-16 h-16 mx-auto text-slate-300 mb-4" />
                         <p class="text-slate-500 font-medium">No hay comisiones registradas</p>
                         <p class="text-slate-400 text-sm mt-1">Haz clic en "Nueva Comisión" para agregar una</p>
                     </div>
@@ -155,10 +114,7 @@
                             <div class="mt-2 flex flex-col sm:flex-row sm:justify-between gap-2">
                                 <div class="flex flex-wrap gap-4 text-sm text-slate-500">
                                     <span class="flex items-center gap-1">
-                                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                                        </svg>
+                                        <MapPin class="w-4 h-4" />
                                         {{ commission.lugar }}
                                     </span>
                                     <span>{{ commission.placa }} - {{ commission.chofer }}</span>
@@ -178,11 +134,7 @@
             <div v-if="activeTab === 'inventory'" class="space-y-6">
                 <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4">
                     <div class="relative max-w-md">
-                        <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" fill="none"
-                            viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                        </svg>
+                        <Search class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                         <input type="text" v-model="searchInventory"
                             class="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                             placeholder="Buscar vehículo por placa, marca o modelo...">
@@ -197,11 +149,7 @@
                 </div>
                 <div v-else-if="filteredInventory.length === 0"
                     class="text-center py-20 bg-white rounded-2xl shadow-sm border border-slate-200">
-                    <svg class="w-16 h-16 mx-auto text-slate-300 mb-4" fill="none" viewBox="0 0 24 24"
-                        stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                            d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z" />
-                    </svg>
+                    <Car class="w-16 h-16 mx-auto text-slate-300 mb-4" />
                     <p class="text-slate-500 font-medium">No hay vehículos en el inventario</p>
                 </div>
                 <div v-else class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
@@ -212,7 +160,7 @@
                                 vehicle.tipo }}</span>
                             <span class="text-xs font-bold px-3 py-1 rounded-lg"
                                 :class="vehicle.estado === 'Operativo' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'">{{
-                                vehicle.estado }}</span>
+                                    vehicle.estado }}</span>
                         </div>
                         <h3 class="text-xl font-bold text-slate-800 group-hover:text-indigo-600 transition-colors">{{
                             vehicle.marca }} {{ vehicle.modelo }}</h3>
@@ -236,11 +184,7 @@
                         <p class="text-lg font-medium text-slate-600">Cargando gastos de mantenimiento...</p>
                     </div>
                     <div v-else-if="maintenances.length === 0" class="text-center py-20">
-                        <svg class="w-16 h-16 mx-auto text-slate-300 mb-4" fill="none" viewBox="0 0 24 24"
-                            stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                        </svg>
+                        <Wrench class="w-16 h-16 mx-auto text-slate-300 mb-4" />
                         <p class="text-slate-500 font-medium">No hay gastos de mantenimiento registrados</p>
                     </div>
                     <div v-else class="overflow-x-auto">
@@ -288,11 +232,7 @@
                         <p class="text-lg font-medium text-slate-600">Cargando actas de entrega...</p>
                     </div>
                     <div v-else-if="handovers.length === 0" class="text-center py-20">
-                        <svg class="w-16 h-16 mx-auto text-slate-300 mb-4" fill="none" viewBox="0 0 24 24"
-                            stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                        </svg>
+                        <FileText class="w-16 h-16 mx-auto text-slate-300 mb-4" />
                         <p class="text-slate-500 font-medium">No hay actas registradas</p>
                     </div>
                     <div v-else class="overflow-x-auto">
@@ -345,11 +285,7 @@
                         <p class="text-lg font-medium text-slate-600">Cargando requerimientos...</p>
                     </div>
                     <div v-else-if="serviceReqs.length === 0" class="text-center py-20">
-                        <svg class="w-16 h-16 mx-auto text-slate-300 mb-4" fill="none" viewBox="0 0 24 24"
-                            stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                                d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                        </svg>
+                        <Settings class="w-16 h-16 mx-auto text-slate-300 mb-4" />
                         <p class="text-slate-500 font-medium">No hay requerimientos registrados</p>
                     </div>
                     <div v-else class="overflow-x-auto">
@@ -408,6 +344,7 @@ export default { layout: MainLayout }
 
 <script setup>
 import { ref, computed, onMounted } from 'vue';
+import { ArrowLeft, Plus, FilePlus, MapPin, Car, Wrench, FileText, Settings, Search } from 'lucide-vue-next';
 import VehicleModal from '@/Components/Vehicles/Inventory/VehicleModal.vue';
 import CommissionModal from '@/Components/Vehicles/Commissions/CommissionModal.vue';
 import MaintenanceModal from '@/Components/Vehicles/Maintenance/MaintenanceModal.vue';

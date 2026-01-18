@@ -1,14 +1,6 @@
 <template>
     <div class="bg-white rounded-xl shadow-md overflow-hidden">
-        <!-- Search Bar -->
-        <div class="p-4 border-b border-slate-200">
-            <div class="relative">
-                <Search class="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
-                <input type="text" :value="searchQuery" @input="$emit('update:searchQuery', $event.target.value)"
-                    placeholder="Buscar por nombre, DNI, email, cargo, área o rol..."
-                    class="w-full pl-10 pr-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" />
-            </div>
-        </div>
+
 
         <!-- Table -->
         <div class="overflow-x-auto">
@@ -55,8 +47,7 @@
                             </div>
                         </td>
                     </tr>
-                    <tr v-else v-for="user in users" :key="user.id"
-                        class="hover:bg-slate-50 transition-colors">
+                    <tr v-else v-for="user in users" :key="user.id" class="hover:bg-slate-50 transition-colors">
                         <td class="px-6 py-4 whitespace-nowrap">
                             <div class="flex items-center">
                                 <div class="flex-shrink-0 h-10 w-10">
@@ -93,7 +84,8 @@
                         <td class="px-6 py-4 whitespace-nowrap">
                             <span
                                 :class="[user.is_active ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-800', 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium']">
-                                <span :class="[user.is_active ? 'bg-emerald-400' : 'bg-slate-400', 'w-2 h-2 rounded-full mr-1.5']"></span>
+                                <span
+                                    :class="[user.is_active ? 'bg-emerald-400' : 'bg-slate-400', 'w-2 h-2 rounded-full mr-1.5']"></span>
                                 {{ user.is_active ? 'Activo' : 'Inactivo' }}
                             </span>
                         </td>
@@ -107,7 +99,8 @@
                                     class="text-indigo-600 hover:text-indigo-900 transition-colors">
                                     <Edit class="w-4 h-4" />
                                 </button>
-                                <button @click="$emit('toggleStatus', user)" :title="user.is_active ? 'Desactivar' : 'Activar'"
+                                <button @click="$emit('toggleStatus', user)"
+                                    :title="user.is_active ? 'Desactivar' : 'Activar'"
                                     :class="[user.is_active ? 'text-orange-600 hover:text-orange-900' : 'text-emerald-600 hover:text-emerald-900', 'transition-colors']">
                                     <Power class="w-4 h-4" />
                                 </button>
@@ -136,7 +129,7 @@
 </template>
 
 <script setup>
-import { Search, Eye, Edit, Power, Key, Trash2, Shield, UserX } from 'lucide-vue-next';
+import { Eye, Edit, Power, Key, Trash2, Shield, UserX } from 'lucide-vue-next';
 
 defineProps({
     users: {
@@ -146,14 +139,10 @@ defineProps({
     loading: {
         type: Boolean,
         default: false
-    },
-    searchQuery: {
-        type: String,
-        default: ''
     }
 });
 
-defineEmits(['update:searchQuery', 'view', 'edit', 'toggleStatus', 'resetPassword', 'delete']);
+defineEmits(['view', 'edit', 'toggleStatus', 'resetPassword', 'delete']);
 
 const getInitials = (name, apellidos) => {
     const n = name?.charAt(0) || '';

@@ -15,10 +15,7 @@
                 <div class="flex gap-3">
                     <a href="/dashboard"
                         class="inline-flex items-center px-4 py-2.5 border border-slate-200 text-sm font-bold rounded-xl text-slate-600 bg-white hover:bg-slate-50 transition-all shadow-sm">
-                        <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                        </svg>
+                        <ArrowLeft class="w-4 h-4 mr-2" />
                         Volver
                     </a>
                     <button @click="showRegisterModal = true"
@@ -73,7 +70,7 @@ export default { layout: MainLayout }
 <script setup>
 import { ref, onMounted } from 'vue';
 import axios from 'axios';
-import { Plus, BookOpen, CalendarDays } from 'lucide-vue-next';
+import { Plus, BookOpen, CalendarDays, ArrowLeft } from 'lucide-vue-next';
 
 import BienestarStats from '@/Components/Bienestar/Stats/BienestarStats.vue';
 import LicenseHistoryTable from '@/Components/Bienestar/Licenses/LicenseHistoryTable.vue';

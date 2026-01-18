@@ -22,14 +22,18 @@
             <!-- Summary Cards -->
             <SummaryCards :summary="summary" />
 
+            <!-- Filters -->
+            <UserFilters :filters="localFilters" :result-count="filteredUsers.length" :roles="roles" :areas="areas"
+                :positions="positions" @update:filters="localFilters = $event" @clear="clearFilters" />
+
             <!-- Users Table -->
-            <UserTable :users="filteredUsers" :loading="isLoading" v-model:search-query="searchQuery" @view="viewUser"
-                @edit="editUser" @toggle-status="toggleUserStatus" @reset-password="resetUserPassword"
-                @delete="handleDeleteUser" />
+            <UserTable :users="filteredUsers" :loading="isLoading" @view="viewUser" @edit="editUser"
+                @toggle-status="toggleUserStatus" @reset-password="resetUserPassword" @delete="handleDeleteUser" />
 
             <!-- User Modal -->
             <UserModal v-if="showUserModal" :user="selectedUser" :is-editing="isEditing" :submitting="isSubmitting"
-                :roles="roles" :areas="areas" :positions="positions" @close="closeUserModal" @submit="saveUser" />
+                :roles="roles" :areas="areas" :positions="positions" :employees="employees" @close="closeUserModal"
+                @submit="saveUser" />
 
             <!-- User Detail Modal -->
             <UserDetailModal v-if="showViewUserModal" :user="selectedUser" @close="closeViewUserModal"
@@ -57,6 +61,7 @@ import { UserPlus } from 'lucide-vue-next';
 
 // Components
 import SummaryCards from '@/Components/Users/SummaryCards.vue';
+import UserFilters from '@/Components/Users/UserFilters.vue';
 import UserTable from '@/Components/Users/UserTable.vue';
 import UserModal from '@/Components/Users/UserModal.vue';
 import UserDetailModal from '@/Components/Users/UserDetailModal.vue';
@@ -64,12 +69,19 @@ import PasswordModal from '@/Components/Users/PasswordModal.vue';
 
 const isLoading = ref(false);
 const isSubmitting = ref(false);
-const searchQuery = ref('');
+const localFilters = ref({
+    search: '',
+    role: '',
+    area: '',
+    position: '',
+    status: ''
+});
 
 const users = ref([]);
 const roles = ref([]);
 const areas = ref([]);
 const positions = ref([]);
+const employees = ref([]);
 const summary = ref({});
 
 const showUserModal = ref(false);
@@ -80,34 +92,85 @@ const selectedUser = ref(null);
 const isEditing = ref(false);
 
 const filteredUsers = computed(() => {
-    if (!searchQuery.value) return users.value;
-    const q = searchQuery.value.toLowerCase();
-    return users.value.filter(u =>
-        (u.full_name || '').toLowerCase().includes(q) ||
-        (u.name + ' ' + (u.apellidos || '')).toLowerCase().includes(q) ||
-        String(u.dni).includes(q) ||
-        (u.email || '').toLowerCase().includes(q) ||
-        (u.cargo || '').toLowerCase().includes(q) ||
-        (u.area || '').toLowerCase().includes(q) ||
-        (u.rol_nombre || '').toLowerCase().includes(q)
-    );
+    let result = [...users.value];
+
+    // Search filter
+    if (localFilters.value.search) {
+        const q = localFilters.value.search.toLowerCase();
+        result = result.filter(u =>
+            (u.full_name || '').toLowerCase().includes(q) ||
+            (u.name + ' ' + (u.apellidos || '')).toLowerCase().includes(q) ||
+            String(u.dni).includes(q) ||
+            (u.email || '').toLowerCase().includes(q) ||
+            (u.cargo || '').toLowerCase().includes(q) ||
+            (u.area || '').toLowerCase().includes(q) ||
+            (u.rol_nombre || '').toLowerCase().includes(q)
+        );
+    }
+
+    // Role filter
+    if (localFilters.value.role) {
+        result = result.filter(u => u.rol_id == localFilters.value.role);
+    }
+
+    // Area filter
+    if (localFilters.value.area) {
+        const selectedArea = areas.value.find(a => a.id == localFilters.value.area);
+        if (selectedArea) {
+            const filterName = selectedArea.nombre.trim().toLowerCase();
+            result = result.filter(u => u.area && u.area.trim().toLowerCase() === filterName);
+        }
+    }
+
+    // Position filter
+    if (localFilters.value.position) {
+        const selectedPosition = positions.value.find(p => p.id == localFilters.value.position);
+        if (selectedPosition) {
+            const filterName = selectedPosition.nombre.trim().toLowerCase();
+            result = result.filter(u => u.cargo && u.cargo.trim().toLowerCase() === filterName);
+        }
+    }
+
+    // Status filter
+    if (localFilters.value.status) {
+        const shouldBeActive = localFilters.value.status === 'active';
+        result = result.filter(u => {
+            // Manejar 1, "1", true como activo y 0, "0", false como inactivo
+            const userIsActive = u.is_active == 1 || u.is_active === true || u.is_active === 'true';
+            return userIsActive === shouldBeActive;
+        });
+    }
+
+    return result;
 });
+
+const clearFilters = () => {
+    localFilters.value = {
+        search: '',
+        role: '',
+        area: '',
+        position: '',
+        status: ''
+    };
+};
 
 const fetchData = async () => {
     isLoading.value = true;
     try {
-        const [usersRes, rolesRes, areasRes, positionsRes, summaryRes] = await Promise.all([
+        const [usersRes, rolesRes, areasRes, positionsRes, summaryRes, empRes] = await Promise.all([
             axios.get('/users/list'),
             axios.get('/users/roles'),
             axios.get('/users/areas'),
             axios.get('/users/positions'),
-            axios.get('/users/summary')
+            axios.get('/users/summary'),
+            axios.get('/hr/employees')
         ]);
         users.value = usersRes.data;
         roles.value = rolesRes.data;
         areas.value = areasRes.data;
         positions.value = positionsRes.data;
         summary.value = summaryRes.data;
+        employees.value = empRes.data;
     } catch (error) {
         console.error('Error fetching users data:', error);
         window.Swal?.fire?.({

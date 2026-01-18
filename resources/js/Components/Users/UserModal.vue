@@ -12,7 +12,8 @@
                             {{ isEditing ? 'Editar Usuario' : 'Nuevo Usuario' }}
                         </h3>
                         <p class="text-indigo-100 text-sm mt-1">
-                            {{ isEditing ? 'Actualice la información del usuario' : 'Complete los datos del nuevo usuario del sistema' }}
+                            {{ isEditing ? 'Actualice la información del usuario' : 'Complete los datos del nuevo
+                            usuario del sistema' }}
                         </p>
                     </div>
                     <button @click="$emit('close')" class="text-indigo-100 hover:text-white transition-colors p-1">
@@ -22,6 +23,24 @@
 
                 <!-- Form -->
                 <form @submit.prevent="handleSubmit" class="p-6 space-y-6">
+                    <!-- Importar desde Empleado -->
+                    <div v-if="!isEditing && employees.length > 0"
+                        class="bg-indigo-50 p-4 rounded-xl border border-indigo-100 mb-2">
+                        <label class="block text-sm font-bold text-indigo-700 mb-2">
+                            Importar datos desde Registro de Personal
+                        </label>
+                        <select @change="handleImportEmployee"
+                            class="w-full px-4 py-2.5 border-indigo-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors bg-white text-indigo-900">
+                            <option value="">-- Seleccionar empleado para autocompletar --</option>
+                            <option v-for="emp in employees" :key="emp.id" :value="emp.id">
+                                {{ emp.nombres }} {{ emp.apellidos }} ({{ emp.dni }})
+                            </option>
+                        </select>
+                        <p class="text-xs text-indigo-500 mt-2 font-medium">
+                            * Seleccione un empleado para llenar automáticamente sus datos básicos
+                        </p>
+                    </div>
+
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <!-- DNI -->
                         <div>
@@ -177,7 +196,7 @@
                                     </button>
                                 </div>
                                 <p v-if="formErrors.password" class="mt-1 text-sm text-red-600">{{ formErrors.password
-                                }}</p>
+                                    }}</p>
                             </div>
 
                             <!-- Confirmar Contraseña -->
@@ -249,6 +268,10 @@ const props = defineProps({
     positions: {
         type: Array,
         default: () => []
+    },
+    employees: {
+        type: Array,
+        default: () => []
     }
 });
 
@@ -308,6 +331,28 @@ watch(() => props.user, (newUser) => {
     }
     formErrors.value = {};
 }, { immediate: true });
+
+const handleImportEmployee = (event) => {
+    const empId = event.target.value;
+    if (!empId) return;
+
+    const emp = props.employees.find(e => e.id == empId);
+    if (emp) {
+        form.value.dni = emp.dni || '';
+        form.value.name = emp.nombres || '';
+        form.value.apellidos = emp.apellidos || '';
+        form.value.email = emp.correo || '';
+        form.value.telefono = emp.telefono || '';
+        form.value.cargo = emp.cargo || '';
+        form.value.area = emp.area || '';
+
+        // Match active status if possible, defaulting to true
+        form.value.is_active = emp.estado === 'ACTIVO';
+
+        // Reset role to prompt selection
+        form.value.rol_id = '';
+    }
+};
 
 const validateForm = () => {
     formErrors.value = {};

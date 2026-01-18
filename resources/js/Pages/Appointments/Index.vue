@@ -17,23 +17,14 @@
                     <div class="flex items-center gap-2">
                         <a href="/dashboard"
                             class="inline-flex items-center justify-center px-4 py-2.5 border border-slate-200 text-sm font-bold rounded-xl text-slate-600 bg-white hover:bg-slate-50 transition-all shadow-sm">
-                            <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                            </svg>
+                            <ArrowLeft class="w-4 h-4 mr-2" />
                             Volver
                         </a>
                         <a href="/citas/portal" target="_blank"
                             class="inline-flex items-center justify-center px-4 py-2.5 border border-blue-200 text-sm font-bold rounded-xl text-blue-600 bg-blue-50 hover:bg-blue-100 transition-all shadow-sm">
-                            <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
-                            </svg>
+                            <Globe class="w-4 h-4 mr-2" />
                             Portal Público
-                            <svg class="w-3 h-3 ml-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                            </svg>
+                            <ExternalLink class="w-3 h-3 ml-1.5" />
                         </a>
                     </div>
 
@@ -121,7 +112,7 @@ import CompletedAppointmentList from '@/Components/Appointments/Completed/Appoin
 import { ref, onMounted, onUnmounted, computed } from 'vue';
 import axios from 'axios';
 import Swal from 'sweetalert2';
-import { RefreshCw, LoaderCircle, Clock, CheckCircle } from 'lucide-vue-next';
+import { RefreshCw, LoaderCircle, Clock, CheckCircle, ArrowLeft, Globe, ExternalLink } from 'lucide-vue-next';
 
 const citas = ref([]);
 const loading = ref(false);

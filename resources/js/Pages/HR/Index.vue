@@ -65,8 +65,11 @@
 
             <!-- Personal Tab -->
             <div v-if="activeTab === 'personal'">
-                <EmployeeTable :employees="filteredEmployees" :loading="isLoading" v-model:search-query="searchQuery"
-                    @view="viewEmployee" @edit="editEmployee" />
+                <EmployeeFilters :filters="localFilters" :result-count="filteredEmployees.length" :areas="areas"
+                    :positions="positions" @update:filters="localFilters = $event" @clear="clearFilters" />
+
+                <EmployeeTable :employees="filteredEmployees" :loading="isLoading" @view="viewEmployee"
+                    @edit="editEmployee" />
             </div>
 
             <!-- Vacaciones Tab -->
@@ -98,8 +101,8 @@
 
             <!-- Vacation Modal -->
             <VacationModal v-if="showVacationModal" :employees="employees" :submitting="isSubmitting"
-                :vacation="selectedVacation" :is-editing="isEditingVacation"
-                @close="closeVacationModal" @submit="saveVacation" />
+                :vacation="selectedVacation" :is-editing="isEditingVacation" @close="closeVacationModal"
+                @submit="saveVacation" />
 
             <!-- Vacation Detail Modal -->
             <VacationDetailModal v-if="showVacationDetailModal" :vacation="selectedVacationDetail"
@@ -143,11 +146,17 @@ import AreaTable from '@/Components/HR/Areas/AreaTable.vue';
 import AreaModal from '@/Components/HR/Areas/AreaModal.vue';
 import PositionTable from '@/Components/HR/Positions/PositionTable.vue';
 import PositionModal from '@/Components/HR/Positions/PositionModal.vue';
+import EmployeeFilters from '@/Components/HR/Employees/EmployeeFilters.vue';
 
 const activeTab = ref('personal');
 const isLoading = ref(false);
 const isSubmitting = ref(false);
-const searchQuery = ref('');
+
+const localFilters = ref({
+    search: '',
+    area: '',
+    position: ''
+});
 
 const employees = ref([]);
 const vacations = ref([]);
@@ -175,15 +184,35 @@ const selectedPosition = ref(null);
 const isEditingPosition = ref(false);
 
 const filteredEmployees = computed(() => {
-    if (!searchQuery.value) return employees.value;
-    const q = searchQuery.value.toLowerCase();
-    return employees.value.filter(e =>
-        (e.nombres + ' ' + e.apellidos).toLowerCase().includes(q) ||
-        String(e.dni).includes(q) ||
-        (e.area || '').toLowerCase().includes(q) ||
-        (e.cargo || '').toLowerCase().includes(q)
-    );
+    let result = employees.value;
+
+    if (localFilters.value.search) {
+        const q = localFilters.value.search.toLowerCase();
+        result = result.filter(e =>
+            (e.nombres + ' ' + e.apellidos).toLowerCase().includes(q) ||
+            String(e.dni).includes(q) ||
+            (e.cargo || '').toLowerCase().includes(q)
+        );
+    }
+
+    if (localFilters.value.area) {
+        result = result.filter(e => e.area === localFilters.value.area);
+    }
+
+    if (localFilters.value.position) {
+        result = result.filter(e => e.cargo === localFilters.value.position);
+    }
+
+    return result;
 });
+
+const clearFilters = () => {
+    localFilters.value = {
+        search: '',
+        area: '',
+        position: ''
+    };
+};
 
 const fetchData = async () => {
     isLoading.value = true;

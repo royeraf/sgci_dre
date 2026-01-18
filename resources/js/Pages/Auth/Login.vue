@@ -77,12 +77,13 @@
                 <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <IdCard class="h-5 w-5 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
                 </div>
-                <input v-model="form.dni" type="text" id="dni" maxlength="8" :class="[
-                  'block w-full pl-10 pr-4 py-3 border-2 rounded-xl transition-all duration-200 ease-in-out focus:outline-none focus:ring-4',
-                  form.errors.dni
-                    ? 'border-red-300 bg-red-50 focus:border-red-500 focus:ring-red-100'
-                    : 'border-slate-200 bg-white hover:border-blue-300 focus:border-blue-500 focus:ring-blue-100'
-                ]" placeholder="DNI (8 dígitos)">
+                <input v-model="form.dni" type="text" id="dni" maxlength="8" inputmode="numeric"
+                  @input="form.dni = $event.target.value.replace(/[\D\s]/g, '')" :class="[
+                    'block w-full pl-10 pr-4 py-3 border-2 rounded-xl transition-all duration-200 ease-in-out focus:outline-none focus:ring-4',
+                    form.errors.dni
+                      ? 'border-red-300 bg-red-50 focus:border-red-500 focus:ring-red-100'
+                      : 'border-slate-200 bg-white hover:border-blue-300 focus:border-blue-500 focus:ring-blue-100'
+                  ]" placeholder="DNI (8 dígitos)">
               </div>
               <p v-if="form.errors.dni" class="mt-1 text-sm text-red-600 flex items-center gap-1">
                 <AlertCircle class="w-4 h-4" />

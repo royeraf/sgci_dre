@@ -31,7 +31,7 @@
                 <div
                     class="bg-slate-50 p-2 rounded-xl border border-slate-100 group-hover:border-pink-100 transition-colors">
                     <p class="text-slate-400 uppercase tracking-widest text-[9px] font-bold mb-0.5">Fecha</p>
-                    <p class="font-black text-slate-800 tracking-tight">{{ cita.fecha }}</p>
+                    <p class="font-black text-slate-800 tracking-tight">{{ formatDate(cita.fecha) }}</p>
                 </div>
                 <div
                     class="bg-slate-50 p-2 rounded-xl border border-slate-100 group-hover:border-pink-100 transition-colors">
@@ -47,7 +47,7 @@
                     class="bg-slate-50 p-2 rounded-xl border border-slate-100 group-hover:border-pink-100 transition-colors overflow-hidden">
                     <p class="text-slate-400 uppercase tracking-widest text-[9px] font-bold mb-0.5">Oficina</p>
                     <p class="font-black text-slate-800 tracking-tight truncate" :title="cita.oficina">{{ cita.oficina
-                        }}</p>
+                    }}</p>
                 </div>
             </div>
 
@@ -123,9 +123,9 @@ const formatDate = (dateStr) => {
         const date = new Date(dateStr);
         return date.toLocaleDateString('es-PE', {
             day: '2-digit',
-            month: 'short',
-            hour: '2-digit',
-            minute: '2-digit'
+            month: '2-digit',
+            year: 'numeric',
+            timeZone: 'UTC'
         });
     } catch {
         return dateStr;
