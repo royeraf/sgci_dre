@@ -12,8 +12,7 @@
                             {{ isEditing ? 'Editar Usuario' : 'Nuevo Usuario' }}
                         </h3>
                         <p class="text-indigo-100 text-sm mt-1">
-                            {{ isEditing ? 'Actualice la información del usuario' : 'Complete los datos del nuevo
-                            usuario del sistema' }}
+                            {{ modalSubtitle }}
                         </p>
                     </div>
                     <button @click="$emit('close')" class="text-indigo-100 hover:text-white transition-colors p-1">
@@ -29,15 +28,27 @@
                         <label class="block text-sm font-bold text-indigo-700 mb-2">
                             Importar datos desde Registro de Personal
                         </label>
-                        <select @change="handleImportEmployee"
-                            class="w-full px-4 py-2.5 border-indigo-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors bg-white text-indigo-900">
-                            <option value="">-- Seleccionar empleado para autocompletar --</option>
-                            <option v-for="emp in employees" :key="emp.id" :value="emp.id">
-                                {{ emp.nombres }} {{ emp.apellidos }} ({{ emp.dni }})
-                            </option>
-                        </select>
+                        <div class="relative">
+                            <Search
+                                class="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-indigo-400" />
+                            <input type="text" v-model="employeeSearch" placeholder="Buscar por nombre o DNI..."
+                                @focus="showEmployeeDropdown = true" @blur="closeDropdown"
+                                class="w-full pl-9 pr-4 py-2.5 border border-indigo-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors bg-white text-indigo-900 placeholder-indigo-300" />
+
+                            <div v-if="showEmployeeDropdown && filteredEmployees.length > 0"
+                                class="absolute z-50 w-full mt-1 bg-white rounded-xl shadow-lg border border-indigo-100 max-h-60 overflow-auto">
+                                <ul class="py-1">
+                                    <li v-for="emp in filteredEmployees" :key="emp.id" @click="selectEmployee(emp)"
+                                        class="px-4 py-2 hover:bg-indigo-50 cursor-pointer flex flex-col border-b border-indigo-50 last:border-0">
+                                        <span class="font-bold text-indigo-900 text-sm">{{ emp.nombres }} {{
+                                            emp.apellidos }}</span>
+                                        <span class="text-xs text-indigo-500">DNI: {{ emp.dni }} • {{ emp.cargo || 'Sin cargo' }}</span>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
                         <p class="text-xs text-indigo-500 mt-2 font-medium">
-                            * Seleccione un empleado para llenar automáticamente sus datos básicos
+                            * Busque y seleccione un empleado para llenar automáticamente sus datos
                         </p>
                     </div>
 
@@ -242,7 +253,7 @@
 
 <script setup>
 import { ref, watch, computed } from 'vue';
-import { X, UserCog, Key, Loader2, Eye, EyeOff } from 'lucide-vue-next';
+import { X, UserCog, Key, Loader2, Eye, EyeOff, Search } from 'lucide-vue-next';
 
 const props = defineProps({
     user: {
@@ -332,26 +343,49 @@ watch(() => props.user, (newUser) => {
     formErrors.value = {};
 }, { immediate: true });
 
-const handleImportEmployee = (event) => {
-    const empId = event.target.value;
-    if (!empId) return;
+const modalSubtitle = computed(() => {
+    return props.isEditing
+        ? 'Actualice la información del usuario'
+        : 'Complete los datos del nuevo usuario del sistema';
+});
 
-    const emp = props.employees.find(e => e.id == empId);
-    if (emp) {
-        form.value.dni = emp.dni || '';
-        form.value.name = emp.nombres || '';
-        form.value.apellidos = emp.apellidos || '';
-        form.value.email = emp.correo || '';
-        form.value.telefono = emp.telefono || '';
-        form.value.cargo = emp.cargo || '';
-        form.value.area = emp.area || '';
+const employeeSearch = ref('');
+const showEmployeeDropdown = ref(false);
 
-        // Match active status if possible, defaulting to true
-        form.value.is_active = emp.estado === 'ACTIVO';
+const filteredEmployees = computed(() => {
+    if (!employeeSearch.value) return [];
+    const q = employeeSearch.value.toLowerCase();
+    return props.employees.filter(e =>
+        (e.nombres + ' ' + e.apellidos).toLowerCase().includes(q) ||
+        String(e.dni).includes(q)
+    ).slice(0, 10); // Limit results
+});
 
-        // Reset role to prompt selection
-        form.value.rol_id = '';
-    }
+const selectEmployee = (emp) => {
+    employeeSearch.value = `${emp.nombres} ${emp.apellidos}`;
+    showEmployeeDropdown.value = false;
+
+    form.value.dni = emp.dni || '';
+    form.value.name = (emp.nombres || '').toUpperCase();
+    form.value.apellidos = (emp.apellidos || '').toUpperCase();
+    form.value.email = emp.correo || '';
+    form.value.telefono = emp.telefono || '';
+    form.value.cargo = emp.cargo || '';
+    form.value.area = emp.area || '';
+
+    // Match active status if possible, defaulting to true
+    form.value.is_active = emp.estado === 'ACTIVO';
+
+    // Reset role to prompt selection
+    form.value.rol_id = '';
+};
+
+// Close dropdown when clicking outside (simple implementation)
+// In a real scenario, use v-click-outside directive or similar
+const closeDropdown = () => {
+    setTimeout(() => {
+        showEmployeeDropdown.value = false;
+    }, 200);
 };
 
 const validateForm = () => {

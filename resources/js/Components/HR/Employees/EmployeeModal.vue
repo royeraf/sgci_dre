@@ -29,7 +29,7 @@
                             <label class="block text-sm font-bold text-slate-700 mb-2">
                                 DNI <span class="text-red-500">*</span>
                             </label>
-                            <input v-model="dni" type="text" maxlength="8" :disabled="isEditing"
+                            <input v-model="dni" v-bind="dniProps" type="text" maxlength="8" :disabled="isEditing"
                                 placeholder="Ingrese DNI"
                                 class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 disabled:bg-slate-50 disabled:text-slate-500 transition-colors"
                                 :class="formErrors.dni ? 'border-red-400' : 'border-slate-200'" />
@@ -41,7 +41,7 @@
                             <label class="block text-sm font-bold text-slate-700 mb-2">
                                 Tipo de Contrato <span class="text-red-500">*</span>
                             </label>
-                            <select v-model="tipoContrato"
+                            <select v-model="tipoContrato" v-bind="tipoContratoProps"
                                 class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white transition-colors"
                                 :class="formErrors.tipo_contrato ? 'border-red-400' : 'border-slate-200'">
                                 <option value="Nombrado">Nombrado</option>
@@ -58,7 +58,8 @@
                             <label class="block text-sm font-bold text-slate-700 mb-2">
                                 Nombres <span class="text-red-500">*</span>
                             </label>
-                            <input v-model="nombres" type="text" placeholder="Ingrese nombres"
+                            <input v-model="nombres" v-bind="nombresProps" type="text" placeholder="Ingrese nombres"
+                                @input="nombres = $event.target.value.toUpperCase()"
                                 class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
                                 :class="formErrors.nombres ? 'border-red-400' : 'border-slate-200'" />
                             <p v-if="formErrors.nombres" class="mt-1 text-sm text-red-600">{{ formErrors.nombres }}</p>
@@ -69,7 +70,8 @@
                             <label class="block text-sm font-bold text-slate-700 mb-2">
                                 Apellidos <span class="text-red-500">*</span>
                             </label>
-                            <input v-model="apellidos" type="text" placeholder="Ingrese apellidos"
+                            <input v-model="apellidos" v-bind="apellidosProps" type="text"
+                                placeholder="Ingrese apellidos" @input="apellidos = $event.target.value.toUpperCase()"
                                 class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
                                 :class="formErrors.apellidos ? 'border-red-400' : 'border-slate-200'" />
                             <p v-if="formErrors.apellidos" class="mt-1 text-sm text-red-600">{{ formErrors.apellidos }}
@@ -79,14 +81,14 @@
                         <!-- Fecha Nacimiento -->
                         <div>
                             <label class="block text-sm font-bold text-slate-700 mb-2">Fecha Nacimiento</label>
-                            <input v-model="fechaNacimiento" type="date"
+                            <input v-model="fechaNacimiento" v-bind="fechaNacimientoProps" type="date"
                                 class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500" />
                         </div>
 
                         <!-- Género -->
                         <div>
                             <label class="block text-sm font-bold text-slate-700 mb-2">Género</label>
-                            <select v-model="genero"
+                            <select v-model="genero" v-bind="generoProps"
                                 class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white">
                                 <option value="">Seleccionar...</option>
                                 <option value="Masculino">Masculino</option>
@@ -99,7 +101,7 @@
                             <label class="block text-sm font-bold text-slate-700 mb-2">
                                 Cargo / Puesto <span class="text-red-500">*</span>
                             </label>
-                            <select v-model="cargo"
+                            <select v-model="cargo" v-bind="cargoProps"
                                 class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white transition-colors"
                                 :class="formErrors.cargo ? 'border-red-400' : 'border-slate-200'">
                                 <option value="">Seleccione cargo...</option>
@@ -116,7 +118,7 @@
                             <label class="block text-sm font-bold text-slate-700 mb-2">
                                 Área / Oficina <span class="text-red-500">*</span>
                             </label>
-                            <select v-model="area"
+                            <select v-model="area" v-bind="areaProps"
                                 class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white transition-colors"
                                 :class="formErrors.area ? 'border-red-400' : 'border-slate-200'">
                                 <option value="">Seleccione área...</option>
@@ -131,28 +133,31 @@
                         <!-- Teléfono -->
                         <div>
                             <label class="block text-sm font-bold text-slate-700 mb-2">Teléfono</label>
-                            <input v-model="telefono" type="text" placeholder="999 999 999"
+                            <input v-model="telefono" v-bind="telefonoProps" type="text" placeholder="999 999 999"
                                 class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500" />
                         </div>
 
                         <!-- Correo -->
                         <div>
                             <label class="block text-sm font-bold text-slate-700 mb-2">Correo Institucional</label>
-                            <input v-model="correo" type="email" placeholder="usuario@drehco.gob.pe"
-                                class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500" />
+                            <input v-model="correo" v-bind="correoProps" type="email"
+                                placeholder="usuario@drehco.gob.pe"
+                                class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                                :class="formErrors.correo ? 'border-red-400' : 'border-slate-200'" />
+                            <p v-if="formErrors.correo" class="mt-1 text-sm text-red-600">{{ formErrors.correo }}</p>
                         </div>
 
                         <!-- Fecha Ingreso -->
                         <div>
                             <label class="block text-sm font-bold text-slate-700 mb-2">Fecha de Ingreso</label>
-                            <input v-model="fechaIngreso" type="date"
+                            <input v-model="fechaIngreso" v-bind="fechaIngresoProps" type="date"
                                 class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500" />
                         </div>
 
                         <!-- Estado (Solo edición) -->
                         <div v-if="isEditing">
                             <label class="block text-sm font-bold text-slate-700 mb-2">Estado del Personal</label>
-                            <select v-model="estado"
+                            <select v-model="estado" v-bind="estadoProps"
                                 class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white">
                                 <option value="ACTIVO">Activo</option>
                                 <option value="INACTIVO">Inactivo</option>
@@ -165,14 +170,15 @@
                     <!-- Dirección -->
                     <div>
                         <label class="block text-sm font-bold text-slate-700 mb-2">Dirección de Domicilio</label>
-                        <input v-model="direccion" type="text" placeholder="Jr. / Av. ..."
+                        <input v-model="direccion" v-bind="direccionProps" type="text" placeholder="Jr. / Av. ..."
                             class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500" />
                     </div>
 
                     <!-- Observaciones -->
                     <div>
                         <label class="block text-sm font-bold text-slate-700 mb-2">Observaciones</label>
-                        <textarea v-model="observaciones" rows="3" placeholder="Información adicional relevante..."
+                        <textarea v-model="observaciones" v-bind="observacionesProps" rows="3"
+                            placeholder="Información adicional relevante..."
                             class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 resize-none"></textarea>
                     </div>
 
@@ -239,21 +245,21 @@ const employeeSchema = toTypedSchema(
         apellidos: yup.string()
             .required('Los apellidos son obligatorios')
             .min(2, 'Debe tener al menos 2 caracteres'),
-        fecha_nacimiento: yup.string().nullable(),
-        genero: yup.string().nullable(),
-        direccion: yup.string().nullable(),
-        telefono: yup.string().nullable(),
-        correo: yup.string().email('Ingrese un correo válido').nullable(),
+        fecha_nacimiento: yup.string().transform((value) => value || null).nullable(),
+        genero: yup.string().transform((value) => value || null).nullable(),
+        direccion: yup.string().transform((value) => value || null).nullable(),
+        telefono: yup.string().transform((value) => value || null).nullable(),
+        correo: yup.string().transform((value) => value || null).email('Ingrese un correo válido').nullable(),
         cargo: yup.string().required('Debe seleccionar un cargo'),
         area: yup.string().required('Debe seleccionar un área'),
-        fecha_ingreso: yup.string().nullable(),
+        fecha_ingreso: yup.string().transform((value) => value || null).nullable(),
         tipo_contrato: yup.string().required('Debe seleccionar un tipo de contrato'),
-        estado: yup.string().nullable(),
-        observaciones: yup.string().nullable(),
+        estado: yup.string().transform((value) => value || null).nullable(),
+        observaciones: yup.string().transform((value) => value || null).nullable(),
     })
 );
 
-const { errors: formErrors, defineField, handleSubmit: validateForm, setValues } = useForm({
+const { errors: formErrors, defineField, handleSubmit: validateForm, setValues, resetForm } = useForm({
     validationSchema: employeeSchema,
     initialValues: {
         dni: '',
@@ -273,20 +279,20 @@ const { errors: formErrors, defineField, handleSubmit: validateForm, setValues }
     }
 });
 
-const [dni] = defineField('dni');
-const [nombres] = defineField('nombres');
-const [apellidos] = defineField('apellidos');
-const [fechaNacimiento] = defineField('fecha_nacimiento');
-const [genero] = defineField('genero');
-const [direccion] = defineField('direccion');
-const [telefono] = defineField('telefono');
-const [correo] = defineField('correo');
-const [cargo] = defineField('cargo');
-const [area] = defineField('area');
-const [fechaIngreso] = defineField('fecha_ingreso');
-const [tipoContrato] = defineField('tipo_contrato');
-const [estado] = defineField('estado');
-const [observaciones] = defineField('observaciones');
+const [dni, dniProps] = defineField('dni');
+const [nombres, nombresProps] = defineField('nombres');
+const [apellidos, apellidosProps] = defineField('apellidos');
+const [fechaNacimiento, fechaNacimientoProps] = defineField('fecha_nacimiento');
+const [genero, generoProps] = defineField('genero');
+const [direccion, direccionProps] = defineField('direccion');
+const [telefono, telefonoProps] = defineField('telefono');
+const [correo, correoProps] = defineField('correo');
+const [cargo, cargoProps] = defineField('cargo');
+const [area, areaProps] = defineField('area');
+const [fechaIngreso, fechaIngresoProps] = defineField('fecha_ingreso');
+const [tipoContrato, tipoContratoProps] = defineField('tipo_contrato');
+const [estado, estadoProps] = defineField('estado');
+const [observaciones, observacionesProps] = defineField('observaciones');
 
 watch(() => props.employee, (emp) => {
     if (emp && props.isEditing) {
@@ -307,11 +313,7 @@ watch(() => props.employee, (emp) => {
             observaciones: emp.observaciones || '',
         });
     } else {
-        setValues({
-            dni: '', nombres: '', apellidos: '', fecha_nacimiento: '', genero: '',
-            direccion: '', telefono: '', correo: '', cargo: '', area: '',
-            fecha_ingreso: '', tipo_contrato: 'Nombrado', estado: 'ACTIVO', observaciones: '',
-        });
+        resetForm();
     }
 }, { immediate: true });
 
