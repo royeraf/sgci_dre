@@ -12,27 +12,50 @@
                         Administra las reservas de citas realizadas por usuarios externos.
                     </p>
                 </div>
-                <div class="flex items-center gap-3">
-                    <a href="/dashboard"
-                        class="inline-flex items-center px-4 py-2.5 border border-slate-200 text-sm font-bold rounded-xl text-slate-600 bg-white hover:bg-slate-50 transition-all shadow-sm">
-                        <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                        </svg>
-                        Volver
-                    </a>
-                    <div class="hidden sm:flex items-center gap-2 text-sm text-gray-500 mr-2">
-                        <span class="relative flex h-2 w-2">
-                            <span
-                                class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                            <span class="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
-                        </span>
-                        <span class="text-xs font-bold uppercase tracking-wider">En vivo</span>
+                <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                    <!-- Left Group: Navigation -->
+                    <div class="flex items-center gap-2">
+                        <a href="/dashboard"
+                            class="inline-flex items-center justify-center px-4 py-2.5 border border-slate-200 text-sm font-bold rounded-xl text-slate-600 bg-white hover:bg-slate-50 transition-all shadow-sm">
+                            <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                            </svg>
+                            Volver
+                        </a>
+                        <a href="/citas/portal" target="_blank"
+                            class="inline-flex items-center justify-center px-4 py-2.5 border border-blue-200 text-sm font-bold rounded-xl text-blue-600 bg-blue-50 hover:bg-blue-100 transition-all shadow-sm">
+                            <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+                            </svg>
+                            Portal Público
+                            <svg class="w-3 h-3 ml-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                            </svg>
+                        </a>
                     </div>
-                    <button @click="fetchCitas(true)"
-                        class="inline-flex items-center px-6 py-3 border border-transparent text-sm font-bold rounded-xl shadow-lg shadow-pink-600/20 text-white bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-700 hover:to-rose-700 focus:outline-none focus:ring-4 focus:ring-pink-300 transition-all duration-300 transform hover:scale-105 active:scale-95">
-                        <RefreshCw class="h-5 w-5 mr-2" :class="{ 'animate-spin': loading }" />
-                        Actualizar
-                    </button>
+
+                    <!-- Right Group: Status & Action -->
+                    <div class="flex items-center gap-2.5">
+                        <!-- Live Indicator -->
+                        <div class="flex items-center gap-2 px-3 py-2 bg-green-50 border border-green-200 rounded-xl">
+                            <span class="relative flex h-2 w-2">
+                                <span
+                                    class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                                <span class="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                            </span>
+                            <span class="text-xs font-bold uppercase tracking-wider text-green-700">En vivo</span>
+                        </div>
+
+                        <!-- Refresh Button -->
+                        <button @click="fetchCitas(true)"
+                            class="inline-flex items-center justify-center px-5 py-2.5 border border-transparent text-sm font-bold rounded-xl shadow-lg shadow-pink-600/20 text-white bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-700 hover:to-rose-700 focus:outline-none focus:ring-4 focus:ring-pink-300 transition-all duration-300 transform hover:scale-105 active:scale-95">
+                            <RefreshCw class="h-4 w-4 mr-2" :class="{ 'animate-spin': loading }" />
+                            Actualizar
+                        </button>
+                    </div>
                 </div>
             </div>
 

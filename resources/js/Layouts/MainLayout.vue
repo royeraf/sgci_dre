@@ -39,7 +39,7 @@
                 </div>
                 <nav class="space-y-1.5" :class="isCollapsed ? 'px-2' : 'px-4'">
                     <!-- Dashboard Link -->
-                    <Link href="/dashboard"
+                    <Link v-if="hasModulePermission('dashboard', 'ver')" href="/dashboard"
                         class="group flex items-center text-sm font-semibold rounded-xl transition-all duration-200 ease-in-out relative"
                         :class="[
                             $page.component === 'Dashboard' ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/30 ring-1 ring-blue-400/50' : 'text-slate-300 hover:bg-slate-800/80 hover:text-white',
@@ -147,7 +147,7 @@
                     </Link>
 
                     <!-- Bienestar Social - Licencias -->
-                    <Link href="/bienestar"
+                    <Link v-if="hasModulePermission('bienestar', 'ver')" href="/bienestar"
                         class="group flex items-center text-sm font-semibold rounded-xl transition-all duration-200 ease-in-out relative"
                         :class="[
                             $page.component.startsWith('Bienestar/') ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-lg shadow-purple-500/30 ring-1 ring-purple-400/50' : 'text-slate-300 hover:bg-slate-800/80 hover:text-white',
@@ -181,17 +181,44 @@
                         <span v-if="!isCollapsed" class="whitespace-nowrap transition-opacity duration-200">Recursos
                             Humanos</span>
                     </Link>
+
+                    <!-- Divider for Admin Section -->
+                    <div v-if="isAdmin()" class="my-4 transition-opacity duration-200"
+                        :class="isCollapsed ? 'px-0' : 'px-3'">
+                        <div class="border-t border-slate-700/50"></div>
+                        <p v-if="!isCollapsed"
+                            class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-4 px-3">
+                            Administración</p>
+                    </div>
+
+                    <!-- User Management (Admin only) -->
+                    <Link v-if="isAdmin()" href="/users"
+                        class="group flex items-center text-sm font-semibold rounded-xl transition-all duration-200 ease-in-out relative"
+                        :class="[
+                            $page.component.startsWith('Users/') ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg shadow-indigo-500/30 ring-1 ring-indigo-400/50' : 'text-slate-300 hover:bg-slate-800/80 hover:text-white',
+                            isCollapsed ? 'justify-center py-3 px-0' : 'px-4 py-3.5'
+                        ]" :title="isCollapsed ? 'Gestión de Usuarios' : ''">
+                        <div class="rounded-lg transition-colors duration-200 ease-in-out flex-shrink-0" :class="[
+                            $page.component.startsWith('Users/') ? 'bg-white/20' : 'bg-slate-700/80 group-hover:bg-slate-600',
+                            isCollapsed ? 'p-2' : 'mr-4 p-2'
+                        ]">
+                            <Shield class="h-5 w-5"
+                                :class="$page.component.startsWith('Users/') ? 'text-white' : 'text-slate-400 group-hover:text-white'" />
+                        </div>
+                        <span v-if="!isCollapsed" class="whitespace-nowrap transition-opacity duration-200">Gestión de
+                            Usuarios</span>
+                    </Link>
                 </nav>
             </div>
 
             <!-- User Profile - Fixed at bottom -->
             <div class="flex-shrink-0 border-t border-slate-700/50 p-4 bg-gradient-to-t from-slate-900 to-slate-800/80 backdrop-blur-sm transition-all duration-300"
                 :class="isCollapsed ? 'items-center justify-center p-2' : 'p-4'">
-                <div class="flex items-center gap-3 rounded-xl bg-slate-800/50 hover:bg-slate-700/50 transition-colors duration-200"
-                    :class="isCollapsed ? 'p-2 justify-center' : 'p-3'">
+                <div class="flex items-center gap-3 rounded-xl bg-slate-800/50 hover:bg-slate-700/50 transition-colors duration-200 cursor-pointer group"
+                    :class="isCollapsed ? 'p-2 justify-center' : 'p-3'" @click="showProfileModal = true">
                     <div class="flex-shrink-0">
                         <div
-                            class="h-11 w-11 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-sm font-bold text-white shadow-lg ring-2 ring-blue-400/30 uppercase">
+                            class="h-11 w-11 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-sm font-bold text-white shadow-lg ring-2 ring-blue-400/30 uppercase group-hover:ring-blue-300/50 transition-all">
                             {{ $page.props.auth?.user?.name?.charAt(0) || 'U' }}
                         </div>
                     </div>
@@ -203,7 +230,7 @@
                             {{ $page.props.auth?.user?.customRole?.nombre || 'Usuario' }}
                         </p>
                     </div>
-                    <button @click="logout"
+                    <button @click.stop="logout"
                         class="flex-shrink-0 bg-slate-700/80 rounded-lg text-slate-400 hover:text-white hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 transition-all duration-200 ease-in-out"
                         :class="isCollapsed ? 'hidden group-hover:block absolute left-full ml-2 p-2' : 'p-2.5'"
                         title="Cerrar Sesión">
@@ -238,35 +265,54 @@
                 <div
                     class="relative flex-1 flex flex-col max-w-xs w-full bg-gradient-to-b from-slate-900 to-slate-800 shadow-2xl">
                     <div class="pt-20 pb-4 px-4 overflow-y-auto h-full space-y-2">
-                        <Link href="/dashboard" @click="mobileMenuOpen = false"
+                        <Link v-if="hasModulePermission('dashboard', 'ver')" href="/dashboard"
+                            @click="mobileMenuOpen = false"
                             class="flex items-center gap-3 px-4 py-3 rounded-xl text-base font-semibold transition-all duration-200"
                             :class="$page.component === 'Dashboard' ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg' : 'text-slate-300 hover:bg-slate-700/50 hover:text-white'">
                             <LayoutDashboard class="h-5 w-5" />
                             Dashboard
                         </Link>
-                        <Link href="/occurrences" @click="mobileMenuOpen = false"
+                        <Link v-if="hasModulePermission('vigilancia', 'ver')" href="/occurrences"
+                            @click="mobileMenuOpen = false"
                             class="flex items-center gap-3 px-4 py-3 rounded-xl text-base font-semibold transition-all duration-200"
                             :class="$page.component.startsWith('Occurrences/') ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg' : 'text-slate-300 hover:bg-slate-700/50 hover:text-white'">
                             <ClipboardList class="h-5 w-5" />
                             Libro de Ocurrencias
                         </Link>
-                        <Link href="/entry-exits" @click="mobileMenuOpen = false"
+                        <Link v-if="hasModulePermission('vigilancia', 'ver')" href="/entry-exits"
+                            @click="mobileMenuOpen = false"
                             class="flex items-center gap-3 px-4 py-3 rounded-xl text-base font-semibold transition-all duration-200"
                             :class="$page.component.startsWith('EntryExits/') ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-lg' : 'text-slate-300 hover:bg-slate-700/50 hover:text-white'">
                             <UserCheck class="h-5 w-5" />
                             Control de Personal
                         </Link>
-                        <Link href="/visitors" @click="mobileMenuOpen = false"
+                        <Link v-if="hasModulePermission('vigilancia', 'ver')" href="/visitors"
+                            @click="mobileMenuOpen = false"
                             class="flex items-center gap-3 px-4 py-3 rounded-xl text-base font-semibold transition-all duration-200"
                             :class="$page.component.startsWith('Visitors/') ? 'bg-gradient-to-r from-purple-600 to-fuchsia-600 text-white shadow-lg' : 'text-slate-300 hover:bg-slate-700/50 hover:text-white'">
                             <Users class="h-5 w-5" />
                             Visitas Externas
                         </Link>
-                        <Link href="/vehicles" @click="mobileMenuOpen = false"
+                        <Link v-if="hasModulePermission('vigilancia', 'ver')" href="/vehicles"
+                            @click="mobileMenuOpen = false"
                             class="flex items-center gap-3 px-4 py-3 rounded-xl text-base font-semibold transition-all duration-200"
                             :class="$page.component.startsWith('Vehicles/') ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-lg' : 'text-slate-300 hover:bg-slate-700/50 hover:text-white'">
                             <Car class="h-5 w-5" />
                             Control Vehicular
+                        </Link>
+                        <Link v-if="hasModulePermission('secretaria', 'ver')" href="/citas"
+                            @click="mobileMenuOpen = false"
+                            class="flex items-center gap-3 px-4 py-3 rounded-xl text-base font-semibold transition-all duration-200"
+                            :class="$page.component.startsWith('Appointments/') ? 'bg-gradient-to-r from-pink-600 to-rose-600 text-white shadow-lg' : 'text-slate-300 hover:bg-slate-700/50 hover:text-white'">
+                            <Calendar class="h-5 w-5" />
+                            Gestión de Citas
+                        </Link>
+                        <Link v-if="hasModulePermission('bienestar', 'ver')" href="/bienestar"
+                            @click="mobileMenuOpen = false"
+                            class="flex items-center gap-3 px-4 py-3 rounded-xl text-base font-semibold transition-all duration-200"
+                            :class="$page.component.startsWith('Bienestar/') ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-lg' : 'text-slate-300 hover:bg-slate-700/50 hover:text-white'">
+                            <Heart class="h-5 w-5" />
+                            Bienestar Social
                         </Link>
                         <Link v-if="hasModulePermission('recursos_humanos', 'ver')" href="/hr"
                             @click="mobileMenuOpen = false"
@@ -274,6 +320,20 @@
                             :class="$page.component.startsWith('HR/') ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-lg' : 'text-slate-300 hover:bg-slate-700/50 hover:text-white'">
                             <Users class="h-5 w-5" />
                             Recursos Humanos
+                        </Link>
+
+                        <!-- Admin Section Divider -->
+                        <div v-if="isAdmin()" class="my-3 border-t border-slate-700 pt-3">
+                            <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest px-4 mb-2">
+                                Administración</p>
+                        </div>
+
+                        <!-- User Management (Admin only) -->
+                        <Link v-if="isAdmin()" href="/users" @click="mobileMenuOpen = false"
+                            class="flex items-center gap-3 px-4 py-3 rounded-xl text-base font-semibold transition-all duration-200"
+                            :class="$page.component.startsWith('Users/') ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg' : 'text-slate-300 hover:bg-slate-700/50 hover:text-white'">
+                            <Shield class="h-5 w-5" />
+                            Gestión de Usuarios
                         </Link>
 
                         <button @click="logout"
@@ -292,6 +352,9 @@
                 <slot />
             </div>
         </main>
+
+        <!-- User Profile Modal -->
+        <UserProfileModal :show="showProfileModal" @close="showProfileModal = false" />
     </div>
 </template>
 
@@ -314,13 +377,16 @@ import {
     LogOut,
     Menu,
     Bell,
-    Heart
+    Heart,
+    Shield
 } from 'lucide-vue-next';
+import UserProfileModal from '@/Components/Profile/UserProfileModal.vue';
 
 const UserGroup = Users;
 
 const isCollapsed = ref(false);
 const mobileMenuOpen = ref(false);
+const showProfileModal = ref(false);
 const page = usePage();
 const pendingAppointmentsCount = ref(0);
 
@@ -373,14 +439,32 @@ const hasModulePermission = (module, action = 'ver') => {
     // Admin has access to everything
     if (user.rol_id === 'ROL001' || user.rol_id === '1') return true;
 
+    // Special case for Jefe de Bienestar Social (ROL008)
+    // Shows: Dashboard + Bienestar Social only
+    if (user.rol_id === 'ROL008' || user.customRole?.codigo === 'jefe_bienestar') {
+        return module === 'bienestar' || module === 'dashboard';
+    }
+
+    // Special case for Jefe de RRHH (ROL009)
+    // Shows: Dashboard + Recursos Humanos only
+    if (user.rol_id === 'ROL009' || user.customRole?.codigo === 'jefe_rrhh') {
+        return module === 'recursos_humanos' || module === 'dashboard';
+    }
+
+    // Special case for Gestor de Citas (ROL010)
+    // Shows: Dashboard + Gestión de Citas only
+    if (user.rol_id === 'ROL010' || user.customRole?.codigo === 'gestor_citas') {
+        return module === 'secretaria' || module === 'dashboard';
+    }
+
     const permisos = user.customRole?.permisos_json || {};
 
     // Mapping sidebar modules to database permission keys
     const mapping = {
-        'dashboard': true, // Everyone has dashboard
-        'vigilancia': ['ocurrencias', 'visitas', 'vehiculos'],
-        'secretaria': ['visitas'],
-        'recursos_humanos': ['personal'],
+        'dashboard': true, // Everyone else has dashboard
+        'vigilancia': ['ocurrencias', 'personal', 'visitas', 'vehiculos'],
+        'secretaria': ['citas'],
+        'recursos_humanos': ['recursos_humanos', 'vacaciones', 'areas', 'cargos'],
         'bienestar': ['licencias'],
     };
 
@@ -390,6 +474,14 @@ const hasModulePermission = (module, action = 'ver') => {
     if (!dbKeys) return false;
 
     return dbKeys.some(key => permisos[key] !== undefined);
+};
+
+const isAdmin = () => {
+    const user = page.props.auth?.user;
+    if (!user) return false;
+
+    // Check if user has admin role using customRole nivel_acceso or specific role codes
+    return user.customRole && (user.customRole.nivel_acceso >= 9 || user.customRole.codigo === 'ADMIN');
 };
 
 // Real-time Appointment Notifications using WebSockets (Echo/Reverb)

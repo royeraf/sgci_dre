@@ -51,7 +51,7 @@
         <h2 class="text-2xl font-extrabold text-slate-800 tracking-tight">Accesos Rápidos</h2>
       </div>
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Link href="/occurrences"
+        <Link v-if="hasModulePermission('vigilancia')" href="/occurrences"
           class="flex flex-col items-center p-6 bg-white rounded-2xl hover:bg-blue-50/50 border-2 border-slate-100 hover:border-blue-200 transition-all group shadow-sm hover:shadow-md">
           <div
             class="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center mb-4 shadow-lg shadow-blue-600/30 group-hover:scale-110 group-hover:-rotate-3 transition-all duration-300">
@@ -61,7 +61,7 @@
           <span class="text-xs text-slate-500 mt-1 font-medium text-center">Registrar incidentes y novedades</span>
         </Link>
 
-        <Link href="/entry-exits"
+        <Link v-if="hasModulePermission('vigilancia')" href="/entry-exits"
           class="flex flex-col items-center p-6 bg-white rounded-2xl hover:bg-emerald-50/50 border-2 border-slate-100 hover:border-emerald-200 transition-all group shadow-sm hover:shadow-md">
           <div
             class="w-16 h-16 bg-emerald-600 rounded-2xl flex items-center justify-center mb-4 shadow-lg shadow-emerald-600/30 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300">
@@ -71,7 +71,7 @@
           <span class="text-xs text-slate-500 mt-1 font-medium text-center">Entradas y salidas (Papeletas)</span>
         </Link>
 
-        <Link href="/visitors"
+        <Link v-if="hasModulePermission('vigilancia')" href="/visitors"
           class="flex flex-col items-center p-6 bg-white rounded-2xl hover:bg-purple-50/50 border-2 border-slate-100 hover:border-purple-200 transition-all group shadow-sm hover:shadow-md">
           <div
             class="w-16 h-16 bg-purple-600 rounded-2xl flex items-center justify-center mb-4 shadow-lg shadow-purple-600/30 group-hover:scale-110 group-hover:-rotate-3 transition-all duration-300">
@@ -81,7 +81,7 @@
           <span class="text-xs text-slate-500 mt-1 font-medium text-center">Registro de ciudadanos visitantes</span>
         </Link>
 
-        <Link href="/vehicles"
+        <Link v-if="hasModulePermission('vigilancia')" href="/vehicles"
           class="flex flex-col items-center p-6 bg-white rounded-2xl hover:bg-cyan-50/50 border-2 border-slate-100 hover:border-cyan-200 transition-all group shadow-sm hover:shadow-md">
           <div
             class="w-16 h-16 bg-cyan-600 rounded-2xl flex items-center justify-center mb-4 shadow-lg shadow-cyan-600/30 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300">
@@ -90,11 +90,41 @@
           <span class="text-base font-bold text-slate-900">Control Vehicular</span>
           <span class="text-xs text-slate-500 mt-1 font-medium text-center">Salida y retorno de unidades</span>
         </Link>
+
+        <Link v-if="hasModulePermission('secretaria')" href="/citas"
+          class="flex flex-col items-center p-6 bg-white rounded-2xl hover:bg-pink-50/50 border-2 border-slate-100 hover:border-pink-200 transition-all group shadow-sm hover:shadow-md">
+          <div
+            class="w-16 h-16 bg-pink-600 rounded-2xl flex items-center justify-center mb-4 shadow-lg shadow-pink-600/30 group-hover:scale-110 group-hover:-rotate-3 transition-all duration-300">
+            <Calendar class="w-8 h-8 text-white" />
+          </div>
+          <span class="text-base font-bold text-slate-900">Gestión de Citas</span>
+          <span class="text-xs text-slate-500 mt-1 font-medium text-center">Administrar solicitudes de citas</span>
+        </Link>
+
+        <Link v-if="hasModulePermission('bienestar')" href="/bienestar"
+          class="flex flex-col items-center p-6 bg-white rounded-2xl hover:bg-purple-50/50 border-2 border-slate-100 hover:border-purple-200 transition-all group shadow-sm hover:shadow-md">
+          <div
+            class="w-16 h-16 bg-purple-600 rounded-2xl flex items-center justify-center mb-4 shadow-lg shadow-purple-600/30 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300">
+            <Heart class="w-8 h-8 text-white" />
+          </div>
+          <span class="text-base font-bold text-slate-900">Bienestar Social</span>
+          <span class="text-xs text-slate-500 mt-1 font-medium text-center">Gestión de licencias y permisos</span>
+        </Link>
+
+        <Link v-if="hasModulePermission('recursos_humanos')" href="/hr"
+          class="flex flex-col items-center p-6 bg-white rounded-2xl hover:bg-teal-50/50 border-2 border-slate-100 hover:border-teal-200 transition-all group shadow-sm hover:shadow-md">
+          <div
+            class="w-16 h-16 bg-teal-600 rounded-2xl flex items-center justify-center mb-4 shadow-lg shadow-teal-600/30 group-hover:scale-110 group-hover:-rotate-3 transition-all duration-300">
+            <UserCheck class="w-8 h-8 text-white" />
+          </div>
+          <span class="text-base font-bold text-slate-900">Recursos Humanos</span>
+          <span class="text-xs text-slate-500 mt-1 font-medium text-center">Empleados, vacaciones y áreas</span>
+        </Link>
       </div>
     </div>
 
     <!-- Section: Libro de Ocurrencias Stats -->
-    <div class="mb-10">
+    <div v-if="hasModulePermission('vigilancia')" class="mb-10">
       <div class="flex items-center gap-3 mb-6">
         <div class="bg-blue-100 rounded-xl p-2.5">
           <ClipboardList class="w-6 h-6 text-blue-600" />
@@ -157,7 +187,7 @@
     </div>
 
     <!-- Section: Control de Personal Stats -->
-    <div class="mb-10">
+    <div v-if="hasModulePermission('vigilancia')" class="mb-10">
       <div class="flex items-center gap-3 mb-6">
         <div class="bg-emerald-100 rounded-xl p-2.5">
           <UserCheck class="w-6 h-6 text-emerald-600" />
@@ -206,7 +236,7 @@
       </div>
     </div>
     <!-- Section: Visitantes Externos Stats -->
-    <div class="mb-10">
+    <div v-if="hasModulePermission('vigilancia')" class="mb-10">
       <div class="flex items-center gap-3 mb-6">
         <div class="bg-purple-100 rounded-xl p-2.5">
           <Users class="w-6 h-6 text-purple-600" />
@@ -286,7 +316,8 @@ import {
   Zap,
   Sun,
   Car,
-  Calendar
+  Calendar,
+  Heart
 } from 'lucide-vue-next';
 
 const props = defineProps({
@@ -322,6 +353,44 @@ const currentShift = computed(() => {
   if (hour >= 14 && hour < 22) return 'Tarde';
   return 'Noche';
 });
+
+const hasModulePermission = (module, action = 'ver') => {
+  const user = page.props.auth?.user;
+  if (!user) return false;
+
+  // Admin has access to everything
+  if (user.rol_id === 'ROL001' || user.rol_id === '1') return true;
+
+  // Special case for Jefe de Bienestar Social (ROL008)
+  if (user.rol_id === 'ROL008' || user.customRole?.codigo === 'jefe_bienestar') {
+    return module === 'bienestar';
+  }
+
+  // Special case for Jefe de RRHH (ROL009)
+  if (user.rol_id === 'ROL009' || user.customRole?.codigo === 'jefe_rrhh') {
+    return module === 'recursos_humanos';
+  }
+
+  // Special case for Gestor de Citas (ROL010)
+  if (user.rol_id === 'ROL010' || user.customRole?.codigo === 'gestor_citas') {
+    return module === 'secretaria';
+  }
+
+  const permisos = user.customRole?.permisos_json || {};
+
+  // Mapping dashboard modules to database permission keys
+  const mapping = {
+    'vigilancia': ['ocurrencias', 'personal', 'visitas', 'vehiculos'],
+    'secretaria': ['citas'],
+    'recursos_humanos': ['recursos_humanos', 'vacaciones', 'areas', 'cargos'],
+    'bienestar': ['licencias'],
+  };
+
+  const dbKeys = mapping[module];
+  if (!dbKeys) return false;
+
+  return dbKeys.some(key => permisos[key] !== undefined);
+};
 
 const logout = () => {
   router.post('/logout');

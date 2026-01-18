@@ -64,6 +64,19 @@ class AuthController extends Controller
         );
 
         $request->session()->regenerate();
+        
+        // Redirect based on role
+        if ($user->rol_id === 'ROL008') {
+            return redirect()->intended('/bienestar');
+        }
+
+        if ($user->rol_id === 'ROL009') {
+            return redirect()->intended('/hr');
+        }
+
+        if ($user->rol_id === 'ROL010') {
+            return redirect()->intended('/citas');
+        }
 
         return redirect()->intended('/dashboard');
     }
