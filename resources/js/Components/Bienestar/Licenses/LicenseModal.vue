@@ -28,7 +28,7 @@
                                 <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                     <Users class="h-4 w-4 text-slate-400" />
                                 </div>
-                                <select v-model="dni" @change="onEmployeeSelect"
+                                <select v-model="dni" v-bind="dniProps" @change="onEmployeeSelect"
                                     class="w-full pl-10 pr-8 py-2.5 border rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 bg-white transition-all font-medium appearance-none"
                                     :class="formErrors.dni ? 'border-red-400' : 'border-slate-200'">
                                     <option value="" disabled>Seleccione un empleado...</option>
@@ -46,7 +46,7 @@
                             <label class="block text-sm font-bold text-slate-700">
                                 Tipo de Licencia <span class="text-red-500">*</span>
                             </label>
-                            <select v-model="tipoLicencia"
+                            <select v-model="tipoLicencia" v-bind="tipoLicenciaProps"
                                 class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 bg-white transition-all font-medium"
                                 :class="formErrors.tipo_licencia ? 'border-red-400' : 'border-slate-200'">
                                 <option value="" disabled>Seleccione un tipo</option>
@@ -64,12 +64,12 @@
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6" v-if="employeeFound">
                         <div class="space-y-2">
                             <label class="block text-sm font-bold text-slate-700">Nombres</label>
-                            <input v-model="nombres" type="text" readOnly
+                            <input v-model="nombres" v-bind="nombresProps" type="text" readOnly
                                 class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-600 font-medium cursor-not-allowed">
                         </div>
                         <div class="space-y-2">
                             <label class="block text-sm font-bold text-slate-700">Apellidos</label>
-                            <input v-model="apellidos" type="text" readOnly
+                            <input v-model="apellidos" v-bind="apellidosProps" type="text" readOnly
                                 class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-600 font-medium cursor-not-allowed">
                         </div>
                     </div>
@@ -79,7 +79,7 @@
                             <label class="block text-sm font-bold text-slate-700">
                                 Fecha Inicio <span class="text-red-500">*</span>
                             </label>
-                            <input v-model="fechaInicio" type="date"
+                            <input v-model="fechaInicio" v-bind="fechaInicioProps" type="date"
                                 class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all font-medium"
                                 :class="formErrors.fecha_inicio ? 'border-red-400' : 'border-slate-200'">
                             <p v-if="formErrors.fecha_inicio" class="text-sm text-red-600">{{ formErrors.fecha_inicio }}
@@ -89,7 +89,7 @@
                             <label class="block text-sm font-bold text-slate-700">
                                 Fecha Fin <span class="text-red-500">*</span>
                             </label>
-                            <input v-model="fechaFin" type="date"
+                            <input v-model="fechaFin" v-bind="fechaFinProps" type="date"
                                 class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all font-medium"
                                 :class="formErrors.fecha_fin ? 'border-red-400' : 'border-slate-200'">
                             <p v-if="formErrors.fecha_fin" class="text-sm text-red-600">{{ formErrors.fecha_fin }}</p>
@@ -128,7 +128,7 @@
                         <label class="block text-sm font-bold text-slate-700">
                             Motivo / Justificación
                         </label>
-                        <textarea v-model="motivo" rows="3"
+                        <textarea v-model="motivo" v-bind="motivoProps" rows="3"
                             class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all font-medium resize-none"
                             placeholder="Detalle el motivo institucional de la licencia..."></textarea>
                     </div>
@@ -205,13 +205,13 @@ const { errors: formErrors, defineField, handleSubmit: validateForm, resetForm, 
     }
 });
 
-const [dni] = defineField('dni');
-const [nombres] = defineField('nombres');
-const [apellidos] = defineField('apellidos');
-const [tipoLicencia] = defineField('tipo_licencia');
-const [fechaInicio] = defineField('fecha_inicio');
-const [fechaFin] = defineField('fecha_fin');
-const [motivo] = defineField('motivo');
+const [dni, dniProps] = defineField('dni');
+const [nombres, nombresProps] = defineField('nombres');
+const [apellidos, apellidosProps] = defineField('apellidos');
+const [tipoLicencia, tipoLicenciaProps] = defineField('tipo_licencia');
+const [fechaInicio, fechaInicioProps] = defineField('fecha_inicio');
+const [fechaFin, fechaFinProps] = defineField('fecha_fin');
+const [motivo, motivoProps] = defineField('motivo');
 
 const calculatedDays = computed(() => {
     if (!values.fecha_inicio || !values.fecha_fin) return 0;

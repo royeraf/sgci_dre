@@ -58,8 +58,8 @@
                             <label class="block text-sm font-bold text-slate-700 mb-2">
                                 DNI <span class="text-red-500">*</span>
                             </label>
-                            <input type="text" v-model="form.dni" maxlength="8" placeholder="12345678"
-                                @input="form.dni = $event.target.value.replace(/\D/g, '')"
+                            <input type="text" v-model="dni" v-bind="dniProps" maxlength="8" placeholder="12345678"
+                                @input="dni = $event.target.value.replace(/\D/g, '')"
                                 class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
                                 :class="formErrors.dni ? 'border-red-400' : 'border-slate-200'" />
                             <p v-if="formErrors.dni" class="mt-1 text-sm text-red-600">{{ formErrors.dni }}</p>
@@ -70,7 +70,7 @@
                             <label class="block text-sm font-bold text-slate-700 mb-2">
                                 Título
                             </label>
-                            <input type="text" v-model="form.titulo" maxlength="20" placeholder="Ing., Dr., Lic., etc."
+                            <input type="text" v-model="titulo" v-bind="tituloProps" maxlength="20" placeholder="Ing., Dr., Lic., etc."
                                 class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors" />
                         </div>
 
@@ -79,8 +79,8 @@
                             <label class="block text-sm font-bold text-slate-700 mb-2">
                                 Nombre <span class="text-red-500">*</span>
                             </label>
-                            <input type="text" v-model="form.name" placeholder="JUAN"
-                                @input="form.name = $event.target.value.toUpperCase()"
+                            <input type="text" v-model="name" v-bind="nameProps" placeholder="JUAN"
+                                @input="name = $event.target.value.toUpperCase()"
                                 class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
                                 :class="formErrors.name ? 'border-red-400' : 'border-slate-200'" />
                             <p v-if="formErrors.name" class="mt-1 text-sm text-red-600">{{ formErrors.name }}</p>
@@ -91,8 +91,8 @@
                             <label class="block text-sm font-bold text-slate-700 mb-2">
                                 Apellidos <span class="text-red-500">*</span>
                             </label>
-                            <input type="text" v-model="form.apellidos" placeholder="PÉREZ GARCÍA"
-                                @input="form.apellidos = $event.target.value.toUpperCase()"
+                            <input type="text" v-model="apellidos" v-bind="apellidosProps" placeholder="PÉREZ GARCÍA"
+                                @input="apellidos = $event.target.value.toUpperCase()"
                                 class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
                                 :class="formErrors.apellidos ? 'border-red-400' : 'border-slate-200'" />
                             <p v-if="formErrors.apellidos" class="mt-1 text-sm text-red-600">{{ formErrors.apellidos }}
@@ -104,7 +104,7 @@
                             <label class="block text-sm font-bold text-slate-700 mb-2">
                                 Email <span class="text-red-500">*</span>
                             </label>
-                            <input type="email" v-model="form.email" placeholder="usuario@ejemplo.com"
+                            <input type="email" v-model="email" v-bind="emailProps" placeholder="usuario@ejemplo.com"
                                 class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
                                 :class="formErrors.email ? 'border-red-400' : 'border-slate-200'" />
                             <p v-if="formErrors.email" class="mt-1 text-sm text-red-600">{{ formErrors.email }}</p>
@@ -115,8 +115,8 @@
                             <label class="block text-sm font-bold text-slate-700 mb-2">
                                 Teléfono
                             </label>
-                            <input type="text" v-model="form.telefono" placeholder="999888777" maxlength="9"
-                                @input="form.telefono = $event.target.value.replace(/\D/g, '')"
+                            <input type="text" v-model="telefono" v-bind="telefonoProps" placeholder="999888777" maxlength="9"
+                                @input="telefono = $event.target.value.replace(/\D/g, '')"
                                 class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
                                 :class="formErrors.telefono ? 'border-red-400' : 'border-slate-200'" />
                             <p v-if="formErrors.telefono" class="mt-1 text-sm text-red-600">{{ formErrors.telefono }}
@@ -128,7 +128,7 @@
                             <label class="block text-sm font-bold text-slate-700 mb-2">
                                 Cargo
                             </label>
-                            <select v-model="form.cargo"
+                            <select v-model="cargo" v-bind="cargoProps"
                                 class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors">
                                 <option value="">Seleccionar cargo...</option>
                                 <option v-for="position in positions" :key="position.id" :value="position.nombre">
@@ -142,11 +142,11 @@
                             <label class="block text-sm font-bold text-slate-700 mb-2">
                                 Área
                             </label>
-                            <select v-model="form.area"
+                            <select v-model="area" v-bind="areaProps"
                                 class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors">
                                 <option value="">Seleccionar área...</option>
-                                <option v-for="area in areas" :key="area.id" :value="area.nombre">
-                                    {{ area.nombre }}
+                                <option v-for="a in areas" :key="a.id" :value="a.nombre">
+                                    {{ a.nombre }}
                                 </option>
                             </select>
                         </div>
@@ -156,7 +156,7 @@
                             <label class="block text-sm font-bold text-slate-700 mb-2">
                                 Rol <span class="text-red-500">*</span>
                             </label>
-                            <select v-model="form.rol_id"
+                            <select v-model="rolId" v-bind="rolIdProps"
                                 class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
                                 :class="formErrors.rol_id ? 'border-red-400' : 'border-slate-200'">
                                 <option value="">Seleccionar rol...</option>
@@ -173,7 +173,7 @@
                                 Estado
                             </label>
                             <div class="flex items-center h-10">
-                                <input type="checkbox" v-model="form.is_active" id="is_active"
+                                <input type="checkbox" v-model="isActive" v-bind="isActiveProps" id="is_active"
                                     class="w-4 h-4 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500" />
                                 <label for="is_active" class="ml-2 text-sm text-slate-700">
                                     Usuario activo
@@ -195,7 +195,7 @@
                                     Contraseña <span class="text-red-500">*</span>
                                 </label>
                                 <div class="relative">
-                                    <input :type="showPassword ? 'text' : 'password'" v-model="form.password"
+                                    <input :type="showPassword ? 'text' : 'password'" v-model="password" v-bind="passwordProps"
                                         placeholder="Mínimo 8 caracteres"
                                         class="w-full px-4 py-2.5 pr-12 border rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
                                         :class="formErrors.password ? 'border-red-400' : 'border-slate-200'" />
@@ -206,8 +206,7 @@
                                         <EyeOff v-else class="w-5 h-5" />
                                     </button>
                                 </div>
-                                <p v-if="formErrors.password" class="mt-1 text-sm text-red-600">{{ formErrors.password
-                                    }}</p>
+                                <p v-if="formErrors.password" class="mt-1 text-sm text-red-600">{{ formErrors.password }}</p>
                             </div>
 
                             <!-- Confirmar Contraseña -->
@@ -217,7 +216,7 @@
                                 </label>
                                 <div class="relative">
                                     <input :type="showPasswordConfirmation ? 'text' : 'password'"
-                                        v-model="form.password_confirmation" placeholder="Repetir contraseña"
+                                        v-model="passwordConfirmation" v-bind="passwordConfirmationProps" placeholder="Repetir contraseña"
                                         class="w-full px-4 py-2.5 pr-12 border rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
                                         :class="formErrors.password_confirmation ? 'border-red-400' : 'border-slate-200'" />
                                     <button type="button" @click="showPasswordConfirmation = !showPasswordConfirmation"
@@ -253,6 +252,9 @@
 
 <script setup>
 import { ref, watch, computed } from 'vue';
+import { useForm } from 'vee-validate';
+import { toTypedSchema } from '@vee-validate/yup';
+import * as yup from 'yup';
 import { X, UserCog, Key, Loader2, Eye, EyeOff, Search } from 'lucide-vue-next';
 
 const props = defineProps({
@@ -291,26 +293,81 @@ const emit = defineEmits(['close', 'submit']);
 const showPassword = ref(false);
 const showPasswordConfirmation = ref(false);
 
-const form = ref({
-    dni: '',
-    titulo: '',
-    name: '',
-    apellidos: '',
-    email: '',
-    telefono: '',
-    cargo: '',
-    area: '',
-    rol_id: '',
-    is_active: true,
-    password: '',
-    password_confirmation: ''
+// Validation Schema
+const userSchema = toTypedSchema(
+    yup.object({
+        dni: yup.string()
+            .required('El DNI es obligatorio')
+            .matches(/^\d{8}$/, 'El DNI debe tener 8 dígitos'),
+        titulo: yup.string().transform((value) => value || null).nullable(),
+        name: yup.string().required('El nombre es obligatorio'),
+        apellidos: yup.string().required('Los apellidos son obligatorios'),
+        email: yup.string()
+            .required('El email es obligatorio')
+            .email('El email no es válido'),
+        telefono: yup.string()
+            .transform((value) => value || null)
+            .nullable()
+            .test('length', 'El teléfono debe tener exactamente 9 dígitos', (value) => {
+                if (!value) return true;
+                return /^\d{9}$/.test(value);
+            }),
+        cargo: yup.string().transform((value) => value || null).nullable(),
+        area: yup.string().transform((value) => value || null).nullable(),
+        rol_id: yup.string().required('El rol es obligatorio'),
+        is_active: yup.boolean(),
+        password: yup.string().when('$isEditing', {
+            is: false,
+            then: (schema) => schema
+                .required('La contraseña es obligatoria')
+                .min(8, 'La contraseña debe tener al menos 8 caracteres'),
+            otherwise: (schema) => schema.transform((value) => value || null).nullable()
+        }),
+        password_confirmation: yup.string().when('$isEditing', {
+            is: false,
+            then: (schema) => schema
+                .required('Debe confirmar la contraseña')
+                .oneOf([yup.ref('password')], 'Las contraseñas no coinciden'),
+            otherwise: (schema) => schema.transform((value) => value || null).nullable()
+        })
+    })
+);
+
+const { errors: formErrors, defineField, handleSubmit: validateForm, setValues, resetForm } = useForm({
+    validationSchema: userSchema,
+    initialValues: {
+        dni: '',
+        titulo: '',
+        name: '',
+        apellidos: '',
+        email: '',
+        telefono: '',
+        cargo: '',
+        area: '',
+        rol_id: '',
+        is_active: true,
+        password: '',
+        password_confirmation: ''
+    },
+    context: computed(() => ({ isEditing: props.isEditing }))
 });
 
-const formErrors = ref({});
+const [dni, dniProps] = defineField('dni');
+const [titulo, tituloProps] = defineField('titulo');
+const [name, nameProps] = defineField('name');
+const [apellidos, apellidosProps] = defineField('apellidos');
+const [email, emailProps] = defineField('email');
+const [telefono, telefonoProps] = defineField('telefono');
+const [cargo, cargoProps] = defineField('cargo');
+const [area, areaProps] = defineField('area');
+const [rolId, rolIdProps] = defineField('rol_id');
+const [isActive, isActiveProps] = defineField('is_active');
+const [password, passwordProps] = defineField('password');
+const [passwordConfirmation, passwordConfirmationProps] = defineField('password_confirmation');
 
 watch(() => props.user, (newUser) => {
     if (newUser) {
-        form.value = {
+        setValues({
             dni: newUser.dni || '',
             titulo: newUser.titulo || '',
             name: newUser.name || '',
@@ -323,24 +380,10 @@ watch(() => props.user, (newUser) => {
             is_active: newUser.is_active ?? true,
             password: '',
             password_confirmation: ''
-        };
+        });
     } else {
-        form.value = {
-            dni: '',
-            titulo: '',
-            name: '',
-            apellidos: '',
-            email: '',
-            telefono: '',
-            cargo: '',
-            area: '',
-            rol_id: '',
-            is_active: true,
-            password: '',
-            password_confirmation: ''
-        };
+        resetForm();
     }
-    formErrors.value = {};
 }, { immediate: true });
 
 const modalSubtitle = computed(() => {
@@ -358,107 +401,36 @@ const filteredEmployees = computed(() => {
     return props.employees.filter(e =>
         (e.nombres + ' ' + e.apellidos).toLowerCase().includes(q) ||
         String(e.dni).includes(q)
-    ).slice(0, 10); // Limit results
+    ).slice(0, 10);
 });
 
 const selectEmployee = (emp) => {
     employeeSearch.value = `${emp.nombres} ${emp.apellidos}`;
     showEmployeeDropdown.value = false;
 
-    form.value.dni = emp.dni || '';
-    form.value.name = (emp.nombres || '').toUpperCase();
-    form.value.apellidos = (emp.apellidos || '').toUpperCase();
-    form.value.email = emp.correo || '';
-    form.value.telefono = emp.telefono || '';
-    form.value.cargo = emp.cargo || '';
-    form.value.area = emp.area || '';
-
-    // Match active status if possible, defaulting to true
-    form.value.is_active = emp.estado === 'ACTIVO';
-
-    // Reset role to prompt selection
-    form.value.rol_id = '';
+    setValues({
+        dni: emp.dni || '',
+        titulo: titulo.value,
+        name: (emp.nombres || '').toUpperCase(),
+        apellidos: (emp.apellidos || '').toUpperCase(),
+        email: emp.correo || '',
+        telefono: emp.telefono || '',
+        cargo: emp.cargo || '',
+        area: emp.area || '',
+        rol_id: '',
+        is_active: emp.estado === 'ACTIVO',
+        password: password.value,
+        password_confirmation: passwordConfirmation.value
+    });
 };
 
-// Close dropdown when clicking outside (simple implementation)
-// In a real scenario, use v-click-outside directive or similar
 const closeDropdown = () => {
     setTimeout(() => {
         showEmployeeDropdown.value = false;
     }, 200);
 };
 
-const validateForm = () => {
-    formErrors.value = {};
-    let isValid = true;
-
-    // DNI validation
-    if (!form.value.dni) {
-        formErrors.value.dni = 'El DNI es obligatorio';
-        isValid = false;
-    } else if (!/^\d{8}$/.test(form.value.dni)) {
-        formErrors.value.dni = 'El DNI debe tener 8 dígitos';
-        isValid = false;
-    }
-
-    // Name validation
-    if (!form.value.name) {
-        formErrors.value.name = 'El nombre es obligatorio';
-        isValid = false;
-    }
-
-    // Apellidos validation
-    if (!form.value.apellidos) {
-        formErrors.value.apellidos = 'Los apellidos son obligatorios';
-        isValid = false;
-    }
-
-    // Email validation
-    if (!form.value.email) {
-        formErrors.value.email = 'El email es obligatorio';
-        isValid = false;
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.value.email)) {
-        formErrors.value.email = 'El email no es válido';
-        isValid = false;
-    }
-
-    // Phone validation
-    if (form.value.telefono && !/^\d{9}$/.test(form.value.telefono)) {
-        formErrors.value.telefono = 'El teléfono debe tener exactamente 9 dígitos';
-        isValid = false;
-    }
-
-    // Role validation
-    if (!form.value.rol_id) {
-        formErrors.value.rol_id = 'El rol es obligatorio';
-        isValid = false;
-    }
-
-    // Password validation (only for new users)
-    if (!props.isEditing) {
-        if (!form.value.password) {
-            formErrors.value.password = 'La contraseña es obligatoria';
-            isValid = false;
-        } else if (form.value.password.length < 8) {
-            formErrors.value.password = 'La contraseña debe tener al menos 8 caracteres';
-            isValid = false;
-        }
-
-        if (!form.value.password_confirmation) {
-            formErrors.value.password_confirmation = 'Debe confirmar la contraseña';
-            isValid = false;
-        } else if (form.value.password !== form.value.password_confirmation) {
-            formErrors.value.password_confirmation = 'Las contraseñas no coinciden';
-            isValid = false;
-        }
-    }
-
-    return isValid;
-};
-
-const handleSubmit = () => {
-    if (validateForm()) {
-        emit('submit', form.value);
-    }
-};
+const handleSubmit = validateForm((values) => {
+    emit('submit', values);
+});
 </script>
