@@ -19,6 +19,14 @@ use Inertia\Inertia;
 |--------------------------------------------------------------------------
 */
 
+// Root redirect (public)
+Route::get('/', function () {
+    if (auth()->check()) {
+        return redirect('/dashboard');
+    }
+    return redirect('/login');
+});
+
 // Public routes
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
@@ -33,10 +41,6 @@ Route::get('/citas/status/{dni}', [AppointmentController::class, 'checkStatus'])
 // Protected routes
 Route::middleware('auth')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
-
-    Route::get('/', function () {
-        return redirect('/dashboard');
-    });
 
     Route::get('/dashboard', [App\Http\Controllers\DashboardController::class, 'index'])->name('dashboard');
 

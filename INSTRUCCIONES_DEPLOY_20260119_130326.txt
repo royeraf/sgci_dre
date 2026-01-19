@@ -1,0 +1,103 @@
+═══════════════════════════════════════════════════════════════
+  INSTRUCCIONES DE DESPLIEGUE - 2026-01-19 13:03:31
+═══════════════════════════════════════════════════════════════
+
+ARCHIVO A SUBIR: public/sgci_dre_assets_20260119_130326.zip
+
+═══════════════════════════════════════════════════════════════
+PASO 1: SUBIR ARCHIVO
+═══════════════════════════════════════════════════════════════
+
+1. Abre File Manager en cPanel
+2. Ve a: public_html/documentos/ (o donde esté tu proyecto)
+3. Sube el archivo: sgci_dre_assets_20260119_130326.zip
+
+═══════════════════════════════════════════════════════════════
+PASO 2: EXTRAER EN UBICACIÓN CORRECTA (IMPORTANTE)
+═══════════════════════════════════════════════════════════════
+
+¡ATENCIÓN! NO extraer directamente en public_html
+
+Opción A - Usando Terminal SSH (RECOMENDADO):
+--------------------------------------------
+cd ~/public_html/documentos/
+unzip -o sgci_dre_assets_20260119_130326.zip
+rm sgci_dre_assets_20260119_130326.zip
+
+Opción B - Usando File Manager:
+--------------------------------
+1. Haz clic derecho en sgci_dre_assets_20260119_130326.zip
+2. Selecciona "Extract"
+3. IMPORTANTE: Verificar que se extrae en la ubicación correcta
+4. Elimina sgci_dre_assets_20260119_130326.zip después
+
+RESULTADO ESPERADO:
+  ~/public_html/documentos/build/assets/app-xDDkCbkB.css
+  ~/public_html/documentos/build/assets/Login-B4sBJbNn.js
+  ~/public_html/documentos/build/assets/... (otros archivos)
+
+═══════════════════════════════════════════════════════════════
+PASO 3: VERIFICAR ESTRUCTURA
+═══════════════════════════════════════════════════════════════
+
+Verifica que existan estos archivos en el servidor:
+
+  documentos/build/manifest.json
+  documentos/build/assets/app-xDDkCbkB.css
+  documentos/build/assets/app-9DE5_l2D.js
+  documentos/build/assets/Login-B4sBJbNn.js
+
+Comando para verificar (SSH):
+  ls -lh ~/public_html/documentos/build/assets/ | head -20
+
+═══════════════════════════════════════════════════════════════
+PASO 4: CONFIGURAR .env (SI AÚN NO LO HICISTE)
+═══════════════════════════════════════════════════════════════
+
+Edita: ~/public_html/documentos/.env
+
+Cambiar estas líneas:
+  APP_ENV=production
+  APP_DEBUG=false
+  APP_URL=https://documentos.drehuanuco.gob.pe
+  ASSET_URL=https://documentos.drehuanuco.gob.pe
+
+COMENTAR/ELIMINAR estas líneas:
+  # VITE_REVERB_APP_KEY=
+  # VITE_REVERB_HOST=localhost
+  # VITE_REVERB_PORT=8080
+  # VITE_REVERB_SCHEME=
+
+═══════════════════════════════════════════════════════════════
+PASO 5: LIMPIAR CACHÉ
+═══════════════════════════════════════════════════════════════
+
+Ejecuta en Terminal SSH:
+  cd ~/public_html/documentos
+  php artisan config:clear
+  php artisan cache:clear
+  php artisan view:clear
+
+═══════════════════════════════════════════════════════════════
+PASO 6: VERIFICAR EN EL NAVEGADOR
+═══════════════════════════════════════════════════════════════
+
+1. Abre: https://documentos.drehuanuco.gob.pe
+2. Presiona Ctrl+Shift+R (hard refresh)
+3. Abre DevTools (F12) → pestaña Network
+4. Recarga la página
+5. Verifica que NO haya errores 404
+
+Si aún ves errores 404:
+  - Verifica que la carpeta build/ esté en la ubicación correcta
+  - Verifica que APP_URL en .env sea correcto
+  - Limpia caché del navegador completamente
+
+═══════════════════════════════════════════════════════════════
+INFORMACIÓN TÉCNICA
+═══════════════════════════════════════════════════════════════
+
+Paquete generado: 2026-01-19 13:03:31
+Archivos incluidos: 44 archivos
+Tamaño total: 524K
+
