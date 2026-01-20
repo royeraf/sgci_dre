@@ -17,3 +17,10 @@ yarn-error.log
 /.fleet
 /.idea
 /.vscode
+
+# Production server files (cPanel)
+.htaccess
+/build
+favicon.ico
+/images
+storage/storage
