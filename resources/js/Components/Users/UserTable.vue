@@ -108,10 +108,6 @@
                                     class="text-amber-600 hover:text-amber-900 transition-colors">
                                     <Key class="w-4 h-4" />
                                 </button>
-                                <button @click="$emit('delete', user.id)" title="Eliminar"
-                                    class="text-red-600 hover:text-red-900 transition-colors">
-                                    <Trash2 class="w-4 h-4" />
-                                </button>
                             </div>
                         </td>
                     </tr>
@@ -129,7 +125,7 @@
 </template>
 
 <script setup>
-import { Eye, Edit, Power, Key, Trash2, Shield, UserX } from 'lucide-vue-next';
+import { Eye, Edit, Power, Key, Shield, UserX } from 'lucide-vue-next';
 
 defineProps({
     users: {
@@ -142,7 +138,7 @@ defineProps({
     }
 });
 
-defineEmits(['view', 'edit', 'toggleStatus', 'resetPassword', 'delete']);
+defineEmits(['view', 'edit', 'toggleStatus', 'resetPassword']);
 
 const getInitials = (name, apellidos) => {
     const n = name?.charAt(0) || '';
