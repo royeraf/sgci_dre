@@ -1,0 +1,170 @@
+@startuml Modelo_Normalizado_Personas
+
+title Modelo Normalizado Implementado\nPersonas, Usuarios, Visitas y Catálogos
+
+skinparam linetype ortho
+skinparam class {
+    BackgroundColor #E8F4FD
+    BorderColor #2C5282
+    ArrowColor #2C5282
+    FontName Arial
+    FontSize 12
+}
+
+' ==========================================
+' TABLA BASE - PEOPLE
+' ==========================================
+entity "**people**" as people #D4EDDA {
+    + **id** : UUID <<PK>>
+    --
+    # dni : VARCHAR(8) <<UNIQUE>>
+    # nombres : VARCHAR(100)
+    # apellidos : VARCHAR(100)
+    # fecha_nacimiento : DATE
+    # genero : ENUM('M','F')
+    # direccion : VARCHAR(255)
+    # telefono : VARCHAR(20)
+    # email : VARCHAR(150)
+    # tipo : ENUM('INTERNO','EXTERNO')
+    # is_active : BOOLEAN
+    # created_at : TIMESTAMP
+    # updated_at : TIMESTAMP
+}
+
+note top of people
+  **Tabla centralizada**
+  Almacena datos personales
+  de INTERNOS y EXTERNOS
+end note
+
+' ==========================================
+' EMPLEADOS (Personas Internas)
+' ==========================================
+entity "**employees**" as employees #FFF3CD {
+    + **id** : UUID <<PK>>
+    --
+    * **person_id** : UUID <<FK>>
+    * **area_id** : UUID <<FK>>
+    * **position_id** : UUID <<FK>>
+    * **office_id** : UUID <<FK>>
+    --
+    # regimen : ENUM('276','728','CAS',...)
+    # tipo_contrato : VARCHAR(50)
+    # fecha_ingreso : DATE
+    # estado : ENUM('ACTIVO','INACTIVO',...)
+    # observaciones : TEXT
+}
+
+note right of employees
+  **Personal Interno**
+  Solo datos laborales
+end note
+
+' ==========================================
+' VISITAS EXTERNAS
+' ==========================================
+entity "**external_visits**" as external_visits #FFE4E1 {
+    + **id** : BIGINT <<PK>>
+    --
+    * **person_id** : UUID <<FK>>
+    * **area_id** : UUID <<FK>>
+    * **registrado_por** : BIGINT <<FK>>
+    --
+    # hora_ingreso : TIME
+    # hora_salida : TIME
+    # motivo : TEXT
+    # a_quien_visita : VARCHAR(200)
+    # fecha : DATE
+}
+
+note right of external_visits
+  **Registro de Visitas**
+  Referencia a people y hr_areas
+end note
+
+' ==========================================
+' USUARIOS DEL SISTEMA
+' ==========================================
+entity "**users**" as users #D6EAF8 {
+    + **id** : BIGINT <<PK>>
+    --
+    * **person_id** : UUID <<FK>> (nullable)
+    --
+    # username : VARCHAR(100) <<UNIQUE>>
+    # password : VARCHAR(255)
+    # is_active : BOOLEAN
+}
+
+note right of users
+  **Credenciales**
+  de acceso al sistema
+end note
+
+' ==========================================
+' CATÁLOGOS ORGANIZACIONALES
+' ==========================================
+entity "**hr_areas**" as hr_areas #FCE4D6 {
+    + **id** : UUID <<PK>>
+    --
+    # nombre : VARCHAR(200) <<UNIQUE>>
+    # descripcion : TEXT
+    # activo : BOOLEAN
+}
+
+entity "**hr_positions**" as hr_positions #FCE4D6 {
+    + **id** : UUID <<PK>>
+    --
+    # nombre : VARCHAR(150) <<UNIQUE>>
+    # descripcion : TEXT
+    # activo : BOOLEAN
+}
+
+entity "**hr_offices**" as hr_offices #FCE4D6 {
+    + **id** : UUID <<PK>>
+    --
+    * **area_id** : UUID <<FK>>
+    --
+    # codigo : VARCHAR(20)
+    # nombre : VARCHAR(200)
+    # ubicacion : VARCHAR(100)
+    # piso : VARCHAR(10)
+    # activo : BOOLEAN
+}
+
+' ==========================================
+' RELACIONES - PEOPLE
+' ==========================================
+
+people ||--o| employees : "tipo='INTERNO'"
+people ||--o| users : "acceso sistema"
+people ||--o{ external_visits : "tipo='EXTERNO'\nrealiza visitas"
+
+' ==========================================
+' RELACIONES - CATÁLOGOS
+' ==========================================
+
+hr_areas ||--o{ employees : "trabaja en"
+hr_areas ||--o{ hr_offices : "contiene"
+hr_areas ||--o{ external_visits : "área visitada"
+hr_positions ||--o{ employees : "ocupa cargo"
+hr_offices ||--o{ employees : "asignado a"
+
+' ==========================================
+' RELACIONES - USERS
+' ==========================================
+
+users ||--o{ external_visits : "registra"
+
+' ==========================================
+' LEYENDA
+' ==========================================
+legend bottom
+  |= Color |= Tipo |= Tablas |
+  | <#D4EDDA> | Base | **people** - Datos personales (internos y externos) |
+  | <#FFF3CD> | Extensión | **employees** - Datos laborales del personal |
+  | <#FFE4E1> | Registro | **external_visits** - Visitas de externos |
+  | <#D6EAF8> | Sistema | **users** - Credenciales de acceso |
+  | <#FCE4D6> | Catálogos | **hr_areas**, **hr_positions**, **hr_offices** |
+endlegend
+
+@enduml

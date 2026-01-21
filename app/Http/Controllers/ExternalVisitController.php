@@ -5,8 +5,12 @@ namespace App\Http\Controllers;
 use App\Models\ExternalVisit;
 use App\Models\AuditLog;
 use App\Services\ReniecService;
+use App\Models\Person;
+use App\Models\HRArea;
+use App\Models\HrOffice;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use Illuminate\Support\Str;
 
 class ExternalVisitController extends Controller
 {
@@ -15,7 +19,7 @@ class ExternalVisitController extends Controller
      */
     public function index(Request $request)
     {
-        $query = ExternalVisit::with(['registrarUser'])
+        $query = ExternalVisit::with(['registrador', 'person', 'area', 'office'])
             ->orderBy('fecha', 'desc')
             ->orderBy('hora_ingreso', 'desc');
 
@@ -35,31 +39,48 @@ class ExternalVisitController extends Controller
         if ($request->has('search') && $request->search) {
              $search = $request->search;
              $query->where(function($q) use ($search) {
-                 $q->where('nombres', 'like', "%{$search}%")
-                   ->orWhere('dni', 'like', "%{$search}%")
-                   ->orWhere('motivo', 'like', "%{$search}%");
+                 // Buscar en tabla relacionada people
+                 $q->whereHas('person', function($qp) use ($search) {
+                     $qp->where('nombres', 'like', "%{$search}%")
+                       ->orWhere('apellidos', 'like', "%{$search}%")
+                       ->orWhere('dni', 'like', "%{$search}%");
+                 })
+                 ->orWhere('motivo', 'like', "%{$search}%")
+                 // Buscar también por nombre de área relacionada
+                 ->orWhereHas('area', function($qa) use ($search) {
+                     $qa->where('nombre', 'like', "%{$search}%");
+                 })
+                 ->orWhereHas('office', function($qo) use ($search) {
+                     $qo->where('nombre', 'like', "%{$search}%");
+                 });
              });
         }
 
         $visits = $query->paginate(10)->through(function ($visit) {
+            $destino = $visit->office_nombre 
+                ? ($visit->office_nombre . ($visit->area_nombre ? " - {$visit->area_nombre}" : '')) 
+                : $visit->area_nombre;
+
             return [
                 'id' => $visit->id,
                 'fecha' => $visit->fecha->format('Y-m-d'),
-                'dni' => $visit->dni,
-                'nombres' => $visit->nombres,
+                'dni' => $visit->dni, // Accessor
+                'nombres' => $visit->nombres, // Accessor (Nombre completo)
                 'hora_ingreso' => $visit->hora_ingreso ? $visit->hora_ingreso->format('H:i') : null,
                 'hora_salida' => $visit->hora_salida ? $visit->hora_salida->format('H:i') : null,
                 'motivo' => $visit->motivo,
-                'area' => $visit->area,
+                'area' => $destino, // Muestra Oficina - Área o solo Área
                 'a_quien_visita' => $visit->a_quien_visita,
                 'is_pending' => is_null($visit->hora_salida),
-                'registrado_por' => $visit->registrarUser ? $visit->registrarUser->name : 'N/A',
+                'registrado_por' => $visit->registrador ? $visit->registrador->name : 'N/A',
             ];
         });
 
         return Inertia::render('Visitors/Index', [
             'visits' => $visits,
             'filters' => $request->only(['fecha', 'estado', 'search']),
+            'areas' => HRArea::where('activo', true)->orderBy('nombre')->get(),
+            'offices' => HrOffice::where('activo', true)->with('area')->orderBy('nombre')->get(),
         ]);
     }
 
@@ -70,22 +91,53 @@ class ExternalVisitController extends Controller
     {
         $validated = $request->validate([
             'dni' => 'required|string|size:8',
-            'nombres' => 'required|string|max:200',
+            'nombres' => 'required|string|max:100',
+            'apellidos' => 'required|string|max:100',
             'hora_ingreso' => 'required',
             'motivo' => 'required|string|min:3',
-            'area' => 'required|string|max:100',
+            'area_id' => 'nullable|uuid|exists:hr_areas,id',
+            'office_id' => 'nullable|uuid|exists:hr_offices,id',
             'a_quien_visita' => 'nullable|string|max:200',
         ], [
             'dni.required' => 'El DNI es obligatorio.',
             'dni.size' => 'El DNI debe tener exactamente 8 dígitos.',
             'nombres.required' => 'El nombre es obligatorio.',
+            'apellidos.required' => 'El apellido es obligatorio.',
             'hora_ingreso.required' => 'La hora de ingreso es obligatoria.',
             'motivo.required' => 'El motivo es obligatorio.',
-            'area.required' => 'El área/oficina es obligatoria.',
         ]);
 
+        if (empty($validated['area_id']) && empty($validated['office_id'])) {
+             return back()->withErrors(['area_id' => 'Debe seleccionar un Área o una Oficina de destino.']);
+        }
+
+        // 1. Buscar o Crear Persona
+        $person = Person::firstOrNew(['dni' => $validated['dni']]);
+        
+        // Solo actualizar datos personales si NO es empleado interno (para no sobrescribir datos oficiales)
+        if ($person->tipo !== 'INTERNO') {
+            $person->nombres = Str::upper($validated['nombres']);
+            $person->apellidos = Str::upper($validated['apellidos']);
+            $person->tipo = 'EXTERNO';
+            $person->is_active = true;
+            $person->save();
+        }
+        
+        // 2. Crear Visita
+        // Si elige office pero no area, intentar obtener area (opcional)
+        $areaId = $validated['area_id'];
+        if (!$areaId && !empty($validated['office_id'])) {
+            $office = HrOffice::find($validated['office_id']);
+            $areaId = $office ? $office->area_id : null;
+        }
+
         $visit = ExternalVisit::create([
-            ...$validated,
+            'person_id' => $person->id,
+            'area_id' => $areaId,
+            'office_id' => $validated['office_id'] ?? null,
+            'hora_ingreso' => $validated['hora_ingreso'],
+            'motivo' => $validated['motivo'],
+            'a_quien_visita' => $validated['a_quien_visita'],
             'fecha' => now()->toDateString(),
             'registrado_por' => auth()->id(),
         ]);
@@ -95,7 +147,7 @@ class ExternalVisitController extends Controller
             AuditLog::log(
                 auth()->id(),
                 'Registrar Visita',
-                "Se registró ingreso de visitante {$visit->nombres} (DNI: {$visit->dni})",
+                "Se registró ingreso de visitante {$person->nombres} (DNI: {$person->dni})",
                 ExternalVisit::class,
                 $visit->id
             );

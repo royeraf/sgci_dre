@@ -7,6 +7,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use Spatie\Permission\Traits\HasRoles;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class User extends Authenticatable
 {
@@ -18,15 +19,12 @@ class User extends Authenticatable
      * @var array<int, string>
      */
     protected $fillable = [
+        'person_id',
+        'username',
         'name',
         'email',
         'password',
-        'dni',
-        'titulo',
         'apellidos',
-        'cargo',
-        'area',
-        'telefono',
         'rol_id',
         'is_active',
         'ultimo_acceso',
@@ -87,12 +85,55 @@ class User extends Authenticatable
     }
 
     /**
+     * @var array<int, string>
+     */
+    protected $appends = [
+        'full_name',
+        'dni',
+        'telefono',
+    ];
+
+    /**
      * Get the full name with title.
      */
     public function getFullNameAttribute(): string
     {
-        $titulo = $this->titulo ? $this->titulo . ' ' : '';
-        return $titulo . $this->name . ($this->apellidos ? ' ' . $this->apellidos : '');
+        // Si tiene persona asociada, usar datos de person
+        if ($this->relationLoaded('person') && $this->person) {
+            return $this->person->nombres . ' ' . $this->person->apellidos;
+        }
+        
+        // Fallback a campos directos
+        $titulo = $this->attributes['titulo'] ?? ''; 
+        $titulo = $titulo ? $titulo . ' ' : '';
+        $nombre = $this->attributes['name'] ?? '';
+        $apellidos = $this->attributes['apellidos'] ?? '';
+        
+        return trim($titulo . $nombre . ($apellidos ? ' ' . $apellidos : ''));
+    }
+
+    /**
+     * Relación con Person (datos personales normalizados)
+     */
+    public function person(): BelongsTo
+    {
+        return $this->belongsTo(Person::class, 'person_id');
+    }
+
+    /**
+     * Acceso al DNI a través de person con fallback
+     */
+    public function getDniAttribute(): ?string
+    {
+        return $this->person?->dni ?? $this->attributes['dni'] ?? null;
+    }
+
+    /**
+     * Acceso al teléfono a través de person con fallback
+     */
+    public function getTelefonoAttribute(): ?string
+    {
+        return $this->person?->telefono ?? $this->attributes['telefono'] ?? null;
     }
 
     /**

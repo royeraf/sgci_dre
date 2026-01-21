@@ -16,7 +16,7 @@
                         <ArrowLeft class="w-4 h-4 mr-2" />
                         Volver
                     </Link>
-                    <button @click="showModal = true"
+                    <button @click="openCreateModal"
                         class="inline-flex items-center px-6 py-3 border border-transparent text-sm font-bold rounded-xl shadow-lg shadow-purple-600/20 text-white bg-gradient-to-r from-purple-600 to-fuchsia-600 hover:from-purple-700 hover:to-fuchsia-700 focus:outline-none focus:ring-4 focus:ring-purple-300 transition-all duration-300 transform hover:scale-105 active:scale-95">
                         <Plus class="w-5 h-5 mr-2" />
                         Nueva Visita
@@ -185,8 +185,11 @@
                 </div>
             </div>
 
-            <!-- Modal -->
-            <ExternalVisitModal v-if="showModal" :visit="selectedVisit" @close="closeModal" />
+            <!-- Modals -->
+            <ExternalVisitModal v-if="showCreateModal" :areas="areas" :offices="offices" @close="closeCreateModal" />
+
+            <ExternalVisitExitModal v-if="showExitModal" :visit="selectedVisit" @close="closeExitModal"
+                @success="handleExitSuccess" />
         </div>
     </div>
 </template>
@@ -200,7 +203,7 @@ export default {
 </script>
 
 <script setup>
-import { ref, watch } from 'vue';
+import { ref } from 'vue';
 import { Link, router } from '@inertiajs/vue3';
 import {
     Search,
@@ -214,7 +217,8 @@ import {
     FileText
 } from 'lucide-vue-next';
 import ExternalVisitModal from '@/Components/ExternalVisit/ExternalVisitModal.vue';
-import Pagination from '@/Components/Common/Pagination.vue'; // Assuming standard pagination component
+import ExternalVisitExitModal from '@/Components/ExternalVisit/ExternalVisitExitModal.vue';
+import Pagination from '@/Components/Common/Pagination.vue';
 
 const props = defineProps({
     visits: {
@@ -224,10 +228,19 @@ const props = defineProps({
     filters: {
         type: Object,
         default: () => ({})
+    },
+    areas: {
+        type: Array,
+        default: () => []
+    },
+    offices: {
+        type: Array,
+        default: () => []
     }
 });
 
-const showModal = ref(false);
+const showCreateModal = ref(false);
+const showExitModal = ref(false);
 const selectedVisit = ref(null);
 
 // Local filters
@@ -236,10 +249,6 @@ const localFilters = ref({
     estado: props.filters.estado || '',
     fecha: props.filters.fecha || ''
 });
-
-// Watch for changes (Debounce could be better but sticking to simple)
-// Actually explicit apply is better or debounce. I implemented "Aplicar Filtros" button to be safe, but typically search is live.
-// I'll make Search/Apply behave.
 
 const applyFilters = () => {
     router.get('/visitors', localFilters.value, {
@@ -258,13 +267,25 @@ const clearFilters = () => {
     applyFilters();
 };
 
-const openExitModal = (visit) => {
-    selectedVisit.value = visit;
-    showModal.value = true;
+const openCreateModal = () => {
+    showCreateModal.value = true;
 };
 
-const closeModal = () => {
-    showModal.value = false;
+const closeCreateModal = () => {
+    showCreateModal.value = false;
+};
+
+const openExitModal = (visit) => {
+    selectedVisit.value = visit;
+    showExitModal.value = true;
+};
+
+const closeExitModal = () => {
+    showExitModal.value = false;
     selectedVisit.value = null;
+};
+
+const handleExitSuccess = () => {
+    // Optional: Show toast or refresh if needed (Inertia handles refresh automatically)
 };
 </script>

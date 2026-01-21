@@ -147,6 +147,12 @@ Route::middleware('auth')->group(function () {
         Route::put('/areas/{id}', [HRController::class, 'updateArea'])->name('areas.update');
         Route::delete('/areas/{id}', [HRController::class, 'deleteArea'])->name('areas.delete');
 
+        // Offices
+        Route::get('/offices', [HRController::class, 'getOffices'])->name('offices.list');
+        Route::post('/offices', [HRController::class, 'storeOffice'])->name('offices.store');
+        Route::put('/offices/{id}', [HRController::class, 'updateOffice'])->name('offices.update');
+        Route::delete('/offices/{id}', [HRController::class, 'deleteOffice'])->name('offices.delete');
+
         // Positions
         Route::get('/positions', [HRController::class, 'getPositions'])->name('positions.list');
         Route::post('/positions', [HRController::class, 'storePosition'])->name('positions.store');
