@@ -8,6 +8,7 @@ use App\Models\HRArea;
 use App\Models\HRPosition;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use App\Models\Person;
 use Carbon\Carbon;
 
 class HRController extends Controller
@@ -58,7 +59,7 @@ class HRController extends Controller
         return response()->json($employee);
     }
 
-use App\Models\Person; // Agregar Import
+
 
     /**
      * Create a new employee
