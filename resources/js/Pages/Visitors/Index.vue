@@ -186,7 +186,7 @@
             </div>
 
             <!-- Modals -->
-            <ExternalVisitModal v-if="showCreateModal" :areas="areas" @close="closeCreateModal" />
+            <ExternalVisitModal v-if="showCreateModal" :areas="areas" :offices="offices" @close="closeCreateModal" />
 
             <ExternalVisitExitModal v-if="showExitModal" :visit="selectedVisit" @close="closeExitModal"
                 @success="handleExitSuccess" />
@@ -230,6 +230,10 @@ const props = defineProps({
         default: () => ({})
     },
     areas: {
+        type: Array,
+        default: () => []
+    },
+    offices: {
         type: Array,
         default: () => []
     }

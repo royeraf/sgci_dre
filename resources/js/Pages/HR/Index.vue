@@ -16,6 +16,11 @@
                         <UserPlus class="w-5 h-5 mr-2" />
                         Nuevo Empleado
                     </button>
+                    <button v-if="activeTab === 'areas'" @click="createNewOffice"
+                        class="inline-flex items-center px-5 py-2.5 text-sm font-bold rounded-xl shadow-lg text-white bg-gradient-to-r from-sky-600 to-cyan-600 hover:from-sky-700 hover:to-cyan-700 transition-all">
+                        <Plus class="w-5 h-5 mr-2" />
+                        Nueva Oficina
+                    </button>
                     <button v-if="activeTab === 'areas'" @click="createNewArea"
                         class="inline-flex items-center px-5 py-2.5 text-sm font-bold rounded-xl shadow-lg text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 transition-all">
                         <Plus class="w-5 h-5 mr-2" />
@@ -79,8 +84,27 @@
             </div>
 
             <!-- Áreas Tab -->
-            <div v-if="activeTab === 'areas'" class="space-y-6">
-                <AreaTable :areas="areas" @edit="editArea" @delete="handleDeleteArea" />
+            <div v-if="activeTab === 'areas'" class="space-y-8">
+                <!-- Áreas Section -->
+                <div>
+                    <div class="flex items-center gap-2 mb-4">
+                        <Building2 class="w-5 h-5 text-blue-600" />
+                        <h3 class="text-xl font-bold text-slate-800">Direcciones y Áreas Principales</h3>
+                    </div>
+                    <AreaTable :areas="areas" @edit="editArea" @delete="handleDeleteArea" />
+                </div>
+
+                <!-- Oficinas Section -->
+                <div>
+                    <div class="flex items-center gap-2 mb-4 pt-6 border-t border-slate-200">
+                        <Building2 class="w-5 h-5 text-indigo-600" />
+                        <h3 class="text-xl font-bold text-slate-800">Oficinas y Unidades Orgánicas</h3>
+                        <span class="ml-2 px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
+                            {{ offices.length }} oficinas
+                        </span>
+                    </div>
+                    <OfficeTable :offices="offices" @edit="editOffice" @delete="handleDeleteOffice" />
+                </div>
             </div>
 
             <!-- Cargos Tab -->
@@ -111,6 +135,10 @@
             <!-- Area Modal -->
             <AreaModal v-if="showAreaModal" :area="selectedArea" :is-editing="isEditingArea" :submitting="isSubmitting"
                 @close="showAreaModal = false" @submit="saveArea" />
+
+            <!-- Office Modal NEW -->
+            <OfficeModal v-if="showOfficeModal" :office="selectedOffice" :is-editing="isEditingOffice"
+                :submitting="isSubmitting" :areas="areas" @close="showOfficeModal = false" @submit="saveOffice" />
 
             <!-- Position Modal -->
             <PositionModal v-if="showPositionModal" :position="selectedPosition" :is-editing="isEditingPosition"
@@ -144,6 +172,8 @@ import VacationModal from '@/Components/HR/Vacations/VacationModal.vue';
 import VacationDetailModal from '@/Components/HR/Vacations/VacationDetailModal.vue';
 import AreaTable from '@/Components/HR/Areas/AreaTable.vue';
 import AreaModal from '@/Components/HR/Areas/AreaModal.vue';
+import OfficeTable from '@/Components/HR/Areas/OfficeTable.vue';
+import OfficeModal from '@/Components/HR/Areas/OfficeModal.vue';
 import PositionTable from '@/Components/HR/Positions/PositionTable.vue';
 import PositionModal from '@/Components/HR/Positions/PositionModal.vue';
 import EmployeeFilters from '@/Components/HR/Employees/EmployeeFilters.vue';
@@ -161,6 +191,7 @@ const localFilters = ref({
 const employees = ref([]);
 const vacations = ref([]);
 const areas = ref([]);
+const offices = ref([]); // Nuevo estado
 const positions = ref([]);
 const summary = ref({});
 
@@ -172,6 +203,7 @@ const selectedVacationDetail = ref(null);
 const isEditingVacation = ref(false);
 const showViewEmployeeModal = ref(false);
 const showAreaModal = ref(false);
+const showOfficeModal = ref(false); // Nuevo Modal
 const showPositionModal = ref(false);
 
 const selectedEmployee = ref(null);
@@ -179,6 +211,9 @@ const isEditing = ref(false);
 
 const selectedArea = ref(null);
 const isEditingArea = ref(false);
+
+const selectedOffice = ref(null); // Nueva selección
+const isEditingOffice = ref(false);
 
 const selectedPosition = ref(null);
 const isEditingPosition = ref(false);
@@ -196,10 +231,11 @@ const filteredEmployees = computed(() => {
     }
 
     if (localFilters.value.area) {
-        result = result.filter(e => e.area === localFilters.value.area);
+        result = result.filter(e => e.area?.__name === localFilters.value.area || e.area_nombre === localFilters.value.area);
     }
 
     if (localFilters.value.position) {
+        // ... logica existente
         result = result.filter(e => e.cargo === localFilters.value.position);
     }
 
@@ -217,18 +253,20 @@ const clearFilters = () => {
 const fetchData = async () => {
     isLoading.value = true;
     try {
-        const [empRes, vacRes, sumRes, areaRes, posRes] = await Promise.all([
+        const [empRes, vacRes, sumRes, areaRes, posRes, officeRes] = await Promise.all([
             axios.get('/hr/employees'),
             axios.get('/hr/vacations'),
             axios.get('/hr/summary'),
             axios.get('/hr/areas'),
-            axios.get('/hr/positions')
+            axios.get('/hr/positions'),
+            axios.get('/hr/offices') // Nuevo endpoint
         ]);
         employees.value = empRes.data;
         vacations.value = vacRes.data;
         summary.value = sumRes.data;
         areas.value = areaRes.data;
         positions.value = posRes.data;
+        offices.value = officeRes.data;
     } catch (error) {
         console.error('Error fetching HR data:', error);
         window.Swal?.fire?.({
@@ -240,6 +278,8 @@ const fetchData = async () => {
         isLoading.value = false;
     }
 };
+
+// ... (Métodos de empleados y vacaciones existentes se mantienen igual) ...
 
 const createNewEmployee = () => {
     isEditing.value = false;
@@ -385,6 +425,62 @@ const handleDeleteArea = (id) => {
                 fetchData();
             } catch (error) {
                 window.Swal?.fire?.('Error', 'No se pudo eliminar el área.', 'error');
+            }
+        }
+    });
+};
+
+// --- OFFICE METHODS ---
+
+const createNewOffice = () => {
+    isEditingOffice.value = false;
+    selectedOffice.value = null;
+    showOfficeModal.value = true;
+};
+
+const editOffice = (office) => {
+    isEditingOffice.value = true;
+    selectedOffice.value = office;
+    showOfficeModal.value = true;
+};
+
+const saveOffice = async (formData) => {
+    isSubmitting.value = true;
+    try {
+        if (isEditingOffice.value && selectedOffice.value) {
+            await axios.put(`/hr/offices/${selectedOffice.value.id}`, formData);
+            window.Swal?.fire?.({ icon: 'success', title: 'Oficina Actualizada', toast: true, position: 'top-end', showConfirmButton: false, timer: 2500 });
+        } else {
+            await axios.post('/hr/offices', formData);
+            window.Swal?.fire?.({ icon: 'success', title: 'Oficina Creada', toast: true, position: 'top-end', showConfirmButton: false, timer: 2500 });
+        }
+        showOfficeModal.value = false;
+        fetchData();
+    } catch (error) {
+        window.Swal?.fire?.({ icon: 'error', title: 'Error', text: error.response?.data?.message || 'No se pudo guardar la oficina' });
+    } finally {
+        isSubmitting.value = false;
+    }
+};
+
+const handleDeleteOffice = (id) => {
+    window.Swal?.fire?.({
+        title: '¿Está seguro?',
+        text: "Esta acción no se puede deshacer",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Sí, eliminar',
+        cancelButtonText: 'Cancelar'
+    }).then(async (result) => {
+        if (result.isConfirmed) {
+            try {
+                await axios.delete(`/hr/offices/${id}`);
+                window.Swal?.fire?.('Eliminado', 'La oficina ha sido eliminada.', 'success');
+                fetchData();
+            } catch (error) {
+                window.Swal?.fire?.('Error', 'No se pudo eliminar la oficina.', 'error');
             }
         }
     });

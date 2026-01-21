@@ -36,8 +36,9 @@
                             </div>
                         </td>
                         <td class="px-6 py-4 font-mono text-slate-700">{{ emp.dni }}</td>
-                        <td class="px-6 py-4 text-sm text-slate-700">{{ emp.cargo || '-' }}</td>
-                        <td class="px-6 py-4 text-sm text-slate-700">{{ emp.area || '-' }}</td>
+                        <td class="px-6 py-4 text-sm text-slate-700">{{ emp.position?.nombre || emp.cargo || '-' }}</td>
+                        <td class="px-6 py-4 text-sm text-slate-700">{{ emp.area?.nombre || emp.area_nombre || '-' }}
+                        </td>
                         <td class="px-6 py-4">
                             <span class="px-2 py-1 text-xs font-bold rounded-lg"
                                 :class="contractClass(emp.tipo_contrato)">

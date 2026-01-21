@@ -6,6 +6,7 @@ use App\Models\ExternalVisit;
 use App\Models\AuditLog;
 use App\Models\Person;
 use App\Models\HRArea;
+use App\Models\HrOffice;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Str;
@@ -17,7 +18,7 @@ class ExternalVisitController extends Controller
      */
     public function index(Request $request)
     {
-        $query = ExternalVisit::with(['registrador', 'person', 'area'])
+        $query = ExternalVisit::with(['registrador', 'person', 'area', 'office'])
             ->orderBy('fecha', 'desc')
             ->orderBy('hora_ingreso', 'desc');
 
@@ -47,11 +48,18 @@ class ExternalVisitController extends Controller
                  // Buscar también por nombre de área relacionada
                  ->orWhereHas('area', function($qa) use ($search) {
                      $qa->where('nombre', 'like', "%{$search}%");
+                 })
+                 ->orWhereHas('office', function($qo) use ($search) {
+                     $qo->where('nombre', 'like', "%{$search}%");
                  });
              });
         }
 
         $visits = $query->paginate(10)->through(function ($visit) {
+            $destino = $visit->office_nombre 
+                ? ($visit->office_nombre . ($visit->area_nombre ? " - {$visit->area_nombre}" : '')) 
+                : $visit->area_nombre;
+
             return [
                 'id' => $visit->id,
                 'fecha' => $visit->fecha->format('Y-m-d'),
@@ -60,7 +68,7 @@ class ExternalVisitController extends Controller
                 'hora_ingreso' => $visit->hora_ingreso ? $visit->hora_ingreso->format('H:i') : null,
                 'hora_salida' => $visit->hora_salida ? $visit->hora_salida->format('H:i') : null,
                 'motivo' => $visit->motivo,
-                'area' => $visit->area_nombre, // Accessor
+                'area' => $destino, // Muestra Oficina - Área o solo Área
                 'a_quien_visita' => $visit->a_quien_visita,
                 'is_pending' => is_null($visit->hora_salida),
                 'registrado_por' => $visit->registrador ? $visit->registrador->name : 'N/A',
@@ -71,6 +79,7 @@ class ExternalVisitController extends Controller
             'visits' => $visits,
             'filters' => $request->only(['fecha', 'estado', 'search']),
             'areas' => HRArea::where('activo', true)->orderBy('nombre')->get(),
+            'offices' => HrOffice::where('activo', true)->with('area')->orderBy('nombre')->get(),
         ]);
     }
 
@@ -85,7 +94,8 @@ class ExternalVisitController extends Controller
             'apellidos' => 'required|string|max:100',
             'hora_ingreso' => 'required',
             'motivo' => 'required|string|min:3',
-            'area_id' => 'required|uuid|exists:hr_areas,id',
+            'area_id' => 'nullable|uuid|exists:hr_areas,id',
+            'office_id' => 'nullable|uuid|exists:hr_offices,id',
             'a_quien_visita' => 'nullable|string|max:200',
         ], [
             'dni.required' => 'El DNI es obligatorio.',
@@ -94,9 +104,11 @@ class ExternalVisitController extends Controller
             'apellidos.required' => 'El apellido es obligatorio.',
             'hora_ingreso.required' => 'La hora de ingreso es obligatoria.',
             'motivo.required' => 'El motivo es obligatorio.',
-            'area_id.required' => 'El área/oficina es obligatoria.',
-            'area_id.exists' => 'El área seleccionada no es válida.',
         ]);
+
+        if (empty($validated['area_id']) && empty($validated['office_id'])) {
+             return back()->withErrors(['area_id' => 'Debe seleccionar un Área o una Oficina de destino.']);
+        }
 
         // 1. Buscar o Crear Persona
         $person = Person::firstOrNew(['dni' => $validated['dni']]);
@@ -110,10 +122,18 @@ class ExternalVisitController extends Controller
             $person->save();
         }
         
-        // 2. Crear Visita con el area_id directo
+        // 2. Crear Visita
+        // Si elige office pero no area, intentar obtener area (opcional)
+        $areaId = $validated['area_id'];
+        if (!$areaId && !empty($validated['office_id'])) {
+            $office = HrOffice::find($validated['office_id']);
+            $areaId = $office ? $office->area_id : null;
+        }
+
         $visit = ExternalVisit::create([
             'person_id' => $person->id,
-            'area_id' => $validated['area_id'],
+            'area_id' => $areaId,
+            'office_id' => $validated['office_id'] ?? null,
             'hora_ingreso' => $validated['hora_ingreso'],
             'motivo' => $validated['motivo'],
             'a_quien_visita' => $validated['a_quien_visita'],

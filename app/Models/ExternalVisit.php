@@ -15,6 +15,7 @@ class ExternalVisit extends Model
     protected $fillable = [
         'person_id',
         'area_id',
+        'office_id',
         'hora_ingreso',
         'hora_salida',
         'motivo',
@@ -36,6 +37,7 @@ class ExternalVisit extends Model
         'dni',
         'nombres',
         'area_nombre',
+        'office_nombre',
     ];
 
     /**
@@ -52,6 +54,14 @@ class ExternalVisit extends Model
     public function area(): BelongsTo
     {
         return $this->belongsTo(HRArea::class, 'area_id');
+    }
+
+    /**
+     * Relación con la oficina que visita
+     */
+    public function office(): BelongsTo
+    {
+        return $this->belongsTo(HrOffice::class, 'office_id');
     }
 
     /**
@@ -89,6 +99,14 @@ class ExternalVisit extends Model
     }
 
     /**
+     * Acceso al nombre de la oficina
+     */
+    public function getOfficeNombreAttribute(): ?string
+    {
+        return $this->office?->nombre;
+    }
+
+    /**
      * Nombre completo del visitante
      */
     public function getNombreCompletoAttribute(): ?string
@@ -119,6 +137,6 @@ class ExternalVisit extends Model
      */
     public function scopeWithAllRelations($query)
     {
-        return $query->with(['person', 'area', 'registrador']);
+        return $query->with(['person', 'area', 'office', 'registrador']);
     }
 }

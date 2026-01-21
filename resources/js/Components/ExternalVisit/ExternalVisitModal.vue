@@ -75,20 +75,54 @@
 
                     <!-- Área y Persona a visitar -->
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                            <label class="block text-sm font-bold text-slate-700 mb-2">
-                                Área u Oficina <span class="text-red-500">*</span>
+                        <div class="space-y-2">
+                            <label class="block text-sm font-bold text-slate-700">
+                                Destino <span class="text-red-500">*</span>
                             </label>
-                            <select v-model="areaId" v-bind="areaIdProps"
-                                class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors bg-white"
-                                :class="errors.area_id ? 'border-red-400' : 'border-slate-200'">
-                                <option value="" disabled>Seleccione un área...</option>
-                                <option v-for="a in areas" :key="a.id" :value="a.id">
-                                    {{ a.nombre }}
-                                </option>
-                            </select>
-                            <p v-if="errors.area_id" class="mt-1 text-sm text-red-600">{{ errors.area_id }}
-                            </p>
+
+                            <!-- Toggle Tipo -->
+                            <div class="flex gap-2 mb-2">
+                                <label
+                                    class="flex-1 flex items-center justify-center gap-2 cursor-pointer p-2 border rounded-xl transition-all"
+                                    :class="destinoTipo === 'area' ? 'border-purple-500 bg-purple-50 text-purple-700 shadow-sm' : 'border-slate-200 hover:bg-slate-50 text-slate-600'">
+                                    <input type="radio" value="area" v-model="destinoTipo"
+                                        @change="toggleDestino('area')" class="hidden">
+                                    <span class="text-sm font-bold">Área / Dirección</span>
+                                </label>
+                                <label
+                                    class="flex-1 flex items-center justify-center gap-2 cursor-pointer p-2 border rounded-xl transition-all"
+                                    :class="destinoTipo === 'office' ? 'border-purple-500 bg-purple-50 text-purple-700 shadow-sm' : 'border-slate-200 hover:bg-slate-50 text-slate-600'">
+                                    <input type="radio" value="office" v-model="destinoTipo"
+                                        @change="toggleDestino('office')" class="hidden">
+                                    <span class="text-sm font-bold">Oficina / Unidad</span>
+                                </label>
+                            </div>
+
+                            <!-- Select Area -->
+                            <div v-if="destinoTipo === 'area'">
+                                <select v-model="areaId" v-bind="areaIdProps"
+                                    class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors bg-white"
+                                    :class="errors.area_id ? 'border-red-400' : 'border-slate-200'">
+                                    <option value="" disabled>Seleccione un área...</option>
+                                    <option v-for="a in areas" :key="a.id" :value="a.id">
+                                        {{ a.nombre }}
+                                    </option>
+                                </select>
+                                <p v-if="errors.area_id" class="mt-1 text-sm text-red-600">{{ errors.area_id }}</p>
+                            </div>
+
+                            <!-- Select Office -->
+                            <div v-if="destinoTipo === 'office'">
+                                <select v-model="officeId" v-bind="officeIdProps"
+                                    class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors bg-white"
+                                    :class="errors.office_id ? 'border-red-400' : 'border-slate-200'">
+                                    <option value="" disabled>Seleccione una oficina...</option>
+                                    <option v-for="off in offices" :key="off.id" :value="off.id">
+                                        {{ off.nombre }} {{ off.area ? `(${off.area.nombre})` : '' }}
+                                    </option>
+                                </select>
+                                <p v-if="errors.office_id" class="mt-1 text-sm text-red-600">{{ errors.office_id }}</p>
+                            </div>
                         </div>
 
                         <div>
@@ -144,6 +178,10 @@ const props = defineProps({
     areas: {
         type: Array,
         default: () => []
+    },
+    offices: {
+        type: Array,
+        default: () => []
     }
 });
 
@@ -151,6 +189,7 @@ const emit = defineEmits(['close']);
 
 const isSubmitting = ref(false);
 const currentTime = new Date().toTimeString().slice(0, 5);
+const destinoTipo = ref('area'); // 'area' | 'office'
 
 // Validation Schema
 const schema = toTypedSchema(
@@ -165,7 +204,14 @@ const schema = toTypedSchema(
             .required('El apellido es obligatorio')
             .min(2, 'El apellido debe tener al menos 2 caracteres'),
         hora_ingreso: yup.string().required('La hora de ingreso es obligatoria'),
-        area_id: yup.string().required('El área u oficina es obligatorio'),
+        // La validación condicional se hace compleja en simple object schema
+        // Usaremos lógica en el submit o where() de yup, pero para simplicidad y como vee-validate 4.5+ soporta computed schemas:
+        area_id: yup.string().test('area-required', 'Debe seleccionar un área', function (val) {
+            return destinoTipo.value === 'office' || (!!val && val.length > 0);
+        }).nullable(),
+        office_id: yup.string().test('office-required', 'Debe seleccionar una oficina', function (val) {
+            return destinoTipo.value === 'area' || (!!val && val.length > 0);
+        }).nullable(),
         a_quien_visita: yup.string().nullable(),
         motivo: yup.string()
             .required('El motivo de visita es obligatorio')
@@ -173,7 +219,7 @@ const schema = toTypedSchema(
     })
 );
 
-const { errors, defineField, handleSubmit, resetForm } = useForm({
+const { errors, defineField, handleSubmit, resetForm, setFieldValue } = useForm({
     validationSchema: schema,
     initialValues: {
         dni: '',
@@ -181,6 +227,7 @@ const { errors, defineField, handleSubmit, resetForm } = useForm({
         apellidos: '',
         hora_ingreso: currentTime,
         area_id: '',
+        office_id: '',
         a_quien_visita: '',
         motivo: '',
     }
@@ -191,11 +238,22 @@ const [nombres, nombresProps] = defineField('nombres');
 const [apellidos, apellidosProps] = defineField('apellidos');
 const [horaIngreso, horaIngresoProps] = defineField('hora_ingreso');
 const [areaId, areaIdProps] = defineField('area_id');
+const [officeId, officeIdProps] = defineField('office_id');
 const [aQuienVisita, aQuienVisitaProps] = defineField('a_quien_visita');
 const [motivo, motivoProps] = defineField('motivo');
 
+const toggleDestino = (tipo) => {
+    destinoTipo.value = tipo;
+    if (tipo === 'area') setFieldValue('office_id', '');
+    else setFieldValue('area_id', '');
+};
+
 const onSubmit = handleSubmit(async (values) => {
     isSubmitting.value = true;
+
+    // Limpieza de datos según selección
+    if (destinoTipo.value === 'area') values.office_id = null;
+    else values.area_id = null;
 
     router.post('/visitors', values, {
         onSuccess: (page) => {

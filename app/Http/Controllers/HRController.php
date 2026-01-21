@@ -9,6 +9,7 @@ use App\Models\HRPosition;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use App\Models\Person;
+use App\Models\HrOffice;
 use Carbon\Carbon;
 
 class HRController extends Controller
@@ -26,7 +27,12 @@ class HRController extends Controller
      */
     public function getEmployees()
     {
-        $employees = Employee::orderBy('apellidos')->get();
+        // Cargamos la relación person para tener acceso a nombres/apellidos
+        // Ordenamos la colección resultante usando el accessor 'apellidos'
+        $employees = Employee::with(['person', 'area', 'position'])
+            ->get()
+            ->sortBy('apellidos', SORT_NATURAL | SORT_FLAG_CASE)
+            ->values(); // Reindexar array
         
         return response()->json($employees);
     }
@@ -36,7 +42,7 @@ class HRController extends Controller
      */
     public function getEmployee(string $id)
     {
-        $employee = Employee::with('vacations')->find($id);
+        $employee = Employee::with(['person', 'vacations', 'area', 'position'])->find($id);
         
         if (!$employee) {
             return response()->json(['message' => 'Empleado no encontrado'], 404);
@@ -50,7 +56,10 @@ class HRController extends Controller
      */
     public function getEmployeeByDni(string $dni)
     {
-        $employee = Employee::where('dni', $dni)->first();
+        // Buscar empleado que tenga una persona con ese DNI
+        $employee = Employee::whereHas('person', function($query) use ($dni) {
+            $query->where('dni', $dni);
+        })->with(['person', 'area', 'position'])->first();
         
         if (!$employee) {
             return response()->json(['message' => 'Empleado no encontrado'], 404);
@@ -505,5 +514,84 @@ class HRController extends Controller
         $position->delete();
         
         return response()->json(['message' => 'Cargo eliminado correctamente']);
+    }
+
+    // ========== OFFICE METHODS ==========
+
+    /**
+     * Get all offices
+     */
+    public function getOffices()
+    {
+        $offices = HrOffice::with('area')->orderBy('nombre')->get();
+        return response()->json($offices);
+    }
+
+    /**
+     * Create a new office
+     */
+    public function storeOffice(Request $request)
+    {
+        $validated = $request->validate([
+            'area_id' => 'required|exists:hr_areas,id',
+            'nombre' => 'required|string|max:255',
+            'codigo' => 'nullable|string|max:20',
+            'ubicacion' => 'nullable|string|max:255',
+            'telefono_interno' => 'nullable|string|max:50',
+            'activo' => 'boolean',
+        ]);
+
+        $office = HrOffice::create($validated);
+        $office->load('area');
+        
+        return response()->json([
+            'message' => 'Oficina registrada correctamente',
+            'office' => $office
+        ], 201);
+    }
+
+    /**
+     * Update an office
+     */
+    public function updateOffice(Request $request, string $id)
+    {
+        $office = HrOffice::find($id);
+        
+        if (!$office) {
+            return response()->json(['message' => 'Oficina no encontrada'], 404);
+        }
+
+        $validated = $request->validate([
+            'area_id' => 'sometimes|exists:hr_areas,id',
+            'nombre' => 'sometimes|string|max:255',
+            'codigo' => 'nullable|string|max:20',
+            'ubicacion' => 'nullable|string|max:255',
+            'telefono_interno' => 'nullable|string|max:50',
+            'activo' => 'boolean',
+        ]);
+
+        $office->update($validated);
+        $office->load('area');
+        
+        return response()->json([
+            'message' => 'Oficina actualizada correctamente',
+            'office' => $office
+        ]);
+    }
+
+    /**
+     * Delete an office
+     */
+    public function deleteOffice(string $id)
+    {
+        $office = HrOffice::find($id);
+        
+        if (!$office) {
+            return response()->json(['message' => 'Oficina no encontrada'], 404);
+        }
+
+        $office->delete();
+        
+        return response()->json(['message' => 'Oficina eliminada correctamente']);
     }
 }
