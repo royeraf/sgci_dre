@@ -4,18 +4,20 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class ExternalVisit extends Model
 {
     use HasFactory;
 
+    protected $table = 'external_visits';
+
     protected $fillable = [
-        'dni',
-        'nombres',
+        'person_id',
+        'area_id',
         'hora_ingreso',
         'hora_salida',
         'motivo',
-        'area',
         'a_quien_visita',
         'fecha',
         'registrado_por',
@@ -27,8 +29,87 @@ class ExternalVisit extends Model
         'hora_salida' => 'datetime:H:i',
     ];
 
-    public function registrarUser()
+    /**
+     * Relación con la persona (visitante)
+     */
+    public function person(): BelongsTo
+    {
+        return $this->belongsTo(Person::class, 'person_id');
+    }
+
+    /**
+     * Relación con el área que visita
+     */
+    public function area(): BelongsTo
+    {
+        return $this->belongsTo(HRArea::class, 'area_id');
+    }
+
+    /**
+     * Relación con el usuario que registró la visita
+     */
+    public function registrador(): BelongsTo
     {
         return $this->belongsTo(User::class, 'registrado_por');
+    }
+
+    // ===== ACCESSORS para compatibilidad =====
+
+    /**
+     * Acceso al DNI a través de person
+     */
+    public function getDniAttribute(): ?string
+    {
+        return $this->person?->dni;
+    }
+
+    /**
+     * Acceso al nombre completo a través de person
+     */
+    public function getNombresAttribute(): ?string
+    {
+        return $this->person ? $this->person->nombres . ' ' . $this->person->apellidos : null;
+    }
+
+    /**
+     * Acceso al nombre del área
+     */
+    public function getAreaNombreAttribute(): ?string
+    {
+        return $this->area?->nombre;
+    }
+
+    /**
+     * Nombre completo del visitante
+     */
+    public function getNombreCompletoAttribute(): ?string
+    {
+        return $this->person?->nombre_completo;
+    }
+
+    // ===== SCOPES =====
+
+    /**
+     * Scope para visitas de hoy
+     */
+    public function scopeHoy($query)
+    {
+        return $query->whereDate('fecha', today());
+    }
+
+    /**
+     * Scope para visitas pendientes (sin hora de salida)
+     */
+    public function scopePendientes($query)
+    {
+        return $query->whereNull('hora_salida');
+    }
+
+    /**
+     * Scope con todas las relaciones
+     */
+    public function scopeWithAllRelations($query)
+    {
+        return $query->with(['person', 'area', 'registrador']);
     }
 }
