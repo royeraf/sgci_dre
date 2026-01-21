@@ -137,7 +137,7 @@
                                     class="uppercase w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors"
                                     :class="formErrors.apellidos ? 'border-red-400' : 'border-slate-200'" />
                                 <p v-if="formErrors.apellidos" class="mt-1 text-sm text-red-600">{{ formErrors.apellidos
-                                }}</p>
+                                    }}</p>
                             </div>
                         </div>
 
@@ -184,7 +184,7 @@
                                     </option>
                                 </select>
                                 <p v-if="formErrors.office_id" class="mt-1 text-sm text-red-600">{{ formErrors.office_id
-                                }}</p>
+                                    }}</p>
                             </div>
                         </div>
 
@@ -335,15 +335,14 @@ const consultarDni = async () => {
         const response = await axios.get('/visitors/api/consultar-dni', { params: { dni: dni.value } });
         if (response.data.success && response.data.data) {
             const persona = response.data.data;
-            setFieldValue('nombres', persona.nombre_completo);
-            nombres.value = persona.nombre_completo;
+            setFieldValue('nombres', persona.nombres);
+            nombres.value = persona.nombres;
 
             // Try to set surnames if available, otherwise clear or user must fill
             if (persona.apellido_paterno || persona.apellido_materno) {
-                const apellidos = `${persona.apellido_paterno || ''} ${persona.apellido_materno || ''}`.trim();
-                setFieldValue('apellidos', apellidos);
-                // Also update local ref
-                // We don't have separate ref for apellidos in snippet, but useForm binds it.
+                const apellidosStr = `${persona.apellido_paterno || ''} ${persona.apellido_materno || ''}`.trim();
+                setFieldValue('apellidos', apellidosStr);
+                apellidos.value = apellidosStr;
             }
 
             nombreAutocompletado.value = true;
