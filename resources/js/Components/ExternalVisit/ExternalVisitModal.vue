@@ -50,7 +50,7 @@
                                     Hora de Salida <span class="text-red-500">*</span>
                                 </label>
                                 <input type="time" v-model="horaSalida" v-bind="horaSalidaProps"
-                                    class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors"
+                                    class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors outline-none"
                                     :class="exitFormErrors.hora_salida ? 'border-red-400' : 'border-slate-200'" />
                                 <p v-if="exitFormErrors.hora_salida" class="mt-1 text-sm text-red-600">{{
                                     exitFormErrors.hora_salida }}</p>
@@ -72,7 +72,7 @@
                                     <input ref="dniInputRef" type="text" v-model="dni" v-bind="dniProps" maxlength="8"
                                         placeholder="Escanee o digite el DNI" @keypress.enter.prevent="consultarDni"
                                         @input="handleDniInput"
-                                        class="w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all text-lg font-mono tracking-wider"
+                                        class="w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all text-lg font-mono tracking-wider outline-none"
                                         :class="[
                                             formErrors.dni ? 'border-red-400 bg-red-50' : 'border-purple-200 bg-white',
                                             isConsultando ? 'opacity-50' : ''
@@ -126,7 +126,7 @@
                                 </label>
                                 <input type="text" v-model="nombres" v-bind="nombresProps" placeholder="Nombres"
                                     @input="nombres = $event.target.value.toUpperCase()" :disabled="!camposEditables"
-                                    class="uppercase w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors disabled:bg-slate-100 disabled:text-slate-500"
+                                    class="uppercase w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors disabled:bg-slate-100 disabled:text-slate-500 outline-none"
                                     :class="formErrors.nombres ? 'border-red-400' : 'border-slate-200'" />
                                 <p v-if="formErrors.nombres" class="mt-1 text-sm text-red-600">{{ formErrors.nombres }}
                                 </p>
@@ -138,7 +138,7 @@
                                 </label>
                                 <input type="text" v-model="apellidos" v-bind="apellidosProps" placeholder="Apellidos"
                                     @input="apellidos = $event.target.value.toUpperCase()" :disabled="!camposEditables"
-                                    class="uppercase w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors disabled:bg-slate-100 disabled:text-slate-500"
+                                    class="uppercase w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors disabled:bg-slate-100 disabled:text-slate-500 outline-none"
                                     :class="formErrors.apellidos ? 'border-red-400' : 'border-slate-200'" />
                                 <p v-if="formErrors.apellidos" class="mt-1 text-sm text-red-600">{{ formErrors.apellidos
                                     }}</p>
@@ -169,7 +169,7 @@
 
                             <div v-if="destinoTipo === 'area'">
                                 <select v-model="areaId" v-bind="areaIdProps"
-                                    class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors bg-white"
+                                    class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors bg-white outline-none"
                                     :class="formErrors.area_id ? 'border-red-400' : 'border-slate-200'">
                                     <option value="" disabled>Seleccione un área...</option>
                                     <option v-for="a in areas" :key="a.id" :value="a.id">{{ a.nombre }}</option>
@@ -180,7 +180,7 @@
 
                             <div v-if="destinoTipo === 'office'">
                                 <select v-model="officeId" v-bind="officeIdProps"
-                                    class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors bg-white"
+                                    class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors bg-white outline-none"
                                     :class="formErrors.office_id ? 'border-red-400' : 'border-slate-200'">
                                     <option value="" disabled>Seleccione una oficina...</option>
                                     <option v-for="off in offices" :key="off.id" :value="off.id">
@@ -198,7 +198,7 @@
                                 <label class="block text-sm font-bold text-slate-700 mb-2">A quién visita</label>
                                 <input type="text" v-model="aQuienVisita" v-bind="aQuienVisitaProps"
                                     placeholder="Nombre personal (Opcional)"
-                                    class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors" />
+                                    class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors outline-none" />
                             </div>
                             <!-- Hora Ingreso (Moved here) -->
                             <div>
@@ -206,7 +206,7 @@
                                     Hora de Ingreso <span class="text-red-500">*</span>
                                 </label>
                                 <input type="time" v-model="horaIngreso" v-bind="horaIngresoProps"
-                                    class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors"
+                                    class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors outline-none"
                                     :class="formErrors.hora_ingreso ? 'border-red-400' : 'border-slate-200'" />
                                 <p v-if="formErrors.hora_ingreso" class="mt-1 text-sm text-red-600">{{
                                     formErrors.hora_ingreso }}</p>
@@ -218,7 +218,7 @@
                                     class="text-red-500">*</span></label>
                             <textarea v-model="motivo" v-bind="motivoProps" rows="3"
                                 placeholder="Indique el motivo de la visita..."
-                                class="w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 resize-none transition-colors"
+                                class="w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 resize-none transition-colors outline-none"
                                 :class="formErrors.motivo ? 'border-red-400' : 'border-slate-200'"></textarea>
                             <p v-if="formErrors.motivo" class="mt-1 text-sm text-red-600">{{ formErrors.motivo }}</p>
                         </div>
