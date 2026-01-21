@@ -13,7 +13,7 @@
                             {{ visit ? 'Registrar Salida de Visita' : 'Registrar Ingreso de Visita' }}
                         </h3>
                         <p class="text-purple-100 text-sm mt-1">
-                            {{ visit ? `Registrar hora de salida` : 'Complete los datos del visitante' }}
+                            {{ visit ? `Registrar hora de salida` : 'Escanee el DNI o ingrese los datos manualmente' }}
                         </p>
                     </div>
                     <button @click="$emit('close')" class="text-purple-100 hover:text-white transition-colors p-1">
@@ -53,18 +53,46 @@
 
                     <!-- New visit mode -->
                     <template v-else>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <!-- DNI -->
-                            <div>
-                                <label class="block text-sm font-bold text-slate-700 mb-2">
-                                    DNI <span class="text-red-500">*</span>
-                                </label>
-                                <input type="text" v-model="dni" v-bind="dniProps" maxlength="8" placeholder="12345678"
-                                    class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors"
-                                    :class="formErrors.dni ? 'border-red-400' : 'border-slate-200'" />
-                                <p v-if="formErrors.dni" class="mt-1 text-sm text-red-600">{{ formErrors.dni }}</p>
+                        <!-- DNI Scanner Section -->
+                        <div
+                            class="bg-gradient-to-br from-purple-50 to-fuchsia-50 rounded-xl p-4 border border-purple-100">
+                            <div class="flex items-center gap-2 mb-3">
+                                <ScanBarcode class="w-5 h-5 text-purple-600" />
+                                <span class="font-semibold text-purple-900">Consulta de DNI con Lector</span>
                             </div>
+                            <div class="flex gap-3">
+                                <div class="flex-1 relative">
+                                    <input ref="dniInputRef" type="text" v-model="dni" v-bind="dniProps" maxlength="8"
+                                        placeholder="Escanee o digite el DNI" @keypress.enter.prevent="consultarDni"
+                                        @input="handleDniInput"
+                                        class="w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all text-lg font-mono tracking-wider"
+                                        :class="[
+                                            formErrors.dni ? 'border-red-400 bg-red-50' : 'border-purple-200 bg-white',
+                                            isConsultando ? 'opacity-50' : ''
+                                        ]" :disabled="isConsultando" />
+                                    <div v-if="isConsultando" class="absolute right-3 top-1/2 -translate-y-1/2">
+                                        <Loader2 class="w-5 h-5 animate-spin text-purple-600" />
+                                    </div>
+                                </div>
+                                <button type="button" @click="consultarDni"
+                                    :disabled="dni.length !== 8 || isConsultando"
+                                    class="px-5 py-3 bg-gradient-to-r from-purple-600 to-fuchsia-600 text-white font-bold rounded-xl hover:from-purple-700 hover:to-fuchsia-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2">
+                                    <Search class="w-5 h-5" />
+                                    <span class="hidden sm:inline">Buscar</span>
+                                </button>
+                            </div>
+                            <p v-if="formErrors.dni" class="mt-2 text-sm text-red-600">{{ formErrors.dni }}</p>
 
+                            <!-- Consulta Result Message -->
+                            <div v-if="consultaMessage" class="mt-3 p-3 rounded-lg flex items-center gap-2"
+                                :class="consultaSuccess ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800'">
+                                <component :is="consultaSuccess ? CheckCircle : AlertCircle"
+                                    class="w-5 h-5 flex-shrink-0" />
+                                <span class="text-sm">{{ consultaMessage }}</span>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <!-- Hora Ingreso -->
                             <div>
                                 <label class="block text-sm font-bold text-slate-700 mb-2">
@@ -76,12 +104,19 @@
                                 <p v-if="formErrors.hora_ingreso" class="mt-1 text-sm text-red-600">{{
                                     formErrors.hora_ingreso }}</p>
                             </div>
+
+                            <!-- Placeholder for alignment -->
+                            <div class="hidden md:block"></div>
                         </div>
 
                         <!-- Nombre Visitante -->
                         <div>
                             <label class="block text-sm font-bold text-slate-700 mb-2">
                                 Nombre del Visitante <span class="text-red-500">*</span>
+                                <span v-if="nombreAutocompletado"
+                                    class="ml-2 text-xs font-normal text-green-600 bg-green-100 px-2 py-0.5 rounded-full">
+                                    ✓ Autocompletado
+                                </span>
                             </label>
                             <input type="text" v-model="nombres" v-bind="nombresProps" placeholder="Nombres y Apellidos"
                                 @input="nombres = $event.target.value.toUpperCase()"
@@ -145,13 +180,14 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, onMounted, nextTick } from 'vue';
 import { useForm } from 'vee-validate';
 import { toTypedSchema } from '@vee-validate/yup';
 import * as yup from 'yup';
 import { router } from '@inertiajs/vue3';
-import { LogIn, LogOut, X, Loader2 } from 'lucide-vue-next';
+import { LogIn, LogOut, X, Loader2, ScanBarcode, Search, CheckCircle, AlertCircle } from 'lucide-vue-next';
 import Swal from 'sweetalert2';
+import axios from 'axios';
 
 const props = defineProps({
     visit: {
@@ -163,7 +199,21 @@ const props = defineProps({
 const emit = defineEmits(['close']);
 
 const isSubmitting = ref(false);
+const isConsultando = ref(false);
+const consultaMessage = ref('');
+const consultaSuccess = ref(false);
+const nombreAutocompletado = ref(false);
+const dniInputRef = ref(null);
 const currentTime = new Date().toTimeString().slice(0, 5);
+
+// Focus DNI input on mount
+onMounted(() => {
+    if (!props.visit) {
+        nextTick(() => {
+            dniInputRef.value?.focus();
+        });
+    }
+});
 
 // Validation Schema for entry form
 const entrySchema = toTypedSchema(
@@ -191,7 +241,7 @@ const exitSchema = toTypedSchema(
 );
 
 // Entry form
-const { errors: formErrors, defineField: defineEntryField, handleSubmit: validateEntryForm, resetForm } = useForm({
+const { errors: formErrors, defineField: defineEntryField, handleSubmit: validateEntryForm, resetForm, setFieldValue } = useForm({
     validationSchema: entrySchema,
     initialValues: {
         dni: '',
@@ -219,6 +269,70 @@ const { errors: exitFormErrors, defineField: defineExitField, handleSubmit: vali
 });
 
 const [horaSalida, horaSalidaProps] = defineExitField('hora_salida');
+
+// Handle DNI input - auto-trigger search when 8 digits entered (for barcode scanner)
+const handleDniInput = (event) => {
+    // Clean non-numeric characters
+    const cleanValue = event.target.value.replace(/\D/g, '');
+    dni.value = cleanValue;
+
+    // Reset messages on new input
+    consultaMessage.value = '';
+    nombreAutocompletado.value = false;
+
+    // Auto-trigger search when 8 digits (barcode scanner typically enters quickly)
+    if (cleanValue.length === 8) {
+        // Small delay to ensure complete barcode scan
+        setTimeout(() => {
+            if (dni.value.length === 8) {
+                consultarDni();
+            }
+        }, 100);
+    }
+};
+
+// Consultar DNI via API
+const consultarDni = async () => {
+    if (dni.value.length !== 8) {
+        consultaMessage.value = 'El DNI debe tener 8 dígitos';
+        consultaSuccess.value = false;
+        return;
+    }
+
+    isConsultando.value = true;
+    consultaMessage.value = '';
+    consultaSuccess.value = false;
+    nombreAutocompletado.value = false;
+
+    try {
+        const response = await axios.get('/visitors/api/consultar-dni', {
+            params: { dni: dni.value }
+        });
+
+        if (response.data.success && response.data.data) {
+            const persona = response.data.data;
+            // Auto-fill the name field
+            setFieldValue('nombres', persona.nombre_completo);
+            nombres.value = persona.nombre_completo;
+            nombreAutocompletado.value = true;
+            consultaMessage.value = `Datos obtenidos: ${persona.nombre_completo}`;
+            consultaSuccess.value = true;
+        } else {
+            consultaMessage.value = response.data.message || 'No se encontraron datos para este DNI';
+            consultaSuccess.value = false;
+        }
+    } catch (error) {
+        console.error('Error consultando DNI:', error);
+        if (error.response?.status === 422) {
+            consultaMessage.value = 'DNI inválido. Verifique el número ingresado.';
+        } else {
+            consultaMessage.value = 'Error al consultar. Puede ingresar los datos manualmente.';
+        }
+        consultaSuccess.value = false;
+    } finally {
+        isConsultando.value = false;
+    }
+};
 
 // Submit entry form
 const onSubmitEntry = validateEntryForm(async (values) => {

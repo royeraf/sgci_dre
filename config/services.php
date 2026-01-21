@@ -31,4 +31,9 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
+    'reniec' => [
+        'url' => env('RENIEC_API_URL', 'https://api.decolecta.com/v1/reniec/dni'),
+        'token' => env('RENIEC_API_TOKEN'),
+    ],
+
 ];

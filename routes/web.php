@@ -73,6 +73,7 @@ Route::middleware('auth')->group(function () {
     Route::middleware('role:ROL006,ROL007')->prefix('visitors')->name('visitors.')->group(function () {
         Route::get('/', [ExternalVisitController::class, 'index'])->name('index');
         Route::post('/', [ExternalVisitController::class, 'store'])->name('store');
+        Route::get('/api/consultar-dni', [ExternalVisitController::class, 'consultarDni'])->name('consultar-dni');
         Route::patch('/{visit}/exit', [ExternalVisitController::class, 'registerExit'])->name('exit');
         Route::get('/{visit}/ticket', [ExternalVisitController::class, 'generateTicket'])->name('ticket');
     });

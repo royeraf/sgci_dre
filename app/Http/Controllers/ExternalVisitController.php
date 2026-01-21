@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\ExternalVisit;
 use App\Models\AuditLog;
+use App\Services\ReniecService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -144,5 +145,23 @@ class ExternalVisitController extends Controller
         ])->setPaper([0, 0, 226, 600], 'portrait'); // ~80mm width ticket
 
         return $pdf->stream("ticket_visita_{$visit->id}.pdf"); // Stream instead of download for better print experience
+    }
+
+    /**
+     * Consultar datos de persona por DNI usando la API de RENIEC.
+     * Este endpoint es usado por el lector de códigos de barras.
+     */
+    public function consultarDni(Request $request, ReniecService $reniecService)
+    {
+        $request->validate([
+            'dni' => 'required|string|size:8',
+        ], [
+            'dni.required' => 'El DNI es obligatorio.',
+            'dni.size' => 'El DNI debe tener exactamente 8 dígitos.',
+        ]);
+
+        $resultado = $reniecService->consultarDni($request->dni);
+
+        return response()->json($resultado);
     }
 }
