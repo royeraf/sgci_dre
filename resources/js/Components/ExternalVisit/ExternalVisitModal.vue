@@ -99,20 +99,8 @@
                             </div>
                         </div>
 
-                        <!-- Hora Ingreso -->
-                        <div>
-                            <label class="block text-sm font-bold text-slate-700 mb-2">
-                                Hora de Ingreso <span class="text-red-500">*</span>
-                            </label>
-                            <input type="time" v-model="horaIngreso" v-bind="horaIngresoProps"
-                                class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors"
-                                :class="formErrors.hora_ingreso ? 'border-red-400' : 'border-slate-200'" />
-                            <p v-if="formErrors.hora_ingreso" class="mt-1 text-sm text-red-600">{{
-                                formErrors.hora_ingreso }}</p>
-                        </div>
-
                         <!-- Nombres y Apellidos -->
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
                             <div>
                                 <label class="block text-sm font-bold text-slate-700 mb-2">
                                     Nombres <span class="text-red-500">*</span>
@@ -142,7 +130,7 @@
                         </div>
 
                         <!-- Destino (Area/Office) -->
-                        <div class="space-y-2">
+                        <div class="space-y-2 mt-4">
                             <label class="block text-sm font-bold text-slate-700">Destino <span
                                     class="text-red-500">*</span></label>
 
@@ -188,15 +176,27 @@
                             </div>
                         </div>
 
-                        <!-- A quien visita & Motivo -->
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- A quien visita & Hora Ingreso -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
                             <div>
                                 <label class="block text-sm font-bold text-slate-700 mb-2">A quién visita</label>
                                 <input type="text" v-model="aQuienVisita" v-bind="aQuienVisitaProps"
                                     placeholder="Nombre personal (Opcional)"
                                     class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors" />
                             </div>
+                            <!-- Hora Ingreso (Moved here) -->
+                            <div>
+                                <label class="block text-sm font-bold text-slate-700 mb-2">
+                                    Hora de Ingreso <span class="text-red-500">*</span>
+                                </label>
+                                <input type="time" v-model="horaIngreso" v-bind="horaIngresoProps"
+                                    class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors"
+                                    :class="formErrors.hora_ingreso ? 'border-red-400' : 'border-slate-200'" />
+                                <p v-if="formErrors.hora_ingreso" class="mt-1 text-sm text-red-600">{{
+                                    formErrors.hora_ingreso }}</p>
+                            </div>
                         </div>
+
                         <div>
                             <label class="block text-sm font-bold text-slate-700 mb-2">Motivo de Visita <span
                                     class="text-red-500">*</span></label>
