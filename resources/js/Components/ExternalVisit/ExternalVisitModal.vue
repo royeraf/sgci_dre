@@ -12,9 +12,11 @@
                             <component :is="visit ? LogOut : LogIn" class="w-6 h-6" />
                             {{ visit ? 'Registrar Salida' : 'Registrar Ingreso de Visita' }}
                         </h3>
-                        <p class="text-purple-100 text-sm mt-1">
-                            {{ visit ? 'Registre la hora de salida del visitante' : 'Escanee el DNI o ingrese los datos
-                            manualmente' }}
+                        <p v-if="visit" class="text-purple-100 text-sm mt-1">
+                            Registre la hora de salida del visitante
+                        </p>
+                        <p v-else class="text-purple-100 text-sm mt-1">
+                            Escanee el DNI o ingrese los datos manualmente
                         </p>
                     </div>
                     <button @click="$emit('close')" class="text-purple-100 hover:text-white transition-colors p-1">
@@ -135,7 +137,7 @@
                                     class="uppercase w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors"
                                     :class="formErrors.apellidos ? 'border-red-400' : 'border-slate-200'" />
                                 <p v-if="formErrors.apellidos" class="mt-1 text-sm text-red-600">{{ formErrors.apellidos
-                                    }}</p>
+                                }}</p>
                             </div>
                         </div>
 
@@ -182,7 +184,7 @@
                                     </option>
                                 </select>
                                 <p v-if="formErrors.office_id" class="mt-1 text-sm text-red-600">{{ formErrors.office_id
-                                    }}</p>
+                                }}</p>
                             </div>
                         </div>
 
