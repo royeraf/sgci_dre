@@ -99,6 +99,22 @@
                             </div>
                         </div>
 
+                        <!-- Toogle Edición -->
+                        <div class="flex items-center justify-between mt-6 -mb-4 px-1">
+                            <span class="text-sm font-bold text-slate-700">Datos Personales</span>
+                            <div class="flex items-center gap-2">
+                                <span class="text-xs font-medium text-slate-500">Editar manualmente</span>
+                                <button type="button" @click="camposEditables = !camposEditables"
+                                    class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-purple-600 focus:ring-offset-2"
+                                    :class="camposEditables ? 'bg-purple-600' : 'bg-slate-200'">
+                                    <span class="sr-only">Habilitar edición</span>
+                                    <span aria-hidden="true"
+                                        class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"
+                                        :class="camposEditables ? 'translate-x-5' : 'translate-x-0'" />
+                                </button>
+                            </div>
+                        </div>
+
                         <!-- Nombres y Apellidos -->
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
                             <div>
@@ -109,8 +125,8 @@
                                         Autocompletado</span>
                                 </label>
                                 <input type="text" v-model="nombres" v-bind="nombresProps" placeholder="Nombres"
-                                    @input="nombres = $event.target.value.toUpperCase()"
-                                    class="uppercase w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors"
+                                    @input="nombres = $event.target.value.toUpperCase()" :disabled="!camposEditables"
+                                    class="uppercase w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors disabled:bg-slate-100 disabled:text-slate-500"
                                     :class="formErrors.nombres ? 'border-red-400' : 'border-slate-200'" />
                                 <p v-if="formErrors.nombres" class="mt-1 text-sm text-red-600">{{ formErrors.nombres }}
                                 </p>
@@ -121,8 +137,8 @@
                                     Apellidos <span class="text-red-500">*</span>
                                 </label>
                                 <input type="text" v-model="apellidos" v-bind="apellidosProps" placeholder="Apellidos"
-                                    @input="apellidos = $event.target.value.toUpperCase()"
-                                    class="uppercase w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors"
+                                    @input="apellidos = $event.target.value.toUpperCase()" :disabled="!camposEditables"
+                                    class="uppercase w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors disabled:bg-slate-100 disabled:text-slate-500"
                                     :class="formErrors.apellidos ? 'border-red-400' : 'border-slate-200'" />
                                 <p v-if="formErrors.apellidos" class="mt-1 text-sm text-red-600">{{ formErrors.apellidos
                                     }}</p>
@@ -172,7 +188,7 @@
                                     </option>
                                 </select>
                                 <p v-if="formErrors.office_id" class="mt-1 text-sm text-red-600">{{ formErrors.office_id
-                                    }}</p>
+                                }}</p>
                             </div>
                         </div>
 
@@ -252,6 +268,7 @@ const nombreAutocompletado = ref(false);
 const dniInputRef = ref(null);
 const currentTime = new Date().toTimeString().slice(0, 5);
 const destinoTipo = ref('area');
+const camposEditables = ref(true);
 
 onMounted(() => {
     if (!props.visit) {
@@ -346,6 +363,7 @@ const consultarDni = async () => {
             }
 
             nombreAutocompletado.value = true;
+            camposEditables.value = false;
             consultaMessage.value = `Datos encontrados: ${persona.nombre_completo}`;
             consultaSuccess.value = true;
         } else {
