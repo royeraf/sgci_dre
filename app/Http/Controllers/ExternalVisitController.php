@@ -212,6 +212,24 @@ class ExternalVisitController extends Controller
             'dni.size' => 'El DNI debe tener exactamente 8 dígitos.',
         ]);
 
+        // 1. Buscar primero en la base de datos local
+        $localPerson = Person::findByDni($request->dni);
+
+        if ($localPerson) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Datos encontrados en registro local',
+                'data' => [
+                    'dni' => $localPerson->dni,
+                    'nombres' => $localPerson->nombres,
+                    'apellido_paterno' => $localPerson->apellidos, // Mapeamos todo a paterno para que el frontend lo concatene bien
+                    'apellido_materno' => '',
+                    'nombre_completo' => $localPerson->nombre_full,
+                ]
+            ]);
+        }
+
+        // 2. Si no existe, consultar a la API de RENIEC
         $resultado = $reniecService->consultarDni($request->dni);
 
         return response()->json($resultado);
