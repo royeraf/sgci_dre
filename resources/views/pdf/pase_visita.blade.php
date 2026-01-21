@@ -99,7 +99,7 @@
         <div class="divider"></div>
 
         <div class="label">DESTINO (ÁREA):</div>
-        <div class="value">{{ Str::upper($visit->area) }}</div>
+        <div class="value">{{ Str::upper($visit->area_nombre) }}</div>
 
         @if($visit->a_quien_visita)
         <div class="label">A QUIEN VISITA:</div>

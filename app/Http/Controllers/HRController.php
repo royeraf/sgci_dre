@@ -58,31 +58,75 @@ class HRController extends Controller
         return response()->json($employee);
     }
 
+use App\Models\Person; // Agregar Import
+
     /**
      * Create a new employee
+     * Normalizado para usar tabla people
      */
     public function storeEmployee(Request $request)
     {
+        // Validación inicial
         $validated = $request->validate([
-            'dni' => 'required|string|size:8|unique:employees,dni',
+            'dni' => 'required|string|size:8',
             'nombres' => 'required|string|max:255',
             'apellidos' => 'required|string|max:255',
             'fecha_nacimiento' => 'nullable|date',
-            'genero' => 'nullable|in:Masculino,Femenino',
+            'genero' => 'nullable|in:M,F,Masculino,Femenino',
             'direccion' => 'nullable|string|max:255',
             'telefono' => 'nullable|string|max:20',
             'correo' => 'nullable|email|max:255',
-            'cargo' => 'nullable|string|max:255',
-            'area' => 'nullable|string|max:255',
+            // Datos laborales
+            'cargo_id' => 'nullable|exists:hr_positions,id', // Idealmente usar IDs
+            'area_id' => 'nullable|exists:hr_areas,id',     // Idealmente usar IDs
             'fecha_ingreso' => 'nullable|date',
-            'tipo_contrato' => 'nullable|in:Nombrado,CAS,Locador,Practicante',
+            'tipo_contrato' => 'nullable|string',
             'observaciones' => 'nullable|string',
-        ], [
-            'dni.unique' => 'Ya existe un empleado con ese DNI',
-            'dni.size' => 'El DNI debe tener exactamente 8 dígitos',
         ]);
 
-        $employee = Employee::create($validated);
+        // 1. Buscar o Crear Persona
+        $person = Person::firstOrNew(['dni' => $validated['dni']]);
+        
+        // Actualizar datos personales
+        $person->nombres = $validated['nombres'];
+        $person->apellidos = $validated['apellidos'];
+        $person->fecha_nacimiento = $validated['fecha_nacimiento'] ?? $person->fecha_nacimiento;
+        $person->genero = $validated['genero'] === 'Masculino' ? 'M' : ($validated['genero'] === 'Femenino' ? 'F' : ($validated['genero'] ?? $person->genero));
+        $person->direccion = $validated['direccion'] ?? $person->direccion;
+        $person->telefono = $validated['telefono'] ?? $person->telefono;
+        $person->email = $validated['correo'] ?? $person->email;
+        $person->tipo = 'INTERNO'; // Promover a interno
+        $person->is_active = true;
+        $person->save();
+
+        // 2. Verificar si ya es empleado
+        if ($person->employee) {
+            return response()->json(['message' => 'Esta persona ya está registrada como empleado.'], 422);
+        }
+
+        // 3. Crear Empleado
+        // Mapeo temporal si el frontend envía nombres en lugar de IDs (para compatibilidad)
+        $areaId = $request->area_id;
+        if (!$areaId && $request->area) {
+             $areaObj = HRArea::where('nombre', $request->area)->first();
+             $areaId = $areaObj?->id;
+        }
+
+        $positionId = $request->cargo_id;
+        if (!$positionId && $request->cargo) {
+             $posObj = HRPosition::where('nombre', $request->cargo)->first();
+             $positionId = $posObj?->id;
+        }
+
+        $employee = Employee::create([
+            'person_id' => $person->id,
+            'area_id' => $areaId,
+            'position_id' => $positionId,
+            'fecha_ingreso' => $validated['fecha_ingreso'] ?? now(),
+            'tipo_contrato' => $validated['tipo_contrato'],
+            'observaciones' => $validated['observaciones'],
+            'estado' => 'ACTIVO',
+        ]);
         
         return response()->json([
             'message' => 'Empleado registrado correctamente',
@@ -95,30 +139,73 @@ class HRController extends Controller
      */
     public function updateEmployee(Request $request, string $id)
     {
-        $employee = Employee::find($id);
+        $employee = Employee::with('person')->find($id);
         
         if (!$employee) {
             return response()->json(['message' => 'Empleado no encontrado'], 404);
         }
 
+        // Validación
         $validated = $request->validate([
-            'dni' => 'sometimes|string|size:8|unique:employees,dni,' . $id,
+            'dni' => 'sometimes|string|size:8', // Validar unicidad en people si cambia, pero es complejo aqui
             'nombres' => 'sometimes|string|max:255',
             'apellidos' => 'sometimes|string|max:255',
-            'fecha_nacimiento' => 'nullable|date',
-            'genero' => 'nullable|in:Masculino,Femenino',
-            'direccion' => 'nullable|string|max:255',
             'telefono' => 'nullable|string|max:20',
             'correo' => 'nullable|email|max:255',
-            'cargo' => 'nullable|string|max:255',
-            'area' => 'nullable|string|max:255',
+            'direccion' => 'nullable|string|max:255',
+            // Laborales
+            'cargo_id' => 'nullable|exists:hr_positions,id',
+            'area_id' => 'nullable|exists:hr_areas,id',
             'fecha_ingreso' => 'nullable|date',
-            'tipo_contrato' => 'nullable|in:Nombrado,CAS,Locador,Practicante',
-            'estado' => 'nullable|in:ACTIVO,INACTIVO,LICENCIA,VACACIONES',
+            'estado' => 'nullable|string',
             'observaciones' => 'nullable|string',
         ]);
 
-        $employee->update($validated);
+        // 1. Actualizar Persona
+        if ($employee->person) {
+            $personData = [];
+            if ($request->has('nombres')) $personData['nombres'] = $validated['nombres'];
+            if ($request->has('apellidos')) $personData['apellidos'] = $validated['apellidos'];
+            if ($request->has('telefono')) $personData['telefono'] = $validated['telefono'];
+            if ($request->has('correo')) $personData['email'] = $validated['correo'];
+            if ($request->has('direccion')) $personData['direccion'] = $validated['direccion'];
+            
+            // Si cambia DNI (caso raro)
+            if ($request->has('dni') && $validated['dni'] !== $employee->person->dni) {
+                // Verificar que no exista otro
+                if (Person::where('dni', $validated['dni'])->where('id', '!=', $employee->person_id)->exists()) {
+                     return response()->json(['message' => 'El DNI ya pertenece a otra persona.'], 422);
+                }
+                $personData['dni'] = $validated['dni'];
+            }
+
+            if (!empty($personData)) {
+                $employee->person->update($personData);
+            }
+        }
+
+        // 2. Actualizar Empleado (Datos laborales)
+        $employeeData = [];
+        if ($request->has('fecha_ingreso')) $employeeData['fecha_ingreso'] = $validated['fecha_ingreso'];
+        if ($request->has('estado')) $employeeData['estado'] = $validated['estado'];
+        if ($request->has('observaciones')) $employeeData['observaciones'] = $validated['observaciones'];
+        
+        // Mapeo de IDs
+        if ($request->has('area_id')) $employeeData['area_id'] = $validated['area_id'];
+        elseif ($request->has('area')) { // fallback nombre
+             $areaObj = HRArea::where('nombre', $request->area)->first();
+             if ($areaObj) $employeeData['area_id'] = $areaObj->id;
+        }
+
+        if ($request->has('cargo_id')) $employeeData['position_id'] = $validated['cargo_id'];
+        elseif ($request->has('cargo')) { // fallback nombre
+             $posObj = HRPosition::where('nombre', $request->cargo)->first();
+             if ($posObj) $employeeData['position_id'] = $posObj->id;
+        }
+
+        if (!empty($employeeData)) {
+            $employee->update($employeeData);
+        }
         
         return response()->json(['message' => 'Empleado actualizado correctamente']);
     }

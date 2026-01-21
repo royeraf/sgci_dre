@@ -30,6 +30,20 @@ class Employee extends Model
     ];
 
     /**
+     * Atributos que se agregan a la serialización del modelo (JSON)
+     */
+    protected $appends = [
+        'dni',
+        'nombres',
+        'apellidos',
+        'telefono',
+        'correo',
+        'cargo',
+        'area_nombre',
+        'full_name',
+    ];
+
+    /**
      * Relación con la persona base
      */
     public function person(): BelongsTo

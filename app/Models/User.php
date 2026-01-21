@@ -85,16 +85,31 @@ class User extends Authenticatable
     }
 
     /**
+     * @var array<int, string>
+     */
+    protected $appends = [
+        'full_name',
+        'dni',
+        'telefono',
+    ];
+
+    /**
      * Get the full name with title.
      */
     public function getFullNameAttribute(): string
     {
         // Si tiene persona asociada, usar datos de person
-        if ($this->person) {
+        if ($this->relationLoaded('person') && $this->person) {
             return $this->person->nombres . ' ' . $this->person->apellidos;
         }
+        
         // Fallback a campos directos
-        return $this->name . ($this->apellidos ? ' ' . $this->apellidos : '');
+        $titulo = $this->attributes['titulo'] ?? ''; 
+        $titulo = $titulo ? $titulo . ' ' : '';
+        $nombre = $this->attributes['name'] ?? '';
+        $apellidos = $this->attributes['apellidos'] ?? '';
+        
+        return trim($titulo . $nombre . ($apellidos ? ' ' . $apellidos : ''));
     }
 
     /**
@@ -106,19 +121,19 @@ class User extends Authenticatable
     }
 
     /**
-     * Acceso al DNI a través de person
+     * Acceso al DNI a través de person con fallback
      */
     public function getDniAttribute(): ?string
     {
-        return $this->person?->dni;
+        return $this->person?->dni ?? $this->attributes['dni'] ?? null;
     }
 
     /**
-     * Acceso al teléfono a través de person
+     * Acceso al teléfono a través de person con fallback
      */
     public function getTelefonoAttribute(): ?string
     {
-        return $this->person?->telefono;
+        return $this->person?->telefono ?? $this->attributes['telefono'] ?? null;
     }
 
     /**

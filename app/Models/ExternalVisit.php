@@ -30,6 +30,15 @@ class ExternalVisit extends Model
     ];
 
     /**
+     * Atributos que se agregan a la serialización del modelo (JSON)
+     */
+    protected $appends = [
+        'dni',
+        'nombres',
+        'area_nombre',
+    ];
+
+    /**
      * Relación con la persona (visitante)
      */
     public function person(): BelongsTo
