@@ -159,6 +159,12 @@ Route::middleware('auth')->group(function () {
         Route::put('/positions/{id}', [HRController::class, 'updatePosition'])->name('positions.update');
         Route::delete('/positions/{id}', [HRController::class, 'deletePosition'])->name('positions.delete');
 
+        // Contract Types
+        Route::get('/contract-types', [HRController::class, 'getContractTypes'])->name('contract-types.list');
+        Route::post('/contract-types', [HRController::class, 'storeContractType'])->name('contract-types.store');
+        Route::put('/contract-types/{id}', [HRController::class, 'updateContractType'])->name('contract-types.update');
+        Route::delete('/contract-types/{id}', [HRController::class, 'deleteContractType'])->name('contract-types.delete');
+
         // Summary
         Route::get('/summary', [HRController::class, 'getSummary'])->name('summary');
     });

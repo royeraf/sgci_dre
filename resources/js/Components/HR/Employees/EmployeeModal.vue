@@ -41,16 +41,17 @@
                             <label class="block text-sm font-bold text-slate-700 mb-2">
                                 Tipo de Contrato <span class="text-red-500">*</span>
                             </label>
-                            <select v-model="tipoContrato" v-bind="tipoContratoProps"
+                            <select v-model="contractTypeId" v-bind="contractTypeIdProps"
                                 class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white transition-colors"
-                                :class="formErrors.tipo_contrato ? 'border-red-400' : 'border-slate-200'">
-                                <option value="Nombrado">Nombrado</option>
-                                <option value="CAS">CAS</option>
-                                <option value="Locador">Locador</option>
-                                <option value="Practicante">Practicante</option>
+                                :class="formErrors.contract_type_id ? 'border-red-400' : 'border-slate-200'">
+                                <option value="">Seleccione tipo...</option>
+                                <option v-for="type in contractTypes" :key="type.id" :value="type.id">
+                                    {{ type.nombre }}
+                                </option>
+                                <option v-if="contractTypes.length === 0" disabled>No hay tipos registrados</option>
                             </select>
-                            <p v-if="formErrors.tipo_contrato" class="mt-1 text-sm text-red-600">{{
-                                formErrors.tipo_contrato }}</p>
+                            <p v-if="formErrors.contract_type_id" class="mt-1 text-sm text-red-600">{{
+                                formErrors.contract_type_id }}</p>
                         </div>
 
                         <!-- Nombres -->
@@ -228,6 +229,10 @@ const props = defineProps({
     positions: {
         type: Array,
         default: () => []
+    },
+    contractTypes: {
+        type: Array,
+        default: () => []
     }
 });
 
@@ -253,7 +258,7 @@ const employeeSchema = toTypedSchema(
         cargo: yup.string().required('Debe seleccionar un cargo'),
         area: yup.string().required('Debe seleccionar un área'),
         fecha_ingreso: yup.string().transform((value) => value || null).nullable(),
-        tipo_contrato: yup.string().required('Debe seleccionar un tipo de contrato'),
+        contract_type_id: yup.string().required('Debe seleccionar un tipo de contrato'),
         estado: yup.string().transform((value) => value || null).nullable(),
         observaciones: yup.string().transform((value) => value || null).nullable(),
     })
@@ -272,8 +277,9 @@ const { errors: formErrors, defineField, handleSubmit: validateForm, setValues, 
         correo: '',
         cargo: '',
         area: '',
+        area: '',
         fecha_ingreso: '',
-        tipo_contrato: 'Nombrado',
+        contract_type_id: '',
         estado: 'ACTIVO',
         observaciones: '',
     }
@@ -290,7 +296,7 @@ const [correo, correoProps] = defineField('correo');
 const [cargo, cargoProps] = defineField('cargo');
 const [area, areaProps] = defineField('area');
 const [fechaIngreso, fechaIngresoProps] = defineField('fecha_ingreso');
-const [tipoContrato, tipoContratoProps] = defineField('tipo_contrato');
+const [contractTypeId, contractTypeIdProps] = defineField('contract_type_id');
 const [estado, estadoProps] = defineField('estado');
 const [observaciones, observacionesProps] = defineField('observaciones');
 
@@ -307,8 +313,9 @@ watch(() => props.employee, (emp) => {
             correo: emp.correo || '',
             cargo: emp.cargo || '',
             area: emp.area || '',
+            area: emp.area || '',
             fecha_ingreso: emp.fecha_ingreso ? emp.fecha_ingreso.split('T')[0] : '',
-            tipo_contrato: emp.tipo_contrato || 'Nombrado',
+            contract_type_id: emp.contract_type_id || '',
             estado: emp.estado || 'ACTIVO',
             observaciones: emp.observaciones || '',
         });

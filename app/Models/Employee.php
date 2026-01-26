@@ -16,8 +16,7 @@ class Employee extends Model
         'area_id',
         'position_id',
         'office_id',
-        'regimen',
-        'tipo_contrato',
+        'contract_type_id',
         'fecha_ingreso',
         'estado',
         'observaciones',
@@ -40,6 +39,7 @@ class Employee extends Model
         'correo',
         'cargo',
         'area_nombre',
+        'tipo_contrato', // Virtual attribute
         'full_name',
     ];
 
@@ -73,6 +73,14 @@ class Employee extends Model
     public function office(): BelongsTo
     {
         return $this->belongsTo(HrOffice::class, 'office_id');
+    }
+
+    /**
+     * Relación con el tipo de contrato
+     */
+    public function contractType(): BelongsTo
+    {
+        return $this->belongsTo(HRContractType::class, 'contract_type_id');
     }
 
     /**
@@ -158,6 +166,14 @@ class Employee extends Model
     }
 
     /**
+     * Acceso al tipo de contrato (nombre) a través de contractType
+     */
+    public function getTipoContratoAttribute(): ?string
+    {
+        return $this->contractType?->nombre;
+    }
+
+    /**
      * Nombre completo del empleado
      */
     public function getFullNameAttribute(): string
@@ -196,6 +212,6 @@ class Employee extends Model
      */
     public function scopeWithAllRelations($query)
     {
-        return $query->with(['person', 'area', 'position', 'office']);
+        return $query->with(['person', 'area', 'position', 'office', 'contractType']);
     }
 }

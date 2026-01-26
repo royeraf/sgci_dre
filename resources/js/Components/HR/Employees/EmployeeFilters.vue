@@ -14,7 +14,7 @@
             </div>
 
             <!-- Area Filter -->
-            <div class="lg:col-span-2">
+            <div class="lg:col-span-1">
                 <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Área</label>
                 <select :value="filters.area"
                     @change="$emit('update:filters', { ...filters, area: $event.target.value })"
@@ -35,6 +35,20 @@
                     <option value="">Todos los cargos</option>
                     <option v-for="pos in positions" :key="pos.id" :value="pos.nombre">
                         {{ pos.nombre }}
+                    </option>
+                </select>
+            </div>
+
+            <!-- Contract Type Filter -->
+            <div class="lg:col-span-1">
+                <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Tipo
+                    Contrato</label>
+                <select :value="filters.contractType"
+                    @change="$emit('update:filters', { ...filters, contractType: $event.target.value })"
+                    class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all duration-200 text-sm bg-white">
+                    <option value="">Todos los tipos</option>
+                    <option v-for="type in contractTypes" :key="type.id" :value="type.id">
+                        {{ type.nombre }}
                     </option>
                 </select>
             </div>
@@ -72,6 +86,10 @@ defineProps({
         default: () => []
     },
     positions: {
+        type: Array,
+        default: () => []
+    },
+    contractTypes: {
         type: Array,
         default: () => []
     }

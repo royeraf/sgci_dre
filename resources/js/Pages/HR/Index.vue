@@ -36,6 +36,11 @@
                         <CalendarPlus class="w-5 h-5 mr-2" />
                         Registrar Vacaciones
                     </button>
+                    <button v-if="activeTab === 'tipos_contrato'" @click="createNewContractType"
+                        class="inline-flex items-center px-5 py-2.5 text-sm font-bold rounded-xl shadow-lg text-white bg-gradient-to-r from-gray-600 to-gray-800 hover:from-gray-700 hover:to-gray-900 transition-all">
+                        <Plus class="w-5 h-5 mr-2" />
+                        Nuevo Tipo
+                    </button>
                 </div>
             </div>
 
@@ -65,16 +70,22 @@
                         <Briefcase class="w-5 h-5" />
                         Cargos / Puestos
                     </button>
+                    <button @click="activeTab = 'tipos_contrato'"
+                        :class="[activeTab === 'tipos_contrato' ? 'border-gray-500 text-gray-800' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300', 'whitespace-nowrap py-4 px-1 border-b-2 font-bold text-sm flex items-center gap-2 transition-colors']">
+                        <FileText class="w-5 h-5" />
+                        Tipos de Contrato
+                    </button>
                 </nav>
             </div>
 
             <!-- Personal Tab -->
             <div v-if="activeTab === 'personal'">
                 <EmployeeFilters :filters="localFilters" :result-count="filteredEmployees.length" :areas="areas"
-                    :positions="positions" @update:filters="localFilters = $event" @clear="clearFilters" />
+                    :positions="positions" :contract-types="contractTypes" @update:filters="localFilters = $event"
+                    @clear="clearFilters" />
 
-                <EmployeeTable :employees="filteredEmployees" :loading="isLoading" @view="viewEmployee"
-                    @edit="editEmployee" />
+                <EmployeeTable :employees="filteredEmployees" :loading="isLoading" v-model:currentPage="currentPage"
+                    v-model:perPage="perPage" @view="viewEmployee" @edit="editEmployee" />
             </div>
 
             <!-- Vacaciones Tab -->
@@ -112,12 +123,17 @@
                 <PositionTable :positions="positions" @edit="editPosition" @delete="handleDeletePosition" />
             </div>
 
+            <!-- Tipos de Contrato Tab -->
+            <div v-if="activeTab === 'tipos_contrato'" class="space-y-6">
+                <ContractTypeTable :types="contractTypes" @edit="editContractType" @delete="handleDeleteContractType" />
+            </div>
+
             <!-- Modals -->
 
             <!-- Employee Modal -->
             <EmployeeModal v-if="showEmployeeModal" :employee="selectedEmployee" :is-editing="isEditing"
-                :submitting="isSubmitting" :areas="areas" :positions="positions" @close="closeEmployeeModal"
-                @submit="saveEmployee" />
+                :submitting="isSubmitting" :areas="areas" :positions="positions" :contract-types="contractTypes"
+                @close="closeEmployeeModal" @submit="saveEmployee" />
 
             <!-- Employee Detail Modal -->
             <EmployeeDetailModal v-if="showViewEmployeeModal" :employee="selectedEmployee"
@@ -143,6 +159,11 @@
             <!-- Position Modal -->
             <PositionModal v-if="showPositionModal" :position="selectedPosition" :is-editing="isEditingPosition"
                 :submitting="isSubmitting" @close="showPositionModal = false" @submit="savePosition" />
+
+            <!-- Contract Type Modal -->
+            <ContractTypeModal v-if="showContractTypeModal" :contract-type="selectedContractType"
+                :is-editing="isEditingContractType" :submitting="isSubmitting" @close="showContractTypeModal = false"
+                @submit="saveContractType" />
         </div>
     </div>
 </template>
@@ -156,10 +177,10 @@ export default {
 </script>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, computed, watch } from 'vue';
 import axios from 'axios';
 import {
-    Users, UserPlus, Calendar, Plus, Building2, CalendarPlus, Briefcase
+    Users, UserPlus, Calendar, Plus, Building2, CalendarPlus, Briefcase, FileText
 } from 'lucide-vue-next';
 
 // Components
@@ -176,6 +197,8 @@ import OfficeTable from '@/Components/HR/Areas/OfficeTable.vue';
 import OfficeModal from '@/Components/HR/Areas/OfficeModal.vue';
 import PositionTable from '@/Components/HR/Positions/PositionTable.vue';
 import PositionModal from '@/Components/HR/Positions/PositionModal.vue';
+import ContractTypeTable from '@/Components/HR/ContractTypes/ContractTypeTable.vue';
+import ContractTypeModal from '@/Components/HR/ContractTypes/ContractTypeModal.vue';
 import EmployeeFilters from '@/Components/HR/Employees/EmployeeFilters.vue';
 
 const activeTab = ref('personal');
@@ -185,14 +208,23 @@ const isSubmitting = ref(false);
 const localFilters = ref({
     search: '',
     area: '',
-    position: ''
+    position: '',
+    contractType: ''
 });
+
+const currentPage = ref(1);
+const perPage = ref(10);
+
+watch(localFilters, () => {
+    currentPage.value = 1;
+}, { deep: true });
 
 const employees = ref([]);
 const vacations = ref([]);
 const areas = ref([]);
-const offices = ref([]); // Nuevo estado
+const offices = ref([]);
 const positions = ref([]);
+const contractTypes = ref([]);
 const summary = ref({});
 
 const showEmployeeModal = ref(false);
@@ -203,8 +235,9 @@ const selectedVacationDetail = ref(null);
 const isEditingVacation = ref(false);
 const showViewEmployeeModal = ref(false);
 const showAreaModal = ref(false);
-const showOfficeModal = ref(false); // Nuevo Modal
+const showOfficeModal = ref(false);
 const showPositionModal = ref(false);
+const showContractTypeModal = ref(false);
 
 const selectedEmployee = ref(null);
 const isEditing = ref(false);
@@ -212,11 +245,14 @@ const isEditing = ref(false);
 const selectedArea = ref(null);
 const isEditingArea = ref(false);
 
-const selectedOffice = ref(null); // Nueva selección
+const selectedOffice = ref(null);
 const isEditingOffice = ref(false);
 
 const selectedPosition = ref(null);
 const isEditingPosition = ref(false);
+
+const selectedContractType = ref(null);
+const isEditingContractType = ref(false);
 
 const filteredEmployees = computed(() => {
     let result = employees.value;
@@ -239,6 +275,10 @@ const filteredEmployees = computed(() => {
         result = result.filter(e => e.cargo === localFilters.value.position);
     }
 
+    if (localFilters.value.contractType) {
+        result = result.filter(e => e.contract_type_id === localFilters.value.contractType);
+    }
+
     return result;
 });
 
@@ -246,20 +286,22 @@ const clearFilters = () => {
     localFilters.value = {
         search: '',
         area: '',
-        position: ''
+        position: '',
+        contractType: ''
     };
 };
 
 const fetchData = async () => {
     isLoading.value = true;
     try {
-        const [empRes, vacRes, sumRes, areaRes, posRes, officeRes] = await Promise.all([
+        const [empRes, vacRes, sumRes, areaRes, posRes, officeRes, contractTypeRes] = await Promise.all([
             axios.get('/hr/employees'),
             axios.get('/hr/vacations'),
             axios.get('/hr/summary'),
             axios.get('/hr/areas'),
             axios.get('/hr/positions'),
-            axios.get('/hr/offices') // Nuevo endpoint
+            axios.get('/hr/offices'),
+            axios.get('/hr/contract-types')
         ]);
         employees.value = empRes.data;
         vacations.value = vacRes.data;
@@ -267,6 +309,7 @@ const fetchData = async () => {
         areas.value = areaRes.data;
         positions.value = posRes.data;
         offices.value = officeRes.data;
+        contractTypes.value = contractTypeRes.data;
     } catch (error) {
         console.error('Error fetching HR data:', error);
         window.Swal?.fire?.({
@@ -535,6 +578,62 @@ const handleDeletePosition = (id) => {
                 fetchData();
             } catch (error) {
                 window.Swal?.fire?.('Error', 'No se pudo eliminar el cargo.', 'error');
+            }
+        }
+    });
+};
+
+// --- CONTRACT TYPE METHODS ---
+
+const createNewContractType = () => {
+    isEditingContractType.value = false;
+    selectedContractType.value = null;
+    showContractTypeModal.value = true;
+};
+
+const editContractType = (type) => {
+    isEditingContractType.value = true;
+    selectedContractType.value = type;
+    showContractTypeModal.value = true;
+};
+
+const saveContractType = async (formData) => {
+    isSubmitting.value = true;
+    try {
+        if (isEditingContractType.value && selectedContractType.value) {
+            await axios.put(`/hr/contract-types/${selectedContractType.value.id}`, formData);
+            window.Swal?.fire?.({ icon: 'success', title: 'Tipo Actualizado', toast: true, position: 'top-end', showConfirmButton: false, timer: 2500 });
+        } else {
+            await axios.post('/hr/contract-types', formData);
+            window.Swal?.fire?.({ icon: 'success', title: 'Tipo Registrado', toast: true, position: 'top-end', showConfirmButton: false, timer: 2500 });
+        }
+        showContractTypeModal.value = false;
+        fetchData();
+    } catch (error) {
+        window.Swal?.fire?.({ icon: 'error', title: 'Error', text: error.response?.data?.message || 'No se pudo guardar el tipo' });
+    } finally {
+        isSubmitting.value = false;
+    }
+};
+
+const handleDeleteContractType = (id) => {
+    window.Swal?.fire?.({
+        title: '¿Está seguro?',
+        text: "Esta acción no se puede deshacer",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Sí, eliminar',
+        cancelButtonText: 'Cancelar'
+    }).then(async (result) => {
+        if (result.isConfirmed) {
+            try {
+                await axios.delete(`/hr/contract-types/${id}`);
+                window.Swal?.fire?.('Eliminado', 'El tipo de contrato ha sido eliminado.', 'success');
+                fetchData();
+            } catch (error) {
+                window.Swal?.fire?.('Error', 'No se pudo eliminar el registro.', 'error');
             }
         }
     });

@@ -22,7 +22,8 @@
                             </div>
                         </td>
                     </tr>
-                    <tr v-else v-for="emp in employees" :key="emp.id" class="hover:bg-emerald-50 transition-colors">
+                    <tr v-else v-for="emp in paginatedEmployees" :key="emp.id"
+                        class="hover:bg-emerald-50 transition-colors">
                         <td class="px-6 py-4">
                             <div class="flex items-center">
                                 <div
@@ -72,13 +73,50 @@
                 </tbody>
             </table>
         </div>
+        <!-- Pagination -->
+        <div v-if="totalPages > 1" class="bg-slate-50 px-6 py-4 border-t border-slate-200">
+            <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div class="flex items-center gap-2 text-sm text-slate-600">
+                    <span>Mostrar</span>
+                    <select :value="perPage" @change="$emit('update:perPage', Number($event.target.value))"
+                        class="border border-slate-200 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-emerald-500 bg-white">
+                        <option :value="10">10</option>
+                        <option :value="25">25</option>
+                        <option :value="50">50</option>
+                    </select>
+                    <span>por página</span>
+                </div>
+                <div class="text-sm text-slate-600">
+                    Página {{ currentPage }} de {{ totalPages }}
+                </div>
+                <div class="flex items-center gap-1">
+                    <button @click="$emit('update:currentPage', 1)" :disabled="currentPage === 1"
+                        class="p-2 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed">
+                        <ChevronsLeft class="w-4 h-4" />
+                    </button>
+                    <button @click="$emit('update:currentPage', currentPage - 1)" :disabled="currentPage === 1"
+                        class="p-2 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed">
+                        <ChevronLeft class="w-4 h-4" />
+                    </button>
+                    <button @click="$emit('update:currentPage', currentPage + 1)" :disabled="currentPage === totalPages"
+                        class="p-2 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed">
+                        <ChevronRight class="w-4 h-4" />
+                    </button>
+                    <button @click="$emit('update:currentPage', totalPages)" :disabled="currentPage === totalPages"
+                        class="p-2 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed">
+                        <ChevronsRight class="w-4 h-4" />
+                    </button>
+                </div>
+            </div>
+        </div>
     </div>
 </template>
 
 <script setup>
-import { Search, Loader2, Eye, Pencil, UserX } from 'lucide-vue-next';
+import { computed } from 'vue';
+import { Search, Loader2, Eye, Pencil, UserX, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-vue-next';
 
-defineProps({
+const props = defineProps({
     employees: {
         type: Array,
         default: () => []
@@ -86,10 +124,28 @@ defineProps({
     loading: {
         type: Boolean,
         default: false
+    },
+    currentPage: {
+        type: Number,
+        default: 1
+    },
+    perPage: {
+        type: Number,
+        default: 10
     }
 });
 
-defineEmits(['view', 'edit']);
+const emit = defineEmits(['view', 'edit', 'update:currentPage', 'update:perPage']);
+
+const paginatedEmployees = computed(() => {
+    const start = (props.currentPage - 1) * props.perPage;
+    const end = start + props.perPage;
+    return props.employees.slice(start, end);
+});
+
+const totalPages = computed(() => {
+    return Math.ceil(props.employees.length / props.perPage) || 1;
+});
 
 const getInitials = (name) => {
     if (!name) return '?';
@@ -99,6 +155,7 @@ const getInitials = (name) => {
 const contractClass = (tipo) => ({
     'bg-blue-100 text-blue-700': tipo === 'Nombrado',
     'bg-yellow-100 text-yellow-700': tipo === 'CAS',
+    'bg-cyan-100 text-cyan-700': tipo === '276',
     'bg-purple-100 text-purple-700': tipo === 'Locador',
     'bg-pink-100 text-pink-700': tipo === 'Practicante',
     'bg-gray-100 text-gray-700': !tipo

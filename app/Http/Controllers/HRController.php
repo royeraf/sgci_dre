@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use App\Models\Person;
 use App\Models\HrOffice;
+use App\Models\HRContractType;
 use Carbon\Carbon;
 
 class HRController extends Controller
@@ -90,7 +91,8 @@ class HRController extends Controller
             'cargo_id' => 'nullable|exists:hr_positions,id', // Idealmente usar IDs
             'area_id' => 'nullable|exists:hr_areas,id',     // Idealmente usar IDs
             'fecha_ingreso' => 'nullable|date',
-            'tipo_contrato' => 'nullable|string',
+            'tipo_contrato' => 'nullable|string', // Ahora puede ser ID o nombre
+            'contract_type_id' => 'nullable|exists:hr_contract_types,id',
             'observaciones' => 'nullable|string',
         ]);
 
@@ -128,12 +130,31 @@ class HRController extends Controller
              $positionId = $posObj?->id;
         }
 
+        // Mapeo de Tipo de Contrato
+        $contractTypeId = $request->contract_type_id;
+        if (!$contractTypeId && $request->tipo_contrato) {
+             // Buscar por nombre exacto primero
+             $ctObj = HRContractType::where('nombre', $request->tipo_contrato)->first();
+             if ($ctObj) {
+                 $contractTypeId = $ctObj->id;
+             } else {
+                 // Opción: Crear si no existe o usar default. 
+                 // Por ahora, creemos uno nuevo si no existe para mantener compatibilidad total
+                 $ctObj = HRContractType::create([
+                     'nombre' => $request->tipo_contrato,
+                     'activo' => true
+                 ]);
+                 $contractTypeId = $ctObj->id;
+             }
+        }
+
         $employee = Employee::create([
             'person_id' => $person->id,
             'area_id' => $areaId,
             'position_id' => $positionId,
+            'contract_type_id' => $contractTypeId,
             'fecha_ingreso' => $validated['fecha_ingreso'] ?? now(),
-            'tipo_contrato' => $validated['tipo_contrato'],
+            // 'tipo_contrato' ya no se usa directamente
             'observaciones' => $validated['observaciones'],
             'estado' => 'ACTIVO',
         ]);
@@ -167,6 +188,9 @@ class HRController extends Controller
             'cargo_id' => 'nullable|exists:hr_positions,id',
             'area_id' => 'nullable|exists:hr_areas,id',
             'fecha_ingreso' => 'nullable|date',
+            'fecha_ingreso' => 'nullable|date',
+            'tipo_contrato' => 'nullable|string',
+            'contract_type_id' => 'nullable|exists:hr_contract_types,id',
             'estado' => 'nullable|string',
             'observaciones' => 'nullable|string',
         ]);
@@ -199,6 +223,21 @@ class HRController extends Controller
         if ($request->has('fecha_ingreso')) $employeeData['fecha_ingreso'] = $validated['fecha_ingreso'];
         if ($request->has('estado')) $employeeData['estado'] = $validated['estado'];
         if ($request->has('observaciones')) $employeeData['observaciones'] = $validated['observaciones'];
+
+        // Mapeo de Tipo de Contrato
+        if ($request->has('contract_type_id')) {
+            $employeeData['contract_type_id'] = $validated['contract_type_id'];
+        } elseif ($request->has('tipo_contrato')) {
+             $typeName = $validated['tipo_contrato'];
+             $ctObj = HRContractType::where('nombre', $typeName)->first();
+             if ($ctObj) {
+                 $employeeData['contract_type_id'] = $ctObj->id;
+             } else {
+                 // Auto-crear para compatibilidad
+                 $ctObj = HRContractType::create(['nombre' => $typeName, 'activo' => true]);
+                 $employeeData['contract_type_id'] = $ctObj->id;
+             }
+        }
         
         // Mapeo de IDs
         if ($request->has('area_id')) $employeeData['area_id'] = $validated['area_id'];
@@ -593,5 +632,75 @@ class HRController extends Controller
         $office->delete();
         
         return response()->json(['message' => 'Oficina eliminada correctamente']);
+    }
+
+    // ========== CONTRACT TYPE METHODS ==========
+
+    /**
+     * Get all contract types
+     */
+    public function getContractTypes()
+    {
+        $types = HRContractType::orderBy('nombre')->get();
+        return response()->json($types);
+    }
+
+    /**
+     * Create a new contract type
+     */
+    public function storeContractType(Request $request)
+    {
+        $validated = $request->validate([
+            'nombre' => 'required|string|max:255|unique:hr_contract_types,nombre',
+            'descripcion' => 'nullable|string',
+            'activo' => 'boolean',
+        ], [
+            'nombre.unique' => 'Ya existe un tipo de contrato con ese nombre',
+        ]);
+
+        $type = HRContractType::create($validated);
+        
+        return response()->json([
+            'message' => 'Tipo de contrato registrado correctamente',
+            'contract_type' => $type
+        ], 201);
+    }
+
+    /**
+     * Update a contract type
+     */
+    public function updateContractType(Request $request, string $id)
+    {
+        $type = HRContractType::find($id);
+        
+        if (!$type) {
+            return response()->json(['message' => 'Tipo de contrato no encontrado'], 404);
+        }
+
+        $validated = $request->validate([
+            'nombre' => 'sometimes|string|max:255|unique:hr_contract_types,nombre,' . $id,
+            'descripcion' => 'nullable|string',
+            'activo' => 'boolean',
+        ]);
+
+        $type->update($validated);
+        
+        return response()->json(['message' => 'Tipo de contrato actualizado correctamente']);
+    }
+
+    /**
+     * Delete a contract type
+     */
+    public function deleteContractType(string $id)
+    {
+        $type = HRContractType::find($id);
+        
+        if (!$type) {
+            return response()->json(['message' => 'Tipo de contrato no encontrado'], 404);
+        }
+
+        $type->delete();
+        
+        return response()->json(['message' => 'Tipo de contrato eliminado correctamente']);
     }
 }
