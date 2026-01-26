@@ -24,3 +24,9 @@ favicon.ico
 /images
 storage/storage
 public/build/
+
+# Archivos de datos sensibles (importaciones)
+*.xlsx
+*.xls
+presonal.xlsx
+/imports/

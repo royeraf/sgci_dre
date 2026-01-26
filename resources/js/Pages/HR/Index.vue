@@ -16,15 +16,15 @@
                         <UserPlus class="w-5 h-5 mr-2" />
                         Nuevo Empleado
                     </button>
-                    <button v-if="activeTab === 'areas'" @click="createNewOffice"
-                        class="inline-flex items-center px-5 py-2.5 text-sm font-bold rounded-xl shadow-lg text-white bg-gradient-to-r from-sky-600 to-cyan-600 hover:from-sky-700 hover:to-cyan-700 transition-all">
-                        <Plus class="w-5 h-5 mr-2" />
-                        Nueva Oficina
-                    </button>
                     <button v-if="activeTab === 'areas'" @click="createNewArea"
                         class="inline-flex items-center px-5 py-2.5 text-sm font-bold rounded-xl shadow-lg text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 transition-all">
                         <Plus class="w-5 h-5 mr-2" />
                         Nueva Área
+                    </button>
+                    <button v-if="activeTab === 'areas'" @click="createNewOffice"
+                        class="inline-flex items-center px-5 py-2.5 text-sm font-bold rounded-xl shadow-lg text-white bg-gradient-to-r from-sky-600 to-cyan-600 hover:from-sky-700 hover:to-cyan-700 transition-all">
+                        <Plus class="w-5 h-5 mr-2" />
+                        Nueva Oficina
                     </button>
                     <button v-if="activeTab === 'cargos'" @click="createNewPosition"
                         class="inline-flex items-center px-5 py-2.5 text-sm font-bold rounded-xl shadow-lg text-white bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 transition-all">

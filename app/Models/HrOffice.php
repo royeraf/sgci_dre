@@ -33,7 +33,7 @@ class HrOffice extends Model
      */
     public function area(): BelongsTo
     {
-        return $this->belongsTo(HrArea::class, 'area_id');
+        return $this->belongsTo(HRArea::class, 'area_id');
     }
 
     /**
