@@ -7,6 +7,7 @@ use PhpOffice\PhpSpreadsheet\IOFactory;
 use App\Models\Person;
 use App\Models\Employee;
 use App\Models\HRPosition;
+use App\Models\HRContractType;
 use Illuminate\Support\Str;
 
 class ImportPersonalExcel extends Command
@@ -16,6 +17,7 @@ class ImportPersonalExcel extends Command
 
     private $tempDniCounter = 1;
     private $positionsCache = [];
+    private $contractTypesCache = [];
     private $importedCount = 0;
     private $skippedCount = 0;
     private $errorsCount = 0;
@@ -62,6 +64,7 @@ class ImportPersonalExcel extends Command
                 ['Omitidos (ya existen)', $this->skippedCount],
                 ['Errores', $this->errorsCount],
                 ['Cargos creados', count($this->positionsCache)],
+                ['Tipos de contrato creados', count($this->contractTypesCache)],
             ]
         );
 
@@ -69,6 +72,14 @@ class ImportPersonalExcel extends Command
             $this->newLine();
             $this->info("📋 Cargos creados:");
             foreach ($this->positionsCache as $nombre => $id) {
+                $this->line("  - {$nombre}");
+            }
+        }
+
+        if (count($this->contractTypesCache) > 0) {
+            $this->newLine();
+            $this->info("📝 Tipos de contrato creados:");
+            foreach ($this->contractTypesCache as $nombre => $id) {
                 $this->line("  - {$nombre}");
             }
         }
@@ -86,27 +97,36 @@ class ImportPersonalExcel extends Command
         $bar->start();
 
         for ($row = 2; $row <= $highestRow; $row++) {
-            $num = $sheet->getCell("A{$row}")->getValue();
-            $nombreApellido = $sheet->getCell("B{$row}")->getValue();
-            $dni = $sheet->getCell("C{$row}")->getValue();
-            $cargo = $sheet->getCell("D{$row}")->getValue();
+            try {
+                $num = $sheet->getCell("A{$row}")->getValue();
+                $nombreApellido = $sheet->getCell("B{$row}")->getValue();
+                $dni = $sheet->getCell("C{$row}")->getValue();
+                $cargo = $sheet->getCell("D{$row}")->getValue();
 
-            // Validar que sea un registro válido (no encabezado repetido)
-            if (!$num || !is_numeric($num) || !$nombreApellido || !$dni) {
+                // Validar que sea un registro válido (no encabezado repetido)
+                if (!$num || !is_numeric($num) || !$nombreApellido || !$dni) {
+                    $bar->advance();
+                    continue;
+                }
+
+                $this->importRecord(
+                    dni: trim($dni),
+                    nombreApellido: $nombreApellido,
+                    cargo: $cargo,
+                    tipoContrato: 'CAS',
+                    email: null,
+                    fechaNacimiento: null
+                );
+
                 $bar->advance();
-                continue;
+            } catch (\Exception $e) {
+                $bar->advance();
+                $this->errorsCount++;
+                if ($this->option('verbose')) {
+                    $this->newLine();
+                    $this->error("Error en fila {$row}: " . $e->getMessage());
+                }
             }
-
-            $this->importRecord(
-                dni: trim($dni),
-                nombreApellido: $nombreApellido,
-                cargo: $cargo,
-                tipoContrato: 'CAS',
-                email: null,
-                fechaNacimiento: null
-            );
-
-            $bar->advance();
         }
 
         $bar->finish();
@@ -123,32 +143,41 @@ class ImportPersonalExcel extends Command
         $bar->start();
 
         for ($row = 2; $row <= $highestRow; $row++) {
-            $num = $sheet->getCell("A{$row}")->getValue();
-            $nombreApellido = $sheet->getCell("B{$row}")->getValue();
-            $cargo = $sheet->getCell("C{$row}")->getValue();
-            // $area = $sheet->getCell("D{$row}")->getValue();
-            $email = $sheet->getCell("F{$row}")->getValue();
-            $fechaNacimiento = $sheet->getCell("G{$row}")->getValue();
+            try {
+                $num = $sheet->getCell("A{$row}")->getValue();
+                $nombreApellido = $sheet->getCell("B{$row}")->getValue();
+                $cargo = $sheet->getCell("C{$row}")->getValue();
+                // $area = $sheet->getCell("D{$row}")->getValue();
+                $email = $sheet->getCell("F{$row}")->getValue();
+                $fechaNacimiento = $sheet->getCell("G{$row}")->getValue();
 
-            // Validar que sea un registro válido
-            if (!$num || !is_numeric($num) || !$nombreApellido) {
+                // Validar que sea un registro válido
+                if (!$num || !is_numeric($num) || !$nombreApellido) {
+                    $bar->advance();
+                    continue;
+                }
+
+                // Generar DNI temporal
+                $dniTemporal = $this->generateTempDni();
+
+                $this->importRecord(
+                    dni: $dniTemporal,
+                    nombreApellido: $nombreApellido,
+                    cargo: $cargo,
+                    tipoContrato: '276',
+                    email: $email !== 'NO PROPORCIONÓ' ? $email : null,
+                    fechaNacimiento: $fechaNacimiento
+                );
+
                 $bar->advance();
-                continue;
+            } catch (\Exception $e) {
+                $bar->advance();
+                $this->errorsCount++;
+                if ($this->option('verbose')) {
+                    $this->newLine();
+                    $this->error("Error en fila {$row}: " . $e->getMessage());
+                }
             }
-
-            // Generar DNI temporal
-            $dniTemporal = $this->generateTempDni();
-
-            $this->importRecord(
-                dni: $dniTemporal,
-                nombreApellido: $nombreApellido,
-                cargo: $cargo,
-                tipoContrato: '276',
-                email: $email !== 'NO PROPORCIONÓ' ? $email : null,
-                fechaNacimiento: $fechaNacimiento
-            );
-
-            $bar->advance();
         }
 
         $bar->finish();
@@ -167,6 +196,10 @@ class ImportPersonalExcel extends Command
         $fechaNacimiento
     ) {
         try {
+            if ($this->option('verbose')) {
+                $this->line("Procesando: {$dni} - {$nombreApellido}");
+            }
+
             // Separar apellidos y nombres (formato: "APELLIDOS, NOMBRES")
             $parts = array_map('trim', explode(',', $nombreApellido, 2));
             $apellidos = mb_strtoupper(trim($parts[0] ?? ''), 'UTF-8');
@@ -183,6 +216,9 @@ class ImportPersonalExcel extends Command
             $existingPerson = Person::where('dni', $dni)->first();
             if ($existingPerson) {
                 $this->skippedCount++;
+                if ($this->option('verbose')) {
+                    $this->warn("  -> Ya existe (omitido)");
+                }
                 return;
             }
 
@@ -191,6 +227,9 @@ class ImportPersonalExcel extends Command
             if ($cargo) {
                 $positionId = $this->getOrCreatePosition($cargo);
             }
+
+            // Obtener o crear el tipo de contrato
+            $contractTypeId = $this->getOrCreateContractType($tipoContrato);
 
             // Crear persona
             $person = Person::create([
@@ -207,16 +246,23 @@ class ImportPersonalExcel extends Command
             Employee::create([
                 'person_id' => $person->id,
                 'position_id' => $positionId,
-                'tipo_contrato' => $tipoContrato,
+                'contract_type_id' => $contractTypeId,
                 'fecha_ingreso' => now(),
                 'estado' => 'ACTIVO',
             ]);
 
             $this->importedCount++;
 
+            if ($this->option('verbose')) {
+                $this->info("  -> Importado exitosamente");
+            }
+
         } catch (\Exception $e) {
             $this->errorsCount++;
-            $this->error("Error en registro {$dni}: " . $e->getMessage());
+            $this->newLine();
+            $this->error("Error en registro {$dni} ({$nombreApellido}): " . $e->getMessage());
+            $this->error("Stack: " . $e->getTraceAsString());
+            throw $e;
         }
     }
 
@@ -243,7 +289,7 @@ class ImportPersonalExcel extends Command
 
         // Buscar existente (case insensitive)
         $existing = HRPosition::whereRaw('UPPER(nombre) = ?', [$cargoNormalizado])->first();
-        
+
         if ($existing) {
             $this->positionsCache[$cargoNormalizado] = $existing->id;
             return $existing->id;
@@ -258,6 +304,36 @@ class ImportPersonalExcel extends Command
 
         $this->positionsCache[$cargoNormalizado] = $position->id;
         return $position->id;
+    }
+
+    /**
+     * Obtiene o crea un tipo de contrato en la tabla hr_contract_types
+     */
+    private function getOrCreateContractType(string $tipoContrato): string
+    {
+        $tipoNormalizado = mb_strtoupper(trim($tipoContrato), 'UTF-8');
+
+        if (isset($this->contractTypesCache[$tipoNormalizado])) {
+            return $this->contractTypesCache[$tipoNormalizado];
+        }
+
+        // Buscar existente (case insensitive)
+        $existing = HRContractType::whereRaw('UPPER(nombre) = ?', [$tipoNormalizado])->first();
+
+        if ($existing) {
+            $this->contractTypesCache[$tipoNormalizado] = $existing->id;
+            return $existing->id;
+        }
+
+        // Crear nuevo
+        $contractType = HRContractType::create([
+            'nombre' => $tipoNormalizado,
+            'descripcion' => 'Generado automáticamente durante importación',
+            'activo' => true,
+        ]);
+
+        $this->contractTypesCache[$tipoNormalizado] = $contractType->id;
+        return $contractType->id;
     }
 
     /**
