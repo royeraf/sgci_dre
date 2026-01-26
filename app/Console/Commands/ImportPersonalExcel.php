@@ -259,10 +259,11 @@ class ImportPersonalExcel extends Command
 
         } catch (\Exception $e) {
             $this->errorsCount++;
-            $this->newLine();
-            $this->error("Error en registro {$dni} ({$nombreApellido}): " . $e->getMessage());
-            $this->error("Stack: " . $e->getTraceAsString());
-            throw $e;
+            if ($this->option('verbose')) {
+                $this->newLine();
+                $this->error("Error en registro {$dni} ({$nombreApellido}): " . $e->getMessage());
+            }
+            // No hacer throw para que continúe con los siguientes registros
         }
     }
 
