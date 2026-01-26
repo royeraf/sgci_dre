@@ -115,7 +115,8 @@ class ImportPersonalExcel extends Command
                     cargo: $cargo,
                     tipoContrato: 'CAS',
                     email: null,
-                    fechaNacimiento: null
+                    fechaNacimiento: null,
+                    formatoNombresApellidos: true // CAS: NOMBRES, APELLIDOS
                 );
 
                 $bar->advance();
@@ -166,7 +167,8 @@ class ImportPersonalExcel extends Command
                     cargo: $cargo,
                     tipoContrato: '276',
                     email: $email !== 'NO PROPORCIONÓ' ? $email : null,
-                    fechaNacimiento: $fechaNacimiento
+                    fechaNacimiento: $fechaNacimiento,
+                    formatoNombresApellidos: true // 276: NOMBRES, APELLIDOS
                 );
 
                 $bar->advance();
@@ -193,17 +195,26 @@ class ImportPersonalExcel extends Command
         ?string $cargo,
         string $tipoContrato,
         ?string $email,
-        $fechaNacimiento
+        $fechaNacimiento,
+        bool $formatoNombresApellidos = false
     ) {
         try {
             if ($this->option('verbose')) {
                 $this->line("Procesando: {$dni} - {$nombreApellido}");
             }
 
-            // Separar apellidos y nombres (formato: "APELLIDOS, NOMBRES")
+            // Separar apellidos y nombres según el formato
             $parts = array_map('trim', explode(',', $nombreApellido, 2));
-            $apellidos = mb_strtoupper(trim($parts[0] ?? ''), 'UTF-8');
-            $nombres = mb_strtoupper(trim($parts[1] ?? ''), 'UTF-8');
+
+            if ($formatoNombresApellidos) {
+                // Formato: "NOMBRES, APELLIDOS"
+                $nombres = mb_strtoupper(trim($parts[0] ?? ''), 'UTF-8');
+                $apellidos = mb_strtoupper(trim($parts[1] ?? ''), 'UTF-8');
+            } else {
+                // Formato: "APELLIDOS, NOMBRES"
+                $apellidos = mb_strtoupper(trim($parts[0] ?? ''), 'UTF-8');
+                $nombres = mb_strtoupper(trim($parts[1] ?? ''), 'UTF-8');
+            }
 
             // Si no hay coma, intentar otro formato
             if (count($parts) < 2 || empty($nombres)) {
