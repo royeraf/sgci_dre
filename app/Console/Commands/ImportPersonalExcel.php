@@ -135,7 +135,7 @@ class ImportPersonalExcel extends Command
                     tipoContrato: 'CAS',
                     email: null,
                     fechaNacimiento: null,
-                    formatoNombresApellidos: true // CAS: NOMBRES, APELLIDOS
+                    formatoNombresApellidos: false // CAS: APELLIDOS, NOMBRES
                 );
 
                 $bar->advance();
@@ -187,7 +187,7 @@ class ImportPersonalExcel extends Command
                     tipoContrato: '276',
                     email: $email !== 'NO PROPORCIONÓ' ? $email : null,
                     fechaNacimiento: $fechaNacimiento,
-                    formatoNombresApellidos: true // 276: NOMBRES, APELLIDOS
+                    formatoNombresApellidos: false // 276: APELLIDOS, NOMBRES
                 );
 
                 $bar->advance();
