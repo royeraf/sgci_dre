@@ -6,14 +6,13 @@
     <title>Ticket de Visita #{{ $visit->id }}</title>
     <style>
         @page {
-            size: 80mm 200mm; /* Tamaño ticket térmico ajustado */
             margin: 0;
         }
         body {
             font-family: 'Courier New', monospace; /* Fuente tipo ticket */
-            font-size: 11px;
+            font-size: 10px;
             color: #000;
-            margin: 2mm 4mm;
+            margin: 1mm 2mm;
             line-height: 1.2;
             text-align: center;
         }

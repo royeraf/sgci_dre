@@ -65,6 +65,14 @@ class ExternalVisit extends Model
     }
 
     /**
+     * Relación con el empleado visitado
+     */
+    public function employee(): BelongsTo
+    {
+        return $this->belongsTo(Employee::class, 'employee_id');
+    }
+
+    /**
      * Relación con el usuario que registró la visita
      */
     public function registrador(): BelongsTo

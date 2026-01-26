@@ -74,6 +74,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/', [ExternalVisitController::class, 'index'])->name('index');
         Route::post('/', [ExternalVisitController::class, 'store'])->name('store');
         Route::get('/api/consultar-dni', [ExternalVisitController::class, 'consultarDni'])->name('consultar-dni');
+        Route::get('/api/report-stats', [ExternalVisitController::class, 'reportStats'])->name('report-stats');
+        Route::get('/report/pdf', [ExternalVisitController::class, 'generateReportPdf'])->name('report-pdf');
         Route::patch('/{visit}/exit', [ExternalVisitController::class, 'registerExit'])->name('exit');
         Route::get('/{visit}/ticket', [ExternalVisitController::class, 'generateTicket'])->name('ticket');
     });

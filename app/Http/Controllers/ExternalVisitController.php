@@ -11,6 +11,7 @@ use App\Models\HrOffice;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Str;
+use App\Models\Employee;
 
 class ExternalVisitController extends Controller
 {
@@ -56,7 +57,8 @@ class ExternalVisitController extends Controller
              });
         }
 
-        $visits = $query->paginate(10)->through(function ($visit) {
+        $perPage = $request->input('per_page', 10);
+        $visits = $query->paginate($perPage)->through(function ($visit) {
             $destino = $visit->office_nombre 
                 ? ($visit->office_nombre . ($visit->area_nombre ? " - {$visit->area_nombre}" : '')) 
                 : $visit->area_nombre;
@@ -80,7 +82,15 @@ class ExternalVisitController extends Controller
             'visits' => $visits,
             'filters' => $request->only(['fecha', 'estado', 'search']),
             'areas' => HRArea::where('activo', true)->orderBy('nombre')->get(),
+            'areas' => HRArea::where('activo', true)->orderBy('nombre')->get(),
             'offices' => HrOffice::where('activo', true)->with('area')->orderBy('nombre')->get(),
+            'employees' => Employee::with('person')->get()->map(function($emp) {
+                return [
+                    'id' => $emp->id,
+                    'nombre_completo' => $emp->person ? $emp->person->nombre_full : 'Sin Datos',
+                    'dni' => $emp->dni
+                ];
+            }),
         ]);
     }
 
@@ -98,6 +108,7 @@ class ExternalVisitController extends Controller
             'area_id' => 'nullable|uuid|exists:hr_areas,id',
             'office_id' => 'nullable|uuid|exists:hr_offices,id',
             'a_quien_visita' => 'nullable|string|max:200',
+            'employee_id' => 'nullable|uuid|exists:employees,id',
         ], [
             'dni.required' => 'El DNI es obligatorio.',
             'dni.size' => 'El DNI debe tener exactamente 8 dígitos.',
@@ -137,7 +148,9 @@ class ExternalVisitController extends Controller
             'office_id' => $validated['office_id'] ?? null,
             'hora_ingreso' => $validated['hora_ingreso'],
             'motivo' => $validated['motivo'],
+            'motivo' => $validated['motivo'],
             'a_quien_visita' => $validated['a_quien_visita'],
+            'employee_id' => $validated['employee_id'] ?? null,
             'fecha' => now()->toDateString(),
             'registrado_por' => auth()->id(),
         ]);
@@ -194,7 +207,7 @@ class ExternalVisitController extends Controller
         // 80mm width, auto height (approximated for A7/Ticket roll)
         $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.pase_visita', [
             'visit' => $visit,
-        ])->setPaper([0, 0, 226, 600], 'portrait'); // ~80mm width ticket
+        ])->setPaper([0, 0, 226, 350], 'portrait'); // ~80mm width, reduced height ticket
 
         return $pdf->stream("ticket_visita_{$visit->id}.pdf"); // Stream instead of download for better print experience
     }
@@ -233,5 +246,45 @@ class ExternalVisitController extends Controller
         $resultado = $reniecService->consultarDni($request->dni);
 
         return response()->json($resultado);
+    }
+    public function reportStats(Request $request) {
+        $start = $request->query('start_date');
+        $end = $request->query('end_date');
+
+        if (!$start || !$end) return response()->json(['error' => 'Fechas requeridas'], 400);
+
+        $visits = ExternalVisit::with(['area', 'office'])
+            ->whereBetween('fecha', [$start, $end])
+            ->get();
+
+        $areas = $visits->groupBy(function($v) {
+            return $v->area ? $v->area->nombre : ($v->office ? $v->office->nombre : 'Sin Destino');
+        })->count();
+
+        return response()->json([
+            'total' => $visits->count(),
+            'pending' => $visits->whereNull('hora_salida')->count(),
+            'completed' => $visits->whereNotNull('hora_salida')->count(),
+            'areasCount' => $areas
+        ]);
+    }
+
+    public function generateReportPdf(Request $request) {
+        $start = $request->query('start_date');
+        $end = $request->query('end_date');
+
+        $visits = ExternalVisit::with(['person', 'area', 'office'])
+            ->whereBetween('fecha', [$start, $end])
+            ->orderBy('fecha')
+            ->orderBy('hora_ingreso')
+            ->get();
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.reporte_visitas', [
+            'visits' => $visits,
+            'start' => $start,
+            'end' => $end
+        ])->setPaper('a4', 'landscape');
+
+        return $pdf->stream("reporte_visitas_{$start}_{$end}.pdf");
     }
 }

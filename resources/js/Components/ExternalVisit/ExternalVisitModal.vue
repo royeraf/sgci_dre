@@ -194,11 +194,31 @@
 
                         <!-- A quien visita & Hora Ingreso -->
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
-                            <div>
+                            <div class="relative" ref="dropdownContainerRef">
                                 <label class="block text-sm font-bold text-slate-700 mb-2">A quién visita</label>
-                                <input type="text" v-model="aQuienVisita" v-bind="aQuienVisitaProps"
-                                    placeholder="Nombre personal (Opcional)"
-                                    class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors outline-none" />
+                                <div class="relative">
+                                    <input type="text" :value="aQuienVisita" @input="handleAQuienVisitaInput"
+                                        @focus="showEmployeeDropdown = true"
+                                        placeholder="Buscar personal o escribir nombre..."
+                                        class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors outline-none pr-10" />
+                                    <ChevronDown
+                                        class="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                                </div>
+                                <!-- Dropdown -->
+                                <div v-if="showEmployeeDropdown && filteredEmployees.length > 0"
+                                    class="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl max-h-60 overflow-y-auto custom-scrollbar">
+                                    <button type="button" v-for="emp in filteredEmployees" :key="emp.id"
+                                        @click="selectEmployee(emp)"
+                                        class="w-full text-left px-4 py-2 hover:bg-purple-50 transition-colors flex items-center justify-between group">
+                                        <div>
+                                            <p class="font-medium text-slate-700 group-hover:text-purple-700 text-sm">
+                                                {{
+                                                    emp.nombre_completo }}</p>
+                                            <p class="text-xs text-slate-400">{{ emp.dni }}</p>
+                                        </div>
+                                        <Check v-if="employeeId === emp.id" class="w-4 h-4 text-purple-600" />
+                                    </button>
+                                </div>
                             </div>
                             <!-- Hora Ingreso (Moved here) -->
                             <div>
@@ -220,7 +240,8 @@
                                 placeholder="Indique el motivo de la visita..."
                                 class="w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 resize-none transition-colors outline-none"
                                 :class="formErrors.motivo ? 'border-red-400' : 'border-slate-200'"></textarea>
-                            <p v-if="formErrors.motivo" class="mt-1 text-sm text-red-600">{{ formErrors.motivo }}</p>
+                            <p v-if="formErrors.motivo" class="mt-1 text-sm text-red-600">{{ formErrors.motivo }}
+                            </p>
                         </div>
                     </template>
 
@@ -243,18 +264,19 @@
 </template>
 
 <script setup>
-import { ref, onMounted, nextTick } from 'vue';
+import { ref, onMounted, nextTick, computed, onUnmounted } from 'vue';
 import { useForm } from 'vee-validate';
 import { toTypedSchema } from '@vee-validate/yup';
 import * as yup from 'yup';
 import { router } from '@inertiajs/vue3';
-import { LogIn, LogOut, X, Loader2, ScanBarcode, Search, CheckCircle, AlertCircle } from 'lucide-vue-next';
+import { LogIn, LogOut, X, Loader2, ScanBarcode, Search, CheckCircle, AlertCircle, ChevronDown, Check } from 'lucide-vue-next';
 import Swal from 'sweetalert2';
 import axios from 'axios';
 
 const props = defineProps({
     areas: { type: Array, default: () => [] },
     offices: { type: Array, default: () => [] },
+    employees: { type: Array, default: () => [] },
     visit: { type: Object, default: null }
 });
 
@@ -270,10 +292,23 @@ const currentTime = new Date().toTimeString().slice(0, 5);
 const destinoTipo = ref('area');
 const camposEditables = ref(true);
 
+const dropdownContainerRef = ref(null);
+
+const handleClickOutside = (event) => {
+    if (dropdownContainerRef.value && !dropdownContainerRef.value.contains(event.target)) {
+        showEmployeeDropdown.value = false;
+    }
+};
+
 onMounted(() => {
     if (!props.visit) {
         nextTick(() => { dniInputRef.value?.focus(); });
     }
+    document.addEventListener('click', handleClickOutside);
+});
+
+onUnmounted(() => {
+    document.removeEventListener('click', handleClickOutside);
 });
 
 // --- Exit Form ---
@@ -301,6 +336,7 @@ const entrySchema = toTypedSchema(yup.object({
         return destinoTipo.value === 'area' || (!!val && val.length > 0);
     }),
     a_quien_visita: yup.string().nullable(),
+    employee_id: yup.string().nullable(),
     motivo: yup.string().required('El motivo es obligatorio').min(5, 'Min 5 caracteres'),
 }));
 
@@ -313,7 +349,9 @@ const { errors: formErrors, defineField: defineEntryField, handleSubmit: validat
         hora_ingreso: currentTime,
         area_id: '',
         office_id: '',
+        office_id: '',
         a_quien_visita: '',
+        employee_id: '',
         motivo: '',
     }
 });
@@ -325,7 +363,31 @@ const [horaIngreso, horaIngresoProps] = defineEntryField('hora_ingreso');
 const [areaId, areaIdProps] = defineEntryField('area_id');
 const [officeId, officeIdProps] = defineEntryField('office_id');
 const [aQuienVisita, aQuienVisitaProps] = defineEntryField('a_quien_visita');
+const [employeeId, employeeIdProps] = defineEntryField('employee_id');
 const [motivo, motivoProps] = defineEntryField('motivo');
+
+const showEmployeeDropdown = ref(false);
+const filteredEmployees = computed(() => {
+    if (!aQuienVisita.value) return props.employees;
+    const search = aQuienVisita.value.toLowerCase();
+    return props.employees.filter(emp =>
+        emp.nombre_completo.toLowerCase().includes(search) ||
+        emp.dni.includes(search)
+    ).slice(0, 10); // Limit results
+});
+
+const selectEmployee = (emp) => {
+    setFieldValue('employee_id', emp.id);
+    setFieldValue('a_quien_visita', emp.nombre_completo);
+    showEmployeeDropdown.value = false;
+};
+
+// Reset employee_id if user types something that modifies the name
+const handleAQuienVisitaInput = (e) => {
+    setFieldValue('employee_id', null);
+    setFieldValue('a_quien_visita', e.target.value);
+    showEmployeeDropdown.value = true;
+};
 
 const toggleDestino = (tipo) => {
     destinoTipo.value = tipo;
