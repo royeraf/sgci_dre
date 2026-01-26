@@ -12,7 +12,7 @@ use Illuminate\Support\Str;
 
 class ImportPersonalExcel extends Command
 {
-    protected $signature = 'import:personal {file? : Ruta al archivo Excel}';
+    protected $signature = 'import:personal {file? : Ruta al archivo Excel} {--fresh : Eliminar datos existentes antes de importar}';
     protected $description = 'Importa personal desde archivo Excel (hojas CAS y 276)';
 
     private $tempDniCounter = 1;
@@ -24,6 +24,25 @@ class ImportPersonalExcel extends Command
 
     public function handle()
     {
+        // Si se usa --fresh, limpiar datos existentes
+        if ($this->option('fresh')) {
+            $this->warn("⚠️  Modo FRESH activado: eliminando datos existentes...");
+
+            if (!$this->confirm('¿Estás seguro de eliminar todos los empleados y personas internas?')) {
+                $this->info('Operación cancelada.');
+                return 0;
+            }
+
+            $employeesCount = Employee::count();
+            $personsCount = Person::where('tipo', 'INTERNO')->count();
+
+            Employee::truncate();
+            Person::where('tipo', 'INTERNO')->delete();
+
+            $this->info("✓ Eliminados {$employeesCount} empleados y {$personsCount} personas internas");
+            $this->newLine();
+        }
+
         $filePath = $this->argument('file') ?? base_path('presonal.xlsx');
 
         if (!file_exists($filePath)) {
