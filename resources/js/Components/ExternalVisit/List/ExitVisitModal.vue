@@ -174,6 +174,13 @@ const handleFormSubmit = validateForm(async (values) => {
 
     router.patch(`/visitors/${props.visit.id}/exit`, values, {
         onSuccess: () => {
+            Swal.fire({
+                icon: 'success',
+                title: 'Salida Registrada',
+                text: 'La salida de la visita fue registrada correctamente.',
+                timer: 2000,
+                showConfirmButton: false
+            });
             emit('success');
             emit('close');
         },

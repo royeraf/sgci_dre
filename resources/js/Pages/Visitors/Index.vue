@@ -50,6 +50,9 @@
 
             <!-- List Tab Content -->
             <div v-if="activeTab === 'list'" class="space-y-6">
+                <!-- Barcode Scanner -->
+                <BarcodeScanner ref="barcodeScanner" @visitFound="handleVisitFound" />
+
                 <VisitFilters :filters="localFilters" @update:filters="updateFilters" @clear="clearFilters" />
 
                 <VisitTable :visits="visits" @exit="openExitModal" @page-change="changePage"
@@ -80,7 +83,7 @@ export default {
 </script>
 
 <script setup>
-import { ref, watch } from 'vue';
+import { ref, watch, onMounted, nextTick } from 'vue';
 import { Link, router } from '@inertiajs/vue3';
 import {
     Plus,
@@ -93,6 +96,7 @@ import ExitVisitModal from '@/Components/ExternalVisit/List/ExitVisitModal.vue';
 import VisitFilters from '@/Components/ExternalVisit/List/VisitFilters.vue';
 import VisitTable from '@/Components/ExternalVisit/List/VisitTable.vue';
 import VisitReports from '@/Components/ExternalVisit/Reports/VisitReports.vue';
+import BarcodeScanner from '@/Components/ExternalVisit/List/BarcodeScanner.vue';
 
 const props = defineProps({
     visits: {
@@ -121,6 +125,7 @@ const showCreateModal = ref(false);
 const showExitModal = ref(false);
 const selectedVisit = ref(null);
 const activeTab = ref('list');
+const barcodeScanner = ref(null);
 
 // Local filters
 const localFilters = ref({
@@ -152,7 +157,8 @@ const changePage = (page) => {
     router.get('/visitors', { ...localFilters.value, page }, {
         preserveState: true,
         preserveScroll: true,
-        replace: true
+        replace: true,
+        onSuccess: () => safeFocusRestore(200)
     });
 };
 
@@ -161,7 +167,8 @@ const updatePerPage = (newPerPage) => {
     router.get('/visitors', { ...localFilters.value, page: 1 }, {
         preserveState: true,
         preserveScroll: true,
-        replace: true
+        replace: true,
+        onSuccess: () => safeFocusRestore(200)
     });
 };
 
@@ -181,6 +188,7 @@ const clearFilters = () => {
         per_page: 10
     };
     applyFilters();
+    safeFocusRestore(200);
 };
 
 const openCreateModal = () => {
@@ -189,6 +197,7 @@ const openCreateModal = () => {
 
 const closeCreateModal = () => {
     showCreateModal.value = false;
+    safeFocusRestore(300);
 };
 
 const openExitModal = (visit) => {
@@ -199,9 +208,66 @@ const openExitModal = (visit) => {
 const closeExitModal = () => {
     showExitModal.value = false;
     selectedVisit.value = null;
+    safeFocusRestore(300);
 };
 
 const handleExitSuccess = () => {
     // Optional: Show toast or refresh if needed (Inertia handles refresh automatically)
+    safeFocusRestore(2500); // Wait for success message to show
 };
+
+const handleVisitFound = (visit) => {
+    selectedVisit.value = visit;
+    showExitModal.value = true;
+};
+
+// Helper to check if an input is focused
+const isAnyInputFocused = () => {
+    const activeElement = document.activeElement;
+    return activeElement && (
+        activeElement.tagName === 'INPUT' ||
+        activeElement.tagName === 'TEXTAREA' ||
+        activeElement.tagName === 'SELECT' ||
+        activeElement.isContentEditable
+    );
+};
+
+// Safe focus restore - only if no other input is focused
+const safeFocusRestore = (delay = 100) => {
+    setTimeout(() => {
+        if (!isAnyInputFocused() && activeTab.value === 'list') {
+            barcodeScanner.value?.focusInput();
+        }
+    }, delay);
+};
+
+// Restore focus when component mounts
+onMounted(() => {
+    nextTick(() => {
+        barcodeScanner.value?.focusInput();
+    });
+
+    // Add global click listener for ticket links
+    const handleGlobalClick = (event) => {
+        const target = event.target.closest('a');
+        if (target && target.href && target.href.includes('/ticket')) {
+            // Restore focus after ticket link is clicked
+            safeFocusRestore(500);
+        }
+    };
+
+    document.addEventListener('click', handleGlobalClick);
+
+    // Cleanup on unmount
+    return () => {
+        document.removeEventListener('click', handleGlobalClick);
+    };
+});
+
+// Watch for tab changes and restore focus
+watch(activeTab, (newTab) => {
+    if (newTab === 'list') {
+        safeFocusRestore(100);
+    }
+});
 </script>

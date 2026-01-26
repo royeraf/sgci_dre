@@ -287,4 +287,55 @@ class ExternalVisitController extends Controller
 
         return $pdf->stream("reporte_visitas_{$start}_{$end}.pdf");
     }
+
+    /**
+     * Buscar visita pendiente por DNI (para escáner de códigos de barras).
+     */
+    public function findPendingByDni(Request $request)
+    {
+        $validated = $request->validate([
+            'dni' => 'required|string|size:8',
+        ], [
+            'dni.required' => 'El DNI es obligatorio.',
+            'dni.size' => 'El DNI debe tener exactamente 8 dígitos.',
+        ]);
+
+        // Buscar visita pendiente del día de hoy con ese DNI
+        $visit = ExternalVisit::with(['person', 'area', 'office'])
+            ->whereHas('person', function($q) use ($validated) {
+                $q->where('dni', $validated['dni']);
+            })
+            ->whereNull('hora_salida')
+            ->whereDate('fecha', now()->toDateString())
+            ->orderBy('hora_ingreso', 'desc')
+            ->first();
+
+        if (!$visit) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No se encontró visita pendiente para el DNI ingresado el día de hoy.'
+            ], 404);
+        }
+
+        $destino = $visit->office_nombre
+            ? ($visit->office_nombre . ($visit->area_nombre ? " - {$visit->area_nombre}" : ''))
+            : $visit->area_nombre;
+
+        return response()->json([
+            'success' => true,
+            'visit' => [
+                'id' => $visit->id,
+                'fecha' => $visit->fecha->format('Y-m-d'),
+                'dni' => $visit->dni,
+                'nombres' => $visit->nombres,
+                'hora_ingreso' => $visit->hora_ingreso ? $visit->hora_ingreso->format('H:i') : null,
+                'hora_salida' => $visit->hora_salida ? $visit->hora_salida->format('H:i') : null,
+                'motivo' => $visit->motivo,
+                'area' => $destino,
+                'a_quien_visita' => $visit->a_quien_visita,
+                'is_pending' => is_null($visit->hora_salida),
+                'registrado_por' => $visit->registrador ? $visit->registrador->name : 'N/A',
+            ]
+        ]);
+    }
 }
