@@ -143,7 +143,7 @@ class ImportPersonalExcel extends Command
                 dni: $dniTemporal,
                 nombreApellido: $nombreApellido,
                 cargo: $cargo,
-                tipoContrato: 'D.Leg.276',
+                tipoContrato: '276',
                 email: $email !== 'NO PROPORCIONÓ' ? $email : null,
                 fechaNacimiento: $fechaNacimiento
             );
