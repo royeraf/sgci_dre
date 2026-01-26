@@ -16,8 +16,10 @@
                             Confirmar salida de visita
                         </p>
                     </div>
-                    <button @click="$emit('close')" class="text-purple-100 hover:text-white transition-colors p-1">
-                        <X class="w-6 h-6" />
+                    <button type="button" @click="$emit('close')"
+                        class="bg-white/10 rounded-md p-2 inline-flex items-center justify-center text-white hover:text-white hover:bg-white/20 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white/50 transition-colors">
+                        <span class="sr-only">Cerrar</span>
+                        <X class="h-6 w-6" stroke-width="2" />
                     </button>
                 </div>
 

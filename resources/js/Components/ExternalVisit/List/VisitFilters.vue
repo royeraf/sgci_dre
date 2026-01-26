@@ -45,11 +45,6 @@
                     <X class="w-4 h-4" />
                     Limpiar filtros
                 </button>
-                <button @click="$emit('apply')"
-                    class="text-sm font-semibold text-purple-600 hover:text-purple-800 transition-colors duration-200 flex items-center gap-1">
-                    <Filter class="w-4 h-4" />
-                    Aplicar Filtros
-                </button>
             </div>
         </div>
     </div>

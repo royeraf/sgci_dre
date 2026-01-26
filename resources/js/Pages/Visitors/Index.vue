@@ -50,8 +50,7 @@
 
             <!-- List Tab Content -->
             <div v-if="activeTab === 'list'" class="space-y-6">
-                <VisitFilters :filters="localFilters" @update:filters="updateFilters" @clear="clearFilters"
-                    @apply="applyFilters" />
+                <VisitFilters :filters="localFilters" @update:filters="updateFilters" @clear="clearFilters" />
 
                 <VisitTable :visits="visits" @exit="openExitModal" @page-change="changePage"
                     @update:perPage="updatePerPage" />
@@ -63,10 +62,10 @@
             </div>
 
             <!-- Modals -->
-            <ExternalVisitModal v-if="showCreateModal" :areas="areas" :offices="offices" :employees="employees"
+            <CreateVisitModal v-if="showCreateModal" :areas="areas" :offices="offices" :employees="employees"
                 @close="closeCreateModal" />
 
-            <ExternalVisitExitModal v-if="showExitModal" :visit="selectedVisit" @close="closeExitModal"
+            <ExitVisitModal v-if="showExitModal" :visit="selectedVisit" @close="closeExitModal"
                 @success="handleExitSuccess" />
         </div>
     </div>
@@ -81,7 +80,7 @@ export default {
 </script>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, watch } from 'vue';
 import { Link, router } from '@inertiajs/vue3';
 import {
     Plus,
@@ -89,8 +88,8 @@ import {
     ClipboardList,
     FileText
 } from 'lucide-vue-next';
-import ExternalVisitModal from '@/Components/ExternalVisit/ExternalVisitModal.vue';
-import ExternalVisitExitModal from '@/Components/ExternalVisit/ExternalVisitExitModal.vue';
+import CreateVisitModal from '@/Components/ExternalVisit/List/CreateVisitModal.vue';
+import ExitVisitModal from '@/Components/ExternalVisit/List/ExitVisitModal.vue';
 import VisitFilters from '@/Components/ExternalVisit/List/VisitFilters.vue';
 import VisitTable from '@/Components/ExternalVisit/List/VisitTable.vue';
 import VisitReports from '@/Components/ExternalVisit/Reports/VisitReports.vue';
@@ -130,6 +129,20 @@ const localFilters = ref({
     fecha: props.filters.fecha || '',
     per_page: 10
 });
+
+// Debounce helper
+const debounce = (fn, delay) => {
+    let timeoutId;
+    return (...args) => {
+        clearTimeout(timeoutId);
+        timeoutId = setTimeout(() => fn(...args), delay);
+    };
+};
+
+// Reactive filtering
+watch(localFilters, debounce(() => {
+    applyFilters();
+}, 500), { deep: true });
 
 const updateFilters = (newFilters) => {
     localFilters.value = newFilters;
