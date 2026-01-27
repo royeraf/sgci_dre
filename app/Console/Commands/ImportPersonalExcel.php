@@ -36,14 +36,20 @@ class ImportPersonalExcel extends Command
             $employeesCount = Employee::count();
             $personsCount = Person::where('tipo', 'INTERNO')->count();
 
+            // Desactivar temporalmente las restricciones de claves foráneas
+            \DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+
             Employee::truncate();
             Person::where('tipo', 'INTERNO')->delete();
+
+            // Reactivar las restricciones de claves foráneas
+            \DB::statement('SET FOREIGN_KEY_CHECKS=1;');
 
             $this->info("✓ Eliminados {$employeesCount} empleados y {$personsCount} personas internas");
             $this->newLine();
         }
 
-        $filePath = $this->argument('file') ?? base_path('presonal.xlsx');
+        $filePath = $this->argument('file') ?? base_path('personal.xlsx');
 
         if (!file_exists($filePath)) {
             $this->error("Archivo no encontrado: {$filePath}");
