@@ -32,7 +32,8 @@
                 <th>Visitante</th>
                 <th>Motivo</th>
                 <th>Destino</th>
-                <th>Estado</th>
+                <th style="width: 80px;">Vigilante</th>
+                <th style="width: 65px;">Estado</th>
             </tr>
         </thead>
         <tbody>
@@ -50,6 +51,7 @@
                     <br><small>A: {{ $visit->a_quien_visita }}</small>
                     @endif
                 </td>
+                <td style="font-size: 10px;">{{ $visit->registrador ? $visit->registrador->name : 'N/A' }}</td>
                 <td>
                     @if($visit->hora_salida)
                         <span class="status-completado">Completado</span>

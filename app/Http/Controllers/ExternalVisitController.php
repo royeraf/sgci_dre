@@ -273,7 +273,7 @@ class ExternalVisitController extends Controller
         $start = $request->query('start_date');
         $end = $request->query('end_date');
 
-        $visits = ExternalVisit::with(['person', 'area', 'office'])
+        $visits = ExternalVisit::with(['person', 'area', 'office', 'registrador'])
             ->whereBetween('fecha', [$start, $end])
             ->orderBy('fecha')
             ->orderBy('hora_ingreso')

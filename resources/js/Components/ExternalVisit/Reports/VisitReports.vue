@@ -31,6 +31,7 @@
                                 <option value="daily">Reporte Diario</option>
                                 <option value="weekly">Reporte Semanal</option>
                                 <option value="monthly">Reporte Mensual</option>
+                                <option value="custom">Reporte Personalizado</option>
                             </select>
                             <div class="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
                                 <ChevronDown class="w-5 h-5" />
@@ -63,10 +64,44 @@
                             <input v-else-if="reportType === 'monthly'" type="month" v-model="selectedMonth"
                                 class="w-full pl-12 pr-4 py-3.5 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-purple-500/10 focus:border-purple-500 transition-all duration-300 bg-slate-50 font-semibold text-slate-700" />
 
+                            <!-- Custom Input - Placeholder -->
+                            <div v-else-if="reportType === 'custom'"
+                                class="w-full pl-12 pr-4 py-3.5 border border-slate-200 rounded-2xl bg-slate-50 font-semibold text-slate-500 flex items-center">
+                                Seleccione fechas abajo
+                            </div>
+
                             <div v-if="reportType === 'weekly'"
                                 class="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
                                 <ChevronDown class="w-5 h-5" />
                             </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Custom Date Range Inputs -->
+                <div v-if="reportType === 'custom'" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Start Date -->
+                    <div>
+                        <label class="block text-sm font-bold text-slate-700 mb-3 uppercase tracking-wider">
+                            Fecha de Inicio
+                        </label>
+                        <div class="relative">
+                            <Calendar class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                            <input type="date" v-model="customStartDate"
+                                class="w-full pl-12 pr-4 py-3.5 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-purple-500/10 focus:border-purple-500 transition-all duration-300 bg-slate-50 font-semibold text-slate-700" />
+                        </div>
+                    </div>
+
+                    <!-- End Date -->
+                    <div>
+                        <label class="block text-sm font-bold text-slate-700 mb-3 uppercase tracking-wider">
+                            Fecha de Fin
+                        </label>
+                        <div class="relative">
+                            <Calendar class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                            <input type="date" v-model="customEndDate"
+                                :min="customStartDate"
+                                class="w-full pl-12 pr-4 py-3.5 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-purple-500/10 focus:border-purple-500 transition-all duration-300 bg-slate-50 font-semibold text-slate-700" />
                         </div>
                     </div>
                 </div>
@@ -134,6 +169,8 @@ const reportType = ref('weekly');
 const selectedDate = ref('');
 const selectedWeek = ref('');
 const selectedMonth = ref('');
+const customStartDate = ref('');
+const customEndDate = ref('');
 
 const isGenerating = ref(false);
 const reportData = ref(null);
@@ -144,6 +181,8 @@ watch(reportType, () => {
     selectedDate.value = '';
     selectedWeek.value = '';
     selectedMonth.value = '';
+    customStartDate.value = '';
+    customEndDate.value = '';
 });
 
 // Computed range
@@ -163,6 +202,9 @@ const currentRange = computed(() => {
         const lastDay = new Date(year, month, 0).getDate();
         const endDate = `${year}-${month}-${lastDay}`;
         return { start: startDate, end: endDate };
+    }
+    if (reportType.value === 'custom' && customStartDate.value && customEndDate.value) {
+        return { start: customStartDate.value, end: customEndDate.value };
     }
     return null;
 });
