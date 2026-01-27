@@ -369,13 +369,36 @@ const [employeeId, employeeIdProps] = defineEntryField('employee_id');
 const [motivo, motivoProps] = defineEntryField('motivo');
 
 const showEmployeeDropdown = ref(false);
+
+// Función para normalizar texto (eliminar acentos y caracteres especiales)
+const normalizeText = (text) => {
+    if (!text) return '';
+    return text
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '') // Eliminar acentos
+        .replace(/\s+/g, ' ') // Normalizar espacios múltiples
+        .trim();
+};
+
 const filteredEmployees = computed(() => {
-    if (!aQuienVisita.value) return props.employees;
-    const search = aQuienVisita.value.toLowerCase();
-    return props.employees.filter(emp =>
-        emp.nombre_completo.toLowerCase().includes(search) ||
-        emp.dni.includes(search)
-    ).slice(0, 10); // Limit results
+    if (!aQuienVisita.value || !aQuienVisita.value.trim()) return props.employees.slice(0, 10);
+
+    const search = normalizeText(aQuienVisita.value);
+    const searchTerms = search.split(' ').filter(term => term.length > 0);
+
+    return props.employees.filter(emp => {
+        const normalizedName = normalizeText(emp.nombre_completo);
+        const dni = emp.dni || '';
+
+        // Buscar por DNI
+        if (dni.includes(aQuienVisita.value.trim())) {
+            return true;
+        }
+
+        // Buscar que todos los términos estén presentes en el nombre
+        return searchTerms.every(term => normalizedName.includes(term));
+    }).slice(0, 10); // Limit results
 });
 
 const selectEmployee = (emp) => {

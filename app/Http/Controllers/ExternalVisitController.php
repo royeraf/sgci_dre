@@ -82,15 +82,25 @@ class ExternalVisitController extends Controller
             'visits' => $visits,
             'filters' => $request->only(['fecha', 'estado', 'search']),
             'areas' => HRArea::where('activo', true)->orderBy('nombre')->get(),
-            'areas' => HRArea::where('activo', true)->orderBy('nombre')->get(),
             'offices' => HrOffice::where('activo', true)->with('area')->orderBy('nombre')->get(),
-            'employees' => Employee::with('person')->get()->map(function($emp) {
-                return [
-                    'id' => $emp->id,
-                    'nombre_completo' => $emp->person ? $emp->person->nombre_full : 'Sin Datos',
-                    'dni' => $emp->dni
-                ];
-            }),
+            'employees' => Employee::with('person')
+                ->where('estado', 'ACTIVO')
+                ->whereHas('person', function($q) {
+                    $q->whereNotNull('nombres')
+                      ->whereNotNull('apellidos')
+                      ->where('nombres', '!=', '')
+                      ->where('apellidos', '!=', '');
+                })
+                ->get()
+                ->map(function($emp) {
+                    return [
+                        'id' => $emp->id,
+                        'nombre_completo' => trim($emp->person->nombre_full),
+                        'dni' => $emp->dni
+                    ];
+                })
+                ->sortBy('nombre_completo')
+                ->values(),
         ]);
     }
 
