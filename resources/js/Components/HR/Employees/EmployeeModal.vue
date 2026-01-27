@@ -166,7 +166,7 @@
                         <!-- Área (SELECT) -->
                         <div>
                             <label class="block text-sm font-bold text-slate-700 mb-2">
-                                Área / Oficina <span class="text-red-500">*</span>
+                                Área / Oficina
                             </label>
                             <select v-model="area" v-bind="areaProps"
                                 class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white transition-colors"
@@ -306,7 +306,7 @@ const employeeSchema = toTypedSchema(
         telefono: yup.string().transform((value) => value || null).nullable(),
         correo: yup.string().transform((value) => value || null).email('Ingrese un correo válido').nullable(),
         cargo: yup.string().required('Debe seleccionar un cargo'),
-        area: yup.string().required('Debe seleccionar un área'),
+        area: yup.string().transform((value) => value || null).nullable(),
         fecha_ingreso: yup.string().transform((value) => value || null).nullable(),
         contract_type_id: yup.string().required('Debe seleccionar un tipo de contrato'),
         estado: yup.string().transform((value) => value || null).nullable(),
