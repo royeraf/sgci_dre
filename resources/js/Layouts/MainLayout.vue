@@ -128,6 +128,24 @@
                             Vehicular</span>
                     </Link>
 
+                    <!-- Patrimonio -->
+                    <Link v-if="hasModulePermission('patrimonio', 'ver')" href="/assets"
+                        class="group flex items-center text-sm font-semibold rounded-xl transition-all duration-200 ease-in-out relative"
+                        :class="[
+                            $page.component.startsWith('Assets/') ? 'bg-gradient-to-r from-slate-700 to-gray-700 text-white shadow-lg shadow-slate-500/30 ring-1 ring-slate-400/50' : 'text-slate-300 hover:bg-slate-800/80 hover:text-white',
+                            isCollapsed ? 'justify-center py-3 px-0' : 'px-4 py-3.5'
+                        ]" :title="isCollapsed ? 'Patrimonio' : ''">
+                        <div class="rounded-lg transition-colors duration-200 ease-in-out flex-shrink-0" :class="[
+                            $page.component.startsWith('Assets/') ? 'bg-white/20' : 'bg-slate-700/80 group-hover:bg-slate-600',
+                            isCollapsed ? 'p-2' : 'mr-4 p-2'
+                        ]">
+                            <Box class="h-5 w-5"
+                                :class="$page.component.startsWith('Assets/') ? 'text-white' : 'text-slate-400 group-hover:text-white'" />
+                        </div>
+                        <span v-if="!isCollapsed" class="whitespace-nowrap transition-opacity duration-200">Patrimonio
+                            (Bienes)</span>
+                    </Link>
+
                     <!-- Gestión de Citas -->
                     <Link v-if="hasModulePermission('secretaria', 'ver')" href="/citas"
                         class="group flex items-center text-sm font-semibold rounded-xl transition-all duration-200 ease-in-out relative"
@@ -300,6 +318,13 @@
                             <Car class="h-5 w-5" />
                             Control Vehicular
                         </Link>
+                        <Link v-if="hasModulePermission('patrimonio', 'ver')" href="/assets"
+                            @click="mobileMenuOpen = false"
+                            class="flex items-center gap-3 px-4 py-3 rounded-xl text-base font-semibold transition-all duration-200"
+                            :class="$page.component.startsWith('Assets/') ? 'bg-gradient-to-r from-slate-700 to-gray-700 text-white shadow-lg' : 'text-slate-300 hover:bg-slate-700/50 hover:text-white'">
+                            <Box class="h-5 w-5" />
+                            Patrimonio (Bienes)
+                        </Link>
                         <Link v-if="hasModulePermission('secretaria', 'ver')" href="/citas"
                             @click="mobileMenuOpen = false"
                             class="flex items-center gap-3 px-4 py-3 rounded-xl text-base font-semibold transition-all duration-200"
@@ -378,7 +403,8 @@ import {
     Menu,
     Bell,
     Heart,
-    Shield
+    Shield,
+    Box
 } from 'lucide-vue-next';
 import UserProfileModal from '@/Components/Profile/UserProfileModal.vue';
 
@@ -466,6 +492,7 @@ const hasModulePermission = (module, action = 'ver') => {
         'secretaria': ['citas'],
         'recursos_humanos': ['recursos_humanos', 'vacaciones', 'areas', 'cargos'],
         'bienestar': ['licencias'],
+        'patrimonio': ['patrimonio', 'bienes'],
     };
 
     if (module === 'dashboard') return true;

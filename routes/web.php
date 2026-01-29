@@ -187,4 +187,22 @@ Route::middleware('auth')->group(function () {
         Route::patch('/{id}/toggle-status', [UserController::class, 'toggleStatus'])->name('toggle-status');
         Route::delete('/{id}', [UserController::class, 'destroy'])->name('destroy');
     });
+
+    // Patrimonio / Activos
+    Route::middleware('auth')->prefix('assets')->name('assets.')->group(function () {
+        Route::get('/', [App\Http\Controllers\AssetController::class, 'index'])->name('index');
+        Route::get('/list', [App\Http\Controllers\AssetController::class, 'getAssets'])->name('list');
+        Route::get('/summary', [App\Http\Controllers\AssetController::class, 'getStats'])->name('summary');
+        Route::post('/', [App\Http\Controllers\AssetController::class, 'store'])->name('store');
+        Route::put('/{asset}', [App\Http\Controllers\AssetController::class, 'update'])->name('update');
+        Route::delete('/{asset}', [App\Http\Controllers\AssetController::class, 'destroy'])->name('destroy');
+
+        // Categories
+        Route::get('/categories', [App\Http\Controllers\AssetCategoryController::class, 'index'])->name('categories.index');
+        Route::post('/categories', [App\Http\Controllers\AssetCategoryController::class, 'store'])->name('categories.store');
+        
+        // Responsibles
+        Route::get('/responsibles', [App\Http\Controllers\AssetResponsibleController::class, 'index'])->name('responsibles.index');
+        Route::post('/responsibles', [App\Http\Controllers\AssetResponsibleController::class, 'store'])->name('responsibles.store');
+    });
 });

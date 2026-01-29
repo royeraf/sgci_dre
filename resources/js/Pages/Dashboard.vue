@@ -45,7 +45,7 @@
     <!-- Quick Actions -->
     <div class="mb-10">
       <div class="flex items-center gap-3 mb-6">
-        <div class="bg-gradient-to-br from-amber-400 to-orange-500 rounded-xl p-2.5 shadow-lg shadow-orange-200">
+        <div class="bg-gradient-to-br from-slate-600 to-gray-600 rounded-xl p-2.5 shadow-lg shadow-slate-200">
           <Zap class="w-6 h-6 text-white fill-white/20" />
         </div>
         <h2 class="text-2xl font-extrabold text-slate-800 tracking-tight">Accesos Rápidos</h2>
@@ -119,6 +119,16 @@
           </div>
           <span class="text-base font-bold text-slate-900">Recursos Humanos</span>
           <span class="text-xs text-slate-500 mt-1 font-medium text-center">Empleados, vacaciones y áreas</span>
+        </Link>
+
+        <Link v-if="hasModulePermission('patrimonio')" href="/assets"
+          class="flex flex-col items-center p-6 bg-white rounded-2xl hover:bg-slate-50/50 border-2 border-slate-100 hover:border-slate-200 transition-all group shadow-sm hover:shadow-md">
+          <div
+            class="w-16 h-16 bg-slate-700 rounded-2xl flex items-center justify-center mb-4 shadow-lg shadow-slate-600/30 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300">
+            <Box class="w-8 h-8 text-white" />
+          </div>
+          <span class="text-base font-bold text-slate-900">Patrimonio</span>
+          <span class="text-xs text-slate-500 mt-1 font-medium text-center">Gestión de bienes y activos</span>
         </Link>
       </div>
     </div>
@@ -208,15 +218,15 @@
           </div>
         </div>
 
-        <div class="bg-white rounded-2xl p-6 border-2 border-orange-50 shadow-sm hover:shadow-md transition-all group">
+        <div class="bg-white rounded-2xl p-6 border-2 border-slate-50 shadow-sm hover:shadow-md transition-all group">
           <div class="flex items-center gap-4">
             <div
-              class="w-14 h-14 bg-orange-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-orange-200">
+              class="w-14 h-14 bg-slate-700 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-slate-200">
               <Clock class="w-7 h-7" />
             </div>
             <div>
               <p class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Pendiente Retorno</p>
-              <p class="text-3xl font-black text-orange-600">{{ stats.personnel.pending_return }}</p>
+              <p class="text-3xl font-black text-slate-700">{{ stats.personnel.pending_return }}</p>
             </div>
           </div>
         </div>
@@ -317,7 +327,8 @@ import {
   Sun,
   Car,
   Calendar,
-  Heart
+  Heart,
+  Box
 } from 'lucide-vue-next';
 
 const props = defineProps({
@@ -384,6 +395,7 @@ const hasModulePermission = (module, action = 'ver') => {
     'secretaria': ['citas'],
     'recursos_humanos': ['recursos_humanos', 'vacaciones', 'areas', 'cargos'],
     'bienestar': ['licencias'],
+    'patrimonio': ['patrimonio', 'bienes'],
   };
 
   const dbKeys = mapping[module];
