@@ -1,3 +1,19 @@
+<script setup lang="ts">
+import { LogIn, LogOut, FileText, Users, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-vue-next';
+
+import { Visit, PaginatedVisits } from '@/Types/visitor';
+
+defineProps<{
+    visits: PaginatedVisits;
+}>();
+
+defineEmits<{
+    (e: 'exit', visit: Visit): void;
+    (e: 'page-change', page: number): void;
+    (e: 'update:perPage', perPage: string | number): void;
+}>();
+</script>
+
 <template>
     <div class="bg-white shadow-xl rounded-2xl border border-slate-200 overflow-hidden">
         <div class="overflow-x-auto">
@@ -102,7 +118,8 @@
             <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
                 <div class="flex items-center gap-2 text-sm text-slate-600">
                     <span>Mostrar</span>
-                    <select :value="visits.per_page" @change="$emit('update:perPage', $event.target.value)"
+                    <select :value="visits.per_page"
+                        @change="$emit('update:perPage', ($event.target as HTMLSelectElement).value)"
                         class="border border-slate-200 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-purple-500 bg-white">
                         <option :value="10">10</option>
                         <option :value="25">25</option>
@@ -137,16 +154,3 @@
         </div>
     </div>
 </template>
-
-<script setup>
-import { LogIn, LogOut, FileText, Users, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-vue-next';
-
-defineProps({
-    visits: {
-        type: Object,
-        required: true
-    }
-});
-
-defineEmits(['exit', 'page-change', 'update:perPage']);
-</script>

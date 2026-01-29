@@ -1,3 +1,134 @@
+<script lang="ts">
+import MainLayout from '@/Layouts/MainLayout.vue';
+
+export default {
+    layout: MainLayout
+}
+</script>
+
+<script setup lang="ts">
+import { ref, onMounted, nextTick, watch } from 'vue';
+import { Link } from '@inertiajs/vue3';
+import {
+    Plus,
+    ArrowLeft,
+    ClipboardList,
+    FileText
+} from 'lucide-vue-next';
+
+// Components
+import CreateVisitModal from '@/Components/ExternalVisit/List/CreateVisitModal.vue';
+import ExitVisitModal from '@/Components/ExternalVisit/List/ExitVisitModal.vue';
+import VisitFilters from '@/Components/ExternalVisit/List/VisitFilters.vue';
+import VisitTable from '@/Components/ExternalVisit/List/VisitTable.vue';
+import VisitReports from '@/Components/ExternalVisit/Reports/VisitReports.vue';
+import BarcodeScanner from '@/Components/ExternalVisit/List/BarcodeScanner.vue';
+
+// Composables
+import { useVisitFilters } from '@/Composables/useVisitFilters';
+
+// Types
+import { Visit, PaginatedVisits } from '@/Types/visitor';
+
+const props = defineProps<{
+    visits: PaginatedVisits;
+    filters: any;
+    areas: any[];
+    offices: any[];
+    employees: any[];
+}>();
+
+// State
+const showCreateModal = ref(false);
+const showExitModal = ref(false);
+const selectedVisit = ref<Visit | null>(null);
+const activeTab = ref<'list' | 'reports'>('list');
+const barcodeScanner = ref<any>(null);
+
+// Filtering logic from composable
+const {
+    localFilters,
+    updateFilters,
+    changePage,
+    updatePerPage,
+    clearFilters
+} = useVisitFilters(props.filters);
+
+// Modal actions
+const openCreateModal = () => {
+    showCreateModal.value = true;
+};
+
+const closeCreateModal = () => {
+    showCreateModal.value = false;
+    safeFocusRestore(300);
+};
+
+const openExitModal = (visit: Visit) => {
+    selectedVisit.value = visit;
+    showExitModal.value = true;
+};
+
+const closeExitModal = () => {
+    showExitModal.value = false;
+    selectedVisit.value = null;
+    safeFocusRestore(300);
+};
+
+const handleExitSuccess = () => {
+    safeFocusRestore(2500); // Wait for success message to show
+};
+
+const handleVisitFound = (visit: Visit) => {
+    selectedVisit.value = visit;
+    showExitModal.value = true;
+};
+
+// Focus management
+const isAnyInputFocused = () => {
+    const activeElement = document.activeElement;
+    return activeElement && (
+        activeElement.tagName === 'INPUT' ||
+        activeElement.tagName === 'TEXTAREA' ||
+        activeElement.tagName === 'SELECT' ||
+        (activeElement as HTMLElement).isContentEditable
+    );
+};
+
+const safeFocusRestore = (delay = 100) => {
+    setTimeout(() => {
+        if (!isAnyInputFocused() && activeTab.value === 'list') {
+            barcodeScanner.value?.focusInput();
+        }
+    }, delay);
+};
+
+onMounted(() => {
+    nextTick(() => {
+        barcodeScanner.value?.focusInput();
+    });
+
+    const handleGlobalClick = (event: MouseEvent) => {
+        const target = (event.target as HTMLElement).closest('a');
+        if (target && target.href && target.href.includes('/ticket')) {
+            safeFocusRestore(500);
+        }
+    };
+
+    document.addEventListener('click', handleGlobalClick);
+
+    return () => {
+        document.removeEventListener('click', handleGlobalClick);
+    };
+});
+
+watch(activeTab, (newTab) => {
+    if (newTab === 'list') {
+        safeFocusRestore(100);
+    }
+});
+</script>
+
 <template>
     <div class="p-4 sm:p-6 lg:p-8">
         <div class="max-w-7xl mx-auto">
@@ -68,206 +199,8 @@
             <CreateVisitModal v-if="showCreateModal" :areas="areas" :offices="offices" :employees="employees"
                 @close="closeCreateModal" />
 
-            <ExitVisitModal v-if="showExitModal" :visit="selectedVisit" @close="closeExitModal"
+            <ExitVisitModal v-if="showExitModal && selectedVisit" :visit="selectedVisit" @close="closeExitModal"
                 @success="handleExitSuccess" />
         </div>
     </div>
 </template>
-
-<script>
-import MainLayout from '@/Layouts/MainLayout.vue';
-
-export default {
-    layout: MainLayout
-}
-</script>
-
-<script setup>
-import { ref, watch, onMounted, nextTick } from 'vue';
-import { Link, router } from '@inertiajs/vue3';
-import {
-    Plus,
-    ArrowLeft,
-    ClipboardList,
-    FileText
-} from 'lucide-vue-next';
-import CreateVisitModal from '@/Components/ExternalVisit/List/CreateVisitModal.vue';
-import ExitVisitModal from '@/Components/ExternalVisit/List/ExitVisitModal.vue';
-import VisitFilters from '@/Components/ExternalVisit/List/VisitFilters.vue';
-import VisitTable from '@/Components/ExternalVisit/List/VisitTable.vue';
-import VisitReports from '@/Components/ExternalVisit/Reports/VisitReports.vue';
-import BarcodeScanner from '@/Components/ExternalVisit/List/BarcodeScanner.vue';
-
-const props = defineProps({
-    visits: {
-        type: Object,
-        default: () => ({ data: [], links: [] })
-    },
-    filters: {
-        type: Object,
-        default: () => ({})
-    },
-    areas: {
-        type: Array,
-        default: () => []
-    },
-    offices: {
-        type: Array,
-        default: () => []
-    },
-    employees: {
-        type: Array,
-        default: () => []
-    }
-});
-
-const showCreateModal = ref(false);
-const showExitModal = ref(false);
-const selectedVisit = ref(null);
-const activeTab = ref('list');
-const barcodeScanner = ref(null);
-
-// Local filters
-const localFilters = ref({
-    search: props.filters.search || '',
-    estado: props.filters.estado || '',
-    fecha: props.filters.fecha || '',
-    per_page: 10
-});
-
-// Debounce helper
-const debounce = (fn, delay) => {
-    let timeoutId;
-    return (...args) => {
-        clearTimeout(timeoutId);
-        timeoutId = setTimeout(() => fn(...args), delay);
-    };
-};
-
-// Reactive filtering
-watch(localFilters, debounce(() => {
-    applyFilters();
-}, 500), { deep: true });
-
-const updateFilters = (newFilters) => {
-    localFilters.value = newFilters;
-};
-
-const changePage = (page) => {
-    router.get('/visitors', { ...localFilters.value, page }, {
-        preserveState: true,
-        preserveScroll: true,
-        replace: true,
-        onSuccess: () => safeFocusRestore(200)
-    });
-};
-
-const updatePerPage = (newPerPage) => {
-    localFilters.value.per_page = newPerPage;
-    router.get('/visitors', { ...localFilters.value, page: 1 }, {
-        preserveState: true,
-        preserveScroll: true,
-        replace: true,
-        onSuccess: () => safeFocusRestore(200)
-    });
-};
-
-const applyFilters = () => {
-    router.get('/visitors', localFilters.value, {
-        preserveState: true,
-        preserveScroll: true,
-        replace: true
-    });
-};
-
-const clearFilters = () => {
-    localFilters.value = {
-        search: '',
-        estado: '',
-        fecha: '',
-        per_page: 10
-    };
-    applyFilters();
-    safeFocusRestore(200);
-};
-
-const openCreateModal = () => {
-    showCreateModal.value = true;
-};
-
-const closeCreateModal = () => {
-    showCreateModal.value = false;
-    safeFocusRestore(300);
-};
-
-const openExitModal = (visit) => {
-    selectedVisit.value = visit;
-    showExitModal.value = true;
-};
-
-const closeExitModal = () => {
-    showExitModal.value = false;
-    selectedVisit.value = null;
-    safeFocusRestore(300);
-};
-
-const handleExitSuccess = () => {
-    // Optional: Show toast or refresh if needed (Inertia handles refresh automatically)
-    safeFocusRestore(2500); // Wait for success message to show
-};
-
-const handleVisitFound = (visit) => {
-    selectedVisit.value = visit;
-    showExitModal.value = true;
-};
-
-// Helper to check if an input is focused
-const isAnyInputFocused = () => {
-    const activeElement = document.activeElement;
-    return activeElement && (
-        activeElement.tagName === 'INPUT' ||
-        activeElement.tagName === 'TEXTAREA' ||
-        activeElement.tagName === 'SELECT' ||
-        activeElement.isContentEditable
-    );
-};
-
-// Safe focus restore - only if no other input is focused
-const safeFocusRestore = (delay = 100) => {
-    setTimeout(() => {
-        if (!isAnyInputFocused() && activeTab.value === 'list') {
-            barcodeScanner.value?.focusInput();
-        }
-    }, delay);
-};
-
-// Restore focus when component mounts
-onMounted(() => {
-    nextTick(() => {
-        barcodeScanner.value?.focusInput();
-    });
-
-    // Add global click listener for ticket links
-    const handleGlobalClick = (event) => {
-        const target = event.target.closest('a');
-        if (target && target.href && target.href.includes('/ticket')) {
-            // Restore focus after ticket link is clicked
-            safeFocusRestore(500);
-        }
-    };
-
-    document.addEventListener('click', handleGlobalClick);
-
-    // Cleanup on unmount
-    return () => {
-        document.removeEventListener('click', handleGlobalClick);
-    };
-});
-
-// Watch for tab changes and restore focus
-watch(activeTab, (newTab) => {
-    if (newTab === 'list') {
-        safeFocusRestore(100);
-    }
-});
-</script>
