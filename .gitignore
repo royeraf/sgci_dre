@@ -30,11 +30,3 @@ public/build/
 *.xls
 presonal.xlsx
 /imports/
-
-# AI Agents & Skills
-.agent/
-.agents/
-.claude/
-.gemini/
-venv/
-.venv/
