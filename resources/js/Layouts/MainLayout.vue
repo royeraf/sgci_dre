@@ -412,6 +412,8 @@ watch(() => page.props.flash?.success, (success) => {
             icon: 'success',
             title: success
         });
+        // Important: Clear the flash message so it can be triggered again even if the string is identical
+        page.props.flash.success = null;
     }
 }, { immediate: true });
 
@@ -421,6 +423,8 @@ watch(() => page.props.flash?.error, (error) => {
             icon: 'error',
             title: error
         });
+        // Clear the error message as well
+        page.props.flash.error = null;
     }
 }, { immediate: true });
 
