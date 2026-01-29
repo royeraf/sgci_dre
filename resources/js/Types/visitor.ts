@@ -6,6 +6,8 @@ export interface Visit {
     hora_ingreso: string | null;
     hora_salida: string | null;
     motivo: string;
+    motivo_nombre?: string;
+    visit_reason_id?: string;
     area: string;
     a_quien_visita: string | null;
     is_pending: boolean;

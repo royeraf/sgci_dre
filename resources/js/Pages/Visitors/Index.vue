@@ -13,7 +13,8 @@ import {
     Plus,
     ArrowLeft,
     ClipboardList,
-    FileText
+    FileText,
+    Settings
 } from 'lucide-vue-next';
 
 // Components
@@ -23,6 +24,7 @@ import VisitFilters from '@/Components/ExternalVisit/List/VisitFilters.vue';
 import VisitTable from '@/Components/ExternalVisit/List/VisitTable.vue';
 import VisitReports from '@/Components/ExternalVisit/Reports/VisitReports.vue';
 import BarcodeScanner from '@/Components/ExternalVisit/List/BarcodeScanner.vue';
+import VisitReasonsManager from '@/Components/ExternalVisit/Reasons/VisitReasonsManager.vue';
 
 // Composables
 import { useVisitFilters } from '@/Composables/useVisitFilters';
@@ -36,13 +38,14 @@ const props = defineProps<{
     areas: any[];
     offices: any[];
     employees: any[];
+    reasons: any[];
 }>();
 
 // State
 const showCreateModal = ref(false);
 const showExitModal = ref(false);
 const selectedVisit = ref<Visit | null>(null);
-const activeTab = ref<'list' | 'reports'>('list');
+const activeTab = ref<'list' | 'reports' | 'reasons'>('list');
 const barcodeScanner = ref<any>(null);
 
 // Filtering logic from composable
@@ -176,6 +179,15 @@ watch(activeTab, (newTab) => {
                         <FileText class="w-5 h-5" />
                         Reportes
                     </button>
+                    <button @click="activeTab = 'reasons'" :class="[
+                        activeTab === 'reasons'
+                            ? 'border-indigo-600 text-indigo-600'
+                            : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300',
+                        'whitespace-nowrap py-4 px-1 border-b-2 font-bold text-sm flex items-center gap-2 transition-all duration-200'
+                    ]">
+                        <Settings class="w-5 h-5" />
+                        Motivos
+                    </button>
                 </nav>
             </div>
 
@@ -195,9 +207,14 @@ watch(activeTab, (newTab) => {
                 <VisitReports />
             </div>
 
+            <!-- Reasons Tab Content -->
+            <div v-if="activeTab === 'reasons'">
+                <VisitReasonsManager />
+            </div>
+
             <!-- Modals -->
             <CreateVisitModal v-if="showCreateModal" :areas="areas" :offices="offices" :employees="employees"
-                @close="closeCreateModal" />
+                :reasons="reasons" @close="closeCreateModal" />
 
             <ExitVisitModal v-if="showExitModal && selectedVisit" :visit="selectedVisit" @close="closeExitModal"
                 @success="handleExitSuccess" />

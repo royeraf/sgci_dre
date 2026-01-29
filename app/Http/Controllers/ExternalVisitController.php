@@ -12,6 +12,7 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Str;
 use App\Models\Employee;
+use App\Models\VisitReason;
 
 class ExternalVisitController extends Controller
 {
@@ -71,6 +72,7 @@ class ExternalVisitController extends Controller
                 'hora_ingreso' => $visit->hora_ingreso ? $visit->hora_ingreso->format('H:i') : null,
                 'hora_salida' => $visit->hora_salida ? $visit->hora_salida->format('H:i') : null,
                 'motivo' => $visit->motivo,
+                'motivo_nombre' => $visit->motivo_nombre, // Accessor from model
                 'area' => $destino, // Muestra Oficina - Área o solo Área
                 'a_quien_visita' => $visit->a_quien_visita,
                 'is_pending' => is_null($visit->hora_salida),
@@ -101,6 +103,7 @@ class ExternalVisitController extends Controller
                 })
                 ->sortBy('nombre_completo')
                 ->values(),
+            'reasons' => VisitReason::active()->orderBy('nombre')->get(),
         ]);
     }
 
@@ -114,7 +117,8 @@ class ExternalVisitController extends Controller
             'nombres' => 'required|string|max:100',
             'apellidos' => 'required|string|max:100',
             'hora_ingreso' => 'required',
-            'motivo' => 'required|string|min:3',
+            'visit_reason_id' => 'required|uuid|exists:visit_reasons,id',
+            'motivo' => 'nullable|string',
             'area_id' => 'nullable|uuid|exists:hr_areas,id',
             'office_id' => 'nullable|uuid|exists:hr_offices,id',
             'a_quien_visita' => 'nullable|string|max:200',
@@ -156,9 +160,9 @@ class ExternalVisitController extends Controller
             'person_id' => $person->id,
             'area_id' => $areaId,
             'office_id' => $validated['office_id'] ?? null,
+            'visit_reason_id' => $validated['visit_reason_id'],
             'hora_ingreso' => $validated['hora_ingreso'],
-            'motivo' => $validated['motivo'],
-            'motivo' => $validated['motivo'],
+            'motivo' => $validated['motivo'] ?? null,
             'a_quien_visita' => $validated['a_quien_visita'],
             'employee_id' => $validated['employee_id'] ?? null,
             'fecha' => now()->toDateString(),
@@ -347,5 +351,67 @@ class ExternalVisitController extends Controller
                 'registrado_por' => $visit->registrador ? $visit->registrador->name : 'N/A',
             ]
         ]);
+    }
+
+    /**
+     * Display the visit reasons management page.
+     */
+    public function reasonsIndex()
+    {
+        return Inertia::render('Visitors/Reasons');
+    }
+
+    /**
+     * Get list of visit reasons.
+     */
+    public function getReasons()
+    {
+        return response()->json(VisitReason::orderBy('nombre')->get());
+    }
+
+    /**
+     * Store a new visit reason.
+     */
+    public function storeReason(Request $request)
+    {
+        $validated = $request->validate([
+            'nombre' => 'required|string|max:100|unique:visit_reasons,nombre',
+            'descripcion' => 'nullable|string|max:255',
+        ]);
+
+        $reason = VisitReason::create($validated);
+
+        return redirect()->back()->with('success', 'Motivo de visita creado correctamente.');
+    }
+
+    /**
+     * Update an existing visit reason.
+     */
+    public function updateReason(Request $request, VisitReason $reason)
+    {
+        $validated = $request->validate([
+            'nombre' => 'required|string|max:100|unique:visit_reasons,nombre,' . $reason->id,
+            'descripcion' => 'nullable|string|max:255',
+            'is_active' => 'required|boolean',
+        ]);
+
+        $reason->update($validated);
+
+        return redirect()->back()->with('success', 'Motivo de visita actualizado correctamente.');
+    }
+
+    /**
+     * Delete a visit reason.
+     */
+    public function deleteReason(VisitReason $reason)
+    {
+        // Check if it's being used
+        if ($reason->visits()->count() > 0) {
+            return redirect()->back()->with('error', 'No se puede eliminar un motivo que ya está siendo utilizado en visitas.');
+        }
+
+        $reason->delete();
+
+        return redirect()->back()->with('success', 'Motivo de visita eliminado correctamente.');
     }
 }

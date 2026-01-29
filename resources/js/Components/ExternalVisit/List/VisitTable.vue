@@ -74,7 +74,10 @@ defineEmits<{
                             </div>
                         </td>
                         <td class="px-6 py-4">
-                            <div class="text-sm text-slate-700 line-clamp-2 max-w-xs">{{ visit.motivo }}</div>
+                            <div class="text-sm font-bold text-slate-800">{{ visit.motivo_nombre || 'No especificado' }}
+                            </div>
+                            <div v-if="visit.motivo" class="text-xs text-slate-500 line-clamp-1 max-w-xs">{{
+                                visit.motivo }}</div>
                         </td>
                         <td class="px-6 py-4">
                             <div class="text-sm font-bold text-slate-700">{{ visit.area }}</div>

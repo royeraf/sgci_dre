@@ -22,12 +22,16 @@ interface Office {
     area?: { nombre: string };
 }
 
-
+interface VisitReason {
+    id: string;
+    nombre: string;
+}
 
 const props = defineProps<{
     areas: Area[];
     offices: Office[];
     employees: Employee[];
+    reasons: VisitReason[];
 }>();
 
 const emit = defineEmits<{
@@ -61,7 +65,8 @@ const entrySchema = toTypedSchema(yup.object({
     }),
     a_quien_visita: yup.string().nullable(),
     employee_id: yup.string().nullable(),
-    motivo: yup.string().required('El motivo es obligatorio').min(5, 'Min 5 caracteres'),
+    visit_reason_id: yup.string().required('Debe seleccionar un motivo'),
+    motivo: yup.string().nullable(),
 }));
 
 const { errors: formErrors, defineField: defineEntryField, handleSubmit: validateEntryForm, resetForm, setFieldValue } = useForm({
@@ -75,6 +80,7 @@ const { errors: formErrors, defineField: defineEntryField, handleSubmit: validat
         office_id: '',
         a_quien_visita: '',
         employee_id: '',
+        visit_reason_id: '',
         motivo: '',
     }
 });
@@ -87,6 +93,7 @@ const [areaId] = defineEntryField('area_id');
 const [officeId] = defineEntryField('office_id');
 const [aQuienVisita] = defineEntryField('a_quien_visita');
 const [employeeId] = defineEntryField('employee_id');
+const [visitReasonId] = defineEntryField('visit_reason_id');
 const [motivo] = defineEntryField('motivo');
 
 // Logic for employee search interaction
@@ -297,7 +304,7 @@ onUnmounted(() => {
                                 class="uppercase w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors disabled:bg-slate-100 disabled:text-slate-500 outline-none"
                                 :class="formErrors.apellidos ? 'border-red-400' : 'border-slate-200'" />
                             <p v-if="formErrors.apellidos" class="mt-1 text-sm text-red-600">{{ formErrors.apellidos
-                            }}</p>
+                                }}</p>
                         </div>
                     </div>
 
@@ -344,7 +351,7 @@ onUnmounted(() => {
                                 </option>
                             </select>
                             <p v-if="formErrors.office_id" class="mt-1 text-sm text-red-600">{{ formErrors.office_id
-                            }}</p>
+                                }}</p>
                         </div>
                     </div>
 
@@ -388,14 +395,29 @@ onUnmounted(() => {
                         </div>
                     </div>
 
-                    <div>
-                        <label class="block text-sm font-bold text-slate-700 mb-2">Motivo de Visita <span
-                                class="text-red-500">*</span></label>
-                        <textarea v-model="motivo" rows="3" placeholder="Indique el motivo de la visita..."
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+                        <div>
+                            <label class="block text-sm font-bold text-slate-700 mb-2">Motivo <span
+                                    class="text-red-500">*</span></label>
+                            <select v-model="visitReasonId"
+                                class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors bg-white outline-none"
+                                :class="{ 'border-red-400': formErrors.visit_reason_id }">
+                                <option value="" disabled>Seleccione un motivo...</option>
+                                <option v-for="r in reasons" :key="r.id" :value="r.id">{{ r.nombre }}</option>
+                            </select>
+                            <p v-if="formErrors.visit_reason_id"
+                                class="mt-1 text-sm text-red-600 font-bold flex items-center gap-1">
+                                <AlertCircle class="w-3 h-3" /> {{ formErrors.visit_reason_id }}
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="mt-4">
+                        <label class="block text-sm font-bold text-slate-700 mb-2">Detalles / Nota (Opcional)</label>
+                        <textarea v-model="motivo" rows="2" placeholder="Información adicional sobre la visita..."
                             class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 resize-none transition-colors outline-none"
                             :class="{ 'border-red-400': formErrors.motivo }"></textarea>
-                        <p v-if="formErrors.motivo" class="mt-1 text-sm text-red-600">{{ formErrors.motivo }}
-                        </p>
+                        <p v-if="formErrors.motivo" class="mt-1 text-sm text-red-600">{{ formErrors.motivo }}</p>
                     </div>
 
                     <!-- Actions -->
