@@ -57,6 +57,21 @@
                                         :disabled="isSubmitting" />
                                     <p v-if="formErrors.codigo_interno" class="mt-1 text-sm text-red-600">{{
                                         formErrors.codigo_interno }}</p>
+
+                                    <div v-if="codeExists"
+                                        class="mt-2 p-3 bg-red-50 border border-red-200 rounded-xl flex items-start gap-2 text-red-700 animate-pulse">
+                                        <AlertCircle class="w-5 h-5 shrink-0 mt-0.5" />
+                                        <div class="text-xs font-bold">
+                                            ¡Código Duplicado! El código {{ codigo_patrimonio }}{{ codigo_interno }} ya
+                                            está registrado en el sistema.
+                                        </div>
+                                    </div>
+
+                                    <div v-else-if="isCheckingCode"
+                                        class="mt-2 flex items-center gap-2 text-slate-400 text-xs font-medium">
+                                        <Loader2 class="w-3 h-3 animate-spin" />
+                                        Verificando disponibilidad...
+                                    </div>
                                 </div>
 
                                 <div>
@@ -73,7 +88,7 @@
                                         <option value="BAJA">BAJA</option>
                                     </select>
                                     <p v-if="formErrors.estado" class="mt-1 text-sm text-red-600">{{ formErrors.estado
-                                        }}</p>
+                                    }}</p>
                                 </div>
                             </div>
                         </div>
@@ -129,7 +144,8 @@
                                         class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-slate-500 focus:border-slate-500 transition-colors outline-none"
                                         :class="formErrors.marca ? 'border-red-400' : 'border-slate-200'"
                                         :disabled="isSubmitting" />
-                                    <p v-if="formErrors.marca" class="mt-1 text-sm text-red-600">{{ formErrors.marca }}</p>
+                                    <p v-if="formErrors.marca" class="mt-1 text-sm text-red-600">{{ formErrors.marca }}
+                                    </p>
                                 </div>
 
                                 <div>
@@ -138,7 +154,8 @@
                                         class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-slate-500 focus:border-slate-500 transition-colors outline-none"
                                         :class="formErrors.modelo ? 'border-red-400' : 'border-slate-200'"
                                         :disabled="isSubmitting" />
-                                    <p v-if="formErrors.modelo" class="mt-1 text-sm text-red-600">{{ formErrors.modelo }}</p>
+                                    <p v-if="formErrors.modelo" class="mt-1 text-sm text-red-600">{{ formErrors.modelo
+                                        }}</p>
                                 </div>
 
                                 <div>
@@ -147,7 +164,8 @@
                                         class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-slate-500 focus:border-slate-500 transition-colors outline-none"
                                         :class="formErrors.numero_serie ? 'border-red-400' : 'border-slate-200'"
                                         :disabled="isSubmitting" />
-                                    <p v-if="formErrors.numero_serie" class="mt-1 text-sm text-red-600">{{ formErrors.numero_serie }}</p>
+                                    <p v-if="formErrors.numero_serie" class="mt-1 text-sm text-red-600">{{
+                                        formErrors.numero_serie }}</p>
                                 </div>
 
                                 <div>
@@ -156,7 +174,8 @@
                                         class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-slate-500 focus:border-slate-500 transition-colors outline-none"
                                         :class="formErrors.color ? 'border-red-400' : 'border-slate-200'"
                                         :disabled="isSubmitting" />
-                                    <p v-if="formErrors.color" class="mt-1 text-sm text-red-600">{{ formErrors.color }}</p>
+                                    <p v-if="formErrors.color" class="mt-1 text-sm text-red-600">{{ formErrors.color }}
+                                    </p>
                                 </div>
 
                                 <div>
@@ -165,7 +184,8 @@
                                         class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-slate-500 focus:border-slate-500 transition-colors outline-none"
                                         :class="formErrors.dimension ? 'border-red-400' : 'border-slate-200'"
                                         :disabled="isSubmitting" />
-                                    <p v-if="formErrors.dimension" class="mt-1 text-sm text-red-600">{{ formErrors.dimension }}</p>
+                                    <p v-if="formErrors.dimension" class="mt-1 text-sm text-red-600">{{
+                                        formErrors.dimension }}</p>
                                 </div>
                             </div>
                         </div>
@@ -186,7 +206,8 @@
                                         class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-slate-500 focus:border-slate-500 transition-colors bg-white outline-none"
                                         :class="formErrors.ubicacion ? 'border-red-400' : 'border-slate-200'"
                                         :disabled="isSubmitting" />
-                                    <p v-if="formErrors.ubicacion" class="mt-1 text-sm text-red-600">{{ formErrors.ubicacion }}</p>
+                                    <p v-if="formErrors.ubicacion" class="mt-1 text-sm text-red-600">{{
+                                        formErrors.ubicacion }}</p>
                                 </div>
 
                                 <div>
@@ -197,7 +218,8 @@
                                         class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-slate-500 focus:border-slate-500 transition-colors bg-white outline-none"
                                         :class="formErrors.responsable_nombre ? 'border-red-400' : 'border-slate-200'"
                                         :disabled="isSubmitting" />
-                                    <p v-if="formErrors.responsable_nombre" class="mt-1 text-sm text-red-600">{{ formErrors.responsable_nombre }}</p>
+                                    <p v-if="formErrors.responsable_nombre" class="mt-1 text-sm text-red-600">{{
+                                        formErrors.responsable_nombre }}</p>
                                     <!-- Here we could add a proper select for existing employees/responsibles -->
                                 </div>
 
@@ -208,7 +230,8 @@
                                         class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-slate-500 focus:border-slate-500 transition-colors bg-white outline-none"
                                         :class="formErrors.fecha_asignacion ? 'border-red-400' : 'border-slate-200'"
                                         :disabled="isSubmitting" />
-                                    <p v-if="formErrors.fecha_asignacion" class="mt-1 text-sm text-red-600">{{ formErrors.fecha_asignacion }}</p>
+                                    <p v-if="formErrors.fecha_asignacion" class="mt-1 text-sm text-red-600">{{
+                                        formErrors.fecha_asignacion }}</p>
                                 </div>
                             </div>
                         </div>
@@ -234,12 +257,21 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, watch, onUnmounted } from 'vue';
 import { useForm } from 'vee-validate';
 import { toTypedSchema } from '@vee-validate/yup';
 import * as yup from 'yup';
 import { router } from '@inertiajs/vue3';
-import { Plus, X, Loader2 } from 'lucide-vue-next';
+import { Plus, X, Loader2, AlertCircle } from 'lucide-vue-next';
+import axios from 'axios';
+
+let debounceTimer = null;
+const debounce = (callback, delay) => {
+    return (...args) => {
+        if (debounceTimer) clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => callback(...args), delay);
+    };
+};
 
 const props = defineProps({
     categories: {
@@ -296,12 +328,12 @@ const assetSchema = toTypedSchema(
             .max(200, 'El nombre del responsable no puede exceder 200 caracteres'),
         fecha_asignacion: yup.string()
             .nullable()
-            .test('valid-date', 'Fecha no válida', function(value) {
+            .test('valid-date', 'Fecha no válida', function (value) {
                 if (!value) return true; // nullable
                 const date = new Date(value);
                 return !isNaN(date.getTime());
             })
-            .test('not-future', 'La fecha no puede ser futura', function(value) {
+            .test('not-future', 'La fecha no puede ser futura', function (value) {
                 if (!value) return true;
                 const inputDate = new Date(value);
                 const today = new Date();
@@ -346,7 +378,45 @@ const [ubicacion, ubicacionProps] = defineField('ubicacion');
 const [responsable_nombre, responsableNombreProps] = defineField('responsable_nombre');
 const [fecha_asignacion, fechaAsignacionProps] = defineField('fecha_asignacion');
 
+const codeExists = ref(false);
+const isCheckingCode = ref(false);
+
+const checkCodeAvailability = debounce(async () => {
+    const pCode = codigo_patrimonio.value;
+    const iCode = codigo_interno.value;
+
+    if (pCode && iCode && pCode.length === 8 && iCode.length === 4) {
+        isCheckingCode.value = true;
+        try {
+            const fullCode = pCode + iCode;
+            const response = await axios.get(`/assets/check-code?code=${fullCode}`);
+            codeExists.value = response.data.exists;
+
+            if (codeExists.value) {
+                // We can manually set an error in vee-validate if we want, 
+                // but showing a specific message is also good.
+            }
+        } catch (error) {
+            console.error('Error checking code:', error);
+        } finally {
+            isCheckingCode.value = false;
+        }
+    } else {
+        codeExists.value = false;
+    }
+}, 500);
+
+watch([codigo_patrimonio, codigo_interno], () => {
+    checkCodeAvailability();
+});
+
+onUnmounted(() => {
+    if (debounceTimer) clearTimeout(debounceTimer);
+});
+
 const onSubmitForm = validateForm(async (values) => {
+    if (codeExists.value) return;
+
     isSubmitting.value = true;
 
     // Clean up empty values

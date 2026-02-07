@@ -75,6 +75,17 @@ class AssetController extends Controller
         ]);
     }
 
+    public function checkCode(Request $request)
+    {
+        $code = $request->query('code');
+        if (!$code) {
+            return response()->json(['exists' => false]);
+        }
+
+        $exists = Asset::where('codigo_completo', $code)->exists();
+        return response()->json(['exists' => $exists]);
+    }
+
     public function store(Request $request)
     {
         $validated = $request->validate([
@@ -96,9 +107,18 @@ class AssetController extends Controller
         if ($request->tipo_origen === 'SOBRANTE') {
             $code .= 'S';
         }
+        
+        // Check if code already exists
+        if ($code && Asset::where('codigo_completo', $code)->exists()) {
+            return redirect()->back()->withErrors([
+                'codigo_patrimonio' => 'El código generado (' . $code . ') ya existe en el sistema.',
+                'codigo_interno' => 'El código generado (' . $code . ') ya existe en el sistema.'
+            ]);
+        }
+        
         $validated['codigo_completo'] = $code ?: null;
 
-        $asset = Asset::create($request->except(['ubicacion', 'responsable_nombre'])); // Handle extra fields manually if needed
+        $asset = Asset::create(array_merge($validated, $request->except(['ubicacion', 'responsable_nombre', 'codigo_patrimonio', 'codigo_interno', 'codigo_completo']))); 
         
         // Create initial movement
         if ($request->has('responsable_id') || $request->has('ubicacion')) {

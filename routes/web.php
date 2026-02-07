@@ -202,6 +202,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/', [App\Http\Controllers\AssetController::class, 'index'])->name('index');
         Route::get('/list', [App\Http\Controllers\AssetController::class, 'getAssets'])->name('list');
         Route::get('/summary', [App\Http\Controllers\AssetController::class, 'getStats'])->name('summary');
+        Route::get('/check-code', [App\Http\Controllers\AssetController::class, 'checkCode'])->name('check-code');
         Route::post('/', [App\Http\Controllers\AssetController::class, 'store'])->name('store');
         Route::put('/{asset}', [App\Http\Controllers\AssetController::class, 'update'])->name('update');
         Route::delete('/{asset}', [App\Http\Controllers\AssetController::class, 'destroy'])->name('destroy');

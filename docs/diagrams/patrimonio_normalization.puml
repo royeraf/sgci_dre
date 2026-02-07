@@ -1,0 +1,289 @@
+@startuml Modelo_Normalizado_Patrimonio
+
+title Propuesta de Normalización - Sistema de Patrimonio\n(Módulo de Activos/Bienes Patrimoniales)
+
+skinparam linetype ortho
+skinparam class {
+    BackgroundColor #E8F4FD
+    BorderColor #2C5282
+    ArrowColor #2C5282
+    FontName Arial
+    FontSize 11
+}
+
+' ==========================================
+' LEYENDA DE COLORES
+' ==========================================
+' Verde     #D4EDDA = Tabla Principal
+' Amarillo  #FFF3CD = Tablas de Movimientos
+' Naranja   #FCE4D6 = Catálogos existentes (RRHH)
+' Azul      #D6EAF8 = Catálogos nuevos (Patrimonio)
+' Rosa      #FFE4E1 = Tablas auxiliares
+
+' ==========================================
+' TABLA PRINCIPAL - ASSETS
+' ==========================================
+entity "**assets**" as assets #D4EDDA {
+    + **id** : BIGINT <<PK>>
+    --
+    # codigo_patrimonio : VARCHAR(12)
+    # codigo_interno : VARCHAR(10)
+    # codigo_completo : VARCHAR(22) <<INDEX>>
+    # denominacion : VARCHAR(200)
+    # descripcion : TEXT
+    --
+    * **categoria_id** : BIGINT <<FK>>
+    * **marca_id** : BIGINT <<FK>>
+    * **color_id** : BIGINT <<FK>>
+    * **origen_id** : BIGINT <<FK>>
+    --
+    # modelo : VARCHAR(100)
+    # numero_serie : VARCHAR(100)
+    # dimension : VARCHAR(100)
+    # fecha_adquisicion : DATE
+    # fecha_retiro : DATE
+    # observacion : TEXT
+    # codigo_barras : VARCHAR(50)
+    # created_at : TIMESTAMP
+    # updated_at : TIMESTAMP
+    # deleted_at : TIMESTAMP
+}
+
+note top of assets
+  **Tabla Principal de Bienes**
+  Solo datos estáticos.
+  Responsable, oficina y estado
+  se obtienen del último movimiento.
+end note
+
+' ==========================================
+' MOVIMIENTOS DE ACTIVOS
+' ==========================================
+entity "**asset_movements**" as asset_movements #FFF3CD {
+    + **id** : BIGINT <<PK>>
+    --
+    * **asset_id** : BIGINT <<FK>>
+    * **responsable_id** : BIGINT <<FK>>
+    * **oficina_id** : UUID <<FK>>
+    * **estado_id** : BIGINT <<FK>>
+    * **inventariador_id** : BIGINT <<FK>>
+    --
+    # tipo : ENUM('ASIGNACION','DEVOLUCION','TRASLADO','BAJA')
+    # fecha : DATE
+    # observaciones : TEXT
+    # created_at : TIMESTAMP
+    # updated_at : TIMESTAMP
+    # deleted_at : TIMESTAMP
+}
+
+note right of asset_movements
+  **Historial de Movimientos**
+  Ya no guarda snapshots de nombre,
+  referencia directa a tablas
+end note
+
+' ==========================================
+' CATÁLOGOS NUEVOS - PATRIMONIO
+' ==========================================
+entity "**asset_categories**" as asset_categories #D6EAF8 {
+    + **id** : BIGINT <<PK>>
+    --
+    # nombre : VARCHAR(100) <<UNIQUE>>
+    # descripcion : TEXT
+    # codigo : VARCHAR(20)
+    # activo : BOOLEAN DEFAULT true
+    # created_at : TIMESTAMP
+    # updated_at : TIMESTAMP
+    # deleted_at : TIMESTAMP
+}
+
+entity "**asset_brands**" as asset_brands #D6EAF8 {
+    + **id** : BIGINT <<PK>>
+    --
+    # nombre : VARCHAR(100) <<UNIQUE>>
+    # activo : BOOLEAN DEFAULT true
+    # created_at : TIMESTAMP
+    # updated_at : TIMESTAMP
+}
+
+note right of asset_brands
+  **NUEVO**
+  Catálogo de marcas:
+  DELL, HP, LENOVO, etc.
+end note
+
+entity "**asset_colors**" as asset_colors #D6EAF8 {
+    + **id** : BIGINT <<PK>>
+    --
+    # nombre : VARCHAR(50) <<UNIQUE>>
+    # codigo_hex : VARCHAR(7)
+    # activo : BOOLEAN DEFAULT true
+    # created_at : TIMESTAMP
+    # updated_at : TIMESTAMP
+}
+
+note right of asset_colors
+  **NUEVO**
+  Catálogo de colores:
+  NEGRO, BLANCO, GRIS, etc.
+end note
+
+entity "**asset_states**" as asset_states #D6EAF8 {
+    + **id** : BIGINT <<PK>>
+    --
+    # nombre : VARCHAR(50) <<UNIQUE>>
+    # descripcion : TEXT
+    # orden : INTEGER
+    # activo : BOOLEAN DEFAULT true
+    # created_at : TIMESTAMP
+    # updated_at : TIMESTAMP
+}
+
+note right of asset_states
+  **NUEVO**
+  Estados del bien:
+  BUENO, REGULAR, MALO, BAJA
+end note
+
+entity "**asset_origins**" as asset_origins #D6EAF8 {
+    + **id** : BIGINT <<PK>>
+    --
+    # nombre : VARCHAR(100) <<UNIQUE>>
+    # descripcion : TEXT
+    # activo : BOOLEAN DEFAULT true
+    # created_at : TIMESTAMP
+    # updated_at : TIMESTAMP
+}
+
+note right of asset_origins
+  **NUEVO**
+  Tipo de origen:
+  SIGA, SOBRANTE, DONACIÓN, etc.
+end note
+
+' ==========================================
+' TABLA DE RESPONSABLES (MEJORADA)
+' ==========================================
+entity "**asset_responsibles**" as asset_responsibles #FFE4E1 {
+    + **id** : BIGINT <<PK>>
+    --
+    * **area_id** : UUID <<FK>>
+    * **oficina_id** : UUID <<FK>>
+    * **contrato_id** : UUID <<FK>>
+    * **employee_id** : UUID <<FK>>
+    --
+    # nombre_original : VARCHAR(200)
+    # activo : BOOLEAN DEFAULT true
+    # created_at : TIMESTAMP
+    # updated_at : TIMESTAMP
+    # deleted_at : TIMESTAMP
+}
+
+note bottom of asset_responsibles
+  **MEJORADA**
+  Ahora referencia a catálogos
+  de RRHH en lugar de texto libre
+end note
+
+' ==========================================
+' CATÁLOGOS EXISTENTES - RRHH (Reutilizados)
+' ==========================================
+entity "**hr_areas**" as hr_areas #FCE4D6 {
+    + **id** : UUID <<PK>>
+    --
+    # nombre : VARCHAR(200)
+    # descripcion : TEXT
+    # activo : BOOLEAN
+}
+
+entity "**hr_offices**" as hr_offices #FCE4D6 {
+    + **id** : UUID <<PK>>
+    --
+    * **area_id** : UUID <<FK>>
+    --
+    # codigo : VARCHAR(20)
+    # nombre : VARCHAR(200)
+    # ubicacion : VARCHAR(100)
+    # piso : VARCHAR(10)
+    # activo : BOOLEAN
+}
+
+entity "**hr_contract_types**" as hr_contract_types #FCE4D6 {
+    + **id** : UUID <<PK>>
+    --
+    # nombre : VARCHAR(100)
+    # descripcion : TEXT
+    # activo : BOOLEAN
+}
+
+entity "**employees**" as employees #FCE4D6 {
+    + **id** : UUID <<PK>>
+    --
+    * **person_id** : UUID <<FK>>
+    * **area_id** : UUID <<FK>>
+    * **position_id** : UUID <<FK>>
+    * **office_id** : UUID <<FK>>
+    --
+    # estado : ENUM
+}
+
+entity "**users**" as users #FCE4D6 {
+    + **id** : BIGINT <<PK>>
+    --
+    # username : VARCHAR(100)
+    # ...
+}
+
+' ==========================================
+' RELACIONES - ASSETS (Solo catálogos estáticos)
+' ==========================================
+
+assets }o--|| asset_categories : "categoria"
+assets }o--|| asset_brands : "marca"
+assets }o--|| asset_colors : "color"
+assets }o--|| asset_origins : "origen"
+
+' ==========================================
+' RELACIONES - MOVEMENTS
+' ==========================================
+
+assets ||--o{ asset_movements : "historial"
+asset_movements }o--|| asset_responsibles : "responsable"
+asset_movements }o--|| hr_offices : "ubicación"
+asset_movements }o--|| asset_states : "estado"
+asset_movements }o--o| users : "inventariador"
+
+' ==========================================
+' RELACIONES - RESPONSIBLES CON RRHH
+' ==========================================
+
+asset_responsibles }o--o| hr_areas : "área"
+asset_responsibles }o--o| hr_offices : "oficina"
+asset_responsibles }o--o| hr_contract_types : "tipo contrato"
+asset_responsibles }o--o| employees : "empleado vinculado"
+
+' ==========================================
+' RELACIONES - RRHH INTERNAS
+' ==========================================
+
+hr_offices }o--|| hr_areas : "pertenece"
+
+' ==========================================
+' LEYENDA
+' ==========================================
+legend bottom
+  |= Color |= Tipo |= Descripción |
+  | <#D4EDDA> | Principal | **assets** - Tabla principal de bienes patrimoniales |
+  | <#FFF3CD> | Movimientos | **asset_movements** - Historial de asignaciones/traslados |
+  | <#D6EAF8> | Catálogos Nuevos | **asset_brands**, **asset_colors**, **asset_states**, **asset_origins** |
+  | <#FFE4E1> | Auxiliar Mejorada | **asset_responsibles** - Ahora vinculada a RRHH |
+  | <#FCE4D6> | Catálogos RRHH | **hr_areas**, **hr_offices**, **hr_contract_types** (existentes) |
+  
+  **Beneficios de la Normalización:**
+  • Elimina duplicación de datos (marca, color, estado guardados como texto)
+  • Permite filtros y reportes consistentes
+  • Reutiliza catálogos de RRHH existentes
+  • Facilita mantenimiento de catálogos centralizados
+endlegend
+
+@enduml
