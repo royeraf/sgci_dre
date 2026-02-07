@@ -1,3 +1,105 @@
+<script setup lang="ts">
+import { ref, computed, nextTick, onMounted } from 'vue';
+import { useForm } from 'vee-validate';
+import { toTypedSchema } from '@vee-validate/yup';
+import * as yup from 'yup';
+import { router } from '@inertiajs/vue3';
+import { LogOut, X, Loader2, ScanBarcode, CheckCircle2 } from 'lucide-vue-next';
+import Swal from 'sweetalert2';
+
+import { Visit } from '@/Types/visitor';
+
+const props = defineProps<{
+    visit: Visit;
+}>();
+
+const emit = defineEmits<{
+    (e: 'close'): void;
+    (e: 'success'): void;
+}>();
+
+const isSubmitting = ref(false);
+const currentTime = new Date().toTimeString().slice(0, 5);
+const verifyDni = ref('');
+const verifyDniInput = ref<HTMLInputElement | null>(null);
+
+// DNI Verification
+const isDniVerified = computed(() => {
+    return props.visit && verifyDni.value === props.visit.dni;
+});
+
+// Focus on mount
+onMounted(() => {
+    nextTick(() => {
+        verifyDniInput.value?.focus();
+    });
+});
+
+// Validation Schema
+const schema = toTypedSchema(
+    yup.object({
+        hora_salida: yup.string().required('La hora de salida es obligatoria'),
+    })
+);
+
+const { errors, defineField, handleSubmit: validateForm } = useForm({
+    validationSchema: schema,
+    initialValues: {
+        hora_salida: currentTime,
+    }
+});
+
+const [horaSalida] = defineField('hora_salida');
+
+// Auto-submit if verified via enter or scanner
+const checkDniAndSubmit = () => {
+    if (isDniVerified.value) {
+        // Update exit time to current moment on verification
+        const now = new Date().toTimeString().slice(0, 5);
+        if (horaSalida) horaSalida.value = now;
+
+        handleFormSubmit();
+    }
+};
+
+const handleFormSubmit = validateForm(async (values) => {
+    if (!isDniVerified.value) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Verificación Requerida',
+            text: 'Debe escanear o ingresar el DNI del visitante.',
+            timer: 3000,
+            showConfirmButton: false
+        });
+        verifyDniInput.value?.focus();
+        return;
+    }
+
+    isSubmitting.value = true;
+
+    router.patch(`/visitors/${props.visit.id}/exit`, values as any, {
+        onSuccess: () => {
+            Swal.fire({
+                icon: 'success',
+                title: 'Salida Registrada',
+                text: 'La salida de la visita fue registrada correctamente.',
+                timer: 2000,
+                showConfirmButton: false
+            });
+            emit('success');
+            emit('close');
+        },
+        onFinish: () => {
+            isSubmitting.value = false;
+        }
+    });
+});
+
+const handleSubmit = () => {
+    handleFormSubmit();
+};
+</script>
+
 <template>
     <div class="fixed inset-0 z-50 overflow-y-auto">
         <div class="flex items-center justify-center min-h-screen px-4">
@@ -38,7 +140,7 @@
                                 <input ref="verifyDniInput" type="text" v-model="verifyDni"
                                     placeholder="Escanee o escriba DNI..." maxlength="8"
                                     @keyup.enter.prevent="checkDniAndSubmit"
-                                    class="block w-full rounded-md border-indigo-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border bg-white" />
+                                    class="block w-full rounded-md border-indigo-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border bg-white outline-none" />
 
                                 <p v-if="verifyDni && !isDniVerified" class="text-xs text-red-600 mt-1 font-bold">
                                     No coincide ({{ visit.dni }})
@@ -71,8 +173,8 @@
                         <label class="block text-sm font-bold text-slate-700 mb-2">
                             Hora de Salida <span class="text-red-500">*</span>
                         </label>
-                        <input type="time" v-model="horaSalida" v-bind="horaSalidaProps"
-                            class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors"
+                        <input type="time" v-model="horaSalida"
+                            class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors outline-none"
                             :class="errors.hora_salida ? 'border-red-400' : 'border-slate-200'" />
                         <p v-if="errors.hora_salida" class="mt-1 text-sm text-red-600">{{ errors.hora_salida }}</p>
                     </div>
@@ -94,103 +196,3 @@
         </div>
     </div>
 </template>
-
-<script setup>
-import { ref, computed, nextTick, onMounted } from 'vue';
-import { useForm } from 'vee-validate';
-import { toTypedSchema } from '@vee-validate/yup';
-import * as yup from 'yup';
-import { router } from '@inertiajs/vue3';
-import { LogOut, X, Loader2, ScanBarcode, CheckCircle2 } from 'lucide-vue-next';
-import Swal from 'sweetalert2';
-
-const props = defineProps({
-    visit: {
-        type: Object,
-        required: true
-    }
-});
-
-const emit = defineEmits(['close', 'success']);
-
-const isSubmitting = ref(false);
-const currentTime = new Date().toTimeString().slice(0, 5);
-const verifyDni = ref('');
-const verifyDniInput = ref(null);
-
-// Verificar DNI
-const isDniVerified = computed(() => {
-    return props.visit && verifyDni.value === props.visit.dni;
-});
-
-// Focus al montar
-onMounted(() => {
-    nextTick(() => {
-        verifyDniInput.value?.focus();
-    });
-});
-
-// Schema
-const schema = toTypedSchema(
-    yup.object({
-        hora_salida: yup.string().required('La hora de salida es obligatoria'),
-    })
-);
-
-const { errors, defineField, handleSubmit: validateForm } = useForm({
-    validationSchema: schema,
-    initialValues: {
-        hora_salida: currentTime,
-    }
-});
-
-const [horaSalida, horaSalidaProps] = defineField('hora_salida');
-
-// Auto-submit si se verifica
-const checkDniAndSubmit = () => {
-    if (isDniVerified.value) {
-        // Actualizar hora de salida al momento actual al verificar
-        const now = new Date().toTimeString().slice(0, 5);
-        if (horaSalida) horaSalida.value = now;
-
-        handleFormSubmit();
-    }
-};
-
-const handleFormSubmit = validateForm(async (values) => {
-    if (!isDniVerified.value) {
-        Swal.fire({
-            icon: 'warning',
-            title: 'Verificación Requerida',
-            text: 'Debe escanear o ingresar el DNI del visitante.',
-            timer: 3000,
-            showConfirmButton: false
-        });
-        verifyDniInput.value?.focus();
-        return;
-    }
-
-    isSubmitting.value = true;
-
-    router.patch(`/visitors/${props.visit.id}/exit`, values, {
-        onSuccess: () => {
-            Swal.fire({
-                icon: 'success',
-                title: 'Salida Registrada',
-                text: 'La salida de la visita fue registrada correctamente.',
-                timer: 2000,
-                showConfirmButton: false
-            });
-            emit('success');
-            emit('close');
-        },
-        onFinish: () => {
-            isSubmitting.value = false;
-        }
-    });
-});
-
-const handleSubmit = () => {
-    handleFormSubmit();
-};
-</script>

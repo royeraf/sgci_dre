@@ -1,3 +1,17 @@
+<script setup lang="ts">
+import { Search, X } from 'lucide-vue-next';
+import type { Filters } from '@/Composables/useVisitFilters';
+
+defineProps<{
+    filters: Filters;
+}>();
+
+defineEmits<{
+    (e: 'update:filters', filters: Filters): void;
+    (e: 'clear'): void;
+}>();
+</script>
+
 <template>
     <div class="bg-white shadow-lg rounded-2xl border border-slate-200 p-4 mb-6">
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -7,7 +21,7 @@
                 <div class="relative">
                     <Search class="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-slate-400" />
                     <input type="text" :value="filters.search"
-                        @input="$emit('update:filters', { ...filters, search: $event.target.value })"
+                        @input="$emit('update:filters', { ...filters, search: ($event.target as HTMLInputElement).value })"
                         placeholder="Buscar por nombre, DNI o motivo..."
                         class="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 text-sm" />
                 </div>
@@ -17,7 +31,7 @@
             <div>
                 <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Estado</label>
                 <select :value="filters.estado"
-                    @change="$emit('update:filters', { ...filters, estado: $event.target.value })"
+                    @change="$emit('update:filters', { ...filters, estado: ($event.target as HTMLSelectElement).value })"
                     class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 text-sm bg-white">
                     <option value="">Todos</option>
                     <option value="pendiente">Pendiente salida</option>
@@ -29,7 +43,7 @@
             <div>
                 <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Fecha</label>
                 <input type="date" :value="filters.fecha"
-                    @input="$emit('update:filters', { ...filters, fecha: $event.target.value })"
+                    @input="$emit('update:filters', { ...filters, fecha: ($event.target as HTMLInputElement).value })"
                     class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 text-sm" />
             </div>
         </div>
@@ -49,16 +63,3 @@
         </div>
     </div>
 </template>
-
-<script setup>
-import { Search, X, Filter } from 'lucide-vue-next';
-
-defineProps({
-    filters: {
-        type: Object,
-        required: true
-    }
-});
-
-defineEmits(['update:filters', 'clear', 'apply']);
-</script>

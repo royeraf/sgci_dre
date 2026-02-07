@@ -1,3 +1,132 @@
+<script setup lang="ts">
+import { ref, computed, watch } from 'vue';
+import { FileText, Calendar, ChevronDown, Download, Loader2, Tag } from 'lucide-vue-next';
+import axios from 'axios';
+
+interface ReportStats {
+    total: number;
+    completed: number;
+    pending: number;
+    areasCount: number;
+}
+
+interface DateRange {
+    start: string;
+    end: string;
+}
+
+const reportType = ref<'daily' | 'weekly' | 'monthly' | 'custom'>('weekly');
+const selectedDate = ref('');
+const selectedWeek = ref('');
+const selectedMonth = ref('');
+const customStartDate = ref('');
+const customEndDate = ref('');
+
+const isGenerating = ref(false);
+const reportData = ref<ReportStats | null>(null);
+
+// Reset choices when type changes
+watch(reportType, () => {
+    reportData.value = null;
+    selectedDate.value = '';
+    selectedWeek.value = '';
+    selectedMonth.value = '';
+    customStartDate.value = '';
+    customEndDate.value = '';
+});
+
+// Computed range
+const currentRange = computed<DateRange | null>(() => {
+    if (reportType.value === 'daily' && selectedDate.value) {
+        return { start: selectedDate.value, end: selectedDate.value };
+    }
+    if (reportType.value === 'weekly' && selectedWeek.value) {
+        const [start, end] = selectedWeek.value.split('_');
+        return { start, end };
+    }
+    if (reportType.value === 'monthly' && selectedMonth.value) {
+        // selectedMonth is YYYY-MM
+        const [yearStr, monthStr] = selectedMonth.value.split('-');
+        const year = parseInt(yearStr);
+        const month = parseInt(monthStr);
+        const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
+        // Last day of month
+        const lastDay = new Date(year, month, 0).getDate();
+        const endDate = `${year}-${String(month).padStart(2, '0')}-${lastDay}`;
+        return { start: startDate, end: endDate };
+    }
+    if (reportType.value === 'custom' && customStartDate.value && customEndDate.value) {
+        return { start: customStartDate.value, end: customEndDate.value };
+    }
+    return null;
+});
+
+const dateRangeLabel = computed(() => {
+    if (!currentRange.value) return '';
+    return `${currentRange.value.start} al ${currentRange.value.end}`;
+});
+
+// Generate available weeks
+const availableWeeks = computed(() => {
+    const weeks: { value: string; label: string }[] = [];
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    let friday = new Date(today);
+    const dayOfWeek = friday.getDay();
+    let daysToFriday;
+    if (dayOfWeek === 6) daysToFriday = -1;
+    else if (dayOfWeek <= 5) daysToFriday = 5 - dayOfWeek;
+    else daysToFriday = 0; // Sunday
+
+    friday.setDate(friday.getDate() + daysToFriday);
+
+    for (let i = 0; i < 12; i++) {
+        const endDate = new Date(friday);
+        endDate.setDate(endDate.getDate() - (i * 7));
+        const startDate = new Date(endDate);
+        startDate.setDate(startDate.getDate() - 6);
+
+        const formatDate = (d: Date) => {
+            const y = d.getFullYear();
+            const m = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${y}-${m}-${day}`;
+        };
+        const formatDisplay = (d: Date) => d.toLocaleDateString('es-PE', { day: '2-digit', month: 'short', year: 'numeric' });
+
+        weeks.push({
+            value: `${formatDate(startDate)}_${formatDate(endDate)}`,
+            label: `${formatDisplay(startDate)} al ${formatDisplay(endDate)}`
+        });
+    }
+    return weeks;
+});
+
+// Watch range to fetch stats preview
+watch(currentRange, async (newVal) => {
+    if (newVal) {
+        try {
+            const response = await axios.get('/visitors/api/report-stats', {
+                params: { start_date: newVal.start, end_date: newVal.end }
+            });
+            reportData.value = response.data;
+        } catch (e) {
+            console.error(e);
+            reportData.value = null;
+        }
+    } else {
+        reportData.value = null;
+    }
+});
+
+const generateReport = () => {
+    if (!currentRange.value) return;
+    const { start, end } = currentRange.value;
+    window.open(`/visitors/report/pdf?start_date=${start}&end_date=${end}`, '_blank');
+};
+</script>
+
 <template>
     <div class="bg-white shadow-xl rounded-2xl border border-slate-200 overflow-hidden">
         <!-- Reports Header -->
@@ -27,7 +156,7 @@
                         <div class="relative">
                             <Tag class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                             <select v-model="reportType"
-                                class="w-full pl-12 pr-4 py-3.5 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-purple-500/10 focus:border-purple-500 transition-all duration-300 bg-slate-50 font-semibold text-slate-700 appearance-none">
+                                class="w-full pl-12 pr-4 py-3.5 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-purple-500/10 focus:border-purple-500 transition-all duration-300 bg-slate-50 font-semibold text-slate-700 appearance-none outline-none">
                                 <option value="daily">Reporte Diario</option>
                                 <option value="weekly">Reporte Semanal</option>
                                 <option value="monthly">Reporte Mensual</option>
@@ -49,11 +178,11 @@
 
                             <!-- Daily Input -->
                             <input v-if="reportType === 'daily'" type="date" v-model="selectedDate"
-                                class="w-full pl-12 pr-4 py-3.5 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-purple-500/10 focus:border-purple-500 transition-all duration-300 bg-slate-50 font-semibold text-slate-700" />
+                                class="w-full pl-12 pr-4 py-3.5 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-purple-500/10 focus:border-purple-500 transition-all duration-300 bg-slate-50 font-semibold text-slate-700 outline-none" />
 
                             <!-- Weekly Input -->
                             <select v-else-if="reportType === 'weekly'" v-model="selectedWeek"
-                                class="w-full pl-12 pr-4 py-3.5 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-purple-500/10 focus:border-purple-500 transition-all duration-300 bg-slate-50 font-semibold text-slate-700 appearance-none">
+                                class="w-full pl-12 pr-4 py-3.5 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-purple-500/10 focus:border-purple-500 transition-all duration-300 bg-slate-50 font-semibold text-slate-700 appearance-none outline-none">
                                 <option value="" disabled>Seleccione una semana...</option>
                                 <option v-for="week in availableWeeks" :key="week.value" :value="week.value">
                                     {{ week.label }}
@@ -62,7 +191,7 @@
 
                             <!-- Monthly Input -->
                             <input v-else-if="reportType === 'monthly'" type="month" v-model="selectedMonth"
-                                class="w-full pl-12 pr-4 py-3.5 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-purple-500/10 focus:border-purple-500 transition-all duration-300 bg-slate-50 font-semibold text-slate-700" />
+                                class="w-full pl-12 pr-4 py-3.5 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-purple-500/10 focus:border-purple-500 transition-all duration-300 bg-slate-50 font-semibold text-slate-700 outline-none" />
 
                             <!-- Custom Input - Placeholder -->
                             <div v-else-if="reportType === 'custom'"
@@ -79,7 +208,7 @@
                 </div>
 
                 <!-- Custom Date Range Inputs -->
-                <div v-if="reportType === 'custom'" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div v-if="reportType === 'custom'" class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
                     <!-- Start Date -->
                     <div>
                         <label class="block text-sm font-bold text-slate-700 mb-3 uppercase tracking-wider">
@@ -88,7 +217,7 @@
                         <div class="relative">
                             <Calendar class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                             <input type="date" v-model="customStartDate"
-                                class="w-full pl-12 pr-4 py-3.5 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-purple-500/10 focus:border-purple-500 transition-all duration-300 bg-slate-50 font-semibold text-slate-700" />
+                                class="w-full pl-12 pr-4 py-3.5 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-purple-500/10 focus:border-purple-500 transition-all duration-300 bg-slate-50 font-semibold text-slate-700 outline-none" />
                         </div>
                     </div>
 
@@ -99,9 +228,8 @@
                         </label>
                         <div class="relative">
                             <Calendar class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-                            <input type="date" v-model="customEndDate"
-                                :min="customStartDate"
-                                class="w-full pl-12 pr-4 py-3.5 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-purple-500/10 focus:border-purple-500 transition-all duration-300 bg-slate-50 font-semibold text-slate-700" />
+                            <input type="date" v-model="customEndDate" :min="customStartDate"
+                                class="w-full pl-12 pr-4 py-3.5 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-purple-500/10 focus:border-purple-500 transition-all duration-300 bg-slate-50 font-semibold text-slate-700 outline-none" />
                         </div>
                     </div>
                 </div>
@@ -111,19 +239,19 @@
             <div v-if="reportData" class="space-y-10">
                 <!-- Stats Cards -->
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div class="bg-white border-2 border-purple-100 rounded-2xl p-5 shadow-sm">
+                    <div class="bg-white border-2 border-purple-100 rounded-2xl p-5 shadow-sm text-center">
                         <p class="text-slate-500 text-[10px] font-bold uppercase tracking-widest mb-1">Total Visitas</p>
                         <p class="text-3xl font-black text-purple-600">{{ reportData.total }}</p>
                     </div>
-                    <div class="bg-white border-2 border-green-100 rounded-2xl p-5 shadow-sm">
+                    <div class="bg-white border-2 border-green-100 rounded-2xl p-5 shadow-sm text-center">
                         <p class="text-slate-500 text-[10px] font-bold uppercase tracking-widest mb-1">Completados</p>
                         <p class="text-3xl font-black text-green-600">{{ reportData.completed }}</p>
                     </div>
-                    <div class="bg-white border-2 border-yellow-100 rounded-2xl p-5 shadow-sm">
+                    <div class="bg-white border-2 border-yellow-100 rounded-2xl p-5 shadow-sm text-center">
                         <p class="text-slate-500 text-[10px] font-bold uppercase tracking-widest mb-1">Pendientes</p>
                         <p class="text-3xl font-black text-yellow-600">{{ reportData.pending }}</p>
                     </div>
-                    <div class="bg-white border-2 border-slate-200 rounded-2xl p-5 shadow-sm">
+                    <div class="bg-white border-2 border-slate-200 rounded-2xl p-5 shadow-sm text-center">
                         <p class="text-slate-500 text-[10px] font-bold uppercase tracking-widest mb-1">Áreas Visitadas
                         </p>
                         <p class="text-3xl font-black text-slate-600">{{ reportData.areasCount }}</p>
@@ -159,116 +287,3 @@
         </div>
     </div>
 </template>
-
-<script setup>
-import { ref, computed, watch } from 'vue';
-import { FileText, Calendar, ChevronDown, Download, Loader2, Tag } from 'lucide-vue-next';
-import axios from 'axios';
-
-const reportType = ref('weekly');
-const selectedDate = ref('');
-const selectedWeek = ref('');
-const selectedMonth = ref('');
-const customStartDate = ref('');
-const customEndDate = ref('');
-
-const isGenerating = ref(false);
-const reportData = ref(null);
-
-// Reset choices when type changes
-watch(reportType, () => {
-    reportData.value = null;
-    selectedDate.value = '';
-    selectedWeek.value = '';
-    selectedMonth.value = '';
-    customStartDate.value = '';
-    customEndDate.value = '';
-});
-
-// Computed range
-const currentRange = computed(() => {
-    if (reportType.value === 'daily' && selectedDate.value) {
-        return { start: selectedDate.value, end: selectedDate.value };
-    }
-    if (reportType.value === 'weekly' && selectedWeek.value) {
-        const [start, end] = selectedWeek.value.split('_');
-        return { start, end };
-    }
-    if (reportType.value === 'monthly' && selectedMonth.value) {
-        // selectedMonth is YYYY-MM
-        const [year, month] = selectedMonth.value.split('-');
-        const startDate = `${year}-${month}-01`;
-        // Last day of month
-        const lastDay = new Date(year, month, 0).getDate();
-        const endDate = `${year}-${month}-${lastDay}`;
-        return { start: startDate, end: endDate };
-    }
-    if (reportType.value === 'custom' && customStartDate.value && customEndDate.value) {
-        return { start: customStartDate.value, end: customEndDate.value };
-    }
-    return null;
-});
-
-const dateRangeLabel = computed(() => {
-    if (!currentRange.value) return '';
-    return `${currentRange.value.start} al ${currentRange.value.end}`;
-});
-
-// Generate available weeks (Simple logic, same as other report)
-const availableWeeks = computed(() => {
-    const weeks = [];
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    // Logic to find Fridays similar to the other component
-    let friday = new Date(today);
-    const dayOfWeek = friday.getDay();
-    let daysToFriday;
-    if (dayOfWeek === 6) daysToFriday = -1;
-    else if (dayOfWeek <= 5) daysToFriday = 5 - dayOfWeek;
-    friday.setDate(friday.getDate() + daysToFriday);
-
-    for (let i = 0; i < 12; i++) {
-        const endDate = new Date(friday);
-        endDate.setDate(endDate.getDate() - (i * 7));
-        const startDate = new Date(endDate);
-        startDate.setDate(startDate.getDate() - 6);
-
-        const formatDate = (d) => {
-            const year = d.getFullYear();
-            const month = String(d.getMonth() + 1).padStart(2, '0');
-            const day = String(d.getDate()).padStart(2, '0');
-            return `${year}-${month}-${day}`;
-        };
-        const formatDisplay = (d) => d.toLocaleDateString('es-PE', { day: '2-digit', month: 'short', year: 'numeric' });
-
-        weeks.push({
-            value: `${formatDate(startDate)}_${formatDate(endDate)}`,
-            label: `${formatDisplay(startDate)} al ${formatDisplay(endDate)}`
-        });
-    }
-    return weeks;
-});
-
-watch(currentRange, async (newVal) => {
-    if (newVal) {
-        try {
-            const response = await axios.get('/visitors/api/report-stats', {
-                params: { start_date: newVal.start, end_date: newVal.end }
-            });
-            reportData.value = response.data;
-        } catch (e) {
-            console.error(e);
-            reportData.value = null;
-        }
-    } else {
-        reportData.value = null;
-    }
-});
-
-const generateReport = () => {
-    if (!currentRange.value) return;
-    const { start, end } = currentRange.value;
-    window.open(`/visitors/report/pdf?start_date=${start}&end_date=${end}`, '_blank');
-};
-</script>

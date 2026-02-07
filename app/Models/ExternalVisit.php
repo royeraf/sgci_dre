@@ -16,6 +16,7 @@ class ExternalVisit extends Model
         'person_id',
         'area_id',
         'office_id',
+        'visit_reason_id',
         'hora_ingreso',
         'hora_salida',
         'motivo',
@@ -38,6 +39,7 @@ class ExternalVisit extends Model
         'nombres',
         'area_nombre',
         'office_nombre',
+        'motivo_nombre',
     ];
 
     /**
@@ -70,6 +72,14 @@ class ExternalVisit extends Model
     public function employee(): BelongsTo
     {
         return $this->belongsTo(Employee::class, 'employee_id');
+    }
+
+    /**
+     * Relación con el motivo de visita
+     */
+    public function reason(): BelongsTo
+    {
+        return $this->belongsTo(VisitReason::class, 'visit_reason_id');
     }
 
     /**
@@ -112,6 +122,14 @@ class ExternalVisit extends Model
     public function getOfficeNombreAttribute(): ?string
     {
         return $this->office?->nombre;
+    }
+
+    /**
+     * Acceso al nombre del motivo
+     */
+    public function getMotivoNombreAttribute(): ?string
+    {
+        return $this->reason?->nombre;
     }
 
     /**

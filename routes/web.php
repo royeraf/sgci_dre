@@ -79,6 +79,15 @@ Route::middleware('auth')->group(function () {
         Route::get('/report/pdf', [ExternalVisitController::class, 'generateReportPdf'])->name('report-pdf');
         Route::patch('/{visit}/exit', [ExternalVisitController::class, 'registerExit'])->name('exit');
         Route::get('/{visit}/ticket', [ExternalVisitController::class, 'generateTicket'])->name('ticket');
+
+        // Visit Reasons management
+        Route::prefix('reasons')->name('reasons.')->group(function () {
+            Route::get('/', [ExternalVisitController::class, 'reasonsIndex'])->name('index');
+            Route::get('/list', [ExternalVisitController::class, 'getReasons'])->name('list');
+            Route::post('/', [ExternalVisitController::class, 'storeReason'])->name('store');
+            Route::put('/{reason}', [ExternalVisitController::class, 'updateReason'])->name('update');
+            Route::delete('/{reason}', [ExternalVisitController::class, 'deleteReason'])->name('delete');
+        });
     });
 
     // Control Vehicular
