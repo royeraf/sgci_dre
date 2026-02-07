@@ -206,12 +206,54 @@ Route::middleware('auth')->group(function () {
         Route::post('/', [App\Http\Controllers\AssetController::class, 'store'])->name('store');
         Route::put('/{asset}', [App\Http\Controllers\AssetController::class, 'update'])->name('update');
         Route::delete('/{asset}', [App\Http\Controllers\AssetController::class, 'destroy'])->name('destroy');
-
-        // Categories
-        Route::get('/categories', [App\Http\Controllers\AssetCategoryController::class, 'index'])->name('categories.index');
-        Route::post('/categories', [App\Http\Controllers\AssetCategoryController::class, 'store'])->name('categories.store');
         
-        // Responsibles
+        // Movimientos
+        Route::post('/{asset}/movements', [App\Http\Controllers\AssetController::class, 'storeMovement'])->name('movements.store');
+
+        // Catálogos - Página principal
+        Route::get('/catalogs', [App\Http\Controllers\AssetCatalogController::class, 'index'])->name('catalogs.index');
+
+        // Catálogos - Marcas
+        Route::prefix('catalogs/brands')->name('catalogs.brands.')->group(function () {
+            Route::get('/', [App\Http\Controllers\AssetCatalogController::class, 'getBrands'])->name('list');
+            Route::post('/', [App\Http\Controllers\AssetCatalogController::class, 'storeBrand'])->name('store');
+            Route::put('/{id}', [App\Http\Controllers\AssetCatalogController::class, 'updateBrand'])->name('update');
+            Route::delete('/{id}', [App\Http\Controllers\AssetCatalogController::class, 'deleteBrand'])->name('delete');
+        });
+
+        // Catálogos - Colores
+        Route::prefix('catalogs/colors')->name('catalogs.colors.')->group(function () {
+            Route::get('/', [App\Http\Controllers\AssetCatalogController::class, 'getColors'])->name('list');
+            Route::post('/', [App\Http\Controllers\AssetCatalogController::class, 'storeColor'])->name('store');
+            Route::put('/{id}', [App\Http\Controllers\AssetCatalogController::class, 'updateColor'])->name('update');
+            Route::delete('/{id}', [App\Http\Controllers\AssetCatalogController::class, 'deleteColor'])->name('delete');
+        });
+
+        // Catálogos - Estados
+        Route::prefix('catalogs/states')->name('catalogs.states.')->group(function () {
+            Route::get('/', [App\Http\Controllers\AssetCatalogController::class, 'getStates'])->name('list');
+            Route::post('/', [App\Http\Controllers\AssetCatalogController::class, 'storeState'])->name('store');
+            Route::put('/{id}', [App\Http\Controllers\AssetCatalogController::class, 'updateState'])->name('update');
+            Route::delete('/{id}', [App\Http\Controllers\AssetCatalogController::class, 'deleteState'])->name('delete');
+        });
+
+        // Catálogos - Orígenes
+        Route::prefix('catalogs/origins')->name('catalogs.origins.')->group(function () {
+            Route::get('/', [App\Http\Controllers\AssetCatalogController::class, 'getOrigins'])->name('list');
+            Route::post('/', [App\Http\Controllers\AssetCatalogController::class, 'storeOrigin'])->name('store');
+            Route::put('/{id}', [App\Http\Controllers\AssetCatalogController::class, 'updateOrigin'])->name('update');
+            Route::delete('/{id}', [App\Http\Controllers\AssetCatalogController::class, 'deleteOrigin'])->name('delete');
+        });
+
+        // Catálogos - Categorías
+        Route::prefix('catalogs/categories')->name('catalogs.categories.')->group(function () {
+            Route::get('/', [App\Http\Controllers\AssetCatalogController::class, 'getCategories'])->name('list');
+            Route::post('/', [App\Http\Controllers\AssetCatalogController::class, 'storeCategory'])->name('store');
+            Route::put('/{id}', [App\Http\Controllers\AssetCatalogController::class, 'updateCategory'])->name('update');
+            Route::delete('/{id}', [App\Http\Controllers\AssetCatalogController::class, 'deleteCategory'])->name('delete');
+        });
+        
+        // Responsibles (legacy routes)
         Route::get('/responsibles', [App\Http\Controllers\AssetResponsibleController::class, 'index'])->name('responsibles.index');
         Route::post('/responsibles', [App\Http\Controllers\AssetResponsibleController::class, 'store'])->name('responsibles.store');
     });

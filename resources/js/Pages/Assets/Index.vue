@@ -14,6 +14,11 @@
                 </div>
 
                 <div class="flex gap-3">
+                    <a href="/assets/catalogs"
+                        class="inline-flex items-center px-4 py-3 border-2 border-slate-300 text-sm font-bold rounded-xl text-slate-600 bg-white hover:bg-slate-50 focus:outline-none focus:ring-4 focus:ring-slate-200 transition-all duration-200">
+                        <Settings class="w-5 h-5 mr-2" />
+                        Catálogos
+                    </a>
                     <button @click="showCreateModal = true"
                         class="inline-flex items-center px-6 py-3 border border-transparent text-sm font-bold rounded-xl shadow-lg shadow-slate-600/20 text-white bg-gradient-to-r from-slate-700 to-gray-700 hover:from-slate-800 hover:to-gray-800 focus:outline-none focus:ring-4 focus:ring-slate-300 transition-all duration-300 transform hover:scale-105 active:scale-95">
                         <Plus class="w-5 h-5 mr-2" />
@@ -23,7 +28,8 @@
             </div>
 
             <!-- Asset Modal -->
-            <AssetModal v-if="showCreateModal" :categories="categories" @close="showCreateModal = false"
+            <AssetModal v-if="showCreateModal" :categories="categories" :brands="brands" :colors="colors"
+                :states="states" :origins="origins" :offices="offices" @close="showCreateModal = false"
                 @success="handleAssetCreated" />
 
             <!-- Tabs Navigation -->
@@ -198,13 +204,34 @@ import {
     LayoutGrid,
     ArrowRightLeft,
     AlertTriangle,
-    XCircle
+    XCircle,
+    Settings
 } from 'lucide-vue-next';
 import axios from 'axios';
 import AssetModal from '@/Components/Assets/AssetModal.vue';
 
 defineProps({
     categories: {
+        type: Array,
+        default: () => []
+    },
+    brands: {
+        type: Array,
+        default: () => []
+    },
+    colors: {
+        type: Array,
+        default: () => []
+    },
+    states: {
+        type: Array,
+        default: () => []
+    },
+    origins: {
+        type: Array,
+        default: () => []
+    },
+    offices: {
         type: Array,
         default: () => []
     }

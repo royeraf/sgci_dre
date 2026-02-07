@@ -78,17 +78,17 @@
                                     <label class="block text-sm font-bold text-slate-700 mb-2">
                                         Estado <span class="text-red-500">*</span>
                                     </label>
-                                    <select v-model="estado" v-bind="estadoProps"
+                                    <select v-model="estado_id" v-bind="estadoIdProps"
                                         class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-slate-500 focus:border-slate-500 bg-white transition-colors outline-none"
-                                        :class="formErrors.estado ? 'border-red-400' : 'border-slate-200'"
+                                        :class="formErrors.estado_id ? 'border-red-400' : 'border-slate-200'"
                                         :disabled="isSubmitting">
-                                        <option value="BUENO">BUENO</option>
-                                        <option value="REGULAR">REGULAR</option>
-                                        <option value="MALO">MALO</option>
-                                        <option value="BAJA">BAJA</option>
+                                        <option value="">Seleccione estado</option>
+                                        <option v-for="state in states" :key="state.id" :value="state.id">
+                                            {{ state.nombre }}
+                                        </option>
                                     </select>
-                                    <p v-if="formErrors.estado" class="mt-1 text-sm text-red-600">{{ formErrors.estado
-                                    }}</p>
+                                    <p v-if="formErrors.estado_id" class="mt-1 text-sm text-red-600">{{
+                                        formErrors.estado_id }}</p>
                                 </div>
                             </div>
                         </div>
@@ -140,12 +140,14 @@
 
                                 <div>
                                     <label class="block text-sm font-bold text-slate-700 mb-2">Marca</label>
-                                    <input type="text" v-model="marca" v-bind="marcaProps"
-                                        class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-slate-500 focus:border-slate-500 transition-colors outline-none"
-                                        :class="formErrors.marca ? 'border-red-400' : 'border-slate-200'"
-                                        :disabled="isSubmitting" />
-                                    <p v-if="formErrors.marca" class="mt-1 text-sm text-red-600">{{ formErrors.marca }}
-                                    </p>
+                                    <select v-model="marca_id" v-bind="marcaIdProps"
+                                        class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-slate-500 focus:border-slate-500 bg-white transition-colors outline-none"
+                                        :disabled="isSubmitting">
+                                        <option value="">Sin Marca</option>
+                                        <option v-for="brand in brands" :key="brand.id" :value="brand.id">{{
+                                            brand.nombre }}
+                                        </option>
+                                    </select>
                                 </div>
 
                                 <div>
@@ -155,7 +157,7 @@
                                         :class="formErrors.modelo ? 'border-red-400' : 'border-slate-200'"
                                         :disabled="isSubmitting" />
                                     <p v-if="formErrors.modelo" class="mt-1 text-sm text-red-600">{{ formErrors.modelo
-                                        }}</p>
+                                    }}</p>
                                 </div>
 
                                 <div>
@@ -170,12 +172,14 @@
 
                                 <div>
                                     <label class="block text-sm font-bold text-slate-700 mb-2">Color</label>
-                                    <input type="text" v-model="color" v-bind="colorProps"
-                                        class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-slate-500 focus:border-slate-500 transition-colors outline-none"
-                                        :class="formErrors.color ? 'border-red-400' : 'border-slate-200'"
-                                        :disabled="isSubmitting" />
-                                    <p v-if="formErrors.color" class="mt-1 text-sm text-red-600">{{ formErrors.color }}
-                                    </p>
+                                    <select v-model="color_id" v-bind="colorIdProps"
+                                        class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-slate-500 focus:border-slate-500 bg-white transition-colors outline-none"
+                                        :disabled="isSubmitting">
+                                        <option value="">Sin Color</option>
+                                        <option v-for="color in colors" :key="color.id" :value="color.id">{{
+                                            color.nombre }}
+                                        </option>
+                                    </select>
                                 </div>
 
                                 <div>
@@ -186,6 +190,18 @@
                                         :disabled="isSubmitting" />
                                     <p v-if="formErrors.dimension" class="mt-1 text-sm text-red-600">{{
                                         formErrors.dimension }}</p>
+                                </div>
+
+                                <div>
+                                    <label class="block text-sm font-bold text-slate-700 mb-2">Origen</label>
+                                    <select v-model="origen_id" v-bind="origenIdProps"
+                                        class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-slate-500 focus:border-slate-500 bg-white transition-colors outline-none"
+                                        :disabled="isSubmitting">
+                                        <option value="">Sin especificar</option>
+                                        <option v-for="origin in origins" :key="origin.id" :value="origin.id">{{
+                                            origin.nombre }}
+                                        </option>
+                                    </select>
                                 </div>
                             </div>
                         </div>
@@ -201,13 +217,14 @@
                                 <div>
                                     <label class="block text-sm font-bold text-slate-700 mb-2">Ubicación /
                                         Oficina</label>
-                                    <input type="text" v-model="ubicacion" v-bind="ubicacionProps"
-                                        placeholder="Ej. Oficina de Administración"
-                                        class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-slate-500 focus:border-slate-500 transition-colors bg-white outline-none"
-                                        :class="formErrors.ubicacion ? 'border-red-400' : 'border-slate-200'"
-                                        :disabled="isSubmitting" />
-                                    <p v-if="formErrors.ubicacion" class="mt-1 text-sm text-red-600">{{
-                                        formErrors.ubicacion }}</p>
+                                    <select v-model="oficina_id" v-bind="oficinaIdProps"
+                                        class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-slate-500 focus:border-slate-500 bg-white transition-colors outline-none"
+                                        :disabled="isSubmitting">
+                                        <option value="">Sin asignar</option>
+                                        <option v-for="office in offices" :key="office.id" :value="office.id">
+                                            {{ office.area?.nombre }} - {{ office.nombre }}
+                                        </option>
+                                    </select>
                                 </div>
 
                                 <div>
@@ -220,7 +237,6 @@
                                         :disabled="isSubmitting" />
                                     <p v-if="formErrors.responsable_nombre" class="mt-1 text-sm text-red-600">{{
                                         formErrors.responsable_nombre }}</p>
-                                    <!-- Here we could add a proper select for existing employees/responsibles -->
                                 </div>
 
                                 <div>
@@ -242,7 +258,7 @@
                                 class="px-6 py-2.5 border-2 border-slate-300 text-slate-600 font-bold rounded-xl hover:bg-slate-50 transition-all">
                                 Cancelar
                             </button>
-                            <button type="submit" :disabled="isSubmitting"
+                            <button type="submit" :disabled="isSubmitting || codeExists"
                                 class="px-6 py-2.5 bg-gradient-to-r from-slate-700 to-gray-700 text-white font-bold rounded-xl hover:from-slate-800 hover:to-gray-800 transition-all disabled:opacity-50 shadow-lg shadow-slate-600/20">
                                 <Loader2 v-if="isSubmitting" class="w-5 h-5 animate-spin inline mr-2" />
                                 {{ isSubmitting ? 'Guardando...' : 'Guardar Activo' }}
@@ -277,6 +293,26 @@ const props = defineProps({
     categories: {
         type: Array,
         default: () => []
+    },
+    brands: {
+        type: Array,
+        default: () => []
+    },
+    colors: {
+        type: Array,
+        default: () => []
+    },
+    states: {
+        type: Array,
+        default: () => []
+    },
+    origins: {
+        type: Array,
+        default: () => []
+    },
+    offices: {
+        type: Array,
+        default: () => []
     }
 });
 
@@ -284,6 +320,9 @@ const emit = defineEmits(['close', 'success']);
 
 const isSubmitting = ref(false);
 const today = new Date().toISOString().split('T')[0];
+
+// Encontrar el estado "BUENO" por defecto
+const defaultStateId = props.states.find(s => s.nombre === 'BUENO')?.id || '';
 
 const assetSchema = toTypedSchema(
     yup.object({
@@ -293,9 +332,8 @@ const assetSchema = toTypedSchema(
         codigo_interno: yup.string()
             .required('El código interno es obligatorio')
             .matches(/^[A-Z0-9]{4}$/i, 'El código interno debe tener exactamente 4 caracteres (letras o números)'),
-        estado: yup.string()
-            .required('El estado es obligatorio')
-            .oneOf(['BUENO', 'REGULAR', 'MALO', 'BAJA'], 'Estado no válido'),
+        estado_id: yup.number()
+            .required('El estado es obligatorio'),
         denominacion: yup.string()
             .required('La denominación es obligatoria')
             .min(3, 'La denominación debe tener al menos 3 caracteres')
@@ -304,24 +342,19 @@ const assetSchema = toTypedSchema(
             .nullable()
             .max(500, 'La descripción no puede exceder 500 caracteres'),
         categoria_id: yup.number().nullable(),
-        marca: yup.string()
-            .nullable()
-            .max(100, 'La marca no puede exceder 100 caracteres'),
+        marca_id: yup.number().nullable(),
+        color_id: yup.number().nullable(),
+        origen_id: yup.number().nullable(),
         modelo: yup.string()
             .nullable()
             .max(100, 'El modelo no puede exceder 100 caracteres'),
         numero_serie: yup.string()
             .nullable()
             .max(100, 'El número de serie no puede exceder 100 caracteres'),
-        color: yup.string()
-            .nullable()
-            .max(50, 'El color no puede exceder 50 caracteres'),
         dimension: yup.string()
             .nullable()
             .max(100, 'Las dimensiones no pueden exceder 100 caracteres'),
-        ubicacion: yup.string()
-            .nullable()
-            .max(200, 'La ubicación no puede exceder 200 caracteres'),
+        oficina_id: yup.string().nullable(),
         responsable_nombre: yup.string()
             .nullable()
             .min(3, 'El nombre del responsable debe tener al menos 3 caracteres')
@@ -329,7 +362,7 @@ const assetSchema = toTypedSchema(
         fecha_asignacion: yup.string()
             .nullable()
             .test('valid-date', 'Fecha no válida', function (value) {
-                if (!value) return true; // nullable
+                if (!value) return true;
                 const date = new Date(value);
                 return !isNaN(date.getTime());
             })
@@ -348,16 +381,17 @@ const { errors: formErrors, defineField, handleSubmit: validateForm, resetForm }
     initialValues: {
         codigo_patrimonio: '',
         codigo_interno: '',
-        estado: 'BUENO',
+        estado_id: defaultStateId,
         denominacion: '',
         descripcion: '',
         categoria_id: '',
-        marca: '',
+        marca_id: '',
+        color_id: '',
+        origen_id: '',
         modelo: '',
         numero_serie: '',
-        color: '',
         dimension: '',
-        ubicacion: '',
+        oficina_id: '',
         responsable_nombre: '',
         fecha_asignacion: today,
     }
@@ -365,16 +399,17 @@ const { errors: formErrors, defineField, handleSubmit: validateForm, resetForm }
 
 const [codigo_patrimonio, codigoPatrimonioProps] = defineField('codigo_patrimonio');
 const [codigo_interno, codigoInternoProps] = defineField('codigo_interno');
-const [estado, estadoProps] = defineField('estado');
+const [estado_id, estadoIdProps] = defineField('estado_id');
 const [denominacion, denominacionProps] = defineField('denominacion');
 const [descripcion, descripcionProps] = defineField('descripcion');
 const [categoria_id, categoriaIdProps] = defineField('categoria_id');
-const [marca, marcaProps] = defineField('marca');
+const [marca_id, marcaIdProps] = defineField('marca_id');
+const [color_id, colorIdProps] = defineField('color_id');
+const [origen_id, origenIdProps] = defineField('origen_id');
 const [modelo, modeloProps] = defineField('modelo');
 const [numero_serie, numeroSerieProps] = defineField('numero_serie');
-const [color, colorProps] = defineField('color');
 const [dimension, dimensionProps] = defineField('dimension');
-const [ubicacion, ubicacionProps] = defineField('ubicacion');
+const [oficina_id, oficinaIdProps] = defineField('oficina_id');
 const [responsable_nombre, responsableNombreProps] = defineField('responsable_nombre');
 const [fecha_asignacion, fechaAsignacionProps] = defineField('fecha_asignacion');
 
@@ -391,11 +426,6 @@ const checkCodeAvailability = debounce(async () => {
             const fullCode = pCode + iCode;
             const response = await axios.get(`/assets/check-code?code=${fullCode}`);
             codeExists.value = response.data.exists;
-
-            if (codeExists.value) {
-                // We can manually set an error in vee-validate if we want, 
-                // but showing a specific message is also good.
-            }
         } catch (error) {
             console.error('Error checking code:', error);
         } finally {
@@ -421,7 +451,11 @@ const onSubmitForm = validateForm(async (values) => {
 
     // Clean up empty values
     const payload = { ...values };
-    if (!payload.categoria_id) delete payload.categoria_id;
+    Object.keys(payload).forEach(key => {
+        if (payload[key] === '' || payload[key] === null) {
+            delete payload[key];
+        }
+    });
 
     router.post('/assets', payload, {
         onSuccess: () => {

@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class AssetMovement extends Model
 {
@@ -14,32 +15,71 @@ class AssetMovement extends Model
         'asset_id',
         'tipo',
         'fecha',
-        'ubicacion_actual',
-        'responsable_nombre',
         'responsable_id',
-        'modalidad_responsable',
+        'estado_id',
+        'oficina_id',
         'inventariador_id',
-        'documento_id',
         'observaciones',
-        'estado'
     ];
     
     protected $casts = [
         'fecha' => 'date',
     ];
+
+    // ===== RELACIONES =====
     
-    public function asset()
+    /**
+     * Activo al que pertenece el movimiento
+     */
+    public function asset(): BelongsTo
     {
         return $this->belongsTo(Asset::class);
     }
     
-    public function responsible()
+    /**
+     * Responsable asignado en este movimiento
+     */
+    public function responsible(): BelongsTo
     {
         return $this->belongsTo(AssetResponsible::class, 'responsable_id');
     }
     
-    public function inventariador()
+    /**
+     * Estado del bien en este movimiento
+     */
+    public function state(): BelongsTo
+    {
+        return $this->belongsTo(AssetState::class, 'estado_id');
+    }
+    
+    /**
+     * Oficina/ubicación en este movimiento
+     */
+    public function office(): BelongsTo
+    {
+        return $this->belongsTo(HrOffice::class, 'oficina_id');
+    }
+    
+    /**
+     * Usuario que registró el movimiento
+     */
+    public function inventariador(): BelongsTo
     {
         return $this->belongsTo(User::class, 'inventariador_id');
+    }
+
+    // ===== SCOPES =====
+    
+    /**
+     * Scope para cargar relaciones comunes
+     */
+    public function scopeWithRelations($query)
+    {
+        return $query->with([
+            'responsible.employee.person',
+            'state',
+            'office.area',
+            'inventariador',
+        ]);
     }
 }
