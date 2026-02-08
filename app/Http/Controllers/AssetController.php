@@ -4,15 +4,18 @@ namespace App\Http\Controllers;
 
 use App\Models\Asset;
 use App\Models\AssetBrand;
+use App\Models\Employee;
 use App\Models\AssetColor;
 use App\Models\AssetState;
 use App\Models\AssetOrigin;
 use App\Models\AssetCategory;
 use App\Models\AssetMovement;
 use App\Models\AssetResponsible;
+use App\Models\HRArea;
 use App\Models\HrOffice;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use Picqer\Barcode\BarcodeGeneratorPNG;
 
 class AssetController extends Controller
 {
@@ -27,7 +30,26 @@ class AssetController extends Controller
             'colors' => AssetColor::activos()->orderBy('nombre')->get(),
             'states' => AssetState::activos()->get(),
             'origins' => AssetOrigin::activos()->orderBy('nombre')->get(),
+            'areas' => HRArea::activas()->orderBy('nombre')->get(),
             'offices' => HrOffice::activas()->with('area')->orderBy('nombre')->get(),
+            'employees' => Employee::with('person')
+                ->where('estado', 'ACTIVO')
+                ->whereHas('person', function($q) {
+                    $q->whereNotNull('nombres')
+                      ->whereNotNull('apellidos')
+                      ->where('nombres', '!=', '')
+                      ->where('apellidos', '!=', '');
+                })
+                ->get()
+                ->map(function($emp) {
+                    return [
+                        'id' => $emp->id,
+                        'nombre_completo' => trim($emp->full_name),
+                        'dni' => $emp->dni,
+                    ];
+                })
+                ->sortBy('nombre_completo')
+                ->values(),
         ]);
     }
 
@@ -151,15 +173,15 @@ class AssetController extends Controller
             'codigo_barras' => 'nullable|string|max:50',
             // Datos del movimiento inicial
             'estado_id' => 'required|exists:asset_states,id',
+            'area_id' => 'nullable|exists:hr_areas,id',
             'oficina_id' => 'nullable|exists:hr_offices,id',
-            'responsable_id' => 'nullable|exists:asset_responsibles,id',
-            'responsable_nombre' => 'nullable|string|max:200',
+            'employee_id' => 'nullable|exists:employees,id',
             'fecha_asignacion' => 'nullable|date',
         ]);
-        
+
         // Generate codigo_completo
         $code = $request->codigo_patrimonio . $request->codigo_interno;
-        
+
         // Check if code already exists
         if (Asset::where('codigo_completo', $code)->exists()) {
             return redirect()->back()->withErrors([
@@ -167,18 +189,24 @@ class AssetController extends Controller
                 'codigo_interno' => 'El código generado (' . $code . ') ya existe en el sistema.'
             ]);
         }
-        
-        // Crear o buscar responsable si se proporciona nombre
-        $responsableId = $request->responsable_id;
-        if (!$responsableId && $request->filled('responsable_nombre')) {
-            $responsible = AssetResponsible::firstOrCreate(
-                ['nombre_original' => strtoupper(trim($request->responsable_nombre))],
-                ['activo' => true]
-            );
-            $responsableId = $responsible->id;
+
+        // Crear o buscar responsable vinculado al empleado
+        $responsableId = null;
+        if ($request->filled('employee_id')) {
+            $employee = Employee::with('person')->find($request->employee_id);
+            if ($employee) {
+                $responsible = AssetResponsible::firstOrCreate(
+                    ['employee_id' => $employee->id],
+                    [
+                        'nombre_original' => strtoupper($employee->full_name),
+                        'activo' => true,
+                    ]
+                );
+                $responsableId = $responsible->id;
+            }
         }
 
-        // Crear el asset
+        // Crear el asset con código de barras auto-generado
         $asset = Asset::create([
             'codigo_patrimonio' => $request->codigo_patrimonio,
             'codigo_interno' => strtoupper($request->codigo_interno),
@@ -194,7 +222,7 @@ class AssetController extends Controller
             'dimension' => $request->dimension,
             'fecha_adquisicion' => $request->fecha_adquisicion,
             'observacion' => $request->observacion,
-            'codigo_barras' => $request->codigo_barras,
+            'codigo_barras' => $code,
         ]); 
         
         // Crear movimiento inicial (siempre)
@@ -203,6 +231,7 @@ class AssetController extends Controller
             'tipo' => 'ASIGNACION',
             'fecha' => $request->fecha_asignacion ?? now()->toDateString(),
             'estado_id' => $request->estado_id,
+            'area_id' => $request->area_id,
             'oficina_id' => $request->oficina_id,
             'responsable_id' => $responsableId,
             'inventariador_id' => auth()->id(),
@@ -235,6 +264,44 @@ class AssetController extends Controller
     {
         $asset->delete();
         return redirect()->back()->with('success', 'Bien eliminado correctamente');
+    }
+
+    /**
+     * Generar PDF con etiquetas de códigos de barra
+     * Soporta individual (?ids=1) y lote (?ids=1,2,3)
+     */
+    public function generateBarcodePdf(Request $request)
+    {
+        $ids = explode(',', $request->query('ids', ''));
+        $size = $request->query('size', 'medium');
+
+        $assets = Asset::whereIn('id', $ids)->get();
+
+        if ($assets->isEmpty()) {
+            abort(404, 'No se encontraron activos');
+        }
+
+        // Generar codigo_barras si no existe y generar PNG base64 para cada activo
+        $generator = new BarcodeGeneratorPNG();
+        $barcodes = [];
+
+        foreach ($assets as $asset) {
+            if (!$asset->codigo_barras) {
+                $asset->update(['codigo_barras' => $asset->codigo_completo]);
+            }
+
+            $code = $asset->codigo_barras;
+            $png = $generator->getBarcode($code, $generator::TYPE_CODE_128, 2, 50);
+            $barcodes[$asset->id] = 'data:image/png;base64,' . base64_encode($png);
+        }
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.etiquetas_codigos_barra', [
+            'assets' => $assets,
+            'barcodes' => $barcodes,
+            'size' => $size,
+        ])->setPaper('a4', 'portrait');
+
+        return $pdf->stream('etiquetas_codigos_barra.pdf');
     }
 
     /**

@@ -18,6 +18,7 @@ class AssetMovement extends Model
         'responsable_id',
         'estado_id',
         'oficina_id',
+        'area_id',
         'inventariador_id',
         'observaciones',
     ];
@@ -58,6 +59,14 @@ class AssetMovement extends Model
     public function office(): BelongsTo
     {
         return $this->belongsTo(HrOffice::class, 'oficina_id');
+    }
+
+    /**
+     * Área/dirección en este movimiento
+     */
+    public function area(): BelongsTo
+    {
+        return $this->belongsTo(HRArea::class, 'area_id');
     }
     
     /**

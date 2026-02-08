@@ -29,8 +29,8 @@
 
             <!-- Asset Modal -->
             <AssetModal v-if="showCreateModal" :categories="categories" :brands="brands" :colors="colors"
-                :states="states" :origins="origins" :offices="offices" @close="showCreateModal = false"
-                @success="handleAssetCreated" />
+                :states="states" :origins="origins" :areas="areas" :offices="offices" :employees="employees"
+                @close="showCreateModal = false" @success="handleAssetCreated" />
 
             <!-- Tabs Navigation -->
             <div class="border-b border-slate-200 mb-8">
@@ -245,7 +245,15 @@ defineProps({
         type: Array,
         default: () => []
     },
+    areas: {
+        type: Array,
+        default: () => []
+    },
     offices: {
+        type: Array,
+        default: () => []
+    },
+    employees: {
         type: Array,
         default: () => []
     }

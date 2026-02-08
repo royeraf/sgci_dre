@@ -204,9 +204,13 @@ Route::middleware('auth')->group(function () {
         Route::get('/summary', [App\Http\Controllers\AssetController::class, 'getStats'])->name('summary');
         Route::get('/check-code', [App\Http\Controllers\AssetController::class, 'checkCode'])->name('check-code');
         Route::post('/', [App\Http\Controllers\AssetController::class, 'store'])->name('store');
+
+        // Códigos de barra - PDF
+        Route::get('/barcodes/pdf', [App\Http\Controllers\AssetController::class, 'generateBarcodePdf'])->name('barcodes.pdf');
+
         Route::put('/{asset}', [App\Http\Controllers\AssetController::class, 'update'])->name('update');
         Route::delete('/{asset}', [App\Http\Controllers\AssetController::class, 'destroy'])->name('destroy');
-        
+
         // Movimientos
         Route::post('/{asset}/movements', [App\Http\Controllers\AssetController::class, 'storeMovement'])->name('movements.store');
 
