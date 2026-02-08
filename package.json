@@ -16,6 +16,7 @@
         "@tailwindcss/vite": "^4.1.18",
         "@vee-validate/yup": "^4.15.1",
         "@vitejs/plugin-vue": "^6.0.3",
+        "jsbarcode": "^3.12.3",
         "jspdf": "^4.0.0",
         "jspdf-autotable": "^5.0.7",
         "laravel-echo": "^2.3.0",

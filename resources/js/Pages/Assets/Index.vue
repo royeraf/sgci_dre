@@ -53,6 +53,15 @@
                         <ArrowRightLeft class="w-5 h-5" />
                         Movimientos
                     </button>
+                    <button @click="activeTab = 'barcodes'" :class="[
+                        activeTab === 'barcodes'
+                            ? 'border-slate-600 text-slate-700'
+                            : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300',
+                        'whitespace-nowrap py-4 px-1 border-b-2 font-bold text-sm flex items-center gap-2 transition-all duration-200'
+                    ]">
+                        <Barcode class="w-5 h-5" />
+                        Códigos de Barra
+                    </button>
                     <button @click="activeTab = 'reports'" :class="[
                         activeTab === 'reports'
                             ? 'border-green-600 text-green-600'
@@ -165,6 +174,9 @@
                 </div>
             </div>
 
+            <!-- Barcodes Tab -->
+            <BarcodeGenerator v-if="activeTab === 'barcodes'" />
+
             <!-- Movements Tab Placeholder -->
             <div v-if="activeTab === 'movements'"
                 class="bg-white rounded-2xl shadow-sm border border-slate-200 p-8 text-center">
@@ -205,10 +217,12 @@ import {
     ArrowRightLeft,
     AlertTriangle,
     XCircle,
-    Settings
+    Settings,
+    Barcode
 } from 'lucide-vue-next';
 import axios from 'axios';
 import AssetModal from '@/Components/Assets/AssetModal.vue';
+import BarcodeGenerator from '@/Components/Assets/BarcodeGenerator.vue';
 
 defineProps({
     categories: {
