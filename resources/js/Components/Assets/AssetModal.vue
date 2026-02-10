@@ -10,10 +10,10 @@
                     class="bg-gradient-to-r from-slate-700 to-gray-700 px-6 py-4 flex justify-between items-center shrink-0">
                     <div>
                         <h3 class="text-xl font-bold text-white flex items-center gap-2">
-                            <Plus class="w-6 h-6" />
-                            Registrar Nuevo Bien
+                            <component :is="isEditing ? Pencil : Plus" class="w-6 h-6" />
+                            {{ isEditing ? 'Editar Bien' : 'Registrar Nuevo Bien' }}
                         </h3>
-                        <p class="text-slate-100 text-sm mt-1">Ingrese los detalles del activo patrimonial</p>
+                        <p class="text-slate-100 text-sm mt-1">{{ isEditing ? 'Modifique los datos del activo patrimonial' : 'Ingrese los detalles del activo patrimonial' }}</p>
                     </div>
                     <button @click="$emit('close')" class="text-slate-100 hover:text-white transition-colors p-1">
                         <X class="w-6 h-6" />
@@ -306,7 +306,7 @@
                             <button type="submit" :disabled="isSubmitting || codeExists"
                                 class="px-6 py-2.5 bg-gradient-to-r from-slate-700 to-gray-700 text-white font-bold rounded-xl hover:from-slate-800 hover:to-gray-800 transition-all disabled:opacity-50 shadow-lg shadow-slate-600/20">
                                 <Loader2 v-if="isSubmitting" class="w-5 h-5 animate-spin inline mr-2" />
-                                {{ isSubmitting ? 'Guardando...' : 'Guardar Activo' }}
+                                {{ isSubmitting ? 'Guardando...' : (isEditing ? 'Actualizar Activo' : 'Guardar Activo') }}
                             </button>
                         </div>
 
@@ -323,7 +323,7 @@ import { useForm } from 'vee-validate';
 import { toTypedSchema } from '@vee-validate/yup';
 import * as yup from 'yup';
 import { router } from '@inertiajs/vue3';
-import { Plus, X, Loader2, AlertCircle, ChevronDown, Check } from 'lucide-vue-next';
+import { Plus, Pencil, X, Loader2, AlertCircle, ChevronDown, Check } from 'lucide-vue-next';
 import axios from 'axios';
 import { useEmployeeSearch } from '@/Composables/useEmployeeSearch';
 
@@ -336,47 +336,28 @@ const debounce = (callback, delay) => {
 };
 
 const props = defineProps({
-    categories: {
-        type: Array,
-        default: () => []
-    },
-    brands: {
-        type: Array,
-        default: () => []
-    },
-    colors: {
-        type: Array,
-        default: () => []
-    },
-    states: {
-        type: Array,
-        default: () => []
-    },
-    origins: {
-        type: Array,
-        default: () => []
-    },
-    areas: {
-        type: Array,
-        default: () => []
-    },
-    offices: {
-        type: Array,
-        default: () => []
-    },
-    employees: {
-        type: Array,
-        default: () => []
-    }
+    asset: { type: Object, default: null },
+    categories: { type: Array, default: () => [] },
+    brands: { type: Array, default: () => [] },
+    colors: { type: Array, default: () => [] },
+    states: { type: Array, default: () => [] },
+    origins: { type: Array, default: () => [] },
+    areas: { type: Array, default: () => [] },
+    offices: { type: Array, default: () => [] },
+    employees: { type: Array, default: () => [] },
 });
+
+const isEditing = !!props.asset;
 
 const emit = defineEmits(['close', 'success']);
 
 const isSubmitting = ref(false);
 const today = new Date().toISOString().split('T')[0];
 
-// Encontrar el estado "BUENO" por defecto
-const defaultStateId = props.states.find(s => s.nombre === 'BUENO')?.id || '';
+// Encontrar el estado "BUENO" por defecto (solo para creación)
+const defaultStateId = isEditing
+    ? (props.asset.latest_movement?.state?.id || '')
+    : (props.states.find(s => s.nombre === 'BUENO')?.id || '');
 
 const assetSchema = toTypedSchema(
     yup.object({
@@ -429,25 +410,28 @@ const assetSchema = toTypedSchema(
     })
 );
 
+const assetData = props.asset;
+const lastMovement = assetData?.latest_movement;
+
 const { errors: formErrors, defineField, handleSubmit: validateForm, resetForm, setFieldValue } = useForm({
     validationSchema: assetSchema,
     initialValues: {
-        codigo_patrimonio: '',
-        codigo_interno: '',
+        codigo_patrimonio: assetData?.codigo_patrimonio || '',
+        codigo_interno: assetData?.codigo_interno || '',
         estado_id: defaultStateId,
-        denominacion: '',
-        descripcion: '',
-        categoria_id: '',
-        marca_id: '',
-        color_id: '',
-        origen_id: '',
-        modelo: '',
-        numero_serie: '',
-        dimension: '',
-        area_id: '',
-        oficina_id: '',
-        employee_id: '',
-        fecha_asignacion: today,
+        denominacion: assetData?.denominacion || '',
+        descripcion: assetData?.descripcion || '',
+        categoria_id: assetData?.categoria_id ?? '',
+        marca_id: assetData?.marca_id ?? '',
+        color_id: assetData?.color_id ?? '',
+        origen_id: assetData?.origen_id ?? '',
+        modelo: assetData?.modelo || '',
+        numero_serie: assetData?.numero_serie || '',
+        dimension: assetData?.dimension || '',
+        area_id: lastMovement?.area_id ?? '',
+        oficina_id: lastMovement?.oficina_id ?? '',
+        employee_id: lastMovement?.responsible?.employee_id ? String(lastMovement.responsible.employee_id) : '',
+        fecha_asignacion: lastMovement?.fecha_movimiento || today,
     }
 });
 
@@ -472,7 +456,7 @@ const codeExists = ref(false);
 const isCheckingCode = ref(false);
 
 // Location toggle (area vs office)
-const ubicacionTipo = ref('area');
+const ubicacionTipo = ref(lastMovement?.oficina_id ? 'office' : 'area');
 
 const toggleUbicacion = (tipo) => {
     ubicacionTipo.value = tipo;
@@ -486,6 +470,12 @@ const toggleUbicacion = (tipo) => {
 // Employee search (same pattern as ExternalVisit)
 const { searchQuery, showDropdown, filteredEmployees } = useEmployeeSearch(props.employees);
 const dropdownContainerRef = ref(null);
+
+// Pre-fill employee search if editing
+if (isEditing && lastMovement?.responsible?.employee?.person) {
+    const p = lastMovement.responsible.employee.person;
+    searchQuery.value = `${p.nombres} ${p.apellido_paterno} ${p.apellido_materno || ''}`.trim();
+}
 
 const selectEmployee = (emp) => {
     setFieldValue('employee_id', String(emp.id));
@@ -506,14 +496,21 @@ const handleClickOutside = (event) => {
     }
 };
 
+const originalCode = isEditing ? (assetData.codigo_patrimonio + assetData.codigo_interno) : null;
+
 const checkCodeAvailability = debounce(async () => {
     const pCode = codigo_patrimonio.value;
     const iCode = codigo_interno.value;
 
     if (pCode && iCode && pCode.length === 8 && iCode.length === 4) {
+        const fullCode = pCode + iCode;
+        // Skip check if editing and code hasn't changed
+        if (isEditing && fullCode === originalCode) {
+            codeExists.value = false;
+            return;
+        }
         isCheckingCode.value = true;
         try {
-            const fullCode = pCode + iCode;
             const response = await axios.get(`/assets/check-code?code=${fullCode}`);
             codeExists.value = response.data.exists;
         } catch (error) {
@@ -552,16 +549,27 @@ const onSubmitForm = validateForm(async (values) => {
         }
     });
 
-    router.post('/assets', payload, {
-        onSuccess: () => {
-            resetForm();
-            emit('success');
-            emit('close');
-        },
-        onFinish: () => {
-            isSubmitting.value = false;
-        }
-    });
+    if (isEditing) {
+        router.put(`/assets/${assetData.id}`, payload, {
+            onSuccess: () => {
+                emit('success');
+            },
+            onFinish: () => {
+                isSubmitting.value = false;
+            }
+        });
+    } else {
+        router.post('/assets', payload, {
+            onSuccess: () => {
+                resetForm();
+                emit('success');
+                emit('close');
+            },
+            onFinish: () => {
+                isSubmitting.value = false;
+            }
+        });
+    }
 });
 
 const handleSubmit = () => {

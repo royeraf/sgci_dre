@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\AssetResponsible;
+use App\Models\Employee;
 use Illuminate\Http\Request;
 
 class AssetResponsibleController extends Controller
@@ -10,9 +11,15 @@ class AssetResponsibleController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        //
+        $query = AssetResponsible::with(['employee.person', 'area', 'office']);
+
+        if ($request->filled('employee_id')) {
+            $query->where('employee_id', $request->employee_id);
+        }
+
+        return response()->json($query->get());
     }
 
     /**
@@ -28,7 +35,21 @@ class AssetResponsibleController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        $request->validate([
+            'employee_id' => 'required|exists:employees,id',
+        ]);
+
+        $employee = Employee::with('person')->find($request->employee_id);
+
+        $responsible = AssetResponsible::firstOrCreate(
+            ['employee_id' => $employee->id],
+            [
+                'nombre_original' => strtoupper($employee->full_name),
+                'activo' => true,
+            ]
+        );
+
+        return response()->json($responsible);
     }
 
     /**

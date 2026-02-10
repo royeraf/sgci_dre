@@ -16,6 +16,7 @@ use App\Models\HrOffice;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Picqer\Barcode\BarcodeGeneratorPNG;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class AssetController extends Controller
 {
@@ -75,6 +76,7 @@ class AssetController extends Controller
                   ->orWhere('codigo_patrimonio', 'like', "%{$search}%")
                   ->orWhere('codigo_interno', 'like', "%{$search}%")
                   ->orWhere('codigo_completo', 'like', "%{$search}%")
+                  ->orWhere('codigo_barras', 'like', "%{$search}%")
                   ->orWhere('modelo', 'like', "%{$search}%")
                   ->orWhere('numero_serie', 'like', "%{$search}%")
                   ->orWhereHas('brand', function($q2) use ($search) {
@@ -291,7 +293,7 @@ class AssetController extends Controller
             }
 
             $code = $asset->codigo_barras;
-            $png = $generator->getBarcode($code, $generator::TYPE_CODE_128, 2, 50);
+            $png = $generator->getBarcode($code, $generator::TYPE_CODE_128, 4, 100);
             $barcodes[$asset->id] = 'data:image/png;base64,' . base64_encode($png);
         }
 
@@ -302,6 +304,109 @@ class AssetController extends Controller
         ])->setPaper('a4', 'portrait');
 
         return $pdf->stream('etiquetas_codigos_barra.pdf');
+    }
+
+    /**
+     * Listar movimientos con filtros y paginación
+     */
+    public function getMovements(Request $request)
+    {
+        $query = AssetMovement::with([
+                'asset.category',
+                'asset.brand',
+                'responsible.employee.person',
+                'state',
+                'office.area',
+                'area',
+                'inventariador',
+            ])
+            ->orderBy('fecha', 'desc')
+            ->orderBy('created_at', 'desc');
+
+        // Búsqueda por código o denominación del activo
+        if ($request->filled('search')) {
+            $search = $request->search;
+
+            // Primero intentar buscar coincidencia exacta de código para ser más precisos con el escáner
+            $exactAsset = \App\Models\Asset::where('codigo_barras', $search)
+                ->orWhere('codigo_patrimonio', $search)
+                ->orWhere('codigo_completo', $search)
+                ->first();
+
+            if ($exactAsset) {
+                $query->where('asset_id', $exactAsset->id);
+            } else {
+                $query->where(function ($q) use ($search) {
+                    $q->whereHas('asset', function ($q2) use ($search) {
+                        $q2->where('codigo_patrimonio', 'like', "%{$search}%")
+                            ->orWhere('codigo_interno', 'like', "%{$search}%")
+                            ->orWhere('codigo_completo', 'like', "%{$search}%")
+                            ->orWhere('codigo_barras', 'like', "%{$search}%")
+                            ->orWhere('denominacion', 'like', "%{$search}%");
+                    })
+                        ->orWhere('observaciones', 'like', "%{$search}%")
+                        ->orWhereHas('responsible', function ($q2) use ($search) {
+                            $q2->where('nombre_original', 'like', "%{$search}%")
+                                ->orWhereHas('employee.person', function ($q3) use ($search) {
+                                    $q3->where('nombres', 'like', "%{$search}%")
+                                        ->orWhere('apellidos', 'like', "%{$search}%")
+                                        ->orWhere('apellido_paterno', 'like', "%{$search}%");
+                                });
+                        });
+                });
+            }
+        }
+
+        // Filtrar por tipo de movimiento
+        if ($request->filled('tipo')) {
+            $query->where('tipo', $request->tipo);
+        }
+
+        // Filtrar por estado
+        if ($request->filled('estado_id')) {
+            $query->where('estado_id', $request->estado_id);
+        }
+
+        // Filtrar por oficina
+        if ($request->filled('oficina_id')) {
+            $query->where('oficina_id', $request->oficina_id);
+        }
+
+        // Filtrar por rango de fechas
+        if ($request->filled('fecha_desde')) {
+            $query->whereDate('fecha', '>=', $request->fecha_desde);
+        }
+        if ($request->filled('fecha_hasta')) {
+            $query->whereDate('fecha', '<=', $request->fecha_hasta);
+        }
+
+        $perPage = $request->input('per_page', 15);
+
+        return response()->json($query->paginate($perPage));
+    }
+
+    /**
+     * Resumen de estadísticas de movimientos
+     */
+    public function getMovementStats()
+    {
+        $total = AssetMovement::count();
+        
+        $byType = AssetMovement::selectRaw('tipo, COUNT(*) as total')
+            ->groupBy('tipo')
+            ->pluck('total', 'tipo')
+            ->toArray();
+
+        $lastMonth = AssetMovement::where('fecha', '>=', now()->subMonth())->count();
+
+        return response()->json([
+            'total' => $total,
+            'asignaciones' => $byType['ASIGNACION'] ?? 0,
+            'devoluciones' => $byType['DEVOLUCION'] ?? 0,
+            'traslados' => $byType['TRASLADO'] ?? 0,
+            'bajas' => $byType['BAJA'] ?? 0,
+            'ultimo_mes' => $lastMonth,
+        ]);
     }
 
     /**
@@ -321,8 +426,30 @@ class AssetController extends Controller
         $validated['asset_id'] = $asset->id;
         $validated['inventariador_id'] = auth()->id();
 
-        AssetMovement::create($validated);
+        $movement = AssetMovement::create($validated);
+
+        if ($request->wantsJson()) {
+            return response()->json($movement->load(['state', 'responsible', 'office']), 201);
+        }
 
         return redirect()->back()->with('success', 'Movimiento registrado correctamente');
+    }
+
+    /**
+     * Generar reporte de bienes asignados a un responsable
+     */
+    public function reportByResponsible($responsibleId)
+    {
+        $responsible = AssetResponsible::with(['employee.person', 'area', 'office'])
+            ->findOrFail($responsibleId);
+
+        // Buscar bienes asignados actualmente a este responsable (último movimiento lo tiene a él como responsable)
+        $assets = Asset::whereHas('latestMovement', function ($query) use ($responsibleId) {
+            $query->where('responsable_id', $responsibleId);
+        })->with(['brand', 'latestMovement.state'])->get();
+
+        $pdf = Pdf::loadView('pdf.bienes_asignados', compact('responsible', 'assets'));
+        
+        return $pdf->stream('bienes_asignados_' . $responsible->employee->dni . '.pdf');
     }
 }

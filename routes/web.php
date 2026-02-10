@@ -208,10 +208,15 @@ Route::middleware('auth')->group(function () {
         // Códigos de barra - PDF
         Route::get('/barcodes/pdf', [App\Http\Controllers\AssetController::class, 'generateBarcodePdf'])->name('barcodes.pdf');
 
+        // Reportes
+        Route::get('/reports/responsible/{id}', [App\Http\Controllers\AssetController::class, 'reportByResponsible'])->name('reports.responsible');
+
         Route::put('/{asset}', [App\Http\Controllers\AssetController::class, 'update'])->name('update');
         Route::delete('/{asset}', [App\Http\Controllers\AssetController::class, 'destroy'])->name('destroy');
 
         // Movimientos
+        Route::get('/movements', [App\Http\Controllers\AssetController::class, 'getMovements'])->name('movements.list');
+        Route::get('/movements/stats', [App\Http\Controllers\AssetController::class, 'getMovementStats'])->name('movements.stats');
         Route::post('/{asset}/movements', [App\Http\Controllers\AssetController::class, 'storeMovement'])->name('movements.store');
 
         // Catálogos - Página principal
