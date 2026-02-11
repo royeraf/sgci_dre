@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Models\CustomRole;
-use App\Models\HRArea;
+use App\Models\HrDirection;
 use App\Models\HRPosition;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -97,7 +97,7 @@ class UserController extends Controller
      */
     public function getAreas()
     {
-        $areas = HRArea::select('id', 'nombre')
+        $areas = HrDirection::select('id', 'nombre')
             ->orderBy('nombre')
             ->get();
 
