@@ -153,11 +153,11 @@ Route::middleware('auth')->group(function () {
         Route::put('/vacations/{id}', [HRController::class, 'updateVacation'])->name('vacations.update');
         Route::delete('/vacations/{id}', [HRController::class, 'deleteVacation'])->name('vacations.delete');
 
-        // Areas
-        Route::get('/areas', [HRController::class, 'getAreas'])->name('areas.list');
-        Route::post('/areas', [HRController::class, 'storeArea'])->name('areas.store');
-        Route::put('/areas/{id}', [HRController::class, 'updateArea'])->name('areas.update');
-        Route::delete('/areas/{id}', [HRController::class, 'deleteArea'])->name('areas.delete');
+        // Directions
+        Route::get('/directions', [HRController::class, 'getDirections'])->name('directions.list');
+        Route::post('/directions', [HRController::class, 'storeDirection'])->name('directions.store');
+        Route::put('/directions/{id}', [HRController::class, 'updateDirection'])->name('directions.update');
+        Route::delete('/directions/{id}', [HRController::class, 'deleteDirection'])->name('directions.delete');
 
         // Offices
         Route::get('/offices', [HRController::class, 'getOffices'])->name('offices.list');

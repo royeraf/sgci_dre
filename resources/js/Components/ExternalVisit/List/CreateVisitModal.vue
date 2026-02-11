@@ -11,7 +11,7 @@ import Swal from 'sweetalert2';
 import { useDniConsultation } from '@/Composables/useDniConsultation';
 import { useEmployeeSearch, type Employee } from '@/Composables/useEmployeeSearch';
 
-interface Area {
+interface Direction {
     id: string;
     nombre: string;
 }
@@ -19,7 +19,7 @@ interface Area {
 interface Office {
     id: string;
     nombre: string;
-    area?: { nombre: string };
+    direction?: { nombre: string };
 }
 
 interface VisitReason {
@@ -28,7 +28,7 @@ interface VisitReason {
 }
 
 const props = defineProps<{
-    areas: Area[];
+    directions: Direction[];
     offices: Office[];
     employees: Employee[];
     reasons: VisitReason[];
@@ -42,8 +42,21 @@ const emit = defineEmits<{
 const isSubmitting = ref(false);
 const nombreAutocompletado = ref(false);
 const dniInputRef = ref<HTMLInputElement | null>(null);
-const currentTime = new Date().toTimeString().slice(0, 5);
-const destinoTipo = ref<'area' | 'office'>('area');
+const currentTime = ref(new Date().toTimeString().slice(0, 5));
+
+// Update time every 30 seconds
+let timeInterval: any;
+onMounted(() => {
+    timeInterval = setInterval(() => {
+        currentTime.value = new Date().toTimeString().slice(0, 5);
+        setFieldValue('hora_ingreso', currentTime.value);
+    }, 30000);
+});
+
+onUnmounted(() => {
+    if (timeInterval) clearInterval(timeInterval);
+});
+const destinoTipo = ref<'direction' | 'office'>('office');
 const camposEditables = ref(true);
 const dropdownContainerRef = ref<HTMLElement | null>(null);
 
@@ -51,17 +64,43 @@ const dropdownContainerRef = ref<HTMLElement | null>(null);
 const { isConsultando, consultaMessage, consultaSuccess, consultarDni } = useDniConsultation();
 const { searchQuery, showDropdown, filteredEmployees } = useEmployeeSearch(props.employees);
 
+// Search states for Directions and Offices
+const directionQuery = ref('');
+const showDirectionDropdown = ref(false);
+const officeQuery = ref('');
+const showOfficeDropdown = ref(false);
+
+const normalizeText = (text: string) => {
+    if (!text) return '';
+    return text.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+};
+
+const filteredDirections = computed(() => {
+    if (!directionQuery.value) return props.directions.slice(0, 10);
+    const q = normalizeText(directionQuery.value);
+    return props.directions.filter(d => normalizeText(d.nombre).includes(q)).slice(0, 10);
+});
+
+const filteredOffices = computed(() => {
+    if (!officeQuery.value) return props.offices.slice(0, 10);
+    const q = normalizeText(officeQuery.value);
+    return props.offices.filter(o =>
+        normalizeText(o.nombre).includes(q) ||
+        (o.direction?.nombre && normalizeText(o.direction.nombre).includes(q))
+    ).slice(0, 10);
+});
+
 // Form Setup
 const entrySchema = toTypedSchema(yup.object({
     dni: yup.string().required('El DNI es obligatorio').matches(/^\d{8}$/, 'El DNI debe tener 8 dígitos numéricos'),
     nombres: yup.string().required('El nombre es obligatorio').min(2, 'Min 2 caracteres'),
     apellidos: yup.string().required('El apellido es obligatorio').min(2, 'Min 2 caracteres'),
     hora_ingreso: yup.string().required('Obligatorio'),
-    area_id: yup.string().nullable().test('area-required', 'Debe seleccionar un área', function (val) {
+    direction_id: yup.string().nullable().test('direction-required', 'Debe seleccionar una dirección', function (val) {
         return destinoTipo.value === 'office' || (!!val && val.length > 0);
     }),
     office_id: yup.string().nullable().test('office-required', 'Debe seleccionar una oficina', function (val) {
-        return destinoTipo.value === 'area' || (!!val && val.length > 0);
+        return destinoTipo.value === 'direction' || (!!val && val.length > 0);
     }),
     a_quien_visita: yup.string().nullable(),
     employee_id: yup.string().nullable(),
@@ -75,8 +114,8 @@ const { errors: formErrors, defineField: defineEntryField, handleSubmit: validat
         dni: '',
         nombres: '',
         apellidos: '',
-        hora_ingreso: currentTime,
-        area_id: '',
+        hora_ingreso: currentTime.value,
+        direction_id: '',
         office_id: '',
         a_quien_visita: '',
         employee_id: '',
@@ -89,7 +128,7 @@ const [dni] = defineEntryField('dni');
 const [nombres] = defineEntryField('nombres');
 const [apellidos] = defineEntryField('apellidos');
 const [horaIngreso] = defineEntryField('hora_ingreso');
-const [areaId] = defineEntryField('area_id');
+const [directionId] = defineEntryField('direction_id');
 const [officeId] = defineEntryField('office_id');
 const [aQuienVisita] = defineEntryField('a_quien_visita');
 const [employeeId] = defineEntryField('employee_id');
@@ -112,10 +151,27 @@ const handleAQuienVisitaInput = (e: Event) => {
     showDropdown.value = true;
 };
 
-const toggleDestino = (tipo: 'area' | 'office') => {
+const toggleDestino = (tipo: 'direction' | 'office') => {
     destinoTipo.value = tipo;
-    if (tipo === 'area') setFieldValue('office_id', '');
-    else setFieldValue('area_id', '');
+    if (tipo === 'direction') {
+        setFieldValue('office_id', '');
+        officeQuery.value = '';
+    } else {
+        setFieldValue('direction_id', '');
+        directionQuery.value = '';
+    }
+};
+
+const selectDirection = (d: Direction) => {
+    setFieldValue('direction_id', d.id);
+    directionQuery.value = d.nombre;
+    showDirectionDropdown.value = false;
+};
+
+const selectOffice = (o: Office) => {
+    setFieldValue('office_id', o.id);
+    officeQuery.value = o.nombre;
+    showOfficeDropdown.value = false;
 };
 
 const handleDniInput = (event: Event) => {
@@ -151,8 +207,8 @@ const onSubmit = validateEntryForm(async (values) => {
 
     // Explicitly handle office/area mutually exclusive fields
     const payload = { ...values };
-    if (destinoTipo.value === 'area') payload.office_id = null as any;
-    else payload.area_id = null as any;
+    if (destinoTipo.value === 'direction') payload.office_id = null as any;
+    else payload.direction_id = null as any;
 
     router.post('/visitors', payload as any, {
         onSuccess: (page: any) => {
@@ -180,8 +236,18 @@ const onSubmit = validateEntryForm(async (values) => {
 
 // Click outside to close dropdown
 const handleClickOutside = (event: MouseEvent) => {
-    if (dropdownContainerRef.value && !dropdownContainerRef.value.contains(event.target as Node)) {
+    const target = event.target as Node;
+    if (dropdownContainerRef.value && !dropdownContainerRef.value.contains(target)) {
         showDropdown.value = false;
+    }
+    // Close other dropdowns
+    const dirContainer = document.getElementById('direction-dropdown-container');
+    if (dirContainer && !dirContainer.contains(target)) {
+        showDirectionDropdown.value = false;
+    }
+    const offContainer = document.getElementById('office-dropdown-container');
+    if (offContainer && !offContainer.contains(target)) {
+        showOfficeDropdown.value = false;
     }
 };
 
@@ -304,7 +370,7 @@ onUnmounted(() => {
                                 class="uppercase w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors disabled:bg-slate-100 disabled:text-slate-500 outline-none"
                                 :class="formErrors.apellidos ? 'border-red-400' : 'border-slate-200'" />
                             <p v-if="formErrors.apellidos" class="mt-1 text-sm text-red-600">{{ formErrors.apellidos
-                                }}</p>
+                            }}</p>
                         </div>
                     </div>
 
@@ -316,42 +382,68 @@ onUnmounted(() => {
                         <div class="flex gap-2 mb-2">
                             <label
                                 class="flex-1 flex items-center justify-center gap-2 cursor-pointer p-2 border rounded-xl transition-all"
-                                :class="destinoTipo === 'area' ? 'border-purple-500 bg-purple-50 text-purple-700 shadow-sm' : 'border-slate-200 hover:bg-slate-50 text-slate-600'">
-                                <input type="radio" value="area" v-model="destinoTipo" @change="toggleDestino('area')"
-                                    class="hidden">
-                                <span class="text-sm font-bold">Área / Dirección</span>
-                            </label>
-                            <label
-                                class="flex-1 flex items-center justify-center gap-2 cursor-pointer p-2 border rounded-xl transition-all"
                                 :class="destinoTipo === 'office' ? 'border-purple-500 bg-purple-50 text-purple-700 shadow-sm' : 'border-slate-200 hover:bg-slate-50 text-slate-600'">
                                 <input type="radio" value="office" v-model="destinoTipo"
                                     @change="toggleDestino('office')" class="hidden">
-                                <span class="text-sm font-bold">Oficina / Unidad</span>
+                                <span class="text-sm font-bold">Oficina</span>
+                            </label>
+                            <label
+                                class="flex-1 flex items-center justify-center gap-2 cursor-pointer p-2 border rounded-xl transition-all"
+                                :class="destinoTipo === 'direction' ? 'border-purple-500 bg-purple-50 text-purple-700 shadow-sm' : 'border-slate-200 hover:bg-slate-50 text-slate-600'">
+                                <input type="radio" value="direction" v-model="destinoTipo"
+                                    @change="toggleDestino('direction')" class="hidden">
+                                <span class="text-sm font-bold">Dirección</span>
                             </label>
                         </div>
 
-                        <div v-if="destinoTipo === 'area'">
-                            <select v-model="areaId"
-                                class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors bg-white outline-none"
-                                :class="{ 'border-red-400': formErrors.area_id }">
-                                <option value="" disabled>Seleccione un área...</option>
-                                <option v-for="a in areas" :key="a.id" :value="a.id">{{ a.nombre }}</option>
-                            </select>
-                            <p v-if="formErrors.area_id" class="mt-1 text-sm text-red-600">{{ formErrors.area_id }}
-                            </p>
+                        <div v-if="destinoTipo === 'direction'" class="relative" id="direction-dropdown-container">
+                            <div class="relative">
+                                <input type="text" v-model="directionQuery" @focus="showDirectionDropdown = true"
+                                    placeholder="Buscar dirección..."
+                                    class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors outline-none pr-10"
+                                    :class="{ 'border-red-400': formErrors.direction_id }" />
+                                <ChevronDown
+                                    class="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                            </div>
+                            <div v-if="showDirectionDropdown && filteredDirections.length > 0"
+                                class="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl max-h-48 overflow-y-auto custom-scrollbar">
+                                <button type="button" v-for="d in filteredDirections" :key="d.id"
+                                    @click="selectDirection(d)"
+                                    class="w-full text-left px-4 py-2.5 hover:bg-purple-50 transition-colors flex items-center justify-between group border-b border-slate-50 last:border-0">
+                                    <span class="text-sm font-medium text-slate-700 group-hover:text-purple-700">{{
+                                        d.nombre }}</span>
+                                    <Check v-if="directionId === d.id" class="w-4 h-4 text-purple-600" />
+                                </button>
+                            </div>
+                            <p v-if="formErrors.direction_id" class="mt-1 text-sm text-red-600">{{
+                                formErrors.direction_id }}</p>
                         </div>
 
-                        <div v-if="destinoTipo === 'office'">
-                            <select v-model="officeId"
-                                class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors bg-white outline-none"
-                                :class="{ 'border-red-400': formErrors.office_id }">
-                                <option value="" disabled>Seleccione una oficina...</option>
-                                <option v-for="off in offices" :key="off.id" :value="off.id">
-                                    {{ off.nombre }} {{ off.area ? `(${off.area.nombre})` : '' }}
-                                </option>
-                            </select>
-                            <p v-if="formErrors.office_id" class="mt-1 text-sm text-red-600">{{ formErrors.office_id
-                                }}</p>
+                        <div v-if="destinoTipo === 'office'" class="relative" id="office-dropdown-container">
+                            <div class="relative">
+                                <input type="text" v-model="officeQuery" @focus="showOfficeDropdown = true"
+                                    placeholder="Buscar oficina..."
+                                    class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors outline-none pr-10"
+                                    :class="{ 'border-red-400': formErrors.office_id }" />
+                                <ChevronDown
+                                    class="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                            </div>
+                            <div v-if="showOfficeDropdown && filteredOffices.length > 0"
+                                class="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl max-h-48 overflow-y-auto custom-scrollbar">
+                                <button type="button" v-for="off in filteredOffices" :key="off.id"
+                                    @click="selectOffice(off)"
+                                    class="w-full text-left px-4 py-2.5 hover:bg-purple-50 transition-colors flex flex-col group border-b border-slate-50 last:border-0">
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-sm font-bold text-slate-700 group-hover:text-purple-700">{{
+                                            off.nombre }}</span>
+                                        <Check v-if="officeId === off.id" class="w-4 h-4 text-purple-600" />
+                                    </div>
+                                    <span class="text-[10px] text-slate-400 font-medium">{{ off.direction?.nombre ||
+                                        'Sin Dirección' }}</span>
+                                </button>
+                            </div>
+                            <p v-if="formErrors.office_id" class="mt-1 text-sm text-red-600">{{ formErrors.office_id }}
+                            </p>
                         </div>
                     </div>
 
@@ -382,14 +474,23 @@ onUnmounted(() => {
                             </div>
                         </div>
 
-                        <!-- Hora Ingreso -->
-                        <div>
-                            <label class="block text-sm font-bold text-slate-700 mb-2">
-                                Hora de Ingreso <span class="text-red-500">*</span>
+                        <!-- Hora Ingreso (Automática) -->
+                        <div class="relative">
+                            <label class="block text-sm font-bold text-slate-700 mb-2 flex items-center gap-2">
+                                Hora de Ingreso
+                                <span class="flex h-2 w-2 relative">
+                                    <span
+                                        class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                    <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                                </span>
+                                <span
+                                    class="text-[10px] text-emerald-600 font-medium uppercase tracking-tight">Automático</span>
                             </label>
-                            <input type="time" v-model="horaIngreso"
-                                class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors outline-none"
-                                :class="{ 'border-red-400': formErrors.hora_ingreso }" />
+                            <div class="relative">
+                                <input type="time" :value="horaIngreso" disabled
+                                    class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-500 font-bold outline-none cursor-not-allowed" />
+                                <div class="absolute inset-0 z-10" title="La hora se asigna automáticamente"></div>
+                            </div>
                             <p v-if="formErrors.hora_ingreso" class="mt-1 text-sm text-red-600">{{
                                 formErrors.hora_ingreso }}</p>
                         </div>

@@ -19,7 +19,21 @@ const emit = defineEmits<{
 }>();
 
 const isSubmitting = ref(false);
-const currentTime = new Date().toTimeString().slice(0, 5);
+const currentTime = ref(new Date().toTimeString().slice(0, 5));
+
+// Update time every 30 seconds
+let timeInterval: any;
+onMounted(() => {
+    timeInterval = setInterval(() => {
+        currentTime.value = new Date().toTimeString().slice(0, 5);
+        setFieldValue('hora_salida', currentTime.value);
+    }, 30000);
+});
+
+import { onUnmounted } from 'vue';
+onUnmounted(() => {
+    if (timeInterval) clearInterval(timeInterval);
+});
 const verifyDni = ref('');
 const verifyDniInput = ref<HTMLInputElement | null>(null);
 
@@ -39,17 +53,20 @@ onMounted(() => {
 const schema = toTypedSchema(
     yup.object({
         hora_salida: yup.string().required('La hora de salida es obligatoria'),
+        observacion_salida: yup.string().nullable().max(500, 'Máximo 500 caracteres'),
     })
 );
 
-const { errors, defineField, handleSubmit: validateForm } = useForm({
+const { errors, defineField, handleSubmit: validateForm, setFieldValue } = useForm({
     validationSchema: schema,
     initialValues: {
-        hora_salida: currentTime,
+        hora_salida: currentTime.value,
+        observacion_salida: '',
     }
 });
 
 const [horaSalida] = defineField('hora_salida');
+const [observacionSalida] = defineField('observacion_salida');
 
 // Auto-submit if verified via enter or scanner
 const checkDniAndSubmit = () => {
@@ -168,15 +185,34 @@ const handleSubmit = () => {
                         </div>
                     </div>
 
-                    <!-- Time Input -->
-                    <div>
-                        <label class="block text-sm font-bold text-slate-700 mb-2">
-                            Hora de Salida <span class="text-red-500">*</span>
+                    <!-- Time Input (Automatic) -->
+                    <div class="relative">
+                        <label class="block text-sm font-bold text-slate-700 mb-2 flex items-center gap-2">
+                            Hora de Salida
+                            <span class="flex h-2 w-2 relative">
+                                <span
+                                    class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                            </span>
+                            <span
+                                class="text-[10px] text-emerald-600 font-medium uppercase tracking-tight">Automático</span>
                         </label>
-                        <input type="time" v-model="horaSalida"
-                            class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors outline-none"
-                            :class="errors.hora_salida ? 'border-red-400' : 'border-slate-200'" />
+                        <div class="relative">
+                            <input type="time" :value="horaSalida" disabled
+                                class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-500 font-bold outline-none cursor-not-allowed" />
+                            <div class="absolute inset-0 z-10" title="La hora se asigna automáticamente"></div>
+                        </div>
                         <p v-if="errors.hora_salida" class="mt-1 text-sm text-red-600">{{ errors.hora_salida }}</p>
+                    </div>
+
+                    <!-- Observación (Opcional) -->
+                    <div>
+                        <label class="block text-sm font-bold text-slate-700 mb-2">Observaciones (Opcional)</label>
+                        <textarea v-model="observacionSalida" rows="2" placeholder="Notas opcionales sobre la salida..."
+                            class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 resize-none transition-colors outline-none text-sm shadow-sm"
+                            :class="{ 'border-red-400': errors.observacion_salida }"></textarea>
+                        <p v-if="errors.observacion_salida" class="mt-1 text-sm text-red-600">{{
+                            errors.observacion_salida }}</p>
                     </div>
 
                     <!-- Actions -->

@@ -46,7 +46,7 @@
                 <td>{{ $visit->nombres }}</td>
                 <td>{{ $visit->motivo }}</td>
                 <td>
-                    {{ $visit->office_nombre ? $visit->office_nombre : $visit->area_nombre }}
+                    {{ $visit->office_nombre ? $visit->office_nombre : $visit->direction_nombre }}
                     @if($visit->a_quien_visita)
                     <br><small>A: {{ $visit->a_quien_visita }}</small>
                     @endif

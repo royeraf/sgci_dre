@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Employee;
 use App\Models\Vacation;
-use App\Models\HRArea;
+use App\Models\HrDirection;
 use App\Models\HRPosition;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -30,7 +30,7 @@ class HRController extends Controller
     {
         // Cargamos la relación person para tener acceso a nombres/apellidos
         // Ordenamos la colección resultante usando el accessor 'apellidos'
-        $employees = Employee::with(['person', 'area', 'position'])
+        $employees = Employee::with(['person', 'direction', 'position'])
             ->get()
             ->sortBy('apellidos', SORT_NATURAL | SORT_FLAG_CASE)
             ->values(); // Reindexar array
@@ -43,7 +43,7 @@ class HRController extends Controller
      */
     public function getEmployee(string $id)
     {
-        $employee = Employee::with(['person', 'vacations', 'area', 'position'])->find($id);
+        $employee = Employee::with(['person', 'vacations', 'direction', 'position'])->find($id);
         
         if (!$employee) {
             return response()->json(['message' => 'Empleado no encontrado'], 404);
@@ -60,7 +60,7 @@ class HRController extends Controller
         // Buscar empleado que tenga una persona con ese DNI
         $employee = Employee::whereHas('person', function($query) use ($dni) {
             $query->where('dni', $dni);
-        })->with(['person', 'area', 'position'])->first();
+        })->with(['person', 'direction', 'position'])->first();
         
         if (!$employee) {
             return response()->json(['message' => 'Empleado no encontrado'], 404);
@@ -89,7 +89,7 @@ class HRController extends Controller
             'correo' => 'nullable|email|max:255',
             // Datos laborales
             'cargo_id' => 'nullable|exists:hr_positions,id', // Idealmente usar IDs
-            'area_id' => 'nullable|exists:hr_areas,id',     // Idealmente usar IDs
+            'direction_id' => 'nullable|exists:hr_directions,id',     // Idealmente usar IDs
             'fecha_ingreso' => 'nullable|date',
             'tipo_contrato' => 'nullable|string', // Ahora puede ser ID o nombre
             'contract_type_id' => 'nullable|exists:hr_contract_types,id',
@@ -118,10 +118,11 @@ class HRController extends Controller
 
         // 3. Crear Empleado
         // Mapeo temporal si el frontend envía nombres en lugar de IDs (para compatibilidad)
-        $areaId = $request->area_id;
-        if (!$areaId && $request->area) {
-             $areaObj = HRArea::where('nombre', $request->area)->first();
-             $areaId = $areaObj?->id;
+        $directionId = $request->direction_id ?? $request->area_id;
+        if (!$directionId && ($request->direction || $request->area)) {
+             $searchName = $request->direction ?? $request->area;
+             $dirObj = HrDirection::where('nombre', $searchName)->first();
+             $directionId = $dirObj?->id;
         }
 
         $positionId = $request->cargo_id;
@@ -150,7 +151,7 @@ class HRController extends Controller
 
         $employee = Employee::create([
             'person_id' => $person->id,
-            'area_id' => $areaId,
+            'direction_id' => $directionId,
             'position_id' => $positionId,
             'contract_type_id' => $contractTypeId,
             'fecha_ingreso' => $validated['fecha_ingreso'] ?? now(),
@@ -186,7 +187,7 @@ class HRController extends Controller
             'direccion' => 'nullable|string|max:255',
             // Laborales
             'cargo_id' => 'nullable|exists:hr_positions,id',
-            'area_id' => 'nullable|exists:hr_areas,id',
+            'direction_id' => 'nullable|exists:hr_directions,id',
             'fecha_ingreso' => 'nullable|date',
             'fecha_ingreso' => 'nullable|date',
             'tipo_contrato' => 'nullable|string',
@@ -240,10 +241,15 @@ class HRController extends Controller
         }
         
         // Mapeo de IDs
-        if ($request->has('area_id')) $employeeData['area_id'] = $validated['area_id'];
+        if ($request->has('direction_id')) $employeeData['direction_id'] = $validated['direction_id'];
+        elseif ($request->has('area_id')) $employeeData['direction_id'] = $validated['area_id'];
+        elseif ($request->has('direction')) { // fallback nombre
+             $dirObj = HrDirection::where('nombre', $request->direction)->first();
+             if ($dirObj) $employeeData['direction_id'] = $dirObj->id;
+        }
         elseif ($request->has('area')) { // fallback nombre
-             $areaObj = HRArea::where('nombre', $request->area)->first();
-             if ($areaObj) $employeeData['area_id'] = $areaObj->id;
+             $dirObj = HrDirection::where('nombre', $request->area)->first();
+             if ($dirObj) $employeeData['direction_id'] = $dirObj->id;
         }
 
         if ($request->has('cargo_id')) $employeeData['position_id'] = $validated['cargo_id'];
@@ -399,8 +405,8 @@ class HRController extends Controller
             ->where('estado', '!=', 'CANCELADO')
             ->count();
         
-        // Conteo por área
-        $byArea = $employees->groupBy('area')->map->count();
+        // Conteo por dirección
+        $byDirection = $employees->groupBy('direction_nombre')->map->count();
         
         // Conteo por tipo de contrato
         $byContract = $employees->groupBy('tipo_contrato')->map->count();
@@ -411,79 +417,107 @@ class HRController extends Controller
             'empleados_inactivos' => $employees->where('estado', '!=', 'ACTIVO')->count(),
             'en_vacaciones' => $onVacation,
             'vacaciones_programadas' => $vacations->where('estado', 'PROGRAMADO')->count(),
-            'por_area' => $byArea,
+            'por_direccion' => $byDirection,
             'por_tipo_contrato' => $byContract,
         ]);
     }
-    // ========== AREA METHODS ==========
+    // ========== DIRECTION METHODS ==========
 
     /**
-     * Get all areas
+     * Get all directions
      */
-    public function getAreas()
+    public function getDirections()
     {
-        $areas = HRArea::orderBy('nombre')->get();
-        return response()->json($areas);
+        $directions = HrDirection::with('offices')->withCount('offices')->orderBy('nombre')->get();
+        return response()->json($directions);
     }
 
     /**
-     * Create a new area
+     * Create a new direction
      */
-    public function storeArea(Request $request)
+    public function storeDirection(Request $request)
     {
         $validated = $request->validate([
-            'nombre' => 'required|string|max:255|unique:hr_areas,nombre',
+            'nombre' => 'required|string|max:255|unique:hr_directions,nombre',
+            'abreviacion' => 'nullable|string|max:20',
+            'codigo' => 'nullable|string|max:20',
             'descripcion' => 'nullable|string',
+            'telefono_interno' => 'nullable|string|max:50',
+            'ubicacion' => 'nullable|string|max:255',
             'activo' => 'boolean',
+            'office_ids' => 'nullable|array',
+            'office_ids.*' => 'exists:hr_offices,id',
         ], [
-            'nombre.unique' => 'Ya existe un área con ese nombre',
+            'nombre.unique' => 'Ya existe una dirección con ese nombre',
         ]);
 
-        $area = HRArea::create($validated);
+        $direction = HrDirection::create($validated);
+
+        if (!empty($validated['office_ids'])) {
+            HrOffice::whereIn('id', $validated['office_ids'])->update(['direction_id' => $direction->id]);
+        }
         
         return response()->json([
-            'message' => 'Área registrada correctamente',
-            'area' => $area
+            'message' => 'Dirección registrada correctamente',
+            'direction' => $direction
         ], 201);
     }
 
     /**
-     * Update an area
+     * Update a direction
      */
-    public function updateArea(Request $request, string $id)
+    public function updateDirection(Request $request, string $id)
     {
-        $area = HRArea::find($id);
+        $direction = HrDirection::find($id);
         
-        if (!$area) {
-            return response()->json(['message' => 'Área no encontrada'], 404);
+        if (!$direction) {
+            return response()->json(['message' => 'Dirección no encontrada'], 404);
         }
 
         $validated = $request->validate([
-            'nombre' => 'sometimes|string|max:255|unique:hr_areas,nombre,' . $id,
+            'nombre' => 'sometimes|string|max:255|unique:hr_directions,nombre,' . $id,
+            'abreviacion' => 'nullable|string|max:20',
+            'codigo' => 'nullable|string|max:20',
             'descripcion' => 'nullable|string',
+            'telefono_interno' => 'nullable|string|max:50',
+            'ubicacion' => 'nullable|string|max:255',
             'activo' => 'boolean',
+            'office_ids' => 'nullable|array',
+            'office_ids.*' => 'exists:hr_offices,id',
         ]);
 
-        $area->update($validated);
+        $direction->update($validated);
+
+        // Reset previous offices (optional, or just update the new ones)
+        // Usually, we want to sync.
+        if (isset($validated['office_ids'])) {
+            // First, remove this direction from all offices currently belonging to it
+            HrOffice::where('direction_id', $direction->id)->update(['direction_id' => null]);
+            
+            // Then, assign the new ones
+            if (!empty($validated['office_ids'])) {
+                HrOffice::whereIn('id', $validated['office_ids'])->update(['direction_id' => $direction->id]);
+            }
+        }
         
-        return response()->json(['message' => 'Área actualizada correctamente']);
+        return response()->json(['message' => 'Dirección actualizada correctamente']);
     }
 
     /**
-     * Delete an area
+     * Delete a direction
      */
-    public function deleteArea(string $id)
+    public function deleteDirection(string $id)
     {
-        $area = HRArea::find($id);
+        $direction = HrDirection::find($id);
         
-        if (!$area) {
-            return response()->json(['message' => 'Área no encontrada'], 404);
+        if (!$direction) {
+            return response()->json(['message' => 'Dirección no encontrada'], 404);
         }
 
-        // Optional: check if area is being used by employees before deleting or just allow it
-        $area->delete();
+        // Optional: check if direction is being used by employees before deleting or just allow it
+        $direction->delete();
         
-        return response()->json(['message' => 'Área eliminada correctamente']);
+        return response()->json(['message' => 'Dirección eliminada correctamente']);
     }
     // ========== POSITION METHODS ==========
 
@@ -562,7 +596,7 @@ class HRController extends Controller
      */
     public function getOffices()
     {
-        $offices = HrOffice::with('area')->orderBy('nombre')->get();
+        $offices = HrOffice::with('direction')->orderBy('nombre')->get();
         return response()->json($offices);
     }
 
@@ -572,7 +606,7 @@ class HRController extends Controller
     public function storeOffice(Request $request)
     {
         $validated = $request->validate([
-            'area_id' => 'required|exists:hr_areas,id',
+            'direction_id' => 'nullable|exists:hr_directions,id',
             'nombre' => 'required|string|max:255',
             'codigo' => 'nullable|string|max:20',
             'ubicacion' => 'nullable|string|max:255',
@@ -581,7 +615,7 @@ class HRController extends Controller
         ]);
 
         $office = HrOffice::create($validated);
-        $office->load('area');
+        $office->load('direction');
         
         return response()->json([
             'message' => 'Oficina registrada correctamente',
@@ -601,7 +635,7 @@ class HRController extends Controller
         }
 
         $validated = $request->validate([
-            'area_id' => 'sometimes|exists:hr_areas,id',
+            'direction_id' => 'nullable|exists:hr_directions,id',
             'nombre' => 'sometimes|string|max:255',
             'codigo' => 'nullable|string|max:20',
             'ubicacion' => 'nullable|string|max:255',
@@ -610,7 +644,7 @@ class HRController extends Controller
         ]);
 
         $office->update($validated);
-        $office->load('area');
+        $office->load('direction');
         
         return response()->json([
             'message' => 'Oficina actualizada correctamente',

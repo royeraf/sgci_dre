@@ -16,12 +16,12 @@
                         <UserPlus class="w-5 h-5 mr-2" />
                         Nuevo Empleado
                     </button>
-                    <button v-if="activeTab === 'areas'" @click="createNewArea"
+                    <button v-if="activeTab === 'directions'" @click="createNewDirection"
                         class="inline-flex items-center px-5 py-2.5 text-sm font-bold rounded-xl shadow-lg text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 transition-all">
                         <Plus class="w-5 h-5 mr-2" />
-                        Nueva Área
+                        Nueva Dirección
                     </button>
-                    <button v-if="activeTab === 'areas'" @click="createNewOffice"
+                    <button v-if="activeTab === 'directions'" @click="createNewOffice"
                         class="inline-flex items-center px-5 py-2.5 text-sm font-bold rounded-xl shadow-lg text-white bg-gradient-to-r from-sky-600 to-cyan-600 hover:from-sky-700 hover:to-cyan-700 transition-all">
                         <Plus class="w-5 h-5 mr-2" />
                         Nueva Oficina
@@ -60,10 +60,10 @@
                         <Calendar class="w-5 h-5" />
                         Vacaciones
                     </button>
-                    <button @click="activeTab = 'areas'"
-                        :class="[activeTab === 'areas' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300', 'whitespace-nowrap py-4 px-1 border-b-2 font-bold text-sm flex items-center gap-2 transition-colors']">
+                    <button @click="activeTab = 'directions'"
+                        :class="[activeTab === 'directions' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300', 'whitespace-nowrap py-4 px-1 border-b-2 font-bold text-sm flex items-center gap-2 transition-colors']">
                         <Building2 class="w-5 h-5" />
-                        Áreas / Oficinas
+                        Direcciones / Oficinas
                     </button>
                     <button @click="activeTab = 'cargos'"
                         :class="[activeTab === 'cargos' ? 'border-purple-500 text-purple-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300', 'whitespace-nowrap py-4 px-1 border-b-2 font-bold text-sm flex items-center gap-2 transition-colors']">
@@ -80,9 +80,9 @@
 
             <!-- Personal Tab -->
             <div v-if="activeTab === 'personal'">
-                <EmployeeFilters :filters="localFilters" :result-count="filteredEmployees.length" :areas="areas"
-                    :positions="positions" :contract-types="contractTypes" @update:filters="localFilters = $event"
-                    @clear="clearFilters" />
+                <EmployeeFilters :filters="localFilters" :result-count="filteredEmployees.length"
+                    :directions="directions" :positions="positions" :contract-types="contractTypes"
+                    @update:filters="localFilters = $event" @clear="clearFilters" />
 
                 <EmployeeTable :employees="filteredEmployees" :loading="isLoading" v-model:currentPage="currentPage"
                     v-model:perPage="perPage" @view="viewEmployee" @edit="editEmployee" />
@@ -94,27 +94,55 @@
                     @delete="handleDeleteVacation" />
             </div>
 
-            <!-- Áreas Tab -->
-            <div v-if="activeTab === 'areas'" class="space-y-8">
-                <!-- Áreas Section -->
-                <div>
-                    <div class="flex items-center gap-2 mb-4">
-                        <Building2 class="w-5 h-5 text-blue-600" />
-                        <h3 class="text-xl font-bold text-slate-800">Direcciones y Áreas Principales</h3>
+            <!-- Direcciones Tab -->
+            <div v-if="activeTab === 'directions'" class="space-y-6">
+                <!-- Search and Stats -->
+                <div
+                    class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div class="relative flex-1 max-w-md">
+                        <Search class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                        <input v-model="directionSearch" type="text" placeholder="Buscar dirección u oficina..."
+                            class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border-transparent focus:bg-white focus:ring-2 focus:ring-blue-500 rounded-xl text-sm transition-all outline-none" />
                     </div>
-                    <AreaTable :areas="areas" @edit="editArea" @delete="handleDeleteArea" />
+                    <div class="flex items-center gap-6 px-2">
+                        <div class="text-center">
+                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Direcciones</p>
+                            <p class="text-xl font-black text-blue-600">{{ directions.length }}</p>
+                        </div>
+                        <div class="w-px h-8 bg-slate-200"></div>
+                        <div class="text-center">
+                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Oficinas</p>
+                            <p class="text-xl font-black text-indigo-600">{{ offices.length }}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Direcciones Section -->
+                <div v-if="filteredDirectionsManagement.length > 0">
+                    <div class="flex items-center gap-2 mb-4 px-1">
+                        <Building2 class="w-5 h-5 text-blue-600" />
+                        <h3 class="text-lg font-bold text-slate-800 tracking-tight">Direcciones y Áreas Principales</h3>
+                    </div>
+                    <DirectionTable :directions="filteredDirectionsManagement" @edit="editDirection"
+                        @delete="handleDeleteDirection" @viewOffices="viewDirectionOffices" />
                 </div>
 
                 <!-- Oficinas Section -->
-                <div>
-                    <div class="flex items-center gap-2 mb-4 pt-6 border-t border-slate-200">
+                <div v-if="filteredOfficesManagement.length > 0">
+                    <div class="flex items-center gap-2 mb-4 pt-4 px-1 border-t border-slate-100">
                         <Building2 class="w-5 h-5 text-indigo-600" />
-                        <h3 class="text-xl font-bold text-slate-800">Oficinas y Unidades Orgánicas</h3>
-                        <span class="ml-2 px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
-                            {{ offices.length }} oficinas
-                        </span>
+                        <h3 class="text-lg font-bold text-slate-800 tracking-tight">Oficinas y Unidades Orgánicas</h3>
                     </div>
-                    <OfficeTable :offices="offices" @edit="editOffice" @delete="handleDeleteOffice" />
+                    <OfficeTable :offices="filteredOfficesManagement" @edit="editOffice" @delete="handleDeleteOffice" />
+                </div>
+
+                <!-- Empty State -->
+                <div v-if="filteredDirectionsManagement.length === 0 && filteredOfficesManagement.length === 0"
+                    class="py-20 text-center bg-white rounded-2xl border border-dashed border-slate-300">
+                    <Search class="w-12 h-12 text-slate-300 mx-auto mb-4" />
+                    <p class="text-slate-500 font-medium">No se encontraron resultados para "{{ directionSearch }}"</p>
+                    <button @click="directionSearch = ''"
+                        class="mt-4 text-sm font-bold text-blue-600 hover:underline">Limpiar búsqueda</button>
                 </div>
             </div>
 
@@ -132,8 +160,8 @@
 
             <!-- Employee Modal -->
             <EmployeeModal v-if="showEmployeeModal" :employee="selectedEmployee" :is-editing="isEditing"
-                :submitting="isSubmitting" :areas="areas" :positions="positions" :contract-types="contractTypes"
-                @close="closeEmployeeModal" @submit="saveEmployee" />
+                :submitting="isSubmitting" :directions="directions" :positions="positions"
+                :contract-types="contractTypes" @close="closeEmployeeModal" @submit="saveEmployee" />
 
             <!-- Employee Detail Modal -->
             <EmployeeDetailModal v-if="showViewEmployeeModal" :employee="selectedEmployee"
@@ -148,13 +176,14 @@
             <VacationDetailModal v-if="showVacationDetailModal" :vacation="selectedVacationDetail"
                 @close="closeVacationDetailModal" />
 
-            <!-- Area Modal -->
-            <AreaModal v-if="showAreaModal" :area="selectedArea" :is-editing="isEditingArea" :submitting="isSubmitting"
-                @close="showAreaModal = false" @submit="saveArea" />
+            <!-- Direction Modal -->
+            <DirectionModal v-if="showDirectionModal" :direction="selectedDirection" :is-editing="isEditingDirection"
+                :submitting="isSubmitting" :offices="offices" @close="showDirectionModal = false"
+                @submit="saveDirection" />
 
             <!-- Office Modal NEW -->
             <OfficeModal v-if="showOfficeModal" :office="selectedOffice" :is-editing="isEditingOffice"
-                :submitting="isSubmitting" :areas="areas" @close="showOfficeModal = false" @submit="saveOffice" />
+                :submitting="isSubmitting" @close="showOfficeModal = false" @submit="saveOffice" />
 
             <!-- Position Modal -->
             <PositionModal v-if="showPositionModal" :position="selectedPosition" :is-editing="isEditingPosition"
@@ -164,6 +193,10 @@
             <ContractTypeModal v-if="showContractTypeModal" :contract-type="selectedContractType"
                 :is-editing="isEditingContractType" :submitting="isSubmitting" @close="showContractTypeModal = false"
                 @submit="saveContractType" />
+
+            <!-- Direction Offices View Modal -->
+            <DirectionOfficesModal v-if="showDirectionOfficesModal" :direction="selectedDirectionForOffices"
+                :offices="selectedDirectionForOffices?.offices || []" @close="showDirectionOfficesModal = false" />
         </div>
     </div>
 </template>
@@ -180,7 +213,7 @@ export default {
 import { ref, onMounted, computed, watch } from 'vue';
 import axios from 'axios';
 import {
-    Users, UserPlus, Calendar, Plus, Building2, CalendarPlus, Briefcase, FileText
+    Users, UserPlus, Calendar, Plus, Building2, CalendarPlus, Briefcase, FileText, Search
 } from 'lucide-vue-next';
 
 // Components
@@ -191,23 +224,25 @@ import EmployeeDetailModal from '@/Components/HR/Employees/EmployeeDetailModal.v
 import VacationTable from '@/Components/HR/Vacations/VacationTable.vue';
 import VacationModal from '@/Components/HR/Vacations/VacationModal.vue';
 import VacationDetailModal from '@/Components/HR/Vacations/VacationDetailModal.vue';
-import AreaTable from '@/Components/HR/Areas/AreaTable.vue';
-import AreaModal from '@/Components/HR/Areas/AreaModal.vue';
-import OfficeTable from '@/Components/HR/Areas/OfficeTable.vue';
-import OfficeModal from '@/Components/HR/Areas/OfficeModal.vue';
+import DirectionTable from '@/Components/HR/Directions/DirectionTable.vue';
+import DirectionModal from '@/Components/HR/Directions/DirectionModal.vue';
+import OfficeTable from '@/Components/HR/Directions/OfficeTable.vue';
+import OfficeModal from '@/Components/HR/Directions/OfficeModal.vue';
 import PositionTable from '@/Components/HR/Positions/PositionTable.vue';
 import PositionModal from '@/Components/HR/Positions/PositionModal.vue';
 import ContractTypeTable from '@/Components/HR/ContractTypes/ContractTypeTable.vue';
 import ContractTypeModal from '@/Components/HR/ContractTypes/ContractTypeModal.vue';
 import EmployeeFilters from '@/Components/HR/Employees/EmployeeFilters.vue';
+import DirectionOfficesModal from '@/Components/HR/Directions/DirectionOfficesModal.vue';
 
 const activeTab = ref('personal');
 const isLoading = ref(false);
 const isSubmitting = ref(false);
 
+const directionSearch = ref('');
 const localFilters = ref({
     search: '',
-    area: '',
+    direction: '',
     position: '',
     contractType: ''
 });
@@ -221,7 +256,7 @@ watch(localFilters, () => {
 
 const employees = ref([]);
 const vacations = ref([]);
-const areas = ref([]);
+const directions = ref([]);
 const offices = ref([]);
 const positions = ref([]);
 const contractTypes = ref([]);
@@ -234,16 +269,17 @@ const selectedVacation = ref(null);
 const selectedVacationDetail = ref(null);
 const isEditingVacation = ref(false);
 const showViewEmployeeModal = ref(false);
-const showAreaModal = ref(false);
+const showDirectionModal = ref(false);
 const showOfficeModal = ref(false);
 const showPositionModal = ref(false);
 const showContractTypeModal = ref(false);
+const showDirectionOfficesModal = ref(false);
 
 const selectedEmployee = ref(null);
 const isEditing = ref(false);
 
-const selectedArea = ref(null);
-const isEditingArea = ref(false);
+const selectedDirection = ref(null);
+const isEditingDirection = ref(false);
 
 const selectedOffice = ref(null);
 const isEditingOffice = ref(false);
@@ -253,6 +289,8 @@ const isEditingPosition = ref(false);
 
 const selectedContractType = ref(null);
 const isEditingContractType = ref(false);
+
+const selectedDirectionForOffices = ref(null);
 
 const filteredEmployees = computed(() => {
     let result = employees.value;
@@ -266,8 +304,8 @@ const filteredEmployees = computed(() => {
         );
     }
 
-    if (localFilters.value.area) {
-        result = result.filter(e => e.area?.__name === localFilters.value.area || e.area_nombre === localFilters.value.area);
+    if (localFilters.value.direction) {
+        result = result.filter(e => e.direction?.__name === localFilters.value.direction || e.direction_nombre === localFilters.value.direction);
     }
 
     if (localFilters.value.position) {
@@ -282,10 +320,29 @@ const filteredEmployees = computed(() => {
     return result;
 });
 
+const filteredDirectionsManagement = computed(() => {
+    if (!directionSearch.value) return directions.value;
+    const q = directionSearch.value.toLowerCase();
+    return directions.value.filter(d =>
+        d.nombre.toLowerCase().includes(q) ||
+        (d.descripcion && d.descripcion.toLowerCase().includes(q))
+    );
+});
+
+const filteredOfficesManagement = computed(() => {
+    if (!directionSearch.value) return offices.value;
+    const q = directionSearch.value.toLowerCase();
+    return offices.value.filter(o =>
+        o.nombre.toLowerCase().includes(q) ||
+        (o.codigo && o.codigo.toLowerCase().includes(q)) ||
+        (o.direction?.nombre && o.direction.nombre.toLowerCase().includes(q))
+    );
+});
+
 const clearFilters = () => {
     localFilters.value = {
         search: '',
-        area: '',
+        direction: '',
         position: '',
         contractType: ''
     };
@@ -294,11 +351,11 @@ const clearFilters = () => {
 const fetchData = async () => {
     isLoading.value = true;
     try {
-        const [empRes, vacRes, sumRes, areaRes, posRes, officeRes, contractTypeRes] = await Promise.all([
+        const [empRes, vacRes, sumRes, dirRes, posRes, officeRes, contractTypeRes] = await Promise.all([
             axios.get('/hr/employees'),
             axios.get('/hr/vacations'),
             axios.get('/hr/summary'),
-            axios.get('/hr/areas'),
+            axios.get('/hr/directions'),
             axios.get('/hr/positions'),
             axios.get('/hr/offices'),
             axios.get('/hr/contract-types')
@@ -306,7 +363,7 @@ const fetchData = async () => {
         employees.value = empRes.data;
         vacations.value = vacRes.data;
         summary.value = sumRes.data;
-        areas.value = areaRes.data;
+        directions.value = dirRes.data;
         positions.value = posRes.data;
         offices.value = officeRes.data;
         contractTypes.value = contractTypeRes.data;
@@ -419,38 +476,38 @@ const handleDeleteVacation = (id) => {
     });
 };
 
-const createNewArea = () => {
-    isEditingArea.value = false;
-    selectedArea.value = null;
-    showAreaModal.value = true;
+const createNewDirection = () => {
+    isEditingDirection.value = false;
+    selectedDirection.value = null;
+    showDirectionModal.value = true;
 };
 
-const editArea = (area) => {
-    isEditingArea.value = true;
-    selectedArea.value = area;
-    showAreaModal.value = true;
+const editDirection = (direction) => {
+    isEditingDirection.value = true;
+    selectedDirection.value = direction;
+    showDirectionModal.value = true;
 };
 
-const saveArea = async (formData) => {
+const saveDirection = async (formData) => {
     isSubmitting.value = true;
     try {
-        if (isEditingArea.value && selectedArea.value) {
-            await axios.put(`/hr/areas/${selectedArea.value.id}`, formData);
-            window.Swal?.fire?.({ icon: 'success', title: 'Área Actualizada', toast: true, position: 'top-end', showConfirmButton: false, timer: 2500 });
+        if (isEditingDirection.value && selectedDirection.value) {
+            await axios.put(`/hr/directions/${selectedDirection.value.id}`, formData);
+            window.Swal?.fire?.({ icon: 'success', title: 'Dirección Actualizada', toast: true, position: 'top-end', showConfirmButton: false, timer: 2500 });
         } else {
-            await axios.post('/hr/areas', formData);
-            window.Swal?.fire?.({ icon: 'success', title: 'Área Creada', toast: true, position: 'top-end', showConfirmButton: false, timer: 2500 });
+            await axios.post('/hr/directions', formData);
+            window.Swal?.fire?.({ icon: 'success', title: 'Dirección Creada', toast: true, position: 'top-end', showConfirmButton: false, timer: 2500 });
         }
-        showAreaModal.value = false;
+        showDirectionModal.value = false;
         fetchData();
     } catch (error) {
-        window.Swal?.fire?.({ icon: 'error', title: 'Error', text: error.response?.data?.message || 'No se pudo guardar el área' });
+        window.Swal?.fire?.({ icon: 'error', title: 'Error', text: error.response?.data?.message || 'No se pudo guardar la dirección' });
     } finally {
         isSubmitting.value = false;
     }
 };
 
-const handleDeleteArea = (id) => {
+const handleDeleteDirection = (id) => {
     window.Swal?.fire?.({
         title: '¿Está seguro?',
         text: "Esta acción no se puede deshacer",
@@ -463,17 +520,22 @@ const handleDeleteArea = (id) => {
     }).then(async (result) => {
         if (result.isConfirmed) {
             try {
-                await axios.delete(`/hr/areas/${id}`);
-                window.Swal?.fire?.('Eliminado', 'El área ha sido eliminada.', 'success');
+                await axios.delete(`/hr/directions/${id}`);
+                window.Swal?.fire?.('Eliminado', 'La dirección ha sido eliminada.', 'success');
                 fetchData();
             } catch (error) {
-                window.Swal?.fire?.('Error', 'No se pudo eliminar el área.', 'error');
+                window.Swal?.fire?.('Error', 'No se pudo eliminar la dirección.', 'error');
             }
         }
     });
 };
 
 // --- OFFICE METHODS ---
+
+const viewDirectionOffices = (direction) => {
+    selectedDirectionForOffices.value = direction;
+    showDirectionOfficesModal.value = true;
+};
 
 const createNewOffice = () => {
     isEditingOffice.value = false;

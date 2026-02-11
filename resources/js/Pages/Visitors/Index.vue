@@ -35,7 +35,7 @@ import { Visit, PaginatedVisits } from '@/Types/visitor';
 const props = defineProps<{
     visits: PaginatedVisits;
     filters: any;
-    areas: any[];
+    directions: any[];
     offices: any[];
     employees: any[];
     reasons: any[];
@@ -213,7 +213,7 @@ watch(activeTab, (newTab) => {
             </div>
 
             <!-- Modals -->
-            <CreateVisitModal v-if="showCreateModal" :areas="areas" :offices="offices" :employees="employees"
+            <CreateVisitModal v-if="showCreateModal" :directions="directions" :offices="offices" :employees="employees"
                 :reasons="reasons" @close="closeCreateModal" />
 
             <ExitVisitModal v-if="showExitModal && selectedVisit" :visit="selectedVisit" @close="closeExitModal"

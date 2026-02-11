@@ -51,9 +51,10 @@
                     <div class="bg-slate-50 border border-slate-100 rounded-2xl p-4 transition-all hover:shadow-md">
                         <p
                             class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 flex items-center gap-1.5">
-                            <Building2 class="w-3 h-3" /> Área / Oficina
+                            <Building2 class="w-3 h-3" /> Dirección / Oficina
                         </p>
-                        <p class="text-base font-bold text-slate-800">{{ employee.area || 'No especificada' }}</p>
+                        <p class="text-base font-bold text-slate-800">{{ employee.direction_nombre || 'No especificada'
+                            }}</p>
                     </div>
 
                     <div class="grid grid-cols-2 gap-4">
@@ -73,7 +74,7 @@
                                 <Calendar class="w-3 h-3" /> Fecha Ingreso
                             </p>
                             <p class="text-base font-bold text-slate-800">{{ formatDate(employee.fecha_ingreso) || '-'
-                                }}</p>
+                            }}</p>
                         </div>
                     </div>
 

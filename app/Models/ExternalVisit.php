@@ -14,7 +14,7 @@ class ExternalVisit extends Model
 
     protected $fillable = [
         'person_id',
-        'area_id',
+        'direction_id',
         'office_id',
         'visit_reason_id',
         'hora_ingreso',
@@ -23,6 +23,7 @@ class ExternalVisit extends Model
         'a_quien_visita',
         'fecha',
         'registrado_por',
+        'observacion_salida',
     ];
 
     protected $casts = [
@@ -37,7 +38,7 @@ class ExternalVisit extends Model
     protected $appends = [
         'dni',
         'nombres',
-        'area_nombre',
+        'direction_nombre',
         'office_nombre',
         'motivo_nombre',
     ];
@@ -51,11 +52,11 @@ class ExternalVisit extends Model
     }
 
     /**
-     * Relación con el área que visita
+     * Relación con la dirección que visita
      */
-    public function area(): BelongsTo
+    public function direction(): BelongsTo
     {
-        return $this->belongsTo(HRArea::class, 'area_id');
+        return $this->belongsTo(HrDirection::class, 'direction_id');
     }
 
     /**
@@ -109,11 +110,11 @@ class ExternalVisit extends Model
     }
 
     /**
-     * Acceso al nombre del área
+     * Acceso al nombre de la dirección
      */
-    public function getAreaNombreAttribute(): ?string
+    public function getDirectionNombreAttribute(): ?string
     {
-        return $this->area?->nombre;
+        return $this->direction?->nombre;
     }
 
     /**
@@ -163,6 +164,6 @@ class ExternalVisit extends Model
      */
     public function scopeWithAllRelations($query)
     {
-        return $query->with(['person', 'area', 'office', 'registrador']);
+        return $query->with(['person', 'direction', 'office', 'registrador']);
     }
 }

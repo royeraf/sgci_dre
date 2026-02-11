@@ -7,7 +7,7 @@
                         <th class="px-6 py-4 text-left text-xs font-bold text-slate-600 uppercase">Empleado</th>
                         <th class="px-6 py-4 text-left text-xs font-bold text-slate-600 uppercase">DNI</th>
                         <th class="px-6 py-4 text-left text-xs font-bold text-slate-600 uppercase">Cargo</th>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-slate-600 uppercase">Área</th>
+                        <th class="px-6 py-4 text-left text-xs font-bold text-slate-600 uppercase">Dirección</th>
                         <th class="px-6 py-4 text-left text-xs font-bold text-slate-600 uppercase">Contrato</th>
                         <th class="px-6 py-4 text-center text-xs font-bold text-slate-600 uppercase">Estado</th>
                         <th class="px-6 py-4"></th>
@@ -38,7 +38,8 @@
                         </td>
                         <td class="px-6 py-4 font-mono text-slate-700">{{ emp.dni }}</td>
                         <td class="px-6 py-4 text-sm text-slate-700">{{ emp.position?.nombre || emp.cargo || '-' }}</td>
-                        <td class="px-6 py-4 text-sm text-slate-700">{{ emp.area?.nombre || emp.area_nombre || '-' }}
+                        <td class="px-6 py-4 text-sm text-slate-700">{{ emp.direction?.nombre || emp.direction_nombre ||
+                            '-' }}
                         </td>
                         <td class="px-6 py-4">
                             <span class="px-2 py-1 text-xs font-bold rounded-lg"
