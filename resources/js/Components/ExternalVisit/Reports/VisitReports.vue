@@ -7,7 +7,7 @@ interface ReportStats {
     total: number;
     completed: number;
     pending: number;
-    areasCount: number;
+    directionsCount: number;
 }
 
 interface DateRange {
@@ -252,9 +252,10 @@ const generateReport = () => {
                         <p class="text-3xl font-black text-yellow-600">{{ reportData.pending }}</p>
                     </div>
                     <div class="bg-white border-2 border-slate-200 rounded-2xl p-5 shadow-sm text-center">
-                        <p class="text-slate-500 text-[10px] font-bold uppercase tracking-widest mb-1">Áreas Visitadas
+                        <p class="text-slate-500 text-[10px] font-bold uppercase tracking-widest mb-1">Direcciones
+                            Visitadas
                         </p>
-                        <p class="text-3xl font-black text-slate-600">{{ reportData.areasCount }}</p>
+                        <p class="text-3xl font-black text-slate-600">{{ reportData.directionsCount }}</p>
                     </div>
                 </div>
 

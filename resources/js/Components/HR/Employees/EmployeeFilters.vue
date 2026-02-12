@@ -13,15 +13,15 @@
                 </div>
             </div>
 
-            <!-- Area Filter -->
+            <!-- Direction Filter -->
             <div class="lg:col-span-1">
-                <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Área</label>
-                <select :value="filters.area"
-                    @change="$emit('update:filters', { ...filters, area: $event.target.value })"
+                <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Dirección</label>
+                <select :value="filters.direction"
+                    @change="$emit('update:filters', { ...filters, direction: $event.target.value })"
                     class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all duration-200 text-sm bg-white">
-                    <option value="">Todas las áreas</option>
-                    <option v-for="area in areas" :key="area.id" :value="area.nombre">
-                        {{ area.nombre }}
+                    <option value="">Todas las direcciones</option>
+                    <option v-for="direction in directions" :key="direction.id" :value="direction.nombre">
+                        {{ direction.nombre }}
                     </option>
                 </select>
             </div>
@@ -81,7 +81,7 @@ defineProps({
         type: Number,
         default: 0
     },
-    areas: {
+    directions: {
         type: Array,
         default: () => []
     },

@@ -18,6 +18,8 @@ class DatabaseSeeder extends Seeder
         $this->seedRoles();
         $this->seedUsers();
         $this->seedStaff();
+        $this->call(HrDirectionSeeder::class);
+        $this->call(HrOfficeSeeder::class);
     }
 
     private function seedRoles(): void

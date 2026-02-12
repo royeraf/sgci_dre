@@ -13,7 +13,7 @@ class Employee extends Model
 
     protected $fillable = [
         'person_id',
-        'area_id',
+        'direction_id',
         'position_id',
         'office_id',
         'contract_type_id',
@@ -38,7 +38,7 @@ class Employee extends Model
         'telefono',
         'correo',
         'cargo',
-        'area_nombre',
+        'direction_nombre',
         'tipo_contrato', // Virtual attribute
         'full_name',
     ];
@@ -52,11 +52,11 @@ class Employee extends Model
     }
 
     /**
-     * Relación con el área
+     * Relación con la dirección
      */
-    public function area(): BelongsTo
+    public function direction(): BelongsTo
     {
-        return $this->belongsTo(HRArea::class, 'area_id');
+        return $this->belongsTo(HrDirection::class, 'direction_id');
     }
 
     /**
@@ -158,11 +158,11 @@ class Employee extends Model
     }
 
     /**
-     * Acceso al área (nombre) a través de area
+     * Acceso a la dirección (nombre) a través de direction
      */
-    public function getAreaNombreAttribute(): ?string
+    public function getDirectionNombreAttribute(): ?string
     {
-        return $this->area?->nombre;
+        return $this->direction?->nombre;
     }
 
     /**
@@ -212,6 +212,6 @@ class Employee extends Model
      */
     public function scopeWithAllRelations($query)
     {
-        return $query->with(['person', 'area', 'position', 'office', 'contractType']);
+        return $query->with(['person', 'direction', 'position', 'office', 'contractType']);
     }
 }

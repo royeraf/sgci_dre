@@ -80,7 +80,7 @@ defineEmits<{
                                 visit.motivo }}</div>
                         </td>
                         <td class="px-6 py-4">
-                            <div class="text-sm font-bold text-slate-700">{{ visit.area }}</div>
+                            <div class="text-sm font-bold text-slate-700">{{ visit.destino }}</div>
                             <div v-if="visit.a_quien_visita" class="text-xs text-slate-500">Visita a: {{
                                 visit.a_quien_visita }}</div>
                         </td>

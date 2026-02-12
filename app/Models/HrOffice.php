@@ -15,7 +15,7 @@ class HrOffice extends Model
     protected $table = 'hr_offices';
 
     protected $fillable = [
-        'area_id',
+        'direction_id',
         'codigo',
         'nombre',
         'ubicacion',
@@ -29,11 +29,11 @@ class HrOffice extends Model
     ];
 
     /**
-     * Relación con el área
+     * Relación con la dirección
      */
-    public function area(): BelongsTo
+    public function direction(): BelongsTo
     {
-        return $this->belongsTo(HRArea::class, 'area_id');
+        return $this->belongsTo(HrDirection::class, 'direction_id');
     }
 
     /**
@@ -53,10 +53,10 @@ class HrOffice extends Model
     }
 
     /**
-     * Obtener nombre completo con área
+     * Obtener nombre completo con dirección
      */
     public function getNombreCompletoAttribute(): string
     {
-        return "{$this->area?->nombre} - {$this->nombre}";
+        return "{$this->direction?->nombre} - {$this->nombre}";
     }
 }

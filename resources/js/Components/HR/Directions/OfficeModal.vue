@@ -18,28 +18,13 @@
                 </div>
 
                 <form @submit.prevent="onSubmit" class="p-6 space-y-4">
-                    <!-- Área Select -->
-                    <div>
-                        <label class="block text-sm font-bold text-slate-700 mb-2">
-                            Área Principal <span class="text-red-500">*</span>
-                        </label>
-                        <select v-model="area_id" v-bind="areaIdProps"
-                            class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-sky-500 transition-colors bg-white"
-                            :class="formErrors.area_id ? 'border-red-400' : 'border-slate-200'">
-                            <option value="" disabled>Seleccione un área...</option>
-                            <option v-for="area in areas" :key="area.id" :value="area.id">
-                                {{ area.nombre }}
-                            </option>
-                        </select>
-                        <p v-if="formErrors.area_id" class="mt-1 text-sm text-red-600">{{ formErrors.area_id }}</p>
-                    </div>
-
                     <!-- Nombre -->
                     <div>
                         <label class="block text-sm font-bold text-slate-700 mb-2">
                             Nombre de la Oficina <span class="text-red-500">*</span>
                         </label>
-                        <input v-model="nombre" v-bind="nombreProps" type="text" placeholder="Ej. Unidad de Tesorería"
+                        <input v-model="nombre" v-bind="nombreProps" type="text" placeholder="Ej. UNIDAD DE TESORERÍA"
+                            @input="nombre = $event.target.value.toUpperCase()"
                             class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-sky-500 transition-colors"
                             :class="formErrors.nombre ? 'border-red-400' : 'border-slate-200'" />
                         <p v-if="formErrors.nombre" class="mt-1 text-sm text-red-600">{{ formErrors.nombre }}</p>
@@ -50,23 +35,34 @@
                         <div>
                             <label class="block text-sm font-bold text-slate-700 mb-2">Código Interno</label>
                             <input v-model="codigo" v-bind="codigoProps" type="text" placeholder="Ej. TES-01"
-                                class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-sky-500 transition-colors" />
+                                @input="codigo = $event.target.value.toUpperCase()"
+                                class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-sky-500 transition-colors"
+                                :class="formErrors.codigo ? 'border-red-400 bg-red-50' : 'border-slate-200'" />
+                            <p v-if="formErrors.codigo" class="mt-1 text-sm text-red-600">{{ formErrors.codigo }}</p>
                         </div>
                         <!-- Teléfono -->
                         <div>
                             <label class="block text-sm font-bold text-slate-700 mb-2">Teléfono / Anexo</label>
                             <input v-model="telefono_interno" v-bind="telefonoProps" type="text"
                                 placeholder="Ej. Anexo 205"
-                                class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-sky-500 transition-colors" />
+                                class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-sky-500 transition-colors"
+                                :class="formErrors.telefono_interno ? 'border-red-400 bg-red-50' : 'border-slate-200'" />
+                            <p v-if="formErrors.telefono_interno" class="mt-1 text-sm text-red-600">{{
+                                formErrors.telefono_interno }}</p>
                         </div>
                     </div>
 
                     <!-- Ubicación -->
                     <div>
                         <label class="block text-sm font-bold text-slate-700 mb-2">Ubicación Física</label>
-                        <input v-model="ubicacion" v-bind="ubicacionProps" type="text"
-                            placeholder="Ej. 2do Piso, Pabellón Administrativo"
-                            class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-sky-500 transition-colors" />
+                        <div class="relative">
+                            <MapPin class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                            <input v-model="ubicacion" v-bind="ubicacionProps" type="text"
+                                placeholder="Ej. 2do Piso, Pabellón Administrativo"
+                                class="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-sky-500 transition-colors"
+                                :class="formErrors.ubicacion ? 'border-red-400 bg-red-50' : 'border-slate-200'" />
+                        </div>
+                        <p v-if="formErrors.ubicacion" class="mt-1 text-sm text-red-600">{{ formErrors.ubicacion }}</p>
                     </div>
 
                     <div v-if="isEditing" class="flex items-center gap-2 pt-2">
@@ -96,19 +92,17 @@ import { watch } from 'vue';
 import { useForm } from 'vee-validate';
 import { toTypedSchema } from '@vee-validate/yup';
 import * as yup from 'yup';
-import { Building2, X, Loader2 } from 'lucide-vue-next';
+import { Building2, X, Loader2, MapPin } from 'lucide-vue-next';
 
 const props = defineProps({
     office: { type: Object, default: null },
     isEditing: { type: Boolean, default: false },
     submitting: { type: Boolean, default: false },
-    areas: { type: Array, default: () => [] }
 });
 
 const emit = defineEmits(['close', 'submit']);
 
 const schema = toTypedSchema(yup.object({
-    area_id: yup.string().required('Debe seleccionar un área principal'),
     nombre: yup.string().required('El nombre es obligatorio').min(3, 'Mínimo 3 caracteres'),
     codigo: yup.string().transform((value) => value || null).nullable(),
     ubicacion: yup.string().transform((value) => value || null).nullable(),
@@ -119,7 +113,6 @@ const schema = toTypedSchema(yup.object({
 const { errors: formErrors, defineField, handleSubmit: validateForm, setValues, resetForm } = useForm({
     validationSchema: schema,
     initialValues: {
-        area_id: '',
         nombre: '',
         codigo: '',
         ubicacion: '',
@@ -128,7 +121,6 @@ const { errors: formErrors, defineField, handleSubmit: validateForm, setValues, 
     }
 });
 
-const [area_id, areaIdProps] = defineField('area_id');
 const [nombre, nombreProps] = defineField('nombre');
 const [codigo, codigoProps] = defineField('codigo');
 const [ubicacion, ubicacionProps] = defineField('ubicacion');
@@ -138,7 +130,6 @@ const [activo, activoProps] = defineField('activo');
 watch(() => props.office, (o) => {
     if (o && props.isEditing) {
         setValues({
-            area_id: o.area_id || '',
             nombre: o.nombre || '',
             codigo: o.codigo || '',
             ubicacion: o.ubicacion || '',
@@ -148,7 +139,6 @@ watch(() => props.office, (o) => {
     } else {
         resetForm({
             values: {
-                area_id: '',
                 nombre: '',
                 codigo: '',
                 ubicacion: '',

@@ -8,9 +8,10 @@ export interface Visit {
     motivo: string;
     motivo_nombre?: string;
     visit_reason_id?: string;
-    area: string;
+    destino: string;
     a_quien_visita: string | null;
     is_pending: boolean;
+    observacion_salida?: string | null;
 }
 
 export interface PaginationLinks {

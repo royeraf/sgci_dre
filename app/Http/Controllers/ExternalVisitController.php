@@ -6,7 +6,7 @@ use App\Models\ExternalVisit;
 use App\Models\AuditLog;
 use App\Services\ReniecService;
 use App\Models\Person;
-use App\Models\HRArea;
+use App\Models\HrDirection;
 use App\Models\HrOffice;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -21,7 +21,7 @@ class ExternalVisitController extends Controller
      */
     public function index(Request $request)
     {
-        $query = ExternalVisit::with(['registrador', 'person', 'area', 'office'])
+        $query = ExternalVisit::with(['registrador', 'person', 'direction', 'office'])
             ->orderBy('fecha', 'desc')
             ->orderBy('hora_ingreso', 'desc');
 
@@ -48,9 +48,9 @@ class ExternalVisitController extends Controller
                        ->orWhere('dni', 'like', "%{$search}%");
                  })
                  ->orWhere('motivo', 'like', "%{$search}%")
-                 // Buscar también por nombre de área relacionada
-                 ->orWhereHas('area', function($qa) use ($search) {
-                     $qa->where('nombre', 'like', "%{$search}%");
+                 // Buscar también por nombre de dirección relacionada
+                 ->orWhereHas('direction', function($qd) use ($search) {
+                     $qd->where('nombre', 'like', "%{$search}%");
                  })
                  ->orWhereHas('office', function($qo) use ($search) {
                      $qo->where('nombre', 'like', "%{$search}%");
@@ -61,8 +61,8 @@ class ExternalVisitController extends Controller
         $perPage = $request->input('per_page', 10);
         $visits = $query->paginate($perPage)->through(function ($visit) {
             $destino = $visit->office_nombre 
-                ? ($visit->office_nombre . ($visit->area_nombre ? " - {$visit->area_nombre}" : '')) 
-                : $visit->area_nombre;
+                ? ($visit->office_nombre . ($visit->direction_nombre ? " - {$visit->direction_nombre}" : '')) 
+                : $visit->direction_nombre;
 
             return [
                 'id' => $visit->id,
@@ -73,18 +73,19 @@ class ExternalVisitController extends Controller
                 'hora_salida' => $visit->hora_salida ? $visit->hora_salida->format('H:i') : null,
                 'motivo' => $visit->motivo,
                 'motivo_nombre' => $visit->motivo_nombre, // Accessor from model
-                'area' => $destino, // Muestra Oficina - Área o solo Área
+                'destino' => $destino, // Muestra Oficina - Área o solo Área
                 'a_quien_visita' => $visit->a_quien_visita,
                 'is_pending' => is_null($visit->hora_salida),
                 'registrado_por' => $visit->registrador ? $visit->registrador->name : 'N/A',
+                'observacion_salida' => $visit->observacion_salida,
             ];
         });
 
         return Inertia::render('Visitors/Index', [
             'visits' => $visits,
             'filters' => $request->only(['fecha', 'estado', 'search']),
-            'areas' => HRArea::where('activo', true)->orderBy('nombre')->get(),
-            'offices' => HrOffice::where('activo', true)->with('area')->orderBy('nombre')->get(),
+            'directions' => HrDirection::where('activo', true)->orderBy('nombre')->get(),
+            'offices' => HrOffice::where('activo', true)->with('direction')->orderBy('nombre')->get(),
             'employees' => Employee::with('person')
                 ->where('estado', 'ACTIVO')
                 ->whereHas('person', function($q) {
@@ -119,7 +120,7 @@ class ExternalVisitController extends Controller
             'hora_ingreso' => 'required',
             'visit_reason_id' => 'required|uuid|exists:visit_reasons,id',
             'motivo' => 'nullable|string',
-            'area_id' => 'nullable|uuid|exists:hr_areas,id',
+            'direction_id' => 'nullable|uuid|exists:hr_directions,id',
             'office_id' => 'nullable|uuid|exists:hr_offices,id',
             'a_quien_visita' => 'nullable|string|max:200',
             'employee_id' => 'nullable|uuid|exists:employees,id',
@@ -132,8 +133,8 @@ class ExternalVisitController extends Controller
             'motivo.required' => 'El motivo es obligatorio.',
         ]);
 
-        if (empty($validated['area_id']) && empty($validated['office_id'])) {
-             return back()->withErrors(['area_id' => 'Debe seleccionar un Área o una Oficina de destino.']);
+        if (empty($validated['direction_id']) && empty($validated['office_id'])) {
+             return back()->withErrors(['direction_id' => 'Debe seleccionar una Dirección o una Oficina de destino.']);
         }
 
         // 1. Buscar o Crear Persona
@@ -149,16 +150,16 @@ class ExternalVisitController extends Controller
         }
         
         // 2. Crear Visita
-        // Si elige office pero no area, intentar obtener area (opcional)
-        $areaId = $validated['area_id'];
-        if (!$areaId && !empty($validated['office_id'])) {
+        // Si elige office pero no direction, intentar obtener direction (opcional)
+        $directionId = $validated['direction_id'];
+        if (!$directionId && !empty($validated['office_id'])) {
             $office = HrOffice::find($validated['office_id']);
-            $areaId = $office ? $office->area_id : null;
+            $directionId = $office ? $office->direction_id : null;
         }
 
         $visit = ExternalVisit::create([
             'person_id' => $person->id,
-            'area_id' => $areaId,
+            'direction_id' => $directionId,
             'office_id' => $validated['office_id'] ?? null,
             'visit_reason_id' => $validated['visit_reason_id'],
             'hora_ingreso' => $validated['hora_ingreso'],
@@ -192,12 +193,14 @@ class ExternalVisitController extends Controller
     {
         $validated = $request->validate([
             'hora_salida' => 'required',
+            'observacion_salida' => 'nullable|string|max:500',
         ], [
             'hora_salida.required' => 'La hora de salida es obligatoria.',
         ]);
 
         $visit->update([
             'hora_salida' => $validated['hora_salida'],
+            'observacion_salida' => $validated['observacion_salida'] ?? null,
         ]);
 
         if (class_exists(AuditLog::class)) {
@@ -267,19 +270,19 @@ class ExternalVisitController extends Controller
 
         if (!$start || !$end) return response()->json(['error' => 'Fechas requeridas'], 400);
 
-        $visits = ExternalVisit::with(['area', 'office'])
+        $visits = ExternalVisit::with(['direction', 'office'])
             ->whereBetween('fecha', [$start, $end])
             ->get();
 
-        $areas = $visits->groupBy(function($v) {
-            return $v->area ? $v->area->nombre : ($v->office ? $v->office->nombre : 'Sin Destino');
+        $directionsCount = $visits->groupBy(function($v) {
+            return $v->direction ? $v->direction->nombre : ($v->office ? $v->office->nombre : 'Sin Destino');
         })->count();
 
         return response()->json([
             'total' => $visits->count(),
             'pending' => $visits->whereNull('hora_salida')->count(),
             'completed' => $visits->whereNotNull('hora_salida')->count(),
-            'areasCount' => $areas
+            'directionsCount' => $directionsCount
         ]);
     }
 
@@ -287,7 +290,7 @@ class ExternalVisitController extends Controller
         $start = $request->query('start_date');
         $end = $request->query('end_date');
 
-        $visits = ExternalVisit::with(['person', 'area', 'office', 'registrador'])
+        $visits = ExternalVisit::with(['person', 'direction', 'office', 'registrador'])
             ->whereBetween('fecha', [$start, $end])
             ->orderBy('fecha')
             ->orderBy('hora_ingreso')
@@ -315,7 +318,7 @@ class ExternalVisitController extends Controller
         ]);
 
         // Buscar visita pendiente del día de hoy con ese DNI
-        $visit = ExternalVisit::with(['person', 'area', 'office'])
+        $visit = ExternalVisit::with(['person', 'direction', 'office'])
             ->whereHas('person', function($q) use ($validated) {
                 $q->where('dni', $validated['dni']);
             })
@@ -332,8 +335,8 @@ class ExternalVisitController extends Controller
         }
 
         $destino = $visit->office_nombre
-            ? ($visit->office_nombre . ($visit->area_nombre ? " - {$visit->area_nombre}" : ''))
-            : $visit->area_nombre;
+            ? ($visit->office_nombre . ($visit->direction_nombre ? " - {$visit->direction_nombre}" : ''))
+            : $visit->direction_nombre;
 
         return response()->json([
             'success' => true,
@@ -345,7 +348,7 @@ class ExternalVisitController extends Controller
                 'hora_ingreso' => $visit->hora_ingreso ? $visit->hora_ingreso->format('H:i') : null,
                 'hora_salida' => $visit->hora_salida ? $visit->hora_salida->format('H:i') : null,
                 'motivo' => $visit->motivo,
-                'area' => $destino,
+                'destino' => $destino,
                 'a_quien_visita' => $visit->a_quien_visita,
                 'is_pending' => is_null($visit->hora_salida),
                 'registrado_por' => $visit->registrador ? $visit->registrador->name : 'N/A',

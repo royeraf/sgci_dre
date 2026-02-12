@@ -25,7 +25,8 @@
                 <form @submit.prevent="onSubmit" class="p-6 space-y-6 max-h-[80vh] overflow-y-auto custom-scrollbar">
                     <div class="grid grid-cols-1 gap-6">
                         <!-- DNI Section with Consultation -->
-                        <div class="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-xl p-4 border border-emerald-100">
+                        <div
+                            class="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-xl p-4 border border-emerald-100">
                             <div class="flex items-center gap-2 mb-3">
                                 <ScanBarcode class="w-5 h-5 text-emerald-600" />
                                 <span class="font-semibold text-emerald-900">Consulta de DNI</span>
@@ -41,10 +42,8 @@
                             <div class="flex gap-3">
                                 <div class="flex-1 relative">
                                     <input v-model="dni" v-bind="dniProps" type="text" maxlength="8"
-                                        placeholder="Escanee o digite el DNI"
-                                        @keypress.enter.prevent="consultarDni"
-                                        @input="handleDniInput"
-                                        :disabled="!isDniEditable"
+                                        placeholder="Escanee o digite el DNI" @keypress.enter.prevent="consultarDni"
+                                        @input="handleDniInput" :disabled="!isDniEditable"
                                         class="w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 disabled:bg-slate-50 disabled:text-slate-500 transition-all text-lg font-mono tracking-wider outline-none"
                                         :class="[
                                             formErrors.dni ? 'border-red-400 bg-red-50' : 'border-emerald-200 bg-white',
@@ -163,21 +162,22 @@
                             <p v-if="formErrors.cargo" class="mt-1 text-sm text-red-600">{{ formErrors.cargo }}</p>
                         </div>
 
-                        <!-- Área (SELECT) -->
+                        <!-- Dirección (SELECT) -->
                         <div>
                             <label class="block text-sm font-bold text-slate-700 mb-2">
-                                Área / Oficina
+                                Dirección / Oficina
                             </label>
-                            <select v-model="area" v-bind="areaProps"
+                            <select v-model="direction" v-bind="directionProps"
                                 class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white transition-colors"
-                                :class="formErrors.area ? 'border-red-400' : 'border-slate-200'">
-                                <option value="">Seleccione área...</option>
-                                <option v-for="a in areas" :key="a.id" :value="a.nombre">
-                                    {{ a.nombre }}
+                                :class="formErrors.direction ? 'border-red-400' : 'border-slate-200'">
+                                <option value="">Seleccione dirección...</option>
+                                <option v-for="d in directions" :key="d.id" :value="d.nombre">
+                                    {{ d.nombre }}
                                 </option>
-                                <option v-if="areas.length === 0" disabled>No hay áreas registradas</option>
+                                <option v-if="directions.length === 0" disabled>No hay direcciones registradas</option>
                             </select>
-                            <p v-if="formErrors.area" class="mt-1 text-sm text-red-600">{{ formErrors.area }}</p>
+                            <p v-if="formErrors.direction" class="mt-1 text-sm text-red-600">{{ formErrors.direction }}
+                            </p>
                         </div>
 
                         <!-- Teléfono -->
@@ -272,7 +272,7 @@ const props = defineProps({
         type: Boolean,
         default: false
     },
-    areas: {
+    directions: {
         type: Array,
         default: () => []
     },
@@ -306,7 +306,7 @@ const employeeSchema = toTypedSchema(
         telefono: yup.string().transform((value) => value || null).nullable(),
         correo: yup.string().transform((value) => value || null).email('Ingrese un correo válido').nullable(),
         cargo: yup.string().required('Debe seleccionar un cargo'),
-        area: yup.string().transform((value) => value || null).nullable(),
+        direction: yup.string().transform((value) => value || null).nullable(),
         fecha_ingreso: yup.string().transform((value) => value || null).nullable(),
         contract_type_id: yup.string().required('Debe seleccionar un tipo de contrato'),
         estado: yup.string().transform((value) => value || null).nullable(),
@@ -326,8 +326,7 @@ const { errors: formErrors, defineField, handleSubmit: validateForm, setValues, 
         telefono: '',
         correo: '',
         cargo: '',
-        area: '',
-        area: '',
+        direction: '',
         fecha_ingreso: '',
         contract_type_id: '',
         estado: 'ACTIVO',
@@ -344,7 +343,7 @@ const [direccion, direccionProps] = defineField('direccion');
 const [telefono, telefonoProps] = defineField('telefono');
 const [correo, correoProps] = defineField('correo');
 const [cargo, cargoProps] = defineField('cargo');
-const [area, areaProps] = defineField('area');
+const [direction, directionProps] = defineField('direction');
 const [fechaIngreso, fechaIngresoProps] = defineField('fecha_ingreso');
 const [contractTypeId, contractTypeIdProps] = defineField('contract_type_id');
 const [estado, estadoProps] = defineField('estado');
@@ -369,8 +368,7 @@ watch(() => props.employee, (emp) => {
             telefono: emp.telefono || '',
             correo: emp.correo || '',
             cargo: emp.cargo || '',
-            area: emp.area || '',
-            area: emp.area || '',
+            direction: emp.direction || '',
             fecha_ingreso: emp.fecha_ingreso ? emp.fecha_ingreso.split('T')[0] : '',
             contract_type_id: emp.contract_type_id || '',
             estado: emp.estado || 'ACTIVO',

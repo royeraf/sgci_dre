@@ -6,15 +6,19 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class HRArea extends Model
+class HrDirection extends Model
 {
     use HasUuids;
 
-    protected $table = 'hr_areas';
+    protected $table = 'hr_directions';
 
     protected $fillable = [
         'nombre',
+        'abreviacion',
+        'codigo',
         'descripcion',
+        'telefono_interno',
+        'ubicacion',
         'activo',
     ];
 
@@ -23,23 +27,23 @@ class HRArea extends Model
     ];
 
     /**
-     * Relación con oficinas del área
+     * Relación con oficinas de la dirección
      */
     public function offices(): HasMany
     {
-        return $this->hasMany(HrOffice::class, 'area_id');
+        return $this->hasMany(HrOffice::class, 'direction_id');
     }
 
     /**
-     * Relación con empleados del área
+     * Relación con empleados de la dirección
      */
     public function employees(): HasMany
     {
-        return $this->hasMany(Employee::class, 'area_id');
+        return $this->hasMany(Employee::class, 'direction_id');
     }
 
     /**
-     * Scope para áreas activas
+     * Scope para direcciones activas
      */
     public function scopeActivas($query)
     {

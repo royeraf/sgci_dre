@@ -4,7 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\Employee;
 use App\Models\Vacation;
-use App\Models\HRArea;
+use App\Models\HrDirection;
 use App\Models\HRPosition;
 use Illuminate\Database\Seeder;
 use Carbon\Carbon;
@@ -27,7 +27,7 @@ class EmployeeSeeder extends Seeder
         ];
 
         foreach ($areas as $area) {
-            HRArea::updateOrCreate(['nombre' => $area['nombre']], $area);
+            HrDirection::updateOrCreate(['nombre' => $area['nombre']], $area);
         }
 
         // 2. Crear Cargos
