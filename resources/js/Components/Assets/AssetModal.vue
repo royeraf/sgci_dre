@@ -13,7 +13,11 @@
                             <component :is="isEditing ? Pencil : Plus" class="w-6 h-6" />
                             {{ isEditing ? 'Editar Bien' : 'Registrar Nuevo Bien' }}
                         </h3>
-                        <p class="text-slate-100 text-sm mt-1">{{ isEditing ? 'Modifique los datos del activo patrimonial' : 'Ingrese los detalles del activo patrimonial' }}</p>
+                        <p class="text-slate-100 text-sm mt-1">
+                            {{ isEditing
+                                ? 'Modifique los datos del activo patrimonial'
+                                : 'Ingrese los detalles del activo patrimonial' }}
+                        </p>
                     </div>
                     <button @click="$emit('close')" class="text-slate-100 hover:text-white transition-colors p-1">
                         <X class="w-6 h-6" />
@@ -157,7 +161,7 @@
                                         :class="formErrors.modelo ? 'border-red-400' : 'border-slate-200'"
                                         :disabled="isSubmitting" />
                                     <p v-if="formErrors.modelo" class="mt-1 text-sm text-red-600">{{ formErrors.modelo
-                                    }}</p>
+                                        }}</p>
                                 </div>
 
                                 <div>
@@ -203,6 +207,24 @@
                                         </option>
                                     </select>
                                 </div>
+
+                                <div>
+                                    <label class="block text-sm font-bold text-slate-700 mb-2">Fecha Adquisición</label>
+                                    <input type="date" v-model="fecha_adquisicion" v-bind="fechaAdquisicionProps"
+                                        class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-slate-500 focus:border-slate-500 transition-colors bg-white outline-none"
+                                        :class="formErrors.fecha_adquisicion ? 'border-red-400' : 'border-slate-200'"
+                                        :disabled="isSubmitting" />
+                                </div>
+
+                                <div class="md:col-span-1">
+                                    <label class="block text-sm font-bold text-slate-700 mb-2">Observación
+                                        General</label>
+                                    <input type="text" v-model="observacion" v-bind="observacionProps"
+                                        placeholder="Alguna nota..."
+                                        class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-slate-500 focus:border-slate-500 transition-colors outline-none"
+                                        :class="formErrors.observacion ? 'border-red-400' : 'border-slate-200'"
+                                        :disabled="isSubmitting" />
+                                </div>
                             </div>
                         </div>
 
@@ -210,91 +232,143 @@
                         <div class="bg-slate-50 p-6 rounded-xl border border-slate-200">
                             <h4
                                 class="text-sm font-bold text-slate-500 uppercase tracking-widest mb-4 flex items-center gap-2">
-                                <span class="w-2 h-2 rounded-full bg-slate-600"></span> Asignación Inicial (Movimiento)
+                                <span class="w-2 h-2 rounded-full bg-slate-600"></span>
+                                {{ isEditing ? 'Estado y Ubicación Actual' : 'Asignación Inicial (Movimiento)' }}
                             </h4>
 
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <!-- Ubicación: Área / Oficina toggle -->
-                                <div class="md:col-span-2 space-y-2">
-                                    <label class="block text-sm font-bold text-slate-700">Ubicación</label>
-                                    <div class="flex gap-2 mb-2">
-                                        <label
-                                            class="flex-1 flex items-center justify-center gap-2 cursor-pointer p-2 border rounded-xl transition-all"
-                                            :class="ubicacionTipo === 'area' ? 'border-slate-500 bg-slate-50 text-slate-700 shadow-sm' : 'border-slate-200 hover:bg-slate-50 text-slate-600'">
-                                            <input type="radio" value="area" v-model="ubicacionTipo"
-                                                @change="toggleUbicacion('area')" class="hidden">
-                                            <span class="text-sm font-bold">Área / Dirección</span>
-                                        </label>
-                                        <label
-                                            class="flex-1 flex items-center justify-center gap-2 cursor-pointer p-2 border rounded-xl transition-all"
-                                            :class="ubicacionTipo === 'office' ? 'border-slate-500 bg-slate-50 text-slate-700 shadow-sm' : 'border-slate-200 hover:bg-slate-50 text-slate-600'">
-                                            <input type="radio" value="office" v-model="ubicacionTipo"
-                                                @change="toggleUbicacion('office')" class="hidden">
-                                            <span class="text-sm font-bold">Oficina / Unidad</span>
-                                        </label>
+                            <template v-if="!isEditing">
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <!-- Ubicación: Área / Oficina toggle -->
+                                    <div class="md:col-span-2 space-y-2">
+                                        <label class="block text-sm font-bold text-slate-700">Ubicación</label>
+                                        <div class="flex gap-2 mb-2">
+                                            <label
+                                                class="flex-1 flex items-center justify-center gap-2 cursor-pointer p-2 border rounded-xl transition-all"
+                                                :class="ubicacionTipo === 'area' ? 'border-slate-500 bg-slate-50 text-slate-700 shadow-sm' : 'border-slate-200 hover:bg-slate-50 text-slate-600'">
+                                                <input type="radio" value="area" v-model="ubicacionTipo"
+                                                    @change="toggleUbicacion('area')" class="hidden">
+                                                <span class="text-sm font-bold">Área / Dirección</span>
+                                            </label>
+                                            <label
+                                                class="flex-1 flex items-center justify-center gap-2 cursor-pointer p-2 border rounded-xl transition-all"
+                                                :class="ubicacionTipo === 'office' ? 'border-slate-500 bg-slate-50 text-slate-700 shadow-sm' : 'border-slate-200 hover:bg-slate-50 text-slate-600'">
+                                                <input type="radio" value="office" v-model="ubicacionTipo"
+                                                    @change="toggleUbicacion('office')" class="hidden">
+                                                <span class="text-sm font-bold">Oficina / Unidad</span>
+                                            </label>
+                                        </div>
+
+                                        <div v-if="ubicacionTipo === 'area'">
+                                            <select v-model="area_id" v-bind="areaIdProps"
+                                                class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-slate-500 focus:border-slate-500 bg-white transition-colors outline-none"
+                                                :disabled="isSubmitting">
+                                                <option value="">Seleccione un área...</option>
+                                                <option v-for="a in areas" :key="a.id" :value="a.id">{{ a.nombre }}
+                                                </option>
+                                            </select>
+                                        </div>
+
+                                        <div v-if="ubicacionTipo === 'office'">
+                                            <select v-model="oficina_id" v-bind="oficinaIdProps"
+                                                class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-slate-500 focus:border-slate-500 bg-white transition-colors outline-none"
+                                                :disabled="isSubmitting">
+                                                <option value="">Seleccione una oficina...</option>
+                                                <option v-for="office in offices" :key="office.id" :value="office.id">
+                                                    {{ office.nombre }} {{ office.direction ?
+                                                        `(${office.direction.nombre})`
+                                                        : '' }}
+                                                </option>
+                                            </select>
+                                        </div>
                                     </div>
 
-                                    <div v-if="ubicacionTipo === 'area'">
-                                        <select v-model="area_id" v-bind="areaIdProps"
-                                            class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-slate-500 focus:border-slate-500 bg-white transition-colors outline-none"
-                                            :disabled="isSubmitting">
-                                            <option value="">Seleccione un área...</option>
-                                            <option v-for="a in areas" :key="a.id" :value="a.id">{{ a.nombre }}</option>
-                                        </select>
+                                    <div class="relative" ref="dropdownContainerRef">
+                                        <label class="block text-sm font-bold text-slate-700 mb-2">Responsable
+                                            Inicial</label>
+                                        <div class="relative">
+                                            <input type="text" :value="searchQuery" @input="handleResponsableInput"
+                                                @focus="showDropdown = true"
+                                                placeholder="Buscar personal por nombre o DNI..."
+                                                class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-slate-500 focus:border-slate-500 transition-colors outline-none pr-10"
+                                                :disabled="isSubmitting" />
+                                            <ChevronDown
+                                                class="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                                        </div>
+                                        <!-- Dropdown -->
+                                        <div v-if="showDropdown && filteredEmployees.length > 0"
+                                            class="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl max-h-60 overflow-y-auto">
+                                            <button type="button" v-for="emp in filteredEmployees" :key="emp.id"
+                                                @click="selectEmployee(emp)"
+                                                class="w-full text-left px-4 py-2 hover:bg-slate-50 transition-colors flex items-center justify-between group">
+                                                <div>
+                                                    <p
+                                                        class="font-medium text-slate-700 group-hover:text-slate-900 text-sm">
+                                                        {{ emp.nombre_completo }}</p>
+                                                    <p class="text-xs text-slate-400">{{ emp.dni }}</p>
+                                                </div>
+                                                <Check v-if="employee_id === String(emp.id)"
+                                                    class="w-4 h-4 text-slate-600" />
+                                            </button>
+                                        </div>
                                     </div>
 
-                                    <div v-if="ubicacionTipo === 'office'">
-                                        <select v-model="oficina_id" v-bind="oficinaIdProps"
-                                            class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-slate-500 focus:border-slate-500 bg-white transition-colors outline-none"
-                                            :disabled="isSubmitting">
-                                            <option value="">Seleccione una oficina...</option>
-                                            <option v-for="office in offices" :key="office.id" :value="office.id">
-                                                {{ office.nombre }} {{ office.area ? `(${office.area.nombre})` : '' }}
-                                            </option>
-                                        </select>
-                                    </div>
-                                </div>
-
-                                <div class="relative" ref="dropdownContainerRef">
-                                    <label class="block text-sm font-bold text-slate-700 mb-2">Responsable
-                                        Inicial</label>
-                                    <div class="relative">
-                                        <input type="text" :value="searchQuery"
-                                            @input="handleResponsableInput"
-                                            @focus="showDropdown = true"
-                                            placeholder="Buscar personal por nombre o DNI..."
-                                            class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-slate-500 focus:border-slate-500 transition-colors outline-none pr-10"
+                                    <div>
+                                        <label class="block text-sm font-bold text-slate-700 mb-2">Fecha de
+                                            Asignación</label>
+                                        <input type="date" v-model="fecha_asignacion" v-bind="fechaAsignacionProps"
+                                            class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-slate-500 focus:border-slate-500 transition-colors bg-white outline-none"
+                                            :class="formErrors.fecha_asignacion ? 'border-red-400' : 'border-slate-200'"
                                             :disabled="isSubmitting" />
-                                        <ChevronDown
-                                            class="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                                    </div>
-                                    <!-- Dropdown -->
-                                    <div v-if="showDropdown && filteredEmployees.length > 0"
-                                        class="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl max-h-60 overflow-y-auto">
-                                        <button type="button" v-for="emp in filteredEmployees" :key="emp.id"
-                                            @click="selectEmployee(emp)"
-                                            class="w-full text-left px-4 py-2 hover:bg-slate-50 transition-colors flex items-center justify-between group">
-                                            <div>
-                                                <p class="font-medium text-slate-700 group-hover:text-slate-900 text-sm">
-                                                    {{ emp.nombre_completo }}</p>
-                                                <p class="text-xs text-slate-400">{{ emp.dni }}</p>
-                                            </div>
-                                            <Check v-if="employee_id === String(emp.id)" class="w-4 h-4 text-slate-600" />
-                                        </button>
+                                        <p v-if="formErrors.fecha_asignacion" class="mt-1 text-sm text-red-600">{{
+                                            formErrors.fecha_asignacion }}</p>
                                     </div>
                                 </div>
+                            </template>
 
-                                <div>
-                                    <label class="block text-sm font-bold text-slate-700 mb-2">Fecha de
-                                        Asignación</label>
-                                    <input type="date" v-model="fecha_asignacion" v-bind="fechaAsignacionProps"
-                                        class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-slate-500 focus:border-slate-500 transition-colors bg-white outline-none"
-                                        :class="formErrors.fecha_asignacion ? 'border-red-400' : 'border-slate-200'"
-                                        :disabled="isSubmitting" />
-                                    <p v-if="formErrors.fecha_asignacion" class="mt-1 text-sm text-red-600">{{
-                                        formErrors.fecha_asignacion }}</p>
+                            <template v-else>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+                                    <div class="flex flex-col">
+                                        <span
+                                            class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Responsable
+                                            Actual</span>
+                                        <span class="text-sm font-bold text-slate-700">
+                                            {{ lastMovement?.responsible?.nombre_completo || 'Sin asignar' }}
+                                        </span>
+                                    </div>
+                                    <div class="flex flex-col">
+                                        <span
+                                            class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Ubicación
+                                            Actual</span>
+                                        <span class="text-sm font-bold text-slate-700">
+                                            {{ lastMovement?.office?.nombre || lastMovement?.direction?.nombre || 'Sin ubicación' }}
+                                        </span>
+                                    </div>
+                                    <div class="flex flex-col">
+                                        <span
+                                            class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Estado
+                                            Actual</span>
+                                        <span class="text-sm font-bold text-slate-700">
+                                            {{ lastMovement?.state?.nombre || '—' }}
+                                        </span>
+                                    </div>
+                                    <div class="flex flex-col">
+                                        <span
+                                            class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Última
+                                            Fecha</span>
+                                        <span class="text-sm font-bold text-slate-700 italic">
+                                            {{ lastMovement?.fecha_movimiento || lastMovement?.fecha || '—' }}
+                                        </span>
+                                    </div>
                                 </div>
-                            </div>
+                                <div class="mt-4 pt-3 border-t border-slate-200/60 flex items-start gap-2">
+                                    <AlertCircle class="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
+                                    <p class="text-[11px] leading-relaxed text-slate-500">
+                                        La asignación del bien no puede modificarse desde aquí. Para realizar un cambio
+                                        de responsable o ubicación, por favor utilice la pestaña de
+                                        <span class="font-bold">Movimientos</span> en el panel principal.
+                                    </p>
+                                </div>
+                            </template>
                         </div>
 
                         <!-- Footer Actions -->
@@ -306,7 +380,8 @@
                             <button type="submit" :disabled="isSubmitting || codeExists"
                                 class="px-6 py-2.5 bg-gradient-to-r from-slate-700 to-gray-700 text-white font-bold rounded-xl hover:from-slate-800 hover:to-gray-800 transition-all disabled:opacity-50 shadow-lg shadow-slate-600/20">
                                 <Loader2 v-if="isSubmitting" class="w-5 h-5 animate-spin inline mr-2" />
-                                {{ isSubmitting ? 'Guardando...' : (isEditing ? 'Actualizar Activo' : 'Guardar Activo') }}
+                                {{ isSubmitting ? 'Guardando...' : (isEditing ? 'Actualizar Activo' : 'Guardar Activo')
+                                }}
                             </button>
                         </div>
 
@@ -407,6 +482,8 @@ const assetSchema = toTypedSchema(
                 today.setHours(0, 0, 0, 0);
                 return inputDate <= today;
             }),
+        fecha_adquisicion: yup.string().nullable(),
+        observacion: yup.string().nullable(),
     })
 );
 
@@ -432,6 +509,8 @@ const { errors: formErrors, defineField, handleSubmit: validateForm, resetForm, 
         oficina_id: lastMovement?.oficina_id ?? '',
         employee_id: lastMovement?.responsible?.employee_id ? String(lastMovement.responsible.employee_id) : '',
         fecha_asignacion: lastMovement?.fecha_movimiento || today,
+        fecha_adquisicion: assetData?.fecha_adquisicion ? (typeof assetData.fecha_adquisicion === 'string' ? assetData.fecha_adquisicion.split('T')[0] : '') : '',
+        observacion: assetData?.observacion || '',
     }
 });
 
@@ -451,6 +530,8 @@ const [area_id, areaIdProps] = defineField('area_id');
 const [oficina_id, oficinaIdProps] = defineField('oficina_id');
 const [employee_id, employeeIdProps] = defineField('employee_id');
 const [fecha_asignacion, fechaAsignacionProps] = defineField('fecha_asignacion');
+const [fecha_adquisicion, fechaAdquisicionProps] = defineField('fecha_adquisicion');
+const [observacion, observacionProps] = defineField('observacion');
 
 const codeExists = ref(false);
 const isCheckingCode = ref(false);

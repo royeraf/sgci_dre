@@ -32,11 +32,11 @@ class AssetResponsible extends Model
     // ===== RELACIONES CON RRHH =====
     
     /**
-     * Área del responsable
+     * Dirección del responsable
      */
-    public function area(): BelongsTo
+    public function direction(): BelongsTo
     {
-        return $this->belongsTo(HRArea::class, 'area_id');
+        return $this->belongsTo(HrDirection::class, 'area_id');
     }
     
     /**
@@ -103,6 +103,6 @@ class AssetResponsible extends Model
      */
     public function scopeWithRelations($query)
     {
-        return $query->with(['area', 'office', 'contractType', 'employee.person']);
+        return $query->with(['direction', 'office', 'contractType', 'employee.person']);
     }
 }

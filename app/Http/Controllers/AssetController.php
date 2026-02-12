@@ -11,7 +11,7 @@ use App\Models\AssetOrigin;
 use App\Models\AssetCategory;
 use App\Models\AssetMovement;
 use App\Models\AssetResponsible;
-use App\Models\HRArea;
+use App\Models\HrDirection;
 use App\Models\HrOffice;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -31,8 +31,8 @@ class AssetController extends Controller
             'colors' => AssetColor::activos()->orderBy('nombre')->get(),
             'states' => AssetState::activos()->get(),
             'origins' => AssetOrigin::activos()->orderBy('nombre')->get(),
-            'areas' => HRArea::activas()->orderBy('nombre')->get(),
-            'offices' => HrOffice::activas()->with('area')->orderBy('nombre')->get(),
+            'areas' => HrDirection::activas()->orderBy('nombre')->get(),
+            'offices' => HrOffice::activas()->with('direction')->orderBy('nombre')->get(),
             'employees' => Employee::with('person')
                 ->where('estado', 'ACTIVO')
                 ->whereHas('person', function($q) {
@@ -63,7 +63,7 @@ class AssetController extends Controller
                 'origin',
                 'latestMovement.state',
                 'latestMovement.responsible.employee.person',
-                'latestMovement.office.area',
+                'latestMovement.office.direction',
             ])
             ->withCount('movements')
             ->orderBy('created_at', 'desc');
@@ -175,7 +175,7 @@ class AssetController extends Controller
             'codigo_barras' => 'nullable|string|max:50',
             // Datos del movimiento inicial
             'estado_id' => 'required|exists:asset_states,id',
-            'area_id' => 'nullable|exists:hr_areas,id',
+            'area_id' => 'nullable|exists:hr_directions,id',
             'oficina_id' => 'nullable|exists:hr_offices,id',
             'employee_id' => 'nullable|exists:employees,id',
             'fecha_asignacion' => 'nullable|date',
@@ -255,6 +255,8 @@ class AssetController extends Controller
             'modelo' => 'nullable|string|max:100',
             'numero_serie' => 'nullable|string|max:100',
             'dimension' => 'nullable|string|max:100',
+            'fecha_adquisicion' => 'nullable|date',
+            'observacion' => 'nullable|string',
         ]);
         
         $asset->update($validated);
@@ -265,7 +267,9 @@ class AssetController extends Controller
     public function destroy(Asset $asset)
     {
         $asset->delete();
-        return redirect()->back()->with('success', 'Bien eliminado correctamente');
+        return response()->json([
+            'message' => 'Bien eliminado correctamente'
+        ]);
     }
 
     /**
@@ -316,8 +320,8 @@ class AssetController extends Controller
                 'asset.brand',
                 'responsible.employee.person',
                 'state',
-                'office.area',
-                'area',
+                'office.direction',
+                'direction',
                 'inventariador',
             ])
             ->orderBy('fecha', 'desc')
@@ -440,7 +444,7 @@ class AssetController extends Controller
      */
     public function reportByResponsible($responsibleId)
     {
-        $responsible = AssetResponsible::with(['employee.person', 'area', 'office'])
+        $responsible = AssetResponsible::with(['employee.person', 'direction', 'office'])
             ->findOrFail($responsibleId);
 
         // Buscar bienes asignados actualmente a este responsable (último movimiento lo tiene a él como responsable)

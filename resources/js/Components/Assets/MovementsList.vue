@@ -300,8 +300,8 @@
                             <td class="px-6 py-4 whitespace-nowrap hidden lg:table-cell">
                                 <div v-if="mov.office" class="text-sm text-slate-600">
                                     {{ mov.office.nombre }}
-                                    <div v-if="mov.office.area" class="text-xs text-slate-400">
-                                        {{ mov.office.area.nombre }}
+                                    <div v-if="mov.office.direction" class="text-xs text-slate-400">
+                                        {{ mov.office.direction.nombre }}
                                     </div>
                                 </div>
                                 <span v-else class="text-sm text-slate-400">—</span>
@@ -429,7 +429,7 @@
                                                     class="font-mono font-bold text-slate-700 group-hover:text-blue-700 text-sm">
                                                     {{ asset.codigo_patrimonio }}
                                                     <span class="text-slate-400 font-normal">{{ asset.codigo_interno
-                                                        }}</span>
+                                                    }}</span>
                                                 </p>
                                                 <p class="text-xs text-slate-500 line-clamp-1">{{ asset.denominacion }}
                                                 </p>
@@ -492,7 +492,7 @@
                                             <option value="BAJA">Baja</option>
                                         </select>
                                         <p v-if="modalErrors.tipo" class="mt-1 text-sm text-red-600">{{ modalErrors.tipo
-                                            }}</p>
+                                        }}</p>
                                     </div>
 
                                     <!-- Fecha -->
@@ -532,7 +532,8 @@
                                             class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-colors outline-none">
                                             <option value="">Sin especificar</option>
                                             <option v-for="office in offices" :key="office.id" :value="office.id">
-                                                {{ office.nombre }} {{ office.area ? `(${office.area.nombre})` : '' }}
+                                                {{ office.nombre }} {{ office.direction ? `(${office.direction.nombre})`
+                                                : '' }}
                                             </option>
                                         </select>
                                     </div>

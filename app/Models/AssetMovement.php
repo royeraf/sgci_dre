@@ -62,11 +62,11 @@ class AssetMovement extends Model
     }
 
     /**
-     * Área/dirección en este movimiento
+     * Dirección en este movimiento
      */
-    public function area(): BelongsTo
+    public function direction(): BelongsTo
     {
-        return $this->belongsTo(HRArea::class, 'area_id');
+        return $this->belongsTo(HrDirection::class, 'area_id');
     }
     
     /**
@@ -87,7 +87,8 @@ class AssetMovement extends Model
         return $query->with([
             'responsible.employee.person',
             'state',
-            'office.area',
+            'office.direction',
+            'direction',
             'inventariador',
         ]);
     }
