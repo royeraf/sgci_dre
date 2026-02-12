@@ -88,6 +88,15 @@
                         <FileDown class="w-5 h-5" />
                         Reportes
                     </button>
+                    <button @click="activeTab = 'patrimonio'" :class="[
+                        activeTab === 'patrimonio'
+                            ? 'border-indigo-600 text-indigo-600'
+                            : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300',
+                        'whitespace-nowrap py-4 px-1 border-b-2 font-bold text-sm flex items-center gap-2 transition-all duration-200'
+                    ]">
+                        <DatabaseIcon class="w-5 h-5" />
+                        Patrimonio SIGA
+                    </button>
                 </nav>
             </div>
 
@@ -387,6 +396,9 @@
             <div v-if="activeTab === 'reports'">
                 <ReportsTab :employees="employees" />
             </div>
+
+            <!-- Patrimonio SIGA Tab -->
+            <PatrimonioSigaTab v-if="activeTab === 'patrimonio'" />
         </div>
     </div>
 </template>
@@ -422,6 +434,7 @@ import {
     Loader2,
     PackageOpen,
     X,
+    Database as DatabaseIcon,
 } from 'lucide-vue-next';
 import axios from 'axios';
 import Swal from 'sweetalert2';
@@ -430,6 +443,7 @@ import BarcodeGenerator from '@/Components/Assets/BarcodeGenerator.vue';
 import MovementsList from '@/Components/Assets/MovementsList.vue';
 import BarcodeScannerModal from '@/Components/Assets/BarcodeScannerModal.vue';
 import ReportsTab from '@/Components/Assets/ReportsTab.vue';
+import PatrimonioSigaTab from '@/Components/Assets/PatrimonioSigaTab.vue';
 
 const props = defineProps({
     categories: { type: Array, default: () => [] },

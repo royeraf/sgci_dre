@@ -219,6 +219,11 @@ Route::middleware('auth')->group(function () {
         Route::get('/movements/stats', [App\Http\Controllers\AssetController::class, 'getMovementStats'])->name('movements.stats');
         Route::post('/{asset}/movements', [App\Http\Controllers\AssetController::class, 'storeMovement'])->name('movements.store');
 
+        // Patrimonio SIGA
+        Route::get('/patrimonio', [App\Http\Controllers\AssetController::class, 'getPatrimonioAssets'])->name('patrimonio.list');
+        Route::get('/patrimonio/stats', [App\Http\Controllers\AssetController::class, 'getPatrimonioStats'])->name('patrimonio.stats');
+        Route::post('/patrimonio/import', [App\Http\Controllers\AssetController::class, 'importPatrimonio'])->name('patrimonio.import');
+
         // Catálogos - Página principal
         Route::get('/catalogs', [App\Http\Controllers\AssetCatalogController::class, 'index'])->name('catalogs.index');
 

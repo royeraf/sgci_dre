@@ -11,10 +11,13 @@ use App\Models\AssetOrigin;
 use App\Models\AssetCategory;
 use App\Models\AssetMovement;
 use App\Models\AssetResponsible;
+use App\Models\PatrimonioAsset;
 use App\Models\HrDirection;
 use App\Models\HrOffice;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
+use PhpOffice\PhpSpreadsheet\IOFactory;
 use Picqer\Barcode\BarcodeGeneratorPNG;
 use Barryvdh\DomPDF\Facade\Pdf;
 
@@ -453,7 +456,228 @@ class AssetController extends Controller
         })->with(['brand', 'latestMovement.state'])->get();
 
         $pdf = Pdf::loadView('pdf.bienes_asignados', compact('responsible', 'assets'));
-        
+
         return $pdf->stream('bienes_asignados_' . $responsible->employee->dni . '.pdf');
+    }
+
+    // ===== PATRIMONIO SIGA =====
+
+    public function getPatrimonioAssets(Request $request)
+    {
+        $query = PatrimonioAsset::orderBy('created_at', 'desc');
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('codigo_patrimonial', 'like', "%{$search}%")
+                  ->orWhere('denominacion', 'like', "%{$search}%")
+                  ->orWhere('responsable_final', 'like', "%{$search}%")
+                  ->orWhere('oficina', 'like', "%{$search}%")
+                  ->orWhere('marca', 'like', "%{$search}%")
+                  ->orWhere('nro_serie', 'like', "%{$search}%");
+            });
+        }
+
+        if ($request->filled('estado_conserv')) {
+            $query->where('estado_conserv', $request->estado_conserv);
+        }
+
+        if ($request->filled('lote_importacion')) {
+            $query->where('lote_importacion', $request->lote_importacion);
+        }
+
+        if ($request->filled('sincronizado')) {
+            $query->where('sincronizado', $request->sincronizado === 'true');
+        }
+
+        $perPage = $request->input('per_page', 15);
+
+        return response()->json($query->paginate($perPage));
+    }
+
+    public function getPatrimonioStats()
+    {
+        $total = PatrimonioAsset::count();
+        $sincronizados = PatrimonioAsset::where('sincronizado', true)->count();
+        $noSincronizados = $total - $sincronizados;
+
+        $lotes = PatrimonioAsset::selectRaw('lote_importacion, archivo_origen, fecha_importacion, COUNT(*) as total')
+            ->groupBy('lote_importacion', 'archivo_origen', 'fecha_importacion')
+            ->orderBy('fecha_importacion', 'desc')
+            ->limit(10)
+            ->get();
+
+        $porEstado = PatrimonioAsset::selectRaw('estado_conserv, COUNT(*) as total')
+            ->groupBy('estado_conserv')
+            ->pluck('total', 'estado_conserv')
+            ->toArray();
+
+        return response()->json([
+            'total' => $total,
+            'sincronizados' => $sincronizados,
+            'no_sincronizados' => $noSincronizados,
+            'lotes' => $lotes,
+            'por_estado' => $porEstado,
+        ]);
+    }
+
+    public function importPatrimonio(Request $request)
+    {
+        $request->validate([
+            'file' => 'required|file|mimes:csv,txt|max:10240',
+        ]);
+
+        $file = $request->file('file');
+        $filePath = $file->getRealPath();
+        $fileName = $file->getClientOriginalName();
+        $lote = Str::uuid()->toString();
+
+        try {
+            $reader = IOFactory::createReader('Csv');
+            $reader->setReadDataOnly(true);
+            $reader->setInputEncoding('UTF-8');
+            $reader->setDelimiter(',');
+            $spreadsheet = $reader->load($filePath);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Error al leer el archivo: ' . $e->getMessage()], 422);
+        }
+
+        $sheet = $spreadsheet->getActiveSheet();
+        $highestRow = $sheet->getHighestRow();
+        $totalRows = $highestRow - 1;
+
+        // Leer cabeceras para mapear columnas dinámicamente
+        $headers = [];
+        $highestCol = $sheet->getHighestColumn();
+        $highestColIndex = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::columnIndexFromString($highestCol);
+        for ($col = 1; $col <= $highestColIndex; $col++) {
+            $colLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($col);
+            $headers[trim($sheet->getCell("{$colLetter}1")->getValue())] = $colLetter;
+        }
+
+        $importedCount = 0;
+        $errorsCount = 0;
+        $errors = [];
+
+        // Mapeo de columnas CSV → campos de BD
+        $columnMap = [
+            'CODIGO_PATRIMONIAL' => 'codigo_patrimonial',
+            'CODIGO_INTERNO' => 'codigo_interno',
+            'CODIGO_ACTIVO' => 'codigo_activo',
+            'DENOMINACION' => 'denominacion',
+            'DESCRIPCION' => 'descripcion',
+            'CARACTERISTICAS' => 'caracteristicas',
+            'OBSERVACIONES' => 'observaciones',
+            'MARCA' => 'marca',
+            'MODELO' => 'modelo',
+            'NRO_SERIE' => 'nro_serie',
+            'MEDIDAS' => 'medidas',
+            'ESTADO_CONSERV' => 'estado_conserv',
+            'ESTADO_DESC' => 'estado_desc',
+            'RESPONSABLE_FINAL' => 'responsable_final',
+            'EMPLEADO_FINAL' => 'empleado_final',
+            'OFICINA' => 'oficina',
+            'FECHA_COMPRA' => 'fecha_compra',
+            'FECHA_ALTA' => 'fecha_alta',
+            'VALOR_COMPRA' => 'valor_compra',
+            'VALOR_INICIAL' => 'valor_inicial',
+            'VALOR_DEPREC' => 'valor_deprec',
+            'CODIGO_BARRA' => 'codigo_barra',
+        ];
+
+        // Mapeo de estado_conserv numérico a texto
+        $estadoConservMap = [
+            '1' => 'BUENO',
+            '2' => 'REGULAR',
+            '3' => 'MALO',
+            '4' => 'CHATARRA',
+            '5' => 'NUEVO',
+        ];
+
+        $batch = [];
+
+        for ($row = 2; $row <= $highestRow; $row++) {
+            try {
+                $record = [
+                    'archivo_origen' => $fileName,
+                    'fecha_importacion' => now(),
+                    'importado_por' => auth()->id(),
+                    'lote_importacion' => $lote,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ];
+
+                foreach ($columnMap as $csvCol => $dbCol) {
+                    if (!isset($headers[$csvCol])) {
+                        continue;
+                    }
+
+                    $colLetter = $headers[$csvCol];
+                    $value = $sheet->getCell("{$colLetter}{$row}")->getValue();
+                    $value = is_string($value) ? trim($value) : $value;
+
+                    // Conversiones especiales
+                    if (in_array($dbCol, ['fecha_compra', 'fecha_alta'])) {
+                        $value = $this->parseImportDate($value);
+                    } elseif (in_array($dbCol, ['valor_compra', 'valor_inicial', 'valor_deprec'])) {
+                        $value = is_numeric($value) ? $value : null;
+                    } elseif ($dbCol === 'estado_conserv') {
+                        $value = $estadoConservMap[trim($value)] ?? $value;
+                    }
+
+                    $record[$dbCol] = $value ?: null;
+                }
+
+                $batch[] = $record;
+                $importedCount++;
+
+                // Insertar en lotes de 100
+                if (count($batch) >= 100) {
+                    PatrimonioAsset::insert($batch);
+                    $batch = [];
+                }
+            } catch (\Exception $e) {
+                $errorsCount++;
+                if (count($errors) < 10) {
+                    $errors[] = "Fila {$row}: " . $e->getMessage();
+                }
+            }
+        }
+
+        // Insertar registros restantes
+        if (count($batch) > 0) {
+            PatrimonioAsset::insert($batch);
+        }
+
+        return response()->json([
+            'total' => $totalRows,
+            'importados' => $importedCount,
+            'errores' => $errorsCount,
+            'lote' => $lote,
+            'archivo' => $fileName,
+            'detalle_errores' => $errors,
+        ]);
+    }
+
+    private function parseImportDate($value): ?string
+    {
+        if (empty($value)) {
+            return null;
+        }
+
+        try {
+            if (is_numeric($value)) {
+                return \PhpOffice\PhpSpreadsheet\Shared\Date::excelToDateTimeObject($value)->format('Y-m-d');
+            }
+
+            if ($value instanceof \DateTimeInterface) {
+                return $value->format('Y-m-d');
+            }
+
+            $parsed = date_create($value);
+            return $parsed ? $parsed->format('Y-m-d') : null;
+        } catch (\Exception $e) {
+            return null;
+        }
     }
 }
