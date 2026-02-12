@@ -159,6 +159,26 @@ class AssetController extends Controller
         return response()->json(['exists' => $exists]);
     }
 
+    public function lookupSbnCatalog(Request $request)
+    {
+        $code = $request->query('code');
+        if (!$code || strlen($code) !== 8) {
+            return response()->json(['found' => false]);
+        }
+
+        $item = \App\Models\SbnCatalogItem::where('codigo', $code)->first();
+        if (!$item) {
+            return response()->json(['found' => false]);
+        }
+
+        return response()->json([
+            'found' => true,
+            'denominacion' => $item->denominacion,
+            'grupo_generico' => $item->grupo_generico,
+            'clase' => $item->clase,
+        ]);
+    }
+
     public function store(Request $request)
     {
         $validated = $request->validate([

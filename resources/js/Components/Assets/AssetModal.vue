@@ -108,13 +108,26 @@
                                 <label class="block text-sm font-bold text-slate-700 mb-2">
                                     Denominación <span class="text-red-500">*</span>
                                 </label>
-                                <input type="text" v-model="denominacion" v-bind="denominacionProps"
-                                    placeholder="Nombre del bien (Ej. Laptop Dell Latitude 5420)"
-                                    class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-slate-500 focus:border-slate-500 transition-colors outline-none"
-                                    :class="formErrors.denominacion ? 'border-red-400' : 'border-slate-200'"
-                                    :disabled="isSubmitting" />
+                                <div class="relative">
+                                    <input type="text" v-model="denominacion" v-bind="denominacionProps"
+                                        placeholder="Nombre del bien (Ej. Laptop Dell Latitude 5420)"
+                                        class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-slate-500 focus:border-slate-500 transition-colors outline-none"
+                                        :class="formErrors.denominacion ? 'border-red-400' : 'border-slate-200'"
+                                        :disabled="isSubmitting" />
+                                    <Loader2 v-if="isLookingSbn" class="w-4 h-4 animate-spin absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                                </div>
                                 <p v-if="formErrors.denominacion" class="mt-1 text-sm text-red-600">{{
                                     formErrors.denominacion }}</p>
+                                <div v-if="sbnDenominacion && denominacion !== sbnDenominacion"
+                                    class="mt-1.5 flex items-center gap-2">
+                                    <p class="text-xs text-blue-600">
+                                        SBN: <span class="font-semibold">{{ sbnDenominacion }}</span>
+                                    </p>
+                                    <button type="button" @click="setFieldValue('denominacion', sbnDenominacion)"
+                                        class="text-xs text-blue-700 font-bold underline hover:text-blue-900">
+                                        Usar esta
+                                    </button>
+                                </div>
                             </div>
 
                             <div class="mb-6">
@@ -535,6 +548,8 @@ const [observacion, observacionProps] = defineField('observacion');
 
 const codeExists = ref(false);
 const isCheckingCode = ref(false);
+const sbnDenominacion = ref('');
+const isLookingSbn = ref(false);
 
 // Location toggle (area vs office)
 const ubicacionTipo = ref(lastMovement?.oficina_id ? 'office' : 'area');
@@ -604,8 +619,39 @@ const checkCodeAvailability = debounce(async () => {
     }
 }, 500);
 
+const lookupSbnDenominacion = debounce(async (code) => {
+    if (!code || code.length !== 8) {
+        sbnDenominacion.value = '';
+        return;
+    }
+    isLookingSbn.value = true;
+    try {
+        const response = await axios.get(`/assets/lookup-sbn?code=${code}`);
+        if (response.data.found) {
+            sbnDenominacion.value = response.data.denominacion;
+            // Auto-fill only if denomination is empty or was previously auto-filled
+            const currentDenom = denominacion.value?.trim();
+            if (!currentDenom) {
+                setFieldValue('denominacion', response.data.denominacion);
+            }
+        } else {
+            sbnDenominacion.value = '';
+        }
+    } catch (error) {
+        console.error('Error looking up SBN:', error);
+    } finally {
+        isLookingSbn.value = false;
+    }
+}, 400);
+
 watch([codigo_patrimonio, codigo_interno], () => {
     checkCodeAvailability();
+});
+
+watch(codigo_patrimonio, (newVal) => {
+    if (!isEditing) {
+        lookupSbnDenominacion(newVal);
+    }
 });
 
 onMounted(() => {

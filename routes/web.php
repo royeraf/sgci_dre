@@ -203,6 +203,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/list', [App\Http\Controllers\AssetController::class, 'getAssets'])->name('list');
         Route::get('/summary', [App\Http\Controllers\AssetController::class, 'getStats'])->name('summary');
         Route::get('/check-code', [App\Http\Controllers\AssetController::class, 'checkCode'])->name('check-code');
+        Route::get('/lookup-sbn', [App\Http\Controllers\AssetController::class, 'lookupSbnCatalog'])->name('lookup-sbn');
         Route::post('/', [App\Http\Controllers\AssetController::class, 'store'])->name('store');
 
         // Códigos de barra - PDF
