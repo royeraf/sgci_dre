@@ -63,81 +63,117 @@
             </div>
         </div>
 
-        <!-- Upload Section -->
-        <div class="bg-white shadow-lg rounded-2xl border border-slate-200 p-6">
-            <div class="flex items-center justify-between mb-4">
-                <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2">
-                    <Upload class="w-5 h-5 text-slate-600" />
-                    Importar CSV de SIGA
-                </h3>
-            </div>
-
-            <div class="flex flex-col sm:flex-row items-start sm:items-end gap-4">
-                <div class="flex-1 w-full">
-                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
-                        Archivo CSV
-                    </label>
-                    <div class="relative">
-                        <input ref="fileInput" type="file" accept=".csv,.txt"
-                            @change="handleFileSelect"
-                            class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-sm file:mr-4 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200" />
-                    </div>
-                    <p v-if="selectedFile" class="mt-1 text-xs text-slate-500">
-                        {{ selectedFile.name }} ({{ formatFileSize(selectedFile.size) }})
-                    </p>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Upload Section -->
+            <div class="bg-white shadow-lg rounded-2xl border border-slate-200 p-6 flex flex-col">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                        <Upload class="w-5 h-5 text-slate-600" />
+                        Importar CSV de SIGA
+                    </h3>
                 </div>
 
-                <button @click="uploadFile" :disabled="!selectedFile || uploading"
-                    class="inline-flex items-center px-6 py-2.5 border border-transparent text-sm font-bold rounded-xl shadow-lg text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-4 focus:ring-blue-300 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap">
-                    <Loader2 v-if="uploading" class="w-4 h-4 mr-2 animate-spin" />
-                    <Upload v-else class="w-4 h-4 mr-2" />
-                    {{ uploading ? 'Importando...' : 'Importar' }}
-                </button>
+                <div class="flex flex-col sm:flex-row items-start sm:items-end gap-4">
+                    <div class="flex-1 w-full">
+                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                            Archivo CSV
+                        </label>
+                        <div class="relative">
+                            <input ref="fileInput" type="file" accept=".csv,.txt"
+                                @change="handleFileSelect"
+                                class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-sm file:mr-4 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200" />
+                        </div>
+                        <p v-if="selectedFile" class="mt-1 text-xs text-slate-500">
+                            {{ selectedFile.name }} ({{ formatFileSize(selectedFile.size) }})
+                        </p>
+                    </div>
+
+                    <button @click="uploadFile" :disabled="!selectedFile || uploading"
+                        class="inline-flex items-center px-6 py-2.5 border border-transparent text-sm font-bold rounded-xl shadow-lg text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-4 focus:ring-blue-300 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap">
+                        <Loader2 v-if="uploading" class="w-4 h-4 mr-2 animate-spin" />
+                        <Upload v-else class="w-4 h-4 mr-2" />
+                        {{ uploading ? 'Importando...' : 'Importar' }}
+                    </button>
+                </div>
+
+                <!-- Last import result -->
+                <div v-if="lastImportResult" class="mt-4 p-4 rounded-xl border" :class="lastImportResult.errores > 0 ? 'bg-amber-50 border-amber-200' : 'bg-green-50 border-green-200'">
+                    <p class="text-sm font-semibold" :class="lastImportResult.errores > 0 ? 'text-amber-800' : 'text-green-800'">
+                        Resultado de la importaci&oacute;n:
+                        {{ lastImportResult.importados }} registros importados
+                        <span v-if="lastImportResult.errores > 0">, {{ lastImportResult.errores }} errores</span>
+                    </p>
+                    <p class="text-xs mt-1" :class="lastImportResult.errores > 0 ? 'text-amber-600' : 'text-green-600'">
+                        Archivo: {{ lastImportResult.archivo }}
+                    </p>
+                </div>
             </div>
 
-            <!-- Last import result -->
-            <div v-if="lastImportResult" class="mt-4 p-4 rounded-xl border" :class="lastImportResult.errores > 0 ? 'bg-amber-50 border-amber-200' : 'bg-green-50 border-green-200'">
-                <p class="text-sm font-semibold" :class="lastImportResult.errores > 0 ? 'text-amber-800' : 'text-green-800'">
-                    Resultado de la importaci&oacute;n:
-                    {{ lastImportResult.importados }} registros importados
-                    <span v-if="lastImportResult.errores > 0">, {{ lastImportResult.errores }} errores</span>
-                </p>
-                <p class="text-xs mt-1" :class="lastImportResult.errores > 0 ? 'text-amber-600' : 'text-green-600'">
-                    Archivo: {{ lastImportResult.archivo }}
-                </p>
+            <!-- Actions Section -->
+            <div class="bg-white shadow-lg rounded-2xl border border-slate-200 p-6 flex flex-col">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                        <Zap class="w-5 h-5 text-slate-600" />
+                        Acciones
+                    </h3>
+                </div>
+                
+                <div class="flex flex-col gap-3 flex-1 justify-center">
+                    <button @click="syncLote(null)" :disabled="syncing || patrimonioStats.no_sincronizados === 0"
+                        class="inline-flex w-full justify-center items-center px-6 py-3 border border-transparent text-sm font-bold rounded-xl shadow-lg text-white bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 focus:outline-none focus:ring-4 focus:ring-green-300 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap">
+                        <Loader2 v-if="syncing" class="w-5 h-5 mr-3 animate-spin" />
+                        <RefreshCw v-else class="w-5 h-5 mr-3" />
+                        {{ syncing ? 'Sincronizando...' : `Sincronizar pendientes (${patrimonioStats.no_sincronizados})` }}
+                    </button>
+                </div>
             </div>
         </div>
 
-        <!-- Import History -->
-        <div v-if="patrimonioStats.lotes?.length > 0" class="bg-white shadow-lg rounded-2xl border border-slate-200 p-6">
-            <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2 mb-4">
-                <History class="w-5 h-5 text-slate-600" />
-                Historial de Importaciones
-            </h3>
-            <div class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-slate-200">
-                    <thead class="bg-slate-50">
-                        <tr>
-                            <th class="px-4 py-3 text-left text-xs font-bold text-slate-600 uppercase tracking-wider">Archivo</th>
-                            <th class="px-4 py-3 text-left text-xs font-bold text-slate-600 uppercase tracking-wider">Fecha</th>
-                            <th class="px-4 py-3 text-center text-xs font-bold text-slate-600 uppercase tracking-wider">Registros</th>
-                            <th class="px-4 py-3 text-center text-xs font-bold text-slate-600 uppercase tracking-wider">Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-slate-100">
-                        <tr v-for="lote in patrimonioStats.lotes" :key="lote.lote_importacion" class="hover:bg-blue-50 transition-colors">
-                            <td class="px-4 py-3 text-sm text-slate-700">{{ lote.archivo_origen || 'Sin nombre' }}</td>
-                            <td class="px-4 py-3 text-sm text-slate-500">{{ formatDate(lote.fecha_importacion) }}</td>
-                            <td class="px-4 py-3 text-sm text-center font-semibold text-slate-700">{{ lote.total }}</td>
-                            <td class="px-4 py-3 text-center">
-                                <button @click="filterByLote(lote.lote_importacion)"
-                                    class="text-blue-600 hover:text-blue-800 text-xs font-semibold">
-                                    Ver registros
-                                </button>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
+        <!-- Import History Accordion -->
+        <div v-if="patrimonioStats.lotes?.length > 0" class="bg-white shadow-lg rounded-2xl border border-slate-200 overflow-hidden">
+            <button @click="isHistoryOpen = !isHistoryOpen" class="w-full flex items-center justify-between p-6 bg-slate-50 hover:bg-slate-100 transition-colors focus:outline-none">
+                <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                    <History class="w-5 h-5 text-slate-600" />
+                    Historial de Importaciones
+                </h3>
+                <ChevronDown v-if="!isHistoryOpen" class="w-5 h-5 text-slate-500" />
+                <ChevronUp v-else class="w-5 h-5 text-slate-500" />
+            </button>
+            <div v-show="isHistoryOpen" class="p-6 border-t border-slate-200">
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-slate-200">
+                        <thead class="bg-slate-50">
+                            <tr>
+                                <th class="px-4 py-3 text-left text-xs font-bold text-slate-600 uppercase tracking-wider">Archivo</th>
+                                <th class="px-4 py-3 text-left text-xs font-bold text-slate-600 uppercase tracking-wider">Fecha</th>
+                                <th class="px-4 py-3 text-center text-xs font-bold text-slate-600 uppercase tracking-wider">Registros</th>
+                                <th class="px-4 py-3 text-center text-xs font-bold text-slate-600 uppercase tracking-wider">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100">
+                            <tr v-for="lote in patrimonioStats.lotes" :key="lote.lote_importacion" class="hover:bg-blue-50 transition-colors">
+                                <td class="px-4 py-3 text-sm text-slate-700">{{ lote.archivo_origen || 'Sin nombre' }}</td>
+                                <td class="px-4 py-3 text-sm text-slate-500">{{ formatDate(lote.fecha_importacion) }}</td>
+                                <td class="px-4 py-3 text-sm text-center font-semibold text-slate-700">{{ lote.total }}</td>
+                                <td class="px-4 py-3 text-center">
+                                    <div class="flex items-center justify-center gap-3">
+                                        <button @click="filterByLote(lote.lote_importacion)"
+                                            class="text-blue-600 hover:text-blue-800 text-xs font-semibold">
+                                            Ver registros
+                                        </button>
+                                        <button @click="syncLote(lote.lote_importacion)"
+                                            :disabled="syncing"
+                                            class="text-green-600 hover:text-green-800 text-xs font-semibold disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1">
+                                            <Loader2 v-if="syncing" class="w-3 h-3 animate-spin" />
+                                            <RefreshCw v-else class="w-3 h-3" />
+                                            Sincronizar
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
 
@@ -324,12 +360,17 @@ import {
     ChevronRight,
     ChevronsLeft,
     ChevronsRight,
+    RefreshCw,
+    ChevronDown,
+    ChevronUp,
+    Zap,
 } from 'lucide-vue-next';
 import axios from 'axios';
 import Swal from 'sweetalert2';
 
 // Stats
 const patrimonioStats = ref({ total: 0, sincronizados: 0, no_sincronizados: 0, lotes: [], por_estado: {} });
+const isHistoryOpen = ref(false);
 
 const fetchStats = async () => {
     try {
@@ -412,6 +453,57 @@ const uploadFile = async () => {
         });
     } finally {
         uploading.value = false;
+    }
+};
+
+// Sync
+const syncing = ref(false);
+
+const syncLote = async (lote) => {
+    const titulo = lote ? 'Sincronizar lote' : 'Sincronizar todos los pendientes';
+    const texto = lote
+        ? 'Se sincronizarán los bienes de este lote con los datos actuales en SGCI.'
+        : `Se sincronizarán los ${patrimonioStats.value.no_sincronizados} registros pendientes con los datos actuales en SGCI.`;
+
+    const confirm = await Swal.fire({
+        title: titulo,
+        text: texto,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#16a34a',
+        cancelButtonColor: '#6b7280',
+        confirmButtonText: 'Sincronizar',
+        cancelButtonText: 'Cancelar',
+    });
+
+    if (!confirm.isConfirmed) return;
+
+    syncing.value = true;
+
+    try {
+        const payload = lote ? { lote_importacion: lote } : {};
+        const response = await axios.post('/assets/patrimonio/sync', payload);
+        const data = response.data;
+
+        await Swal.fire({
+            icon: data.errores > 0 ? 'warning' : 'success',
+            title: 'Sincronización completada',
+            html: `
+                <div class="text-sm text-left space-y-1">
+                    <p><span class="font-semibold text-green-600">${data.sincronizados}</span> bienes sincronizados</p>
+                    <p><span class="font-semibold text-slate-500">${data.omitidos}</span> omitidos (no encontrados en SGCI)</p>
+                    ${data.errores > 0 ? `<p><span class="font-semibold text-red-600">${data.errores}</span> errores</p>` : ''}
+                </div>
+            `,
+        });
+
+        fetchStats();
+        fetchRecords(1);
+    } catch (error) {
+        const message = error.response?.data?.message || 'Error al sincronizar';
+        Swal.fire({ icon: 'error', title: 'Error', text: message });
+    } finally {
+        syncing.value = false;
     }
 };
 

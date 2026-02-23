@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use App\Models\PatrimonioAsset;
 
 class Asset extends Model
 {
@@ -70,6 +71,14 @@ class Asset extends Model
     public function movements(): HasMany
     {
         return $this->hasMany(AssetMovement::class);
+    }
+
+    /**
+     * Registro SIGA vinculado (si fue sincronizado desde patrimonio_assets)
+     */
+    public function patrimonioAsset(): HasOne
+    {
+        return $this->hasOne(PatrimonioAsset::class);
     }
     
     /**

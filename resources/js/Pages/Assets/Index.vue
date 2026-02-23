@@ -283,6 +283,11 @@
                                     <td class="px-6 py-4">
                                         <div class="text-sm text-slate-700 font-medium line-clamp-2 max-w-xs">{{
                                             asset.denominacion }}</div>
+                                        <span v-if="asset.patrimonio_asset?.sincronizado"
+                                            class="mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-100 text-indigo-700 border border-indigo-200">
+                                            <DatabaseIcon class="w-2.5 h-2.5" />
+                                            SIGA
+                                        </span>
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap hidden md:table-cell">
                                         <div class="text-sm text-slate-600">{{ asset.brand?.nombre || '—' }}</div>

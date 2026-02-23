@@ -60,13 +60,14 @@ class AssetController extends Controller
     public function getAssets(Request $request)
     {
         $query = Asset::with([
-                'category', 
-                'brand', 
-                'color', 
+                'category',
+                'brand',
+                'color',
                 'origin',
                 'latestMovement.state',
                 'latestMovement.responsible.employee.person',
                 'latestMovement.office.direction',
+                'patrimonioAsset:id,asset_id,sincronizado,fecha_sincronizacion',
             ])
             ->withCount('movements')
             ->orderBy('created_at', 'desc');
@@ -676,6 +677,135 @@ class AssetController extends Controller
             'lote' => $lote,
             'archivo' => $fileName,
             'detalle_errores' => $errors,
+        ]);
+    }
+
+    public function sincronizarPatrimonio(Request $request)
+    {
+        $lote = $request->input('lote_importacion');
+
+        $query = PatrimonioAsset::where('sincronizado', false)
+            ->whereNotNull('codigo_activo')
+            ->where('codigo_activo', '!=', '');
+
+        if ($lote) {
+            $query->where('lote_importacion', $lote);
+        }
+
+        $records = $query->get();
+
+        if ($records->isEmpty()) {
+            return response()->json([
+                'message' => 'No hay registros pendientes de sincronización',
+                'sincronizados' => 0,
+                'omitidos' => 0,
+                'errores' => 0,
+            ]);
+        }
+
+        // Pre-cargar caches para evitar N+1
+        $statesCache = AssetState::all()->keyBy(fn($s) => mb_strtoupper(trim($s->nombre)));
+        $officesCache = HrOffice::activas()->get()->keyBy(fn($o) => mb_strtoupper(trim($o->nombre)));
+        $responsiblesCache = AssetResponsible::whereNotNull('nombre_original')
+            ->get()
+            ->keyBy(fn($r) => mb_strtoupper(trim($r->nombre_original)));
+
+        $sincronizados = 0;
+        $omitidos = 0;
+        $errors = [];
+
+        foreach ($records as $patrimonioAsset) {
+            try {
+                $asset = Asset::where('codigo_completo', $patrimonioAsset->codigo_activo)->first();
+
+                if (!$asset) {
+                    $omitidos++;
+                    continue;
+                }
+
+                // Actualizar campos básicos del asset desde SIGA
+                $updateData = [];
+                if ($patrimonioAsset->denominacion) {
+                    $updateData['denominacion'] = $patrimonioAsset->denominacion;
+                }
+                if ($patrimonioAsset->descripcion) {
+                    $updateData['descripcion'] = $patrimonioAsset->descripcion;
+                }
+                if (!empty($updateData)) {
+                    $asset->update($updateData);
+                }
+
+                // Resolver estado de conservación
+                $estadoKey = mb_strtoupper(trim($patrimonioAsset->estado_conserv ?? ''));
+                $estado = $statesCache->get($estadoKey);
+
+                // Resolver oficina por nombre (exacto primero, luego parcial)
+                $office = null;
+                $oficinaRaw = trim($patrimonioAsset->oficina ?? '');
+                if ($oficinaRaw) {
+                    $oficinaKey = mb_strtoupper($oficinaRaw);
+                    $office = $officesCache->get($oficinaKey);
+                    if (!$office) {
+                        $office = HrOffice::whereRaw('UPPER(nombre) LIKE ?', ['%' . $oficinaKey . '%'])->first();
+                    }
+                }
+
+                // Resolver responsable por nombre (exacto primero, luego crear)
+                $responsible = null;
+                $responsableRaw = trim($patrimonioAsset->responsable_final ?? '');
+                if ($responsableRaw) {
+                    $responsableKey = mb_strtoupper($responsableRaw);
+                    $responsible = $responsablesCache->get($responsableKey);
+                    if (!$responsible) {
+                        $responsible = AssetResponsible::create([
+                            'nombre_original' => strtoupper($responsableRaw),
+                            'oficina_id' => $office?->id,
+                            'activo' => true,
+                        ]);
+                        $responsablesCache->put($responsableKey, $responsible);
+                    }
+                }
+
+                // Crear movimiento de sincronización si hay al menos un dato útil
+                if ($estado || $office || $responsible) {
+                    AssetMovement::create([
+                        'asset_id'        => $asset->id,
+                        'tipo'            => 'ASIGNACION',
+                        'fecha'           => $patrimonioAsset->fecha_alta?->toDateString() ?? now()->toDateString(),
+                        'estado_id'       => $estado?->id,
+                        'oficina_id'      => $office?->id,
+                        'responsable_id'  => $responsible?->id,
+                        'inventariador_id' => auth()->id(),
+                        'observaciones'   => 'Sincronizado desde SIGA' . ($patrimonioAsset->archivo_origen ? ' - ' . $patrimonioAsset->archivo_origen : ''),
+                    ]);
+                }
+
+                // Marcar como sincronizado
+                $patrimonioAsset->update([
+                    'asset_id'             => $asset->id,
+                    'sincronizado'         => true,
+                    'fecha_sincronizacion' => now(),
+                ]);
+
+                $sincronizados++;
+            } catch (\Exception $e) {
+                \Log::error('SyncPatrimonio error', [
+                    'codigo' => $patrimonioAsset->codigo_activo,
+                    'msg'    => $e->getMessage(),
+                    'file'   => $e->getFile() . ':' . $e->getLine(),
+                ]);
+                if (count($errors) < 10) {
+                    $errors[] = "Código {$patrimonioAsset->codigo_activo}: " . $e->getMessage();
+                }
+            }
+        }
+
+        return response()->json([
+            'sincronizados'    => $sincronizados,
+            'omitidos'         => $omitidos,
+            'errores'          => count($errors),
+            'detalle_errores'  => $errors,
+            'message'          => "Sincronización completada: {$sincronizados} bienes actualizados, {$omitidos} omitidos.",
         ]);
     }
 

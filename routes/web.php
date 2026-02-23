@@ -224,6 +224,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/patrimonio', [App\Http\Controllers\AssetController::class, 'getPatrimonioAssets'])->name('patrimonio.list');
         Route::get('/patrimonio/stats', [App\Http\Controllers\AssetController::class, 'getPatrimonioStats'])->name('patrimonio.stats');
         Route::post('/patrimonio/import', [App\Http\Controllers\AssetController::class, 'importPatrimonio'])->name('patrimonio.import');
+        Route::post('/patrimonio/sync', [App\Http\Controllers\AssetController::class, 'sincronizarPatrimonio'])->name('patrimonio.sync');
 
         // Catálogos - Página principal
         Route::get('/catalogs', [App\Http\Controllers\AssetCatalogController::class, 'index'])->name('catalogs.index');

@@ -369,7 +369,7 @@
                                             class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Última
                                             Fecha</span>
                                         <span class="text-sm font-bold text-slate-700 italic">
-                                            {{ lastMovement?.fecha_movimiento || lastMovement?.fecha || '—' }}
+                                            {{ formatDate(lastMovement?.fecha_movimiento || lastMovement?.fecha) }}
                                         </span>
                                     </div>
                                 </div>
@@ -441,6 +441,13 @@ const emit = defineEmits(['close', 'success']);
 
 const isSubmitting = ref(false);
 const today = new Date().toISOString().split('T')[0];
+
+const formatDate = (dateString) => {
+    if (!dateString) return '—';
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return dateString;
+    return date.toLocaleDateString('es-PE', { day: '2-digit', month: '2-digit', year: 'numeric' });
+};
 
 // Encontrar el estado "BUENO" por defecto (solo para creación)
 const defaultStateId = isEditing
