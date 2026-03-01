@@ -14,6 +14,7 @@ class PatrimonioInventarioItem extends Model
         'asset_id',
         'estado_id',
         'oficina_id',
+        'responsable_anterior_id',
         'responsable_id',
         'observaciones',
         'inventariador_id',
@@ -42,6 +43,11 @@ class PatrimonioInventarioItem extends Model
     public function oficina(): BelongsTo
     {
         return $this->belongsTo(HrOffice::class, 'oficina_id');
+    }
+
+    public function responsableAnterior(): BelongsTo
+    {
+        return $this->belongsTo(AssetResponsible::class, 'responsable_anterior_id');
     }
 
     public function responsable(): BelongsTo

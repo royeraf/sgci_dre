@@ -12,6 +12,7 @@ class PatrimonioInventario extends Model
 
     protected $fillable = [
         'anio',
+        'tipo',
         'nombre',
         'descripcion',
         'fecha_inicio',
@@ -19,6 +20,7 @@ class PatrimonioInventario extends Model
         'estado',
         'creado_por',
         'cerrado_por',
+        'responsable_saliente_id',
     ];
 
     protected $casts = [
@@ -40,5 +42,10 @@ class PatrimonioInventario extends Model
     public function cerradoPor(): BelongsTo
     {
         return $this->belongsTo(User::class, 'cerrado_por');
+    }
+
+    public function responsableSaliente(): BelongsTo
+    {
+        return $this->belongsTo(Employee::class, 'responsable_saliente_id');
     }
 }

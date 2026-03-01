@@ -11,7 +11,13 @@
                         <ArrowLeft class="w-5 h-5" />
                     </button>
                     <div>
-                        <h2 class="text-xl font-black text-slate-800">{{ selectedInventario.nombre }}</h2>
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <h2 class="text-xl font-black text-slate-800">{{ selectedInventario.nombre }}</h2>
+                            <span class="px-2 py-0.5 rounded-full text-xs font-bold"
+                                :class="tipoClass(selectedInventario.tipo)">
+                                {{ tipoLabel(selectedInventario.tipo) }}
+                            </span>
+                        </div>
                         <p class="text-sm text-slate-500 mt-0.5">
                             Año {{ selectedInventario.anio }} ·
                             {{ formatDate(selectedInventario.fecha_inicio) }}
@@ -20,6 +26,12 @@
                                 :class="estadoClass(selectedInventario.estado)">
                                 {{ estadoLabel(selectedInventario.estado) }}
                             </span>
+                        </p>
+                        <!-- Saliente (solo ROTACION) -->
+                        <p v-if="selectedInventario.tipo === 'ROTACION' && selectedInventario.responsable_saliente"
+                            class="text-sm text-orange-600 font-semibold mt-1 flex items-center gap-1">
+                            <UserMinus class="w-4 h-4" />
+                            Saliente: {{ nombreEmpleado(selectedInventario.responsable_saliente) }}
                         </p>
                     </div>
                 </div>
@@ -103,7 +115,11 @@
                                 <th class="px-4 py-4 text-left text-xs font-bold text-slate-600 uppercase tracking-wider">Bien</th>
                                 <th class="px-4 py-4 text-left text-xs font-bold text-slate-600 uppercase tracking-wider hidden md:table-cell">Denominación</th>
                                 <th class="px-4 py-4 text-center text-xs font-bold text-slate-600 uppercase tracking-wider">Estado</th>
-                                <th class="px-4 py-4 text-left text-xs font-bold text-slate-600 uppercase tracking-wider hidden lg:table-cell">Responsable</th>
+                                <th v-if="selectedInventario.tipo === 'ROTACION'"
+                                    class="px-4 py-4 text-left text-xs font-bold text-slate-600 uppercase tracking-wider hidden lg:table-cell">
+                                    Resp. Anterior → Nuevo
+                                </th>
+                                <th v-else class="px-4 py-4 text-left text-xs font-bold text-slate-600 uppercase tracking-wider hidden lg:table-cell">Responsable</th>
                                 <th class="px-4 py-4 text-left text-xs font-bold text-slate-600 uppercase tracking-wider hidden lg:table-cell">Oficina</th>
                                 <th class="px-4 py-4 text-left text-xs font-bold text-slate-600 uppercase tracking-wider hidden md:table-cell">Fecha</th>
                                 <th class="px-4 py-4 text-right text-xs font-bold text-slate-600 uppercase tracking-wider">Acciones</th>
@@ -128,7 +144,21 @@
                                     </span>
                                     <span v-else class="text-xs text-slate-400">—</span>
                                 </td>
-                                <td class="px-4 py-4 whitespace-nowrap hidden lg:table-cell">
+                                <!-- Rotación: muestra anterior → nuevo -->
+                                <td v-if="selectedInventario.tipo === 'ROTACION'"
+                                    class="px-4 py-4 hidden lg:table-cell">
+                                    <div class="flex items-center gap-1 text-sm">
+                                        <span class="text-slate-500 line-through text-xs">
+                                            {{ responsableNombre(item.responsable_anterior) || '—' }}
+                                        </span>
+                                        <ArrowRight class="w-3 h-3 text-slate-400 flex-shrink-0" />
+                                        <span class="font-semibold text-slate-800">
+                                            {{ responsableNombre(item.responsable) || '—' }}
+                                        </span>
+                                    </div>
+                                </td>
+                                <!-- Otros tipos: solo responsable actual -->
+                                <td v-else class="px-4 py-4 whitespace-nowrap hidden lg:table-cell">
                                     <div class="text-sm text-slate-600">{{ responsableNombre(item.responsable) || '—' }}</div>
                                 </td>
                                 <td class="px-4 py-4 whitespace-nowrap hidden lg:table-cell">
@@ -247,13 +277,23 @@
 
             <!-- Filtros + Nuevo -->
             <div class="bg-white shadow-lg rounded-2xl border border-slate-200 p-4">
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
                     <div>
                         <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Año</label>
                         <select v-model="filterAnio"
                             class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-purple-500 text-sm bg-white transition-all">
                             <option value="">Todos los años</option>
                             <option v-for="y in availableYears" :key="y" :value="y">{{ y }}</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Tipo</label>
+                        <select v-model="filterTipo"
+                            class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-purple-500 text-sm bg-white transition-all">
+                            <option value="">Todos</option>
+                            <option value="ANUAL">Anual</option>
+                            <option value="ROTACION">Rotación de Personal</option>
+                            <option value="EXTRAORDINARIO">Extraordinario</option>
                         </select>
                     </div>
                     <div>
@@ -266,7 +306,7 @@
                             <option value="CERRADO">Cerrado</option>
                         </select>
                     </div>
-                    <div class="lg:col-span-2 flex items-end justify-end">
+                    <div class="flex items-end justify-end">
                         <button @click="openCreateModal"
                             class="inline-flex items-center px-6 py-2.5 border border-transparent text-sm font-bold rounded-xl shadow-lg text-white bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 focus:outline-none focus:ring-4 focus:ring-purple-300 transition-all">
                             <Plus class="w-4 h-4 mr-2" />
@@ -311,6 +351,7 @@
                             <tr>
                                 <th class="px-5 py-4 text-left text-xs font-bold text-slate-600 uppercase tracking-wider">Año</th>
                                 <th class="px-5 py-4 text-left text-xs font-bold text-slate-600 uppercase tracking-wider">Nombre</th>
+                                <th class="px-5 py-4 text-center text-xs font-bold text-slate-600 uppercase tracking-wider hidden sm:table-cell">Tipo</th>
                                 <th class="px-5 py-4 text-left text-xs font-bold text-slate-600 uppercase tracking-wider hidden md:table-cell">Inicio</th>
                                 <th class="px-5 py-4 text-left text-xs font-bold text-slate-600 uppercase tracking-wider hidden md:table-cell">Fin</th>
                                 <th class="px-5 py-4 text-center text-xs font-bold text-slate-600 uppercase tracking-wider hidden sm:table-cell">Bienes</th>
@@ -326,7 +367,17 @@
                                 </td>
                                 <td class="px-5 py-4">
                                     <div class="text-sm font-semibold text-slate-800">{{ inv.nombre }}</div>
-                                    <div v-if="inv.descripcion" class="text-xs text-slate-500 mt-0.5 line-clamp-1">{{ inv.descripcion }}</div>
+                                    <div v-if="inv.tipo === 'ROTACION' && inv.responsable_saliente"
+                                        class="text-xs text-orange-600 mt-0.5 flex items-center gap-1">
+                                        <UserMinus class="w-3 h-3" />
+                                        {{ nombreEmpleado(inv.responsable_saliente) }}
+                                    </div>
+                                </td>
+                                <td class="px-5 py-4 whitespace-nowrap text-center hidden sm:table-cell">
+                                    <span class="px-2 py-0.5 inline-flex text-xs font-bold rounded-full"
+                                        :class="tipoClass(inv.tipo)">
+                                        {{ tipoLabel(inv.tipo) }}
+                                    </span>
                                 </td>
                                 <td class="px-5 py-4 whitespace-nowrap hidden md:table-cell">
                                     <div class="text-sm text-slate-600">{{ formatDate(inv.fecha_inicio) }}</div>
@@ -459,6 +510,38 @@
                         </div>
                     </div>
 
+                    <!-- Tipo de inventario -->
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Tipo de inventario *</label>
+                        <div class="grid grid-cols-3 gap-2">
+                            <label v-for="opt in tipoOpciones" :key="opt.value"
+                                class="flex flex-col items-center gap-1 p-3 border-2 rounded-xl cursor-pointer transition-all text-center"
+                                :class="invForm.tipo === opt.value
+                                    ? 'border-purple-500 bg-purple-50'
+                                    : 'border-slate-200 hover:border-slate-300'">
+                                <input type="radio" v-model="invForm.tipo" :value="opt.value" class="sr-only" />
+                                <component :is="opt.icon" class="w-5 h-5" :class="invForm.tipo === opt.value ? 'text-purple-600' : 'text-slate-400'" />
+                                <span class="text-xs font-bold" :class="invForm.tipo === opt.value ? 'text-purple-700' : 'text-slate-500'">{{ opt.label }}</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Empleado saliente (solo ROTACION) -->
+                    <div v-if="invForm.tipo === 'ROTACION'"
+                        class="p-4 border border-orange-200 rounded-xl bg-orange-50 space-y-2">
+                        <label class="block text-xs font-bold text-orange-700 uppercase tracking-wider">
+                            Empleado saliente / Rotación
+                        </label>
+                        <select v-model="invForm.responsable_saliente_id"
+                            class="w-full px-4 py-2.5 border border-orange-200 rounded-xl focus:ring-2 focus:ring-orange-400 text-sm bg-white transition-all">
+                            <option value="">Sin especificar</option>
+                            <option v-for="emp in employees" :key="emp.id" :value="emp.id">
+                                {{ emp.nombre_completo }}
+                            </option>
+                        </select>
+                        <p class="text-xs text-orange-600">Empleado cuyos bienes serán reasignados durante este inventario.</p>
+                    </div>
+
                     <div>
                         <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Nombre *</label>
                         <input v-model="invForm.nombre" type="text" required maxlength="200"
@@ -579,7 +662,9 @@
 
                     <!-- Responsable -->
                     <div>
-                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Responsable</label>
+                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                            {{ selectedInventario?.tipo === 'ROTACION' ? 'Nuevo responsable (reasignado)' : 'Responsable' }}
+                        </label>
                         <select v-model="itemForm.employee_id"
                             class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-purple-500 text-sm bg-white transition-all">
                             <option value="">Sin especificar</option>
@@ -625,8 +710,9 @@
 import { ref, watch, onMounted, computed } from 'vue';
 import {
     ClipboardList, Clock, CheckCircle, Loader2, Plus, X,
-    Pencil, Trash2, Play, RotateCcw, Eye, ArrowLeft, Search,
-    ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight,
+    Pencil, Trash2, Play, RotateCcw, Eye, ArrowLeft, ArrowRight,
+    Search, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight,
+    CalendarDays, UserMinus, Zap,
 } from 'lucide-vue-next';
 import axios from 'axios';
 import Swal from 'sweetalert2';
@@ -667,6 +753,7 @@ const availableYears = computed(() => {
 
 const filterAnio   = ref('');
 const filterEstado = ref('');
+const filterTipo   = ref('');
 const inventarios  = ref([]);
 const loading      = ref(false);
 const currentPage  = ref(1);
@@ -681,6 +768,7 @@ const fetchInventarios = async (page = 1) => {
             params: {
                 anio:     filterAnio.value   || undefined,
                 estado:   filterEstado.value || undefined,
+                tipo:     filterTipo.value   || undefined,
                 per_page: perPage.value,
                 page,
             },
@@ -693,10 +781,10 @@ const fetchInventarios = async (page = 1) => {
     finally { loading.value = false; }
 };
 
-watch([filterAnio, filterEstado], () => fetchInventarios(1));
+watch([filterAnio, filterEstado, filterTipo], () => fetchInventarios(1));
 watch(perPage, () => fetchInventarios(1));
 
-const clearFilters = () => { filterAnio.value = ''; filterEstado.value = ''; fetchInventarios(1); };
+const clearFilters = () => { filterAnio.value = ''; filterEstado.value = ''; filterTipo.value = ''; fetchInventarios(1); };
 
 // ===== CAMBIO DE ESTADO =====
 const changeEstado = async (inv, nuevoEstado) => {
@@ -733,13 +821,21 @@ const showInvModal  = ref(false);
 const editingInvId  = ref(null);
 const invSaving     = ref(false);
 
+const tipoOpciones = [
+    { value: 'ANUAL',         label: 'Anual',       icon: CalendarDays },
+    { value: 'ROTACION',      label: 'Rotación',    icon: UserMinus },
+    { value: 'EXTRAORDINARIO', label: 'Extraordinario', icon: Zap },
+];
+
 const emptyInvForm = () => ({
-    anio:        currentYear,
-    nombre:      `Inventario Anual ${currentYear}`,
-    descripcion: '',
-    fecha_inicio: new Date().toISOString().split('T')[0],
-    fecha_fin:   '',
-    estado:      'PENDIENTE',
+    anio:                    currentYear,
+    tipo:                    'ANUAL',
+    nombre:                  `Inventario Anual ${currentYear}`,
+    descripcion:             '',
+    fecha_inicio:            new Date().toISOString().split('T')[0],
+    fecha_fin:               '',
+    estado:                  'PENDIENTE',
+    responsable_saliente_id: '',
 });
 
 const invForm = ref(emptyInvForm());
@@ -748,12 +844,14 @@ const openCreateModal = () => { editingInvId.value = null; invForm.value = empty
 const openEditModal   = (inv) => {
     editingInvId.value = inv.id;
     invForm.value = {
-        anio:        inv.anio,
-        nombre:      inv.nombre,
-        descripcion: inv.descripcion || '',
-        fecha_inicio: inv.fecha_inicio,
-        fecha_fin:   inv.fecha_fin || '',
-        estado:      inv.estado,
+        anio:                    inv.anio,
+        tipo:                    inv.tipo,
+        nombre:                  inv.nombre,
+        descripcion:             inv.descripcion || '',
+        fecha_inicio:            inv.fecha_inicio,
+        fecha_fin:               inv.fecha_fin || '',
+        estado:                  inv.estado,
+        responsable_saliente_id: inv.responsable_saliente_id || '',
     };
     showInvModal.value = true;
 };
@@ -763,8 +861,9 @@ const saveInventario = async () => {
     invSaving.value = true;
     try {
         const payload = { ...invForm.value };
-        if (!payload.fecha_fin)   delete payload.fecha_fin;
-        if (!payload.descripcion) delete payload.descripcion;
+        if (!payload.fecha_fin)               delete payload.fecha_fin;
+        if (!payload.descripcion)             delete payload.descripcion;
+        if (!payload.responsable_saliente_id) delete payload.responsable_saliente_id;
 
         if (editingInvId.value) {
             await axios.put(`/assets/inventarios/${editingInvId.value}`, payload);
@@ -972,6 +1071,20 @@ const formatDate = (dateStr) => {
 
 const estadoLabel = (e) => ({ PENDIENTE: 'Pendiente', EN_PROCESO: 'En Proceso', CERRADO: 'Cerrado' }[e] || e);
 const estadoClass = (e) => ({ PENDIENTE: 'bg-blue-100 text-blue-700', EN_PROCESO: 'bg-amber-100 text-amber-700', CERRADO: 'bg-green-100 text-green-700' }[e] || 'bg-slate-100 text-slate-600');
+
+const tipoLabel = (t) => ({ ANUAL: 'Anual', ROTACION: 'Rotación', EXTRAORDINARIO: 'Extraordinario' }[t] || t);
+const tipoClass = (t) => ({
+    ANUAL:          'bg-slate-100 text-slate-600',
+    ROTACION:       'bg-orange-100 text-orange-700',
+    EXTRAORDINARIO: 'bg-indigo-100 text-indigo-700',
+}[t] || 'bg-slate-100 text-slate-600');
+
+const nombreEmpleado = (emp) => {
+    if (!emp) return null;
+    const p = emp.person;
+    if (p) return `${p.nombres ?? ''} ${p.apellido_paterno ?? ''}`.trim();
+    return emp.nombre_completo ?? null;
+};
 const estadoItemClass = (nombre) => {
     const map = { BUENO: 'bg-green-100 text-green-700', REGULAR: 'bg-yellow-100 text-yellow-700', MALO: 'bg-red-100 text-red-700' };
     return map[nombre?.toUpperCase()] || 'bg-slate-100 text-slate-600';

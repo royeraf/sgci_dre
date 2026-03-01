@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Asset;
+use App\Models\AssetMovement;
 use App\Models\AssetResponsible;
 use App\Models\Employee;
 use App\Models\PatrimonioInventario;
@@ -14,7 +16,12 @@ class PatrimonioInventarioController extends Controller
 
     public function index(Request $request)
     {
-        $query = PatrimonioInventario::with(['creadoPor:id,name', 'cerradoPor:id,name'])
+        $query = PatrimonioInventario::with([
+                'creadoPor:id,name',
+                'cerradoPor:id,name',
+                'responsableSaliente:id',
+                'responsableSaliente.person:id,nombres,apellido_paterno',
+            ])
             ->withCount('items')
             ->orderBy('anio', 'desc')
             ->orderBy('fecha_inicio', 'desc');
@@ -27,6 +34,10 @@ class PatrimonioInventarioController extends Controller
             $query->where('estado', $request->estado);
         }
 
+        if ($request->filled('tipo')) {
+            $query->where('tipo', $request->tipo);
+        }
+
         $perPage = $request->input('per_page', 15);
 
         return response()->json($query->paginate($perPage));
@@ -35,30 +46,52 @@ class PatrimonioInventarioController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'anio'        => 'required|integer|min:2000|max:2100',
-            'nombre'      => 'required|string|max:200',
-            'descripcion' => 'nullable|string',
-            'fecha_inicio' => 'required|date',
-            'fecha_fin'   => 'nullable|date|after_or_equal:fecha_inicio',
+            'anio'                    => 'required|integer|min:2000|max:2100',
+            'tipo'                    => 'required|in:ANUAL,ROTACION,EXTRAORDINARIO',
+            'nombre'                  => 'required|string|max:200',
+            'descripcion'             => 'nullable|string',
+            'fecha_inicio'            => 'required|date',
+            'fecha_fin'               => 'nullable|date|after_or_equal:fecha_inicio',
+            'responsable_saliente_id' => 'nullable|exists:employees,id',
         ]);
+
+        // responsable_saliente solo aplica para ROTACION
+        if ($validated['tipo'] !== 'ROTACION') {
+            $validated['responsable_saliente_id'] = null;
+        }
 
         $validated['estado']     = 'PENDIENTE';
         $validated['creado_por'] = auth()->id();
 
         $inventario = PatrimonioInventario::create($validated);
 
-        return response()->json($inventario->load('creadoPor:id,name'), 201);
+        return response()->json(
+            $inventario->load([
+                'creadoPor:id,name',
+                'responsableSaliente:id',
+                'responsableSaliente.person:id,nombres,apellido_paterno',
+            ]),
+            201
+        );
     }
 
     public function update(Request $request, PatrimonioInventario $inventario)
     {
         $validated = $request->validate([
-            'nombre'       => 'sometimes|required|string|max:200',
-            'descripcion'  => 'nullable|string',
-            'fecha_inicio' => 'sometimes|required|date',
-            'fecha_fin'    => 'nullable|date|after_or_equal:fecha_inicio',
-            'estado'       => 'sometimes|required|in:PENDIENTE,EN_PROCESO,CERRADO',
+            'nombre'                  => 'sometimes|required|string|max:200',
+            'tipo'                    => 'sometimes|required|in:ANUAL,ROTACION,EXTRAORDINARIO',
+            'descripcion'             => 'nullable|string',
+            'fecha_inicio'            => 'sometimes|required|date',
+            'fecha_fin'               => 'nullable|date|after_or_equal:fecha_inicio',
+            'estado'                  => 'sometimes|required|in:PENDIENTE,EN_PROCESO,CERRADO',
+            'responsable_saliente_id' => 'nullable|exists:employees,id',
         ]);
+
+        // responsable_saliente solo aplica para ROTACION
+        $tipo = $validated['tipo'] ?? $inventario->tipo;
+        if ($tipo !== 'ROTACION') {
+            $validated['responsable_saliente_id'] = null;
+        }
 
         if (isset($validated['estado'])) {
             if ($validated['estado'] === 'CERRADO' && $inventario->estado !== 'CERRADO') {
@@ -75,7 +108,14 @@ class PatrimonioInventarioController extends Controller
 
         $inventario->update($validated);
 
-        return response()->json($inventario->fresh()->load(['creadoPor:id,name', 'cerradoPor:id,name']));
+        return response()->json(
+            $inventario->fresh()->load([
+                'creadoPor:id,name',
+                'cerradoPor:id,name',
+                'responsableSaliente:id',
+                'responsableSaliente.person:id,nombres,apellido_paterno',
+            ])
+        );
     }
 
     public function destroy(PatrimonioInventario $inventario)
@@ -97,6 +137,11 @@ class PatrimonioInventarioController extends Controller
             ->pluck('total', 'estado')
             ->toArray();
 
+        $porTipo = PatrimonioInventario::selectRaw('tipo, COUNT(*) as total')
+            ->groupBy('tipo')
+            ->pluck('total', 'tipo')
+            ->toArray();
+
         $porAnio = PatrimonioInventario::selectRaw('anio, COUNT(*) as total')
             ->groupBy('anio')
             ->orderBy('anio', 'desc')
@@ -108,6 +153,7 @@ class PatrimonioInventarioController extends Controller
             'pendientes'  => $porEstado['PENDIENTE']  ?? 0,
             'en_proceso'  => $porEstado['EN_PROCESO'] ?? 0,
             'cerrados'    => $porEstado['CERRADO']    ?? 0,
+            'por_tipo'    => $porTipo,
             'por_anio'    => $porAnio,
             'ultimo_anio' => (int) date('Y'),
         ]);
@@ -119,13 +165,16 @@ class PatrimonioInventarioController extends Controller
     {
         $query = $inventario->items()
             ->with([
-                'asset:id,codigo_patrimonio,codigo_interno,codigo_completo,denominacion,marca_id,categoria_id',
+                'asset:id,codigo_patrimonio,codigo_interno,codigo_completo,denominacion,marca_id',
                 'asset.brand:id,nombre',
                 'estado:id,nombre',
                 'oficina:id,nombre',
+                'responsableAnterior:id,nombre_original,employee_id',
+                'responsableAnterior.employee:id,dni',
+                'responsableAnterior.employee.person:id,nombres,apellido_paterno',
                 'responsable:id,nombre_original,employee_id',
                 'responsable.employee:id,dni',
-                'responsable.employee.person:id,nombres,apellido_paterno,apellido_materno',
+                'responsable.employee.person:id,nombres,apellido_paterno',
                 'inventariador:id,name',
             ])
             ->orderBy('fecha_verificacion', 'desc')
@@ -161,7 +210,7 @@ class PatrimonioInventarioController extends Controller
             ->toArray();
 
         return response()->json([
-            'total'     => $total,
+            'total'      => $total,
             'por_estado' => $porEstado,
         ]);
     }
@@ -177,7 +226,14 @@ class PatrimonioInventarioController extends Controller
             'fecha_verificacion' => 'required|date',
         ]);
 
-        // Resolver o crear el responsable desde el empleado seleccionado
+        // Capturar automáticamente el responsable anterior del bien (su último movimiento)
+        $responsableAnteriorId = null;
+        $asset = Asset::with('latestMovement.responsible')->find($validated['asset_id']);
+        if ($asset?->latestMovement?->responsable_id) {
+            $responsableAnteriorId = $asset->latestMovement->responsable_id;
+        }
+
+        // Resolver o crear el responsable nuevo desde el empleado seleccionado
         $responsableId = null;
         if (!empty($validated['employee_id'])) {
             $employee = Employee::with('person')->find($validated['employee_id']);
@@ -190,18 +246,24 @@ class PatrimonioInventarioController extends Controller
             }
         }
 
+        // Si el nuevo responsable es el mismo que el anterior, no hay cambio de responsable
+        if ($responsableId && $responsableId === $responsableAnteriorId) {
+            $responsableAnteriorId = null;
+        }
+
         $item = PatrimonioInventarioItem::updateOrCreate(
             [
                 'inventario_id' => $inventario->id,
                 'asset_id'      => $validated['asset_id'],
             ],
             [
-                'estado_id'          => $validated['estado_id'] ?? null,
-                'oficina_id'         => $validated['oficina_id'] ?? null,
-                'responsable_id'     => $responsableId,
-                'observaciones'      => $validated['observaciones'] ?? null,
-                'inventariador_id'   => auth()->id(),
-                'fecha_verificacion' => $validated['fecha_verificacion'],
+                'estado_id'              => $validated['estado_id'] ?? null,
+                'oficina_id'             => $validated['oficina_id'] ?? null,
+                'responsable_anterior_id' => $responsableAnteriorId,
+                'responsable_id'         => $responsableId,
+                'observaciones'          => $validated['observaciones'] ?? null,
+                'inventariador_id'       => auth()->id(),
+                'fecha_verificacion'     => $validated['fecha_verificacion'],
             ]
         );
 
@@ -210,6 +272,8 @@ class PatrimonioInventarioController extends Controller
                 'asset:id,codigo_patrimonio,codigo_interno,codigo_completo,denominacion',
                 'estado:id,nombre',
                 'oficina:id,nombre',
+                'responsableAnterior:id,nombre_original,employee_id',
+                'responsableAnterior.employee.person:id,nombres,apellido_paterno',
                 'responsable:id,nombre_original,employee_id',
                 'responsable.employee.person:id,nombres,apellido_paterno',
                 'inventariador:id,name',
