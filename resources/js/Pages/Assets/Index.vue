@@ -415,7 +415,8 @@
             <PatrimonioSigaTab v-if="activeTab === 'patrimonio'" />
 
             <!-- Inventarios Tab -->
-            <InventariosTab v-if="activeTab === 'inventarios'" />
+            <InventariosTab v-if="activeTab === 'inventarios'"
+                :states="states" :offices="offices" :employees="employees" />
         </div>
     </div>
 </template>

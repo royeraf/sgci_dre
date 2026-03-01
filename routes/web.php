@@ -234,6 +234,12 @@ Route::middleware('auth')->group(function () {
             Route::post('/', [App\Http\Controllers\PatrimonioInventarioController::class, 'store'])->name('store');
             Route::put('/{inventario}', [App\Http\Controllers\PatrimonioInventarioController::class, 'update'])->name('update');
             Route::delete('/{inventario}', [App\Http\Controllers\PatrimonioInventarioController::class, 'destroy'])->name('destroy');
+
+            // Items (verificaciones de bienes)
+            Route::get('/{inventario}/items', [App\Http\Controllers\PatrimonioInventarioController::class, 'getItems'])->name('items.list');
+            Route::get('/{inventario}/items/stats', [App\Http\Controllers\PatrimonioInventarioController::class, 'itemStats'])->name('items.stats');
+            Route::post('/{inventario}/items', [App\Http\Controllers\PatrimonioInventarioController::class, 'storeItem'])->name('items.store');
+            Route::delete('/{inventario}/items/{item}', [App\Http\Controllers\PatrimonioInventarioController::class, 'destroyItem'])->name('items.destroy');
         });
 
         // Catálogos - Página principal

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class PatrimonioInventario extends Model
 {
@@ -25,6 +26,11 @@ class PatrimonioInventario extends Model
         'fecha_inicio' => 'date',
         'fecha_fin'    => 'date',
     ];
+
+    public function items(): HasMany
+    {
+        return $this->hasMany(PatrimonioInventarioItem::class, 'inventario_id');
+    }
 
     public function creadoPor(): BelongsTo
     {
