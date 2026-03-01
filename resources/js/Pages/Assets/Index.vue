@@ -97,6 +97,15 @@
                         <DatabaseIcon class="w-5 h-5" />
                         Patrimonio SIGA
                     </button>
+                    <button @click="activeTab = 'inventarios'" :class="[
+                        activeTab === 'inventarios'
+                            ? 'border-purple-600 text-purple-600'
+                            : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300',
+                        'whitespace-nowrap py-4 px-1 border-b-2 font-bold text-sm flex items-center gap-2 transition-all duration-200'
+                    ]">
+                        <ClipboardList class="w-5 h-5" />
+                        Inventarios
+                    </button>
                 </nav>
             </div>
 
@@ -404,6 +413,9 @@
 
             <!-- Patrimonio SIGA Tab -->
             <PatrimonioSigaTab v-if="activeTab === 'patrimonio'" />
+
+            <!-- Inventarios Tab -->
+            <InventariosTab v-if="activeTab === 'inventarios'" />
         </div>
     </div>
 </template>
@@ -440,6 +452,7 @@ import {
     PackageOpen,
     X,
     Database as DatabaseIcon,
+    ClipboardList,
 } from 'lucide-vue-next';
 import axios from 'axios';
 import Swal from 'sweetalert2';
@@ -449,6 +462,7 @@ import MovementsList from '@/Components/Assets/MovementsList.vue';
 import BarcodeScannerModal from '@/Components/Assets/BarcodeScannerModal.vue';
 import ReportsTab from '@/Components/Assets/ReportsTab.vue';
 import PatrimonioSigaTab from '@/Components/Assets/PatrimonioSigaTab.vue';
+import InventariosTab from '@/Components/Assets/InventariosTab.vue';
 
 const props = defineProps({
     categories: { type: Array, default: () => [] },

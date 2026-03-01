@@ -227,6 +227,15 @@ Route::middleware('auth')->group(function () {
         Route::post('/patrimonio/import', [App\Http\Controllers\AssetController::class, 'importPatrimonio'])->name('patrimonio.import');
         Route::post('/patrimonio/sync', [App\Http\Controllers\AssetController::class, 'sincronizarPatrimonio'])->name('patrimonio.sync');
 
+        // Inventarios Anuales de Patrimonio
+        Route::prefix('inventarios')->name('inventarios.')->group(function () {
+            Route::get('/', [App\Http\Controllers\PatrimonioInventarioController::class, 'index'])->name('list');
+            Route::get('/stats', [App\Http\Controllers\PatrimonioInventarioController::class, 'stats'])->name('stats');
+            Route::post('/', [App\Http\Controllers\PatrimonioInventarioController::class, 'store'])->name('store');
+            Route::put('/{inventario}', [App\Http\Controllers\PatrimonioInventarioController::class, 'update'])->name('update');
+            Route::delete('/{inventario}', [App\Http\Controllers\PatrimonioInventarioController::class, 'destroy'])->name('destroy');
+        });
+
         // Catálogos - Página principal
         Route::get('/catalogs', [App\Http\Controllers\AssetCatalogController::class, 'index'])->name('catalogs.index');
 
