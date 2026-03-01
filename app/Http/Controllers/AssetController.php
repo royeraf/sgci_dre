@@ -464,21 +464,182 @@ class AssetController extends Controller
     }
 
     /**
-     * Generar reporte de bienes asignados a un responsable
+     * Generar reporte Excel de bienes asignados a un responsable
      */
     public function reportByResponsible($responsibleId)
     {
         $responsible = AssetResponsible::with(['employee.person', 'direction', 'office'])
             ->findOrFail($responsibleId);
 
-        // Buscar bienes asignados actualmente a este responsable (último movimiento lo tiene a él como responsable)
-        $assets = Asset::whereHas('latestMovement', function ($query) use ($responsibleId) {
-            $query->where('responsable_id', $responsibleId);
-        })->with(['brand', 'latestMovement.state'])->get();
+        // Buscar todos los IDs de responsable que coincidan (por ID directo + por nombre similar)
+        $responsibleIds = collect([$responsibleId]);
+        $nombreResp = mb_strtoupper(trim($responsible->nombre_original ?? ''));
+        if ($nombreResp) {
+            $similarIds = AssetResponsible::whereRaw('UPPER(TRIM(nombre_original)) = ?', [$nombreResp])
+                ->pluck('id');
+            $responsibleIds = $responsibleIds->merge($similarIds)->unique();
+        }
 
-        $pdf = Pdf::loadView('pdf.bienes_asignados', compact('responsible', 'assets'));
+        // Buscar assets cuyo movimiento más reciente CON responsable sea alguno de estos responsables
+        $assets = Asset::whereHas('movements', function ($query) use ($responsibleIds) {
+            $query->whereIn('responsable_id', $responsibleIds)
+                ->whereIn('id', function ($sub) {
+                    $sub->selectRaw('MAX(id)')
+                        ->from('asset_movements')
+                        ->whereNotNull('responsable_id')
+                        ->groupBy('asset_id');
+                });
+        })->with([
+            'brand',
+            'color',
+            'latestMovement.state',
+            'latestMovement.office',
+            'movements' => function ($q) {
+                $q->whereNotNull('responsable_id')->latest('id')->limit(1);
+            },
+            'movements.state',
+            'movements.office',
+        ])->orderBy('denominacion')->get();
 
-        return $pdf->stream('bienes_asignados_' . $responsible->employee->dni . '.pdf');
+        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('Bienes Asignados');
+
+        // Configurar página A4 vertical
+        $sheet->getPageSetup()
+            ->setPaperSize(\PhpOffice\PhpSpreadsheet\Worksheet\PageSetup::PAPERSIZE_A4)
+            ->setOrientation(\PhpOffice\PhpSpreadsheet\Worksheet\PageSetup::ORIENTATION_PORTRAIT)
+            ->setFitToWidth(1)
+            ->setFitToHeight(0);
+        $sheet->getPageMargins()->setTop(0.5)->setBottom(0.5)->setLeft(0.4)->setRight(0.4);
+
+        // Estilos
+        $headerStyle = [
+            'font' => ['bold' => true, 'size' => 12],
+            'alignment' => ['horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER],
+        ];
+        $subHeaderStyle = [
+            'font' => ['bold' => true, 'size' => 10],
+            'alignment' => ['horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER],
+        ];
+        $colHeaderStyle = [
+            'font' => ['bold' => true, 'size' => 8, 'color' => ['rgb' => 'FFFFFF']],
+            'fill' => ['fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID, 'startColor' => ['rgb' => '2D3748']],
+            'alignment' => ['horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER, 'vertical' => \PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_CENTER, 'wrapText' => true],
+            'borders' => ['allBorders' => ['borderStyle' => \PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN, 'color' => ['rgb' => '000000']]],
+        ];
+        $dataCellStyle = [
+            'font' => ['size' => 8],
+            'alignment' => ['vertical' => \PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_CENTER, 'wrapText' => true],
+            'borders' => ['allBorders' => ['borderStyle' => \PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN, 'color' => ['rgb' => 'CBD5E0']]],
+        ];
+
+        // Encabezado institucional
+        $sheet->mergeCells('A1:J1');
+        $sheet->setCellValue('A1', 'DIRECCIÓN REGIONAL DE EDUCACIÓN HUÁNUCO');
+        $sheet->getStyle('A1')->applyFromArray($headerStyle);
+
+        $sheet->mergeCells('A2:J2');
+        $sheet->setCellValue('A2', 'REPORTE DE BIENES ASIGNADOS');
+        $sheet->getStyle('A2')->applyFromArray($subHeaderStyle);
+
+        // Info del responsable
+        $nombreResponsable = strtoupper($responsible->full_name);
+        $dniResponsable = $responsible->dni ?? '';
+        $areaResponsable = $responsible->area_office ?? 'NO ESPECIFICADO';
+
+        $sheet->mergeCells('A4:J4');
+        $sheet->setCellValue('A4', "Responsable: {$nombreResponsable}    DNI: {$dniResponsable}    Oficina/Área: {$areaResponsable}");
+        $sheet->getStyle('A4')->getFont()->setBold(true)->setSize(9);
+
+        $sheet->mergeCells('A5:J5');
+        $sheet->setCellValue('A5', 'Generado el: ' . now()->format('d/m/Y H:i A'));
+        $sheet->getStyle('A5')->getFont()->setSize(8)->setItalic(true);
+
+        // Cabeceras de columna
+        $row = 7;
+        $columns = ['A' => 'Item', 'B' => 'Código del Bien', 'C' => 'Código Interno', 'D' => 'Detalle del Bien', 'E' => 'Características', 'F' => 'Oficina', 'G' => 'Estado', 'H' => 'Cód. Anterior', 'I' => 'Cuenta Contable', 'J' => 'Importe'];
+
+        foreach ($columns as $col => $title) {
+            $sheet->setCellValue("{$col}{$row}", $title);
+        }
+        $sheet->getStyle("A{$row}:J{$row}")->applyFromArray($colHeaderStyle);
+        $sheet->getRowDimension($row)->setRowHeight(25);
+
+        // Anchos de columna
+        $sheet->getColumnDimension('A')->setWidth(5);   // Item
+        $sheet->getColumnDimension('B')->setWidth(12);  // Código
+        $sheet->getColumnDimension('C')->setWidth(8);   // Cód. Interno
+        $sheet->getColumnDimension('D')->setWidth(25);  // Detalle
+        $sheet->getColumnDimension('E')->setWidth(22);  // Características
+        $sheet->getColumnDimension('F')->setWidth(18);  // Oficina
+        $sheet->getColumnDimension('G')->setWidth(6);   // Estado
+        $sheet->getColumnDimension('H')->setWidth(10);  // Cód. Anterior
+        $sheet->getColumnDimension('I')->setWidth(12);  // Cuenta Contable
+        $sheet->getColumnDimension('J')->setWidth(10);  // Importe
+
+        // Datos
+        $dataRow = $row + 1;
+        $estadoMap = ['BUENO' => 'B', 'REGULAR' => 'R', 'MALO' => 'M', 'BAJA' => 'BJ', 'EN REPARACIÓN' => 'ER', 'PERDIDO' => 'P'];
+
+        foreach ($assets as $index => $asset) {
+            // Usar el movimiento con responsable (más preciso) o el latestMovement como fallback
+            $movConResp = $asset->movements->first();
+            $movRef = $movConResp ?? $asset->latestMovement;
+
+            $estadoNombre = optional($movRef?->state)->nombre ?? '';
+            $estadoAbrev = $estadoMap[mb_strtoupper($estadoNombre)] ?? $estadoNombre;
+
+            // Construir características: marca, modelo, serie, color, dimensión
+            $caract = [];
+            if ($asset->brand?->nombre) $caract[] = $asset->brand->nombre;
+            if ($asset->modelo) $caract[] = $asset->modelo;
+            if ($asset->numero_serie) $caract[] = "S/N: {$asset->numero_serie}";
+            if ($asset->color?->nombre) $caract[] = $asset->color->nombre;
+            if ($asset->dimension) $caract[] = $asset->dimension;
+            $caracteristicas = implode(', ', $caract);
+
+            $oficina = $movRef?->office?->nombre ?? '';
+
+            $sheet->setCellValue("A{$dataRow}", $index + 1);
+            $sheet->setCellValueExplicit("B{$dataRow}", $asset->codigo_patrimonio, \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
+            $sheet->setCellValueExplicit("C{$dataRow}", $asset->codigo_interno, \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
+            $sheet->setCellValue("D{$dataRow}", $asset->denominacion);
+            $sheet->setCellValue("E{$dataRow}", $caracteristicas);
+            $sheet->setCellValue("F{$dataRow}", $oficina);
+            $sheet->setCellValue("G{$dataRow}", $estadoAbrev);
+            $sheet->setCellValue("H{$dataRow}", ''); // Cód. Anterior - vacío
+            $sheet->setCellValue("I{$dataRow}", ''); // Cuenta Contable - vacío
+            $sheet->setCellValue("J{$dataRow}", ''); // Importe - vacío
+
+            $sheet->getStyle("A{$dataRow}")->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
+            $sheet->getStyle("G{$dataRow}")->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
+
+            $dataRow++;
+        }
+
+        // Estilo a todo el rango de datos
+        $lastDataRow = $dataRow - 1;
+        if ($lastDataRow >= $row + 1) {
+            $sheet->getStyle("A" . ($row + 1) . ":J{$lastDataRow}")->applyFromArray($dataCellStyle);
+        }
+
+        // Total al final
+        $sheet->mergeCells("A{$dataRow}:F{$dataRow}");
+        $sheet->setCellValue("A{$dataRow}", "Total de bienes: " . count($assets));
+        $sheet->getStyle("A{$dataRow}:J{$dataRow}")->getFont()->setBold(true)->setSize(9);
+        $sheet->getStyle("A{$dataRow}")->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_RIGHT);
+
+        // Generar respuesta
+        $fileName = 'bienes_asignados_' . ($responsible->employee?->dni ?? $responsibleId) . '.xlsx';
+
+        $writer = IOFactory::createWriter($spreadsheet, 'Xlsx');
+
+        return response()->streamDownload(function () use ($writer) {
+            $writer->save('php://output');
+        }, $fileName, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        ]);
     }
 
     // ===== PATRIMONIO SIGA =====
@@ -807,6 +968,58 @@ class AssetController extends Controller
             'detalle_errores'  => $errors,
             'message'          => "Sincronización completada: {$sincronizados} bienes actualizados, {$omitidos} omitidos.",
         ]);
+    }
+
+    /**
+     * Reporte PDF: Bienes Muebles en Uso agrupados por denominación
+     */
+    public function reportBienesMueblesEnUso()
+    {
+        $states = AssetState::all()->keyBy('id');
+
+        // Obtener todos los assets con su último movimiento (estado actual)
+        $assets = Asset::with('latestMovement.state')->get();
+
+        // Agrupar por denominación y contar por estado
+        $grouped = [];
+        foreach ($assets as $asset) {
+            $denom = $asset->denominacion ?? 'SIN DENOMINACIÓN';
+            $estadoNombre = optional($asset->latestMovement?->state)->nombre ?? 'DESCONOCIDO';
+
+            if (!isset($grouped[$denom])) {
+                $grouped[$denom] = [
+                    'denominacion' => $denom,
+                    'bueno' => 0,
+                    'regular' => 0,
+                    'malo' => 0,
+                    'total' => 0,
+                ];
+            }
+
+            $key = mb_strtolower($estadoNombre);
+            if (isset($grouped[$denom][$key])) {
+                $grouped[$denom][$key]++;
+            }
+            $grouped[$denom]['total']++;
+        }
+
+        // Ordenar por denominación
+        $data = collect($grouped)->sortBy('denominacion')->values();
+
+        // Totales generales
+        $totals = [
+            'bueno' => $data->sum('bueno'),
+            'regular' => $data->sum('regular'),
+            'malo' => $data->sum('malo'),
+            'total' => $data->sum('total'),
+        ];
+
+        $pdf = Pdf::loadView('pdf.bienes_muebles_en_uso', [
+            'data' => $data,
+            'totals' => $totals,
+        ])->setPaper('a4', 'portrait');
+
+        return $pdf->stream('reporte_bienes_muebles_en_uso.pdf');
     }
 
     private function parseImportDate($value): ?string

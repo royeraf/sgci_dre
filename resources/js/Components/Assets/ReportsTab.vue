@@ -6,7 +6,8 @@ import {
     User,
     Search,
     X,
-    Loader2
+    Loader2,
+    ClipboardList,
 } from 'lucide-vue-next';
 import axios from 'axios';
 
@@ -18,6 +19,7 @@ const employeeSearch = ref('');
 const selectedEmployee = ref(null);
 const showResults = ref(false);
 const generating = ref(false);
+const generatingBienesMuebles = ref(false);
 const errorMsg = ref('');
 
 // Filtrar empleados localmente
@@ -60,8 +62,8 @@ const generateReport = async () => {
 
         const responsibleId = resp.data.id;
 
-        // Abrir reporte en nueva pestaña
-        window.open(`/assets/reports/responsible/${responsibleId}`, '_blank');
+        // Descargar Excel
+        window.location.href = `/assets/reports/responsible/${responsibleId}`;
 
     } catch (e) {
         console.error(e);
@@ -74,6 +76,14 @@ const generateReport = async () => {
 // Cerrar resultados al hacer click fuera
 /* Esto idealmente se haría con un v-on-click-outside o similar, pero por simplicidad
    podemos confiar en que al seleccionar se cierre */
+
+const generateBienesMueblesReport = () => {
+    generatingBienesMuebles.value = true;
+    window.open('/assets/reports/bienes-muebles-en-uso', '_blank');
+    setTimeout(() => {
+        generatingBienesMuebles.value = false;
+    }, 2000);
+};
 
 </script>
 
@@ -91,7 +101,7 @@ const generateReport = async () => {
                             </div>
                             <div>
                                 <h3 class="font-bold text-slate-800">Bienes por Responsable</h3>
-                                <p class="text-sm text-slate-500 mt-1">Genera un PDF con todos los bienes asignados a un
+                                <p class="text-sm text-slate-500 mt-1">Genera un Excel con todos los bienes asignados a un
                                     servidor</p>
                             </div>
                         </div>
@@ -161,20 +171,45 @@ const generateReport = async () => {
                         class="w-full py-3 px-4 bg-gradient-to-r from-slate-800 to-slate-700 hover:from-slate-900 hover:to-slate-800 text-white font-bold rounded-xl shadow-lg shadow-slate-200 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed group">
                         <Loader2 v-if="generating" class="w-5 h-5 animate-spin" />
                         <Download v-else class="w-5 h-5 group-hover:scale-110 transition-transform" />
-                        {{ generating ? 'Generando...' : 'Descargar Reporte PDF' }}
+                        {{ generating ? 'Generando...' : 'Descargar Reporte Excel' }}
                     </button>
                 </div>
             </div>
 
-            <!-- Card: Coming Soon -->
+            <!-- Card: Bienes Muebles en Uso -->
             <div
-                class="bg-slate-50/50 rounded-2xl border-2 border-dashed border-slate-200 p-6 flex flex-col items-center justify-center text-center">
-                <div class="p-4 bg-white rounded-full mb-3 shadow-sm">
-                    <FileText class="w-8 h-8 text-slate-300" />
+                class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-md transition-shadow">
+                <div class="p-6 border-b border-slate-100 bg-slate-50/50">
+                    <div class="flex items-start justify-between">
+                        <div class="flex items-center gap-3">
+                            <div class="p-2.5 bg-green-100 text-green-600 rounded-xl">
+                                <ClipboardList class="w-6 h-6" />
+                            </div>
+                            <div>
+                                <h3 class="font-bold text-slate-800">Bienes Muebles en Uso</h3>
+                                <p class="text-sm text-slate-500 mt-1">Resumen por denominaci&oacute;n con estado de conservaci&oacute;n (Bueno, Regular, Malo)</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <h3 class="font-bold text-slate-400">Más reportes próximamente</h3>
-                <p class="text-sm text-slate-400 max-w-xs mt-2">Pronto podrás generar reportes por oficina, estado y
-                    tipo de bien.</p>
+
+                <div class="p-6 space-y-4">
+                    <div class="bg-green-50 border border-green-100 rounded-xl p-4">
+                        <p class="text-sm text-green-800 font-medium">
+                            Este reporte agrupa todos los bienes por denominaci&oacute;n y muestra el conteo por estado de conservaci&oacute;n.
+                        </p>
+                        <p class="text-xs text-green-600 mt-1">
+                            Formato: PDF A4 vertical
+                        </p>
+                    </div>
+
+                    <button @click="generateBienesMueblesReport" :disabled="generatingBienesMuebles"
+                        class="w-full py-3 px-4 bg-gradient-to-r from-green-700 to-emerald-600 hover:from-green-800 hover:to-emerald-700 text-white font-bold rounded-xl shadow-lg shadow-green-200 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed group">
+                        <Loader2 v-if="generatingBienesMuebles" class="w-5 h-5 animate-spin" />
+                        <Download v-else class="w-5 h-5 group-hover:scale-110 transition-transform" />
+                        {{ generatingBienesMuebles ? 'Generando...' : 'Descargar Reporte PDF' }}
+                    </button>
+                </div>
             </div>
         </div>
     </div>

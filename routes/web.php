@@ -211,6 +211,7 @@ Route::middleware('auth')->group(function () {
 
         // Reportes
         Route::get('/reports/responsible/{id}', [App\Http\Controllers\AssetController::class, 'reportByResponsible'])->name('reports.responsible');
+        Route::get('/reports/bienes-muebles-en-uso', [App\Http\Controllers\AssetController::class, 'reportBienesMueblesEnUso'])->name('reports.bienes-muebles');
 
         Route::put('/{asset}', [App\Http\Controllers\AssetController::class, 'update'])->name('update');
         Route::delete('/{asset}', [App\Http\Controllers\AssetController::class, 'destroy'])->name('destroy');
