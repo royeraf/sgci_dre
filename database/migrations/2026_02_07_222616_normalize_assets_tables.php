@@ -43,9 +43,11 @@ return new class extends Migration
 
         // Eliminar columnas que ahora vienen de movements
         Schema::table('assets', function (Blueprint $table) {
-            // Eliminar FKs primero
-            if (Schema::hasColumn('assets', 'responsable_id')) {
+            // Eliminar FK si existe (try-catch porque hasColumn no verifica FKs)
+            try {
                 $table->dropForeign(['responsable_id']);
+            } catch (\Exception $e) {
+                // FK ya no existe, continuar
             }
 
             // Eliminar solo columnas que existan
