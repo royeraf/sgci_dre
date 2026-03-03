@@ -41,15 +41,17 @@ return new class extends Migration
             }
         });
 
+        // Eliminar FK de responsable_id si existe
+        try {
+            Schema::table('assets', function (Blueprint $table) {
+                $table->dropForeign(['responsable_id']);
+            });
+        } catch (\Exception $e) {
+            // FK ya no existe, continuar
+        }
+
         // Eliminar columnas que ahora vienen de movements
         Schema::table('assets', function (Blueprint $table) {
-            // Eliminar FK si existe (try-catch porque hasColumn no verifica FKs)
-            try {
-                $table->dropForeign(['responsable_id']);
-            } catch (\Exception $e) {
-                // FK ya no existe, continuar
-            }
-
             // Eliminar solo columnas que existan
             $columnsToDrop = array_filter([
                 'responsable_id',
