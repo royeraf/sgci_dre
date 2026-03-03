@@ -307,11 +307,7 @@
                         </select>
                     </div>
                     <div class="flex items-end justify-end">
-                        <button @click="openCreateModal"
-                            class="inline-flex items-center px-6 py-2.5 border border-transparent text-sm font-bold rounded-xl shadow-lg text-white bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 focus:outline-none focus:ring-4 focus:ring-purple-300 transition-all">
-                            <Plus class="w-4 h-4 mr-2" />
-                            Nuevo Inventario
-                        </button>
+                        <!-- El botón Nuevo Inventario se movió a Index.vue -->
                     </div>
                 </div>
 
@@ -480,11 +476,11 @@
         <div v-if="showInvModal" class="fixed inset-0 z-50 flex items-center justify-center p-4">
             <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" @click="closeInvModal"></div>
             <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg">
-                <div class="flex items-center justify-between p-6 border-b border-slate-100">
-                    <h2 class="text-lg font-bold text-slate-800">
+                <div class="flex items-center justify-between p-6 bg-gradient-to-r from-purple-600 to-indigo-600 rounded-t-2xl">
+                    <h2 class="text-lg font-bold text-white">
                         {{ editingInvId ? 'Editar Inventario' : 'Nuevo Inventario' }}
                     </h2>
-                    <button @click="closeInvModal" class="text-slate-400 hover:text-slate-600 transition-colors">
+                    <button @click="closeInvModal" class="text-white/70 hover:text-white transition-colors">
                         <X class="w-5 h-5" />
                     </button>
                 </div>
@@ -588,11 +584,11 @@
         <div v-if="showItemModal" class="fixed inset-0 z-50 flex items-center justify-center p-4">
             <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" @click="closeItemModal"></div>
             <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
-                <div class="flex items-center justify-between p-6 border-b border-slate-100 sticky top-0 bg-white z-10">
-                    <h2 class="text-lg font-bold text-slate-800">
+                <div class="flex items-center justify-between p-6 sticky top-0 z-10 bg-gradient-to-r from-purple-600 to-indigo-600 rounded-t-2xl">
+                    <h2 class="text-lg font-bold text-white">
                         {{ editingItemId ? 'Editar verificación' : 'Agregar verificación' }}
                     </h2>
-                    <button @click="closeItemModal" class="text-slate-400 hover:text-slate-600 transition-colors">
+                    <button @click="closeItemModal" class="text-white/70 hover:text-white transition-colors">
                         <X class="w-5 h-5" />
                     </button>
                 </div>
@@ -1104,5 +1100,9 @@ const responsableNombre = (responsable) => {
 onMounted(() => {
     fetchStats();
     fetchInventarios(1);
+});
+
+defineExpose({
+    openCreateModal
 });
 </script>

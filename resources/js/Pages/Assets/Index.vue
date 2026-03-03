@@ -37,6 +37,12 @@
                         <ArrowRightLeft class="w-5 h-5 mr-2" />
                         Nuevo Movimiento
                     </button>
+                    <!-- Nuevo Inventario (solo en tab inventarios) -->
+                    <button v-if="activeTab === 'inventarios'" @click="openNewInventario"
+                        class="inline-flex items-center px-6 py-3 border border-transparent text-sm font-bold rounded-xl shadow-lg shadow-purple-600/20 text-white bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 focus:outline-none focus:ring-4 focus:ring-purple-300 transition-all duration-300 transform hover:scale-105 active:scale-95">
+                        <Plus class="w-5 h-5 mr-2" />
+                        Nuevo Inventario
+                    </button>
                 </div>
             </div>
 
@@ -415,7 +421,7 @@
             <PatrimonioSigaTab v-if="activeTab === 'patrimonio'" />
 
             <!-- Inventarios Tab -->
-            <InventariosTab v-if="activeTab === 'inventarios'"
+            <InventariosTab v-if="activeTab === 'inventarios'" ref="inventariosTabRef"
                 :states="states" :offices="offices" :employees="employees" />
         </div>
     </div>
@@ -481,11 +487,18 @@ const showCreateModal = ref(false);
 const showEditModal = ref(false);
 const editingAsset = ref(null);
 const movementsListRef = ref(null);
+const inventariosTabRef = ref(null);
 const showBarcodeScanner = ref(false);
 
 const openNewMovement = () => {
     if (movementsListRef.value) {
         movementsListRef.value.openModal();
+    }
+};
+
+const openNewInventario = () => {
+    if (inventariosTabRef.value) {
+        inventariosTabRef.value.openCreateModal();
     }
 };
 
