@@ -21,25 +21,35 @@ return new class extends Migration
         // 1. MODIFICAR TABLA ASSETS
         // =============================================
         Schema::table('assets', function (Blueprint $table) {
-            // Agregar nuevas FKs para catálogos
-            $table->foreignId('marca_id')->nullable()->after('categoria_id')
-                  ->constrained('asset_brands')->nullOnDelete();
-            $table->foreignId('color_id')->nullable()->after('marca_id')
-                  ->constrained('asset_colors')->nullOnDelete();
-            $table->foreignId('origen_id')->nullable()->after('color_id')
-                  ->constrained('asset_origins')->nullOnDelete();
-            
+            // Agregar nuevas FKs para catálogos (solo si no existen)
+            if (!Schema::hasColumn('assets', 'marca_id')) {
+                $table->foreignId('marca_id')->nullable()->after('categoria_id')
+                      ->constrained('asset_brands')->nullOnDelete();
+            }
+            if (!Schema::hasColumn('assets', 'color_id')) {
+                $table->foreignId('color_id')->nullable()->after('marca_id')
+                      ->constrained('asset_colors')->nullOnDelete();
+            }
+            if (!Schema::hasColumn('assets', 'origen_id')) {
+                $table->foreignId('origen_id')->nullable()->after('color_id')
+                      ->constrained('asset_origins')->nullOnDelete();
+            }
+
             // Renombrar detalle_bien a denominacion
-            $table->renameColumn('detalle_bien', 'denominacion');
+            if (Schema::hasColumn('assets', 'detalle_bien')) {
+                $table->renameColumn('detalle_bien', 'denominacion');
+            }
         });
-        
+
         // Eliminar columnas que ahora vienen de movements
         Schema::table('assets', function (Blueprint $table) {
             // Eliminar FKs primero
-            $table->dropForeign(['responsable_id']);
-            
-            // Eliminar columnas
-            $table->dropColumn([
+            if (Schema::hasColumn('assets', 'responsable_id')) {
+                $table->dropForeign(['responsable_id']);
+            }
+
+            // Eliminar solo columnas que existan
+            $columnsToDrop = array_filter([
                 'responsable_id',
                 'estado',
                 'marca',
@@ -50,53 +60,73 @@ return new class extends Migration
                 'oficina',
                 'fuente',
                 'tipo_registro',
-                'codigo_patrimonial', // duplicado con codigo_patrimonio
+                'codigo_patrimonial',
                 'inventariador_id',
-            ]);
+            ], fn ($col) => Schema::hasColumn('assets', $col));
+
+            if (!empty($columnsToDrop)) {
+                $table->dropColumn($columnsToDrop);
+            }
         });
 
         // =============================================
         // 2. MODIFICAR TABLA ASSET_RESPONSIBLES
         // =============================================
         Schema::table('asset_responsibles', function (Blueprint $table) {
-            // Agregar FKs a tablas de RRHH
-            $table->uuid('area_id')->nullable()->after('id');
-            $table->uuid('oficina_id')->nullable()->after('area_id');
-            $table->uuid('contrato_id')->nullable()->after('oficina_id');
-            
-            // Agregar índices (no constraints por diferencia de tipos UUID)
-            $table->index('area_id');
-            $table->index('oficina_id');
-            $table->index('contrato_id');
-            
-            // Eliminar campos de texto redundantes
-            $table->dropColumn([
+            // Agregar FKs a tablas de RRHH (solo si no existen)
+            if (!Schema::hasColumn('asset_responsibles', 'area_id')) {
+                $table->uuid('area_id')->nullable()->after('id');
+                $table->index('area_id');
+            }
+            if (!Schema::hasColumn('asset_responsibles', 'oficina_id')) {
+                $table->uuid('oficina_id')->nullable()->after('area_id');
+                $table->index('oficina_id');
+            }
+            if (!Schema::hasColumn('asset_responsibles', 'contrato_id')) {
+                $table->uuid('contrato_id')->nullable()->after('oficina_id');
+                $table->index('contrato_id');
+            }
+
+            // Eliminar solo campos que existan
+            $columnsToDrop = array_filter([
                 'nombre_normalizado',
                 'area',
                 'tipo_contrato',
-            ]);
+            ], fn ($col) => Schema::hasColumn('asset_responsibles', $col));
+
+            if (!empty($columnsToDrop)) {
+                $table->dropColumn($columnsToDrop);
+            }
         });
 
         // =============================================
         // 3. MODIFICAR TABLA ASSET_MOVEMENTS
         // =============================================
         Schema::table('asset_movements', function (Blueprint $table) {
-            // Agregar FK a estados
-            $table->foreignId('estado_id')->nullable()->after('responsable_id')
-                  ->constrained('asset_states')->nullOnDelete();
-            
-            // Agregar FK a oficinas (ubicación)
-            $table->uuid('oficina_id')->nullable()->after('estado_id');
-            $table->index('oficina_id');
-            
-            // Eliminar campos redundantes
-            $table->dropColumn([
+            // Agregar FK a estados (solo si no existe)
+            if (!Schema::hasColumn('asset_movements', 'estado_id')) {
+                $table->foreignId('estado_id')->nullable()->after('responsable_id')
+                      ->constrained('asset_states')->nullOnDelete();
+            }
+
+            // Agregar FK a oficinas (solo si no existe)
+            if (!Schema::hasColumn('asset_movements', 'oficina_id')) {
+                $table->uuid('oficina_id')->nullable()->after('estado_id');
+                $table->index('oficina_id');
+            }
+
+            // Eliminar solo campos que existan
+            $columnsToDrop = array_filter([
                 'ubicacion_actual',
                 'responsable_nombre',
                 'modalidad_responsable',
                 'documento_id',
-                'estado', // ahora es FK
-            ]);
+                'estado',
+            ], fn ($col) => Schema::hasColumn('asset_movements', $col));
+
+            if (!empty($columnsToDrop)) {
+                $table->dropColumn($columnsToDrop);
+            }
         });
     }
 
