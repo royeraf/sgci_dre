@@ -1,14 +1,86 @@
 <template>
     <form @submit.prevent="handleSubmit" class="space-y-4 sm:space-y-6">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-            <!-- DNI -->
-            <div>
-                <label class="block text-sm font-bold text-slate-700 mb-2">DNI <span
-                        class="text-red-500">*</span></label>
-                <input v-model="dni" v-bind="dniProps" type="text" maxlength="8"
-                    class="w-full px-3 sm:px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors text-base"
-                    :class="formErrors.dni ? 'border-red-400' : 'border-slate-200'">
-                <p v-if="formErrors.dni" class="mt-1 text-sm text-red-600">{{ formErrors.dni }}</p>
+            <!-- DNI con consulta automática -->
+            <div class="md:col-span-2">
+                <div class="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-4 border border-blue-100">
+                    <div class="flex items-center gap-2 mb-3">
+                        <ScanBarcode class="w-4 h-4 text-blue-600" />
+                        <span class="text-sm font-semibold text-blue-900">Datos del Solicitante</span>
+                        <span class="text-xs text-blue-500 ml-auto">El DNI autocompleta apellidos y nombres</span>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <!-- Campo DNI con botón búsqueda -->
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1.5">DNI <span
+                                    class="text-red-500">*</span></label>
+                            <div class="flex gap-2">
+                                <div class="flex-1 relative">
+                                    <input v-model="dni" v-bind="dniProps" type="text" maxlength="8"
+                                        placeholder="########" @input="handleDniInput"
+                                        @keypress.enter.prevent="buscarPorDni"
+                                        class="w-full px-3 py-2.5 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors text-base font-mono tracking-wider"
+                                        :class="[
+                                            formErrors.dni ? 'border-red-400' : 'border-blue-200 bg-white',
+                                            isConsultandoDni ? 'opacity-60' : ''
+                                        ]">
+                                    <div v-if="isConsultandoDni" class="absolute right-3 top-1/2 -translate-y-1/2">
+                                        <LoaderCircle class="w-4 h-4 animate-spin text-blue-500" />
+                                    </div>
+                                </div>
+                                <button type="button" @click="buscarPorDni"
+                                    :disabled="dni?.length !== 8 || isConsultandoDni"
+                                    class="px-3 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+                                    title="Buscar datos por DNI">
+                                    <Search class="w-4 h-4" />
+                                </button>
+                            </div>
+                            <p v-if="formErrors.dni" class="mt-1 text-xs text-red-600">{{ formErrors.dni }}</p>
+                        </div>
+
+                        <!-- Apellidos (autocompletado) -->
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1.5">Apellidos <span
+                                    class="text-red-500">*</span></label>
+                            <input v-model="apellidos" v-bind="apellidosProps" type="text"
+                                @input="apellidos = ($event.target as HTMLInputElement).value.toUpperCase()"
+                                :disabled="nombreAutocompletado && !camposEditables" placeholder="Apellidos"
+                                class="uppercase w-full px-3 py-2.5 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors text-base disabled:bg-slate-50 disabled:text-slate-600"
+                                :class="formErrors.apellidos ? 'border-red-400' : 'border-blue-200 bg-white'">
+                            <p v-if="formErrors.apellidos" class="mt-1 text-xs text-red-600">{{ formErrors.apellidos }}
+                            </p>
+                        </div>
+
+                        <!-- Nombres (autocompletado) -->
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1.5">Nombres <span
+                                    class="text-red-500">*</span></label>
+                            <input v-model="nombres" v-bind="nombresProps" type="text"
+                                @input="nombres = ($event.target as HTMLInputElement).value.toUpperCase()"
+                                :disabled="nombreAutocompletado && !camposEditables" placeholder="Nombres"
+                                class="uppercase w-full px-3 py-2.5 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors text-base disabled:bg-slate-50 disabled:text-slate-600"
+                                :class="formErrors.nombres ? 'border-red-400' : 'border-blue-200 bg-white'">
+                            <p v-if="formErrors.nombres" class="mt-1 text-xs text-red-600">{{ formErrors.nombres }}</p>
+                        </div>
+                    </div>
+
+                    <!-- Mensaje de resultado de consulta -->
+                    <div v-if="dniConsultaMessage" class="mt-3 p-2.5 rounded-lg flex items-center gap-2"
+                        :class="dniConsultaSuccess ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'">
+                        <CheckCircle2 v-if="dniConsultaSuccess" class="w-4 h-4 flex-shrink-0" />
+                        <AlertCircle v-else class="w-4 h-4 flex-shrink-0" />
+                        <span class="text-xs font-medium">{{ dniConsultaMessage }}</span>
+                    </div>
+
+                    <!-- Edición manual -->
+                    <div v-if="nombreAutocompletado && !camposEditables" class="mt-2">
+                        <button type="button" @click="camposEditables = true"
+                            class="text-xs text-blue-600 hover:text-blue-800 font-medium underline">
+                            ¿Necesita corregir los nombres manualmente?
+                        </button>
+                    </div>
+                </div>
             </div>
 
             <!-- Oficina -->
@@ -30,27 +102,6 @@
                 <p v-if="formErrors.oficina" class="mt-1 text-sm text-red-600">{{ formErrors.oficina }}</p>
             </div>
 
-            <!-- Apellidos -->
-            <div>
-                <label class="block text-sm font-bold text-slate-700 mb-2">Apellidos <span
-                        class="text-red-500">*</span></label>
-                <input v-model="apellidos" v-bind="apellidosProps" type="text"
-                    @input="apellidos = $event.target.value.toUpperCase()"
-                    class="uppercase w-full px-3 sm:px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors text-base"
-                    :class="formErrors.apellidos ? 'border-red-400' : 'border-slate-200'">
-                <p v-if="formErrors.apellidos" class="mt-1 text-sm text-red-600">{{ formErrors.apellidos }}</p>
-            </div>
-
-            <!-- Nombres -->
-            <div>
-                <label class="block text-sm font-bold text-slate-700 mb-2">Nombres <span
-                        class="text-red-500">*</span></label>
-                <input v-model="nombres" v-bind="nombresProps" type="text"
-                    @input="nombres = $event.target.value.toUpperCase()"
-                    class="uppercase w-full px-3 sm:px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors text-base"
-                    :class="formErrors.nombres ? 'border-red-400' : 'border-slate-200'">
-                <p v-if="formErrors.nombres" class="mt-1 text-sm text-red-600">{{ formErrors.nombres }}</p>
-            </div>
 
             <!-- Celular -->
             <div>
@@ -143,18 +194,25 @@
     </form>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, computed } from 'vue';
 import { useForm } from 'vee-validate';
 import { toTypedSchema } from '@vee-validate/yup';
 import * as yup from 'yup';
 import axios from 'axios';
 import Swal from 'sweetalert2';
-import { ShieldCheck, RefreshCw, LoaderCircle } from 'lucide-vue-next';
+import { ShieldCheck, RefreshCw, LoaderCircle, Search, ScanBarcode, CheckCircle2, AlertCircle } from 'lucide-vue-next';
 
 const emit = defineEmits(['success']);
 
 const loading = ref(false);
+
+// DNI Consultation
+const isConsultandoDni = ref(false);
+const dniConsultaMessage = ref('');
+const dniConsultaSuccess = ref(false);
+const nombreAutocompletado = ref(false);
+const camposEditables = ref(true);
 const today = new Date().toISOString().split('T')[0];
 
 // Validation Schema
@@ -185,6 +243,59 @@ const [correo, correoProps] = defineField('correo');
 const [fecha, fechaProps] = defineField('fecha');
 const [hora, horaProps] = defineField('hora');
 const [asunto, asuntoProps] = defineField('asunto');
+
+// DNI input handler: limpiar estado y auto-consultar al llegar a 8 dígitos
+const handleDniInput = (event: Event) => {
+    const input = event.target as HTMLInputElement;
+    const cleanValue = input.value.replace(/\D/g, '');
+    dni.value = cleanValue;
+    dniConsultaMessage.value = '';
+    nombreAutocompletado.value = false;
+    camposEditables.value = true;
+
+    if (cleanValue.length === 8) {
+        setTimeout(() => {
+            if (dni.value?.length === 8) buscarPorDni();
+        }, 150);
+    }
+};
+
+// Consulta a la API de DNI
+const buscarPorDni = async () => {
+    if (!dni.value || dni.value.length !== 8) return;
+
+    isConsultandoDni.value = true;
+    dniConsultaMessage.value = '';
+
+    try {
+        const response = await axios.get('/visitors/api/consultar-dni', { params: { dni: dni.value } });
+
+        if (response.data.success && response.data.data) {
+            const persona = response.data.data;
+
+            nombres.value = persona.nombres;
+
+            if (persona.apellido_paterno || persona.apellido_materno) {
+                apellidos.value = `${persona.apellido_paterno || ''} ${persona.apellido_materno || ''}`.trim();
+            }
+
+            nombreAutocompletado.value = true;
+            camposEditables.value = false;
+            dniConsultaMessage.value = `Datos encontrados: ${persona.nombre_completo || (nombres.value + ' ' + apellidos.value)}`;
+            dniConsultaSuccess.value = true;
+        } else {
+            dniConsultaMessage.value = response.data.message || 'DNI no encontrado. Ingrese los datos manualmente.';
+            dniConsultaSuccess.value = false;
+            camposEditables.value = true;
+        }
+    } catch {
+        dniConsultaMessage.value = 'Error al consultar DNI. Ingrese los datos manualmente.';
+        dniConsultaSuccess.value = false;
+        camposEditables.value = true;
+    } finally {
+        isConsultandoDni.value = false;
+    }
+};
 
 // CAPTCHA
 const captcha = ref({ num1: 0, num2: 0, operator: '+', answer: 0 });
@@ -273,11 +384,16 @@ const onSubmitForm = validateForm(async (values) => {
 
         resetForm();
         generateCaptcha();
-    } catch (error) {
+        nombreAutocompletado.value = false;
+        camposEditables.value = true;
+        dniConsultaMessage.value = '';
+        dniConsultaSuccess.value = false;
+    } catch (error: unknown) {
+        const axiosError = error as { response?: { data?: { message?: string } } };
         Swal.fire({
             icon: 'error',
             title: 'Error',
-            text: error.response?.data?.message || 'Hubo un error al registrar la cita'
+            text: axiosError.response?.data?.message || 'Hubo un error al registrar la cita'
         });
     } finally {
         loading.value = false;

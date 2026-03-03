@@ -4,7 +4,11 @@ namespace Database\Seeders;
 
 use App\Models\CustomRole;
 use App\Models\User;
-use App\Models\Staff;
+use App\Models\Person;
+use App\Models\Employee;
+use App\Models\HRPosition;
+use App\Models\HRContractType;
+use App\Models\HrDirection;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 
@@ -17,7 +21,7 @@ class DatabaseSeeder extends Seeder
     {
         $this->seedRoles();
         $this->seedUsers();
-        $this->seedStaff();
+        $this->seedPersonnel();
         $this->call(HrDirectionSeeder::class);
         $this->call(HrOfficeSeeder::class);
     }
@@ -204,9 +208,9 @@ class DatabaseSeeder extends Seeder
         $this->command->info('✓ Users created successfully');
     }
 
-    private function seedStaff(): void
+    private function seedPersonnel(): void
     {
-        $staffMembers = [
+        $personnel = [
             [
                 'dni' => '45678901',
                 'nombres' => 'María Elena',
@@ -239,13 +243,42 @@ class DatabaseSeeder extends Seeder
             ],
         ];
 
-        foreach ($staffMembers as $staff) {
-            Staff::updateOrCreate(
-                ['dni' => $staff['dni']],
-                $staff
+        foreach ($personnel as $data) {
+            $person = Person::updateOrCreate(
+                ['dni' => $data['dni']],
+                [
+                    'nombres' => $data['nombres'],
+                    'apellidos' => $data['apellidos'],
+                    'telefono' => $data['telefono'],
+                    'email' => $data['email'],
+                    'tipo' => 'INTERNO',
+                    'is_active' => true,
+                ]
+            );
+
+            $contractType = HRContractType::firstOrCreate(
+                ['nombre' => $data['regimen']],
+                ['descripcion' => $data['regimen'], 'activo' => true]
+            );
+
+            $position = HRPosition::firstOrCreate(
+                ['nombre' => $data['cargo']],
+                ['activo' => true]
+            );
+
+            $direction = HrDirection::where('nombre', $data['area'])->first();
+
+            Employee::updateOrCreate(
+                ['person_id' => $person->id],
+                [
+                    'direction_id' => $direction?->id,
+                    'position_id' => $position->id,
+                    'contract_type_id' => $contractType->id,
+                    'estado' => 'ACTIVO',
+                ]
             );
         }
 
-        $this->command->info('✓ Staff members created successfully');
+        $this->command->info('✓ Personnel seeded as Person + Employee records');
     }
 }

@@ -10,16 +10,13 @@ class EntryExit extends Model
     use HasFactory;
 
     protected $fillable = [
-        'staff_id',
-        'dni',
-        'nombre_personal',
+        'employee_id',
         'hora_salida',
         'hora_retorno',
         'motivo',
         'tipo_motivo',
         'papeleta',
         'turno',
-        'regimen',
         'fecha',
         'registrado_por',
     ];
@@ -31,11 +28,11 @@ class EntryExit extends Model
     ];
 
     /**
-     * Get the staff member for this entry/exit.
+     * Relación con el empleado.
      */
-    public function staff()
+    public function employee()
     {
-        return $this->belongsTo(Staff::class);
+        return $this->belongsTo(Employee::class, 'employee_id');
     }
 
     /**
@@ -44,6 +41,23 @@ class EntryExit extends Model
     public function registeredBy()
     {
         return $this->belongsTo(User::class, 'registrado_por');
+    }
+
+    // ===== ACCESSORS (datos derivados del empleado) =====
+
+    public function getDniAttribute(): ?string
+    {
+        return $this->employee?->dni;
+    }
+
+    public function getNombrePersonalAttribute(): ?string
+    {
+        return $this->employee?->full_name;
+    }
+
+    public function getRegimenAttribute(): ?string
+    {
+        return $this->employee?->tipo_contrato;
     }
 
     /**
@@ -84,7 +98,7 @@ class EntryExit extends Model
     public static function generatePapeletaNumber(): string
     {
         $last = self::orderBy('id', 'desc')->first();
-        
+
         if (!$last || !is_numeric($last->papeleta)) {
             return '000001';
         }

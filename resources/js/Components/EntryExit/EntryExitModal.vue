@@ -52,63 +52,120 @@
 
                     <!-- New entry mode -->
                     <template v-else>
-                        <!-- Staff Selection with Search -->
-                        <div>
-                            <label class="block text-sm font-bold text-slate-700 mb-2">
-                                Buscar Personal (DNI o Nombre)
-                            </label>
-                            <div class="relative" ref="dropdownContainerRef">
-                                <input v-model="searchQuery" @input="showDropdown = true" @focus="showDropdown = true"
-                                    type="text" placeholder="Buscar por DNI o nombre..."
-                                    class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-white" />
+                        <!-- Barcode Scanner + Employee Search -->
+                        <div class="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-4 border border-green-100">
+                            <div class="flex items-center gap-2 mb-3">
+                                <ScanBarcode class="w-5 h-5 text-green-600" />
+                                <span class="font-semibold text-green-900">Buscar Personal (DNI o Nombre)</span>
+                            </div>
 
-                                <!-- Dropdown with filtered results -->
-                                <div v-if="showDropdown"
-                                    class="absolute z-10 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg max-h-60 overflow-y-auto">
-                                    <div v-if="isSearching"
-                                        class="px-4 py-3 text-center text-slate-500 text-sm flex items-center justify-center gap-2">
-                                        <Loader2 class="w-4 h-4 animate-spin" /> Buscando...
+                            <!-- Selected Person Card -->
+                            <div v-if="selectedPersonDisplay" class="bg-white rounded-xl p-4 border border-green-200 shadow-sm">
+                                <div class="flex items-center gap-4">
+                                    <div class="h-14 w-14 rounded-full bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center text-xl font-bold text-white shadow-lg">
+                                        {{ selectedPersonDisplay.nombre.charAt(0) }}
                                     </div>
-                                    <div v-else-if="searchResults.length === 0 && searchQuery.length >= 2"
-                                        class="px-4 py-3 text-center text-slate-500 text-sm">
-                                        No se encontraron resultados.
-                                    </div>
-                                    <div v-else-if="searchResults.length === 0"
-                                        class="px-4 py-3 text-center text-slate-400 text-sm">
-                                        Escriba para buscar...
-                                    </div>
-
-                                    <button v-for="person in searchResults" :key="person.id" type="button"
-                                        @click="selectPerson(person)"
-                                        class="w-full px-4 py-3 text-left hover:bg-green-50 transition-colors border-b border-slate-100 last:border-b-0">
-                                        <div class="flex justify-between items-start">
-                                            <div class="flex-1">
-                                                <p class="font-semibold text-slate-900">{{ person.nombre }}</p>
-                                                <p class="text-sm text-slate-600">DNI: {{ person.dni }}</p>
-                                                <p class="text-xs text-slate-500">{{ person.cargo }} - {{ person.area }}
-                                                </p>
-                                            </div>
-                                            <span class="text-xs px-2 py-1 rounded-full"
-                                                :class="person.tipo === 'empleado' ? 'bg-blue-100 text-blue-700' : 'bg-emerald-100 text-emerald-700'">
-                                                {{ person.tipo === 'empleado' ? 'RRHH' : 'Vigilancia' }}
+                                    <div class="flex-1">
+                                        <p class="font-bold text-slate-900 text-lg">{{ selectedPersonDisplay.nombre }}</p>
+                                        <div class="flex items-center gap-3 mt-0.5">
+                                            <p class="text-sm text-slate-600">DNI: {{ selectedPersonDisplay.dni }}</p>
+                                            <span v-if="selectedPersonDisplay.regimen"
+                                                class="px-2 py-0.5 text-xs font-bold rounded-full bg-slate-100 text-slate-600 border border-slate-200">
+                                                {{ selectedPersonDisplay.regimen }}
                                             </span>
                                         </div>
+                                        <p class="text-xs text-slate-500 mt-0.5">{{ selectedPersonDisplay.cargo }} - {{ selectedPersonDisplay.area }}</p>
+                                    </div>
+                                    <button type="button" @click="clearSelection" class="text-slate-400 hover:text-red-500 transition-colors p-1">
+                                        <X class="w-5 h-5" />
                                     </button>
                                 </div>
                             </div>
-                            <p class="text-xs text-slate-500 mt-1">O ingrese los datos manualmente abajo</p>
+
+                            <!-- Search Input (hidden when person is selected) -->
+                            <template v-else>
+                                <div class="relative" ref="dropdownContainerRef">
+                                    <input ref="searchInputRef" v-model="searchQuery" @focus="showDropdown = true"
+                                        @keypress.enter.prevent
+                                        type="text" placeholder="Escanee el DNI o busque por nombre..."
+                                        class="w-full px-4 py-3 pl-10 border rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all outline-none"
+                                        :class="[
+                                            scanStatus === 'success' ? 'border-green-400 bg-green-50' :
+                                            scanStatus === 'error' ? 'border-red-400 bg-red-50' :
+                                            'border-green-200 bg-white',
+                                            isSearching ? 'opacity-50' : ''
+                                        ]"
+                                        :disabled="isSearching" />
+                                    <div class="absolute left-3 top-1/2 -translate-y-1/2">
+                                        <Loader2 v-if="isSearching" class="w-4 h-4 text-green-600 animate-spin" />
+                                        <Search v-else class="w-4 h-4 text-slate-400" />
+                                    </div>
+
+                                    <!-- Dropdown with filtered results -->
+                                    <div v-if="showDropdown"
+                                        class="absolute z-10 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg max-h-60 overflow-y-auto">
+                                        <div v-if="isSearching"
+                                            class="px-4 py-3 text-center text-slate-500 text-sm flex items-center justify-center gap-2">
+                                            <Loader2 class="w-4 h-4 animate-spin" /> Buscando...
+                                        </div>
+                                        <div v-else-if="searchResults.length === 0 && searchQuery.length >= 2"
+                                            class="px-4 py-3 text-center text-slate-500 text-sm">
+                                            No se encontraron resultados.
+                                        </div>
+                                        <div v-else-if="searchResults.length === 0"
+                                            class="px-4 py-3 text-center text-slate-400 text-sm">
+                                            Escriba para buscar...
+                                        </div>
+
+                                        <button v-for="person in searchResults" :key="person.id" type="button"
+                                            @click="selectPerson(person)"
+                                            class="w-full px-4 py-3 text-left hover:bg-green-50 transition-colors border-b border-slate-100 last:border-b-0">
+                                            <div class="flex justify-between items-start">
+                                                <div class="flex-1">
+                                                    <p class="font-semibold text-slate-900">{{ person.nombre }}</p>
+                                                    <p class="text-sm text-slate-600">DNI: {{ person.dni }}</p>
+                                                    <p class="text-xs text-slate-500">{{ person.cargo }} - {{ person.area }}</p>
+                                                </div>
+                                                <span class="text-xs px-2 py-1 rounded-full bg-slate-100 text-slate-600">
+                                                    {{ person.regimen }}
+                                                </span>
+                                            </div>
+                                        </button>
+                                    </div>
+                                </div>
+                            </template>
+
+                            <!-- Scan status message -->
+                            <div v-if="scanMessage" class="mt-2 flex items-center gap-2 p-2 rounded-lg text-xs"
+                                :class="scanStatus === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'">
+                                <component :is="scanStatus === 'success' ? CheckCircle : AlertCircle" class="w-4 h-4 shrink-0" />
+                                <span class="font-medium">{{ scanMessage }}</span>
+                            </div>
+
+                            <!-- Validation error for employee_id -->
+                            <p v-if="formErrors.employee_id" class="mt-2 text-sm text-red-600 font-medium">
+                                {{ formErrors.employee_id }}
+                            </p>
+
+                            <p v-if="!selectedPersonDisplay" class="text-xs text-slate-500 mt-2">Escanee el código de barras del DNI o escriba para buscar</p>
                         </div>
 
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <!-- DNI -->
+                            <!-- Hora Salida (Automática) -->
                             <div>
-                                <label class="block text-sm font-bold text-slate-700 mb-2">
-                                    DNI <span class="text-red-500">*</span>
+                                <label class="block text-sm font-bold text-slate-700 mb-2 flex items-center gap-2">
+                                    Hora de Salida
+                                    <span class="flex h-2 w-2 relative">
+                                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                        <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                                    </span>
+                                    <span class="text-[10px] text-emerald-600 font-medium uppercase tracking-tight">Automático</span>
                                 </label>
-                                <input type="text" v-model="dni" v-bind="dniProps" maxlength="8" placeholder="12345678"
-                                    class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
-                                    :class="formErrors.dni ? 'border-red-400' : 'border-slate-200'" />
-                                <p v-if="formErrors.dni" class="mt-1 text-sm text-red-600">{{ formErrors.dni }}</p>
+                                <div class="relative">
+                                    <input type="time" :value="horaSalida" disabled
+                                        class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-500 font-bold outline-none cursor-not-allowed" />
+                                    <div class="absolute inset-0 z-10" title="La hora se asigna automáticamente"></div>
+                                </div>
                             </div>
 
                             <!-- Turno (Automático) -->
@@ -128,50 +185,6 @@
                                     </div>
                                 </div>
                                 <p class="mt-1 text-xs text-slate-500">El turno se determina según la hora de salida</p>
-                            </div>
-                        </div>
-
-                        <!-- Nombre Personal -->
-                        <div>
-                            <label class="block text-sm font-bold text-slate-700 mb-2">
-                                Nombre del Personal <span class="text-red-500">*</span>
-                            </label>
-                            <input type="text" v-model="nombrePersonal" v-bind="nombrePersonalProps"
-                                placeholder="Nombres y Apellidos"
-                                class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
-                                :class="formErrors.nombre_personal ? 'border-red-400' : 'border-slate-200'" />
-                            <p v-if="formErrors.nombre_personal" class="mt-1 text-sm text-red-600">{{
-                                formErrors.nombre_personal }}</p>
-                        </div>
-
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <!-- Hora Salida -->
-                            <div>
-                                <label class="block text-sm font-bold text-slate-700 mb-2">
-                                    Hora de Salida <span class="text-red-500">*</span>
-                                </label>
-                                <input type="time" v-model="horaSalida" v-bind="horaSalidaProps"
-                                    class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
-                                    :class="formErrors.hora_salida ? 'border-red-400' : 'border-slate-200'" />
-                                <p v-if="formErrors.hora_salida" class="mt-1 text-sm text-red-600">{{
-                                    formErrors.hora_salida }}</p>
-                            </div>
-
-                            <!-- Regimen -->
-                            <div>
-                                <label class="block text-sm font-bold text-slate-700 mb-2">
-                                    Régimen Laboral
-                                </label>
-                                <select v-model="regimen" v-bind="regimenProps"
-                                    class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-white">
-                                    <option value="">Seleccione régimen</option>
-                                    <option value="276">D.L. 276</option>
-                                    <option value="728">D.L. 728</option>
-                                    <option value="CAS">CAS</option>
-                                    <option value="Nombrado">Nombrado</option>
-                                    <option value="Designado">Designado</option>
-                                    <option value="Otro">Otro</option>
-                                </select>
                             </div>
                         </div>
 
@@ -232,12 +245,12 @@
 </template>
 
 <script setup>
-import { ref, watch, computed, onMounted, onUnmounted } from 'vue';
+import { ref, watch, onMounted, onUnmounted, nextTick } from 'vue';
 import { useForm } from 'vee-validate';
 import { toTypedSchema } from '@vee-validate/yup';
 import * as yup from 'yup';
 import { router } from '@inertiajs/vue3';
-import { Plus, X, Loader2, LogIn, Clock } from 'lucide-vue-next';
+import { Plus, X, Loader2, LogIn, Clock, ScanBarcode, Search, CheckCircle, AlertCircle } from 'lucide-vue-next';
 
 const props = defineProps({
     entry: {
@@ -248,13 +261,16 @@ const props = defineProps({
 
 const emit = defineEmits(['close']);
 
-const staffId = ref(null);
 const isSubmitting = ref(false);
 const searchQuery = ref('');
 const showDropdown = ref(false);
 const dropdownContainerRef = ref(null);
 const searchResults = ref([]);
 const isSearching = ref(false);
+const searchInputRef = ref(null);
+const scanMessage = ref('');
+const scanStatus = ref('');
+const selectedPersonDisplay = ref(null);
 let searchTimeout = null;
 
 // Perform async search
@@ -266,7 +282,6 @@ const performSearch = async (query) => {
 
     isSearching.value = true;
     try {
-        // Using native fetch to avoid dependencies, but assumes relative path works relative to base URL
         const response = await fetch(`/entry-exits/api/search-personnel?query=${encodeURIComponent(query)}`);
         if (response.ok) {
             searchResults.value = await response.json();
@@ -278,9 +293,52 @@ const performSearch = async (query) => {
     }
 };
 
-// Watch search query with debounce
+// Barcode scan - immediate DNI search with auto-select
+const performBarcodeSearch = async (dniValue) => {
+    isSearching.value = true;
+    scanMessage.value = '';
+    scanStatus.value = '';
+    showDropdown.value = false;
+
+    try {
+        const response = await fetch(`/entry-exits/api/search-personnel?query=${encodeURIComponent(dniValue)}`);
+        if (response.ok) {
+            const results = await response.json();
+            const exactMatch = results.find(r => r.dni === dniValue);
+
+            if (exactMatch) {
+                selectPerson(exactMatch);
+                scanMessage.value = `Personal encontrado: ${exactMatch.nombre}`;
+                scanStatus.value = 'success';
+                setTimeout(() => { scanMessage.value = ''; scanStatus.value = ''; }, 3000);
+            } else if (results.length > 0) {
+                searchResults.value = results;
+                showDropdown.value = true;
+            } else {
+                scanMessage.value = 'No se encontró personal con ese DNI';
+                scanStatus.value = 'error';
+                setTimeout(() => { scanMessage.value = ''; scanStatus.value = ''; }, 3000);
+            }
+        }
+    } catch (e) {
+        scanMessage.value = 'Error al buscar';
+        scanStatus.value = 'error';
+    } finally {
+        isSearching.value = false;
+    }
+};
+
+// Watch search query with debounce + barcode detection
 watch(searchQuery, (val) => {
     if (searchTimeout) clearTimeout(searchTimeout);
+
+    // Detect barcode scan (exactly 8 digits)
+    if (/^\d{8}$/.test(val.trim())) {
+        performBarcodeSearch(val.trim());
+        return;
+    }
+
+    // Normal debounced text search
     searchTimeout = setTimeout(() => {
         performSearch(val);
     }, 300);
@@ -288,12 +346,24 @@ watch(searchQuery, (val) => {
 
 // Select person from dropdown
 const selectPerson = (person) => {
-    dni.value = person.dni;
-    nombrePersonal.value = person.nombre;
-    regimen.value = person.regimen || '';
-    staffId.value = person.tipo === 'vigilante' ? person.id : null;
-    searchQuery.value = person.nombre;
+    setFieldValue('employee_id', person.id);
+    selectedPersonDisplay.value = {
+        nombre: person.nombre,
+        dni: person.dni,
+        cargo: person.cargo || 'N/A',
+        area: person.area || 'N/A',
+        regimen: person.regimen || '',
+    };
+    searchQuery.value = '';
     showDropdown.value = false;
+};
+
+// Clear selected person
+const clearSelection = () => {
+    setFieldValue('employee_id', '');
+    selectedPersonDisplay.value = null;
+    searchQuery.value = '';
+    nextTick(() => { searchInputRef.value?.focus(); });
 };
 
 // Click outside handler
@@ -305,10 +375,20 @@ const handleClickOutside = (event) => {
 
 onMounted(() => {
     document.addEventListener('click', handleClickOutside);
+    // Auto-focus barcode/search input when creating new entry
+    if (!props.entry) {
+        nextTick(() => { searchInputRef.value?.focus(); });
+    }
+    // Update time automatically every 30 seconds
+    timeInterval = setInterval(() => {
+        currentTime.value = new Date().toTimeString().slice(0, 5);
+        setFieldValue('hora_salida', currentTime.value);
+    }, 30000);
 });
 
 onUnmounted(() => {
     document.removeEventListener('click', handleClickOutside);
+    if (timeInterval) clearInterval(timeInterval);
 });
 
 // Get shift based on hour (HH:mm format or hour number)
@@ -328,20 +408,15 @@ const getShiftFromHour = (timeValue) => {
 // Get current shift based on current time
 const getCurrentShift = () => getShiftFromHour(new Date().getHours());
 
-const currentTime = new Date().toTimeString().slice(0, 5);
+const currentTime = ref(new Date().toTimeString().slice(0, 5));
+let timeInterval = null;
 
 // Validation Schema for exit form
 const exitSchema = toTypedSchema(
     yup.object({
-        dni: yup.string()
-            .required('El DNI es obligatorio')
-            .matches(/^\d{8}$/, 'El DNI debe tener 8 dígitos numéricos'),
-        nombre_personal: yup.string()
-            .required('El nombre es obligatorio')
-            .min(3, 'El nombre debe tener al menos 3 caracteres'),
+        employee_id: yup.string().required('Debe seleccionar un empleado'),
         hora_salida: yup.string().required('La hora de salida es obligatoria'),
         turno: yup.string().required('El turno es obligatorio'),
-        regimen: yup.string().nullable(),
         tipo_motivo: yup.string().required('Debe seleccionar el tipo de motivo'),
         motivo: yup.string()
             .required('La descripción del motivo es obligatoria')
@@ -360,29 +435,25 @@ const returnSchema = toTypedSchema(
 const { errors: formErrors, defineField: defineExitField, handleSubmit: validateExitForm, resetForm, setFieldValue } = useForm({
     validationSchema: exitSchema,
     initialValues: {
-        dni: '',
-        nombre_personal: '',
-        hora_salida: currentTime,
+        employee_id: '',
+        hora_salida: currentTime.value,
         turno: getCurrentShift(),
-        regimen: '',
         tipo_motivo: 'comision',
         motivo: '',
     }
 });
 
-const [dni, dniProps] = defineExitField('dni');
-const [nombrePersonal, nombrePersonalProps] = defineExitField('nombre_personal');
-const [horaSalida, horaSalidaProps] = defineExitField('hora_salida');
-const [turno, turnoProps] = defineExitField('turno');
-const [regimen, regimenProps] = defineExitField('regimen');
-const [tipoMotivo, tipoMotivoProps] = defineExitField('tipo_motivo');
+const [employeeId] = defineExitField('employee_id');
+const [horaSalida] = defineExitField('hora_salida');
+const [turno] = defineExitField('turno');
+const [tipoMotivo] = defineExitField('tipo_motivo');
 const [motivo, motivoProps] = defineExitField('motivo');
 
 // Return form
 const { errors: returnFormErrors, defineField: defineReturnField, handleSubmit: validateReturnForm, resetForm: resetReturnForm } = useForm({
     validationSchema: returnSchema,
     initialValues: {
-        hora_retorno: currentTime,
+        hora_retorno: currentTime.value,
     }
 });
 
@@ -399,14 +470,10 @@ watch(horaSalida, (newHora) => {
 const onSubmitExit = validateExitForm(async (values) => {
     isSubmitting.value = true;
 
-    const payload = {
-        ...values,
-        staff_id: staffId.value,
-    };
-
-    router.post('/entry-exits', payload, {
+    router.post('/entry-exits', values, {
         onSuccess: () => {
             resetForm();
+            selectedPersonDisplay.value = null;
             emit('close');
         },
         onFinish: () => {

@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\EntryExit;
-use App\Models\Staff;
+use App\Models\Employee;
 use App\Models\AuditLog;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -16,7 +16,7 @@ class EntryExitController extends Controller
      */
     public function index(Request $request)
     {
-        $query = EntryExit::with(['staff', 'registeredBy'])
+        $query = EntryExit::with(['employee.person', 'employee.contractType', 'registeredBy'])
             ->orderBy('fecha', 'desc')
             ->orderBy('hora_salida', 'desc');
 
@@ -61,62 +61,37 @@ class EntryExitController extends Controller
     }
 
     /**
-     * Search personnel (Staff and Employees) for autocomplete.
+     * Search employees for autocomplete.
      */
     public function searchPersonnel(Request $request)
     {
         $query = $request->input('query');
-        
+
         if (!$query || strlen($query) < 2) {
             return response()->json([]);
         }
 
-        // Search in Staff (Vigilantes)
-        $staff = Staff::active()
-            ->where(function($q) use ($query) {
+        $employees = Employee::where('estado', 'ACTIVO')
+            ->whereHas('person', function ($q) use ($query) {
                 $q->where('dni', 'like', "%{$query}%")
                   ->orWhere('nombres', 'like', "%{$query}%")
                   ->orWhere('apellidos', 'like', "%{$query}%");
             })
-            ->limit(10)
-            ->get()
-            ->map(function ($s) {
-                return [
-                    'id' => $s->id,
-                    'dni' => $s->dni,
-                    'nombre' => $s->full_name,
-                    'cargo' => $s->cargo,
-                    'area' => $s->area,
-                    'regimen' => $s->regimen,
-                    'tipo' => 'vigilante',
-                ];
-            });
-
-        // Search in Employees (RRHH)
-        $employees = \App\Models\Employee::where('estado', 'ACTIVO')
-            ->where(function($q) use ($query) {
-                $q->where('dni', 'like', "%{$query}%")
-                  ->orWhere('nombres', 'like', "%{$query}%")
-                  ->orWhere('apellidos', 'like', "%{$query}%");
-            })
-            ->limit(10)
+            ->with(['person', 'position', 'direction', 'contractType'])
+            ->limit(15)
             ->get()
             ->map(function ($e) {
                 return [
-                    'id' => 'emp-' . $e->id,
+                    'id' => $e->id,
                     'dni' => $e->dni,
-                    'nombre' => trim($e->nombres . ' ' . $e->apellidos),
-                    'cargo' => $e->cargo,
-                    'area' => $e->area,
+                    'nombre' => $e->full_name,
+                    'cargo' => $e->cargo ?? 'N/A',
+                    'area' => $e->direction_nombre ?? 'N/A',
                     'regimen' => $e->tipo_contrato ?? 'N/A',
-                    'tipo' => 'empleado',
                 ];
             });
 
-        // Combine and limit total results
-        $results = $staff->concat($employees)->take(15)->values();
-
-        return response()->json($results);
+        return response()->json($employees);
     }
 
     /**
@@ -125,18 +100,14 @@ class EntryExitController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'dni' => 'required|string|size:8',
-            'nombre_personal' => 'required|string|max:200',
+            'employee_id' => 'required|exists:employees,id',
             'hora_salida' => 'required',
             'tipo_motivo' => 'required|in:comision,permiso',
             'motivo' => 'required|string|min:5',
             'turno' => 'required|in:Mañana,Tarde,Noche',
-            'regimen' => 'nullable|string|max:50',
-            'staff_id' => 'nullable|exists:staff,id',
         ], [
-            'dni.required' => 'El DNI es obligatorio.',
-            'dni.size' => 'El DNI debe tener exactamente 8 dígitos.',
-            'nombre_personal.required' => 'El nombre del personal es obligatorio.',
+            'employee_id.required' => 'Debe seleccionar un empleado.',
+            'employee_id.exists' => 'El empleado seleccionado no existe.',
             'hora_salida.required' => 'La hora de salida es obligatoria.',
             'tipo_motivo.required' => 'Debe seleccionar el tipo de motivo.',
             'motivo.required' => 'El motivo es obligatorio.',
@@ -150,6 +121,8 @@ class EntryExitController extends Controller
             'papeleta' => EntryExit::generatePapeletaNumber(),
             'registrado_por' => auth()->id(),
         ]);
+
+        $entryExit->load('employee.person');
 
         AuditLog::log(
             auth()->id(),
@@ -178,6 +151,8 @@ class EntryExitController extends Controller
             'hora_retorno' => $validated['hora_retorno'],
         ]);
 
+        $entryExit->load('employee.person');
+
         AuditLog::log(
             auth()->id(),
             'Registrar Retorno',
@@ -195,7 +170,7 @@ class EntryExitController extends Controller
      */
     public function generatePdf(EntryExit $entryExit)
     {
-        $entryExit->load(['staff', 'registeredBy']);
+        $entryExit->load(['employee.person', 'employee.contractType', 'registeredBy']);
 
         $pdf = Pdf::loadView('pdf.papeleta', [
             'entry' => $entryExit,
@@ -209,7 +184,8 @@ class EntryExitController extends Controller
      */
     public function pendingReturns()
     {
-        $pending = EntryExit::today()
+        $pending = EntryExit::with(['employee.person'])
+            ->today()
             ->pending()
             ->get()
             ->map(function ($entry) {
@@ -227,6 +203,7 @@ class EntryExitController extends Controller
             'entries' => $pending,
         ]);
     }
+
     /**
      * Get absent personnel (Vacations and Licenses).
      */
