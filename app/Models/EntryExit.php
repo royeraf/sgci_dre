@@ -11,10 +11,10 @@ class EntryExit extends Model
 
     protected $fillable = [
         'employee_id',
+        'entry_exit_reason_id',
         'hora_salida',
         'hora_retorno',
         'motivo',
-        'tipo_motivo',
         'papeleta',
         'turno',
         'fecha',
@@ -33,6 +33,11 @@ class EntryExit extends Model
     public function employee()
     {
         return $this->belongsTo(Employee::class, 'employee_id');
+    }
+
+    public function reason()
+    {
+        return $this->belongsTo(EntryExitReason::class, 'entry_exit_reason_id');
     }
 
     /**
@@ -58,6 +63,11 @@ class EntryExit extends Model
     public function getRegimenAttribute(): ?string
     {
         return $this->employee?->tipo_contrato;
+    }
+
+    public function getTipoMotivoAttribute(): ?string
+    {
+        return $this->reason?->tipo;
     }
 
     /**

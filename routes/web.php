@@ -64,6 +64,13 @@ Route::middleware('auth')->group(function () {
         Route::get('/api/pending', [EntryExitController::class, 'pendingReturns'])->name('pending');
         Route::get('/api/absent', [EntryExitController::class, 'getAbsentPersonnel'])->name('absent');
         Route::get('/api/search-personnel', [EntryExitController::class, 'searchPersonnel'])->name('search-personnel');
+        Route::get('/api/report-stats', [EntryExitController::class, 'reportStats'])->name('report-stats');
+        Route::get('/report/pdf', [EntryExitController::class, 'reportPdf'])->name('report-pdf');
+        // Reasons CRUD
+        Route::get('/reasons', [EntryExitController::class, 'getReasons'])->name('reasons.index');
+        Route::post('/reasons', [EntryExitController::class, 'storeReason'])->name('reasons.store');
+        Route::put('/reasons/{reason}', [EntryExitController::class, 'updateReason'])->name('reasons.update');
+        Route::delete('/reasons/{reason}', [EntryExitController::class, 'deleteReason'])->name('reasons.destroy');
         // Dynamic parameter routes after static routes
         Route::patch('/{entryExit}/return', [EntryExitController::class, 'registerReturn'])->name('return');
         Route::get('/{entryExit}/pdf', [EntryExitController::class, 'generatePdf'])->name('pdf');

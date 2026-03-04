@@ -29,8 +29,41 @@
                 </div>
             </div>
 
+            <!-- Tabs Navigation -->
+            <div class="border-b border-slate-200 mb-8">
+                <nav class="-mb-px flex space-x-8">
+                    <button @click="activeTab = 'list'" :class="[
+                        activeTab === 'list'
+                            ? 'border-emerald-600 text-emerald-600'
+                            : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300',
+                        'whitespace-nowrap py-4 px-1 border-b-2 font-bold text-sm flex items-center gap-2 transition-all duration-200'
+                    ]">
+                        <ClipboardList class="w-5 h-5" />
+                        Listado de Papeletas
+                    </button>
+                    <button @click="activeTab = 'reports'" :class="[
+                        activeTab === 'reports'
+                            ? 'border-teal-600 text-teal-600'
+                            : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300',
+                        'whitespace-nowrap py-4 px-1 border-b-2 font-bold text-sm flex items-center gap-2 transition-all duration-200'
+                    ]">
+                        <FileText class="w-5 h-5" />
+                        Reportes
+                    </button>
+                    <button @click="activeTab = 'reasons'" :class="[
+                        activeTab === 'reasons'
+                            ? 'border-emerald-700 text-emerald-700'
+                            : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300',
+                        'whitespace-nowrap py-4 px-1 border-b-2 font-bold text-sm flex items-center gap-2 transition-all duration-200'
+                    ]">
+                        <Settings class="w-5 h-5" />
+                        Motivos
+                    </button>
+                </nav>
+            </div>
+
             <!-- Filters Section -->
-            <div class="bg-white shadow-lg rounded-2xl border border-slate-200 p-4 mb-6">
+            <div v-if="activeTab === 'list'" class="bg-white shadow-lg rounded-2xl border border-slate-200 p-4 mb-6">
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
                     <!-- Search -->
                     <div class="lg:col-span-2">
@@ -93,7 +126,7 @@
             </div>
 
             <!-- Table Card -->
-            <div class="bg-white shadow-xl rounded-2xl border border-slate-200 overflow-hidden">
+            <div v-if="activeTab === 'list'" class="bg-white shadow-xl rounded-2xl border border-slate-200 overflow-hidden">
                 <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-slate-200">
                         <thead class="bg-slate-50">
@@ -166,8 +199,11 @@
                                     </div>
                                 </td>
                                 <td class="px-6 py-4">
-                                    <div class="text-sm text-slate-700 line-clamp-2 max-w-xs mb-1">{{ entry.motivo }}
+                                    <div v-if="entry.reason_nombre"
+                                        class="text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-lg px-2 py-1 mb-1.5 inline-block">
+                                        {{ entry.reason_nombre }}
                                     </div>
+                                    <div class="text-sm text-slate-700 line-clamp-2 max-w-xs mb-1">{{ entry.motivo }}</div>
                                     <div class="flex flex-wrap gap-2">
                                         <span v-if="entry.tipo_motivo"
                                             class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border"
@@ -251,16 +287,26 @@
                 </div>
             </div>
 
+            <!-- Reports Tab -->
+            <div v-if="activeTab === 'reports'">
+                <EntryExitReports />
+            </div>
+
+            <!-- Reasons Tab -->
+            <div v-if="activeTab === 'reasons'">
+                <EntryExitReasonsManager />
+            </div>
+
             <!-- Register Modal -->
-            <EntryExitModal v-if="showModal" :personnel="personnel" :entry="selectedEntry" @close="closeModal" />
+            <EntryExitModal v-if="showModal" :reasons="reasons" :entry="selectedEntry" @close="closeModal" />
 
             <!-- Absent Personnel Modal -->
-            <AbsentPersonnelModal v-if="showAbsentModal" :show="showAbsentModal" @close="showAbsentModal = false" />
+            <AbsentPersonnelModal v-if="showAbsentModal" @close="showAbsentModal = false" />
         </div>
     </div>
 </template>
 
-<script>
+<script lang="ts">
 import MainLayout from '@/Layouts/MainLayout.vue';
 
 export default {
@@ -268,9 +314,9 @@ export default {
 }
 </script>
 
-<script setup>
-import { ref, computed, watch } from 'vue';
-import { Link, usePage } from '@inertiajs/vue3';
+<script setup lang="ts">
+import { shallowRef } from 'vue';
+import { Link } from '@inertiajs/vue3';
 import {
     Search,
     Plus,
@@ -281,116 +327,71 @@ import {
     ArrowLeft,
     ChevronLeft,
     ChevronRight,
-    Filter,
-    UserMinus
+    ChevronsLeft,
+    ChevronsRight,
+    Users,
+    Download,
+    UserMinus,
+    ClipboardList,
+    Settings,
 } from 'lucide-vue-next';
 import EntryExitModal from '@/Components/EntryExit/EntryExitModal.vue';
 import AbsentPersonnelModal from '@/Components/EntryExit/AbsentPersonnelModal.vue';
-import Pagination from '@/Components/Common/Pagination.vue';
+import EntryExitReports from '@/Components/EntryExit/Reports/EntryExitReports.vue';
+import EntryExitReasonsManager from '@/Components/EntryExit/Reasons/EntryExitReasonsManager.vue';
+import { useEntryExitList } from '@/Composables/useEntryExitList';
+import type { EntryExitRecord } from '@/Composables/useEntryExitList';
 
-const props = defineProps({
-    entries: {
-        type: Array,
-        default: () => []
-    },
-    personnel: {
-        type: Array,
-        default: () => []
-    },
-    filters: {
-        type: Object,
-        default: () => ({})
-    }
-});
+interface Reason {
+    id: string;
+    nombre: string;
+    tipo: 'comision' | 'permiso' | 'ambos';
+}
 
-const showModal = ref(false);
-const showAbsentModal = ref(false);
-const selectedEntry = ref(null);
-
-// Local filters
-const localFilters = ref({
-    search: '',
-    turno: props.filters?.turno || '',
-    estado: props.filters?.estado || '',
-    fecha: props.filters?.fecha || ''
-});
-
-// Pagination
-const currentPage = ref(1);
-const perPage = ref(10);
-
-// Filtered entries
-const filteredEntries = computed(() => {
-    let result = [...props.entries];
-
-    if (localFilters.value.search) {
-        const searchLower = localFilters.value.search.toLowerCase();
-        result = result.filter(entry =>
-            (entry.personal && entry.personal.toLowerCase().includes(searchLower)) ||
-            (entry.dni && entry.dni.toLowerCase().includes(searchLower)) ||
-            (entry.motivo && entry.motivo.toLowerCase().includes(searchLower))
-        );
-    }
-
-    if (localFilters.value.turno) {
-        result = result.filter(entry => entry.turno === localFilters.value.turno);
-    }
-
-    if (localFilters.value.estado === 'pendiente') {
-        result = result.filter(entry => entry.is_pending);
-    } else if (localFilters.value.estado === 'completado') {
-        result = result.filter(entry => !entry.is_pending);
-    }
-
-    if (localFilters.value.fecha) {
-        result = result.filter(entry => entry.fecha === localFilters.value.fecha);
-    }
-
-    return result;
-});
-
-// Paginated entries
-const paginatedEntries = computed(() => {
-    const start = (currentPage.value - 1) * perPage.value;
-    const end = start + perPage.value;
-    return filteredEntries.value.slice(start, end);
-});
-
-// Total pages
-const totalPages = computed(() => {
-    return Math.ceil(filteredEntries.value.length / perPage.value) || 1;
-});
-
-// Reset page when filters change
-watch(localFilters, () => {
-    currentPage.value = 1;
-}, { deep: true });
-
-const clearFilters = () => {
-    localFilters.value = {
-        search: '',
-        turno: '',
-        estado: '',
-        fecha: ''
+const props = defineProps<{
+    entries: EntryExitRecord[];
+    reasons: Reason[];
+    filters?: {
+        turno?: string;
+        estado?: string;
+        fecha?: string;
     };
-};
+}>();
 
-const openReturnModal = (entry) => {
+const showModal = shallowRef(false);
+const showAbsentModal = shallowRef(false);
+const selectedEntry = shallowRef<EntryExitRecord | null>(null);
+const activeTab = shallowRef<'list' | 'reports' | 'reasons'>('list');
+
+const {
+    localFilters,
+    currentPage,
+    perPage,
+    filteredEntries,
+    paginatedEntries,
+    totalPages,
+    clearFilters,
+} = useEntryExitList({
+    entries: () => props.entries,
+    initialFilters: props.filters,
+});
+
+const openReturnModal = (entry: EntryExitRecord): void => {
     selectedEntry.value = entry;
     showModal.value = true;
 };
 
-const closeModal = () => {
+const closeModal = (): void => {
     showModal.value = false;
     selectedEntry.value = null;
 };
 
-const downloadPdf = (entry) => {
+const downloadPdf = (entry: EntryExitRecord): void => {
     window.open(`/entry-exits/${entry.id}/pdf`, '_blank');
 };
 
-const getTurnoClass = (turno) => {
-    const classes = {
+const getTurnoClass = (turno: string): string => {
+    const classes: Record<string, string> = {
         'Mañana': 'bg-gradient-to-r from-orange-400 to-orange-500 text-white',
         'Tarde': 'bg-gradient-to-r from-yellow-400 to-yellow-500 text-white',
         'Noche': 'bg-gradient-to-r from-indigo-400 to-indigo-500 text-white'

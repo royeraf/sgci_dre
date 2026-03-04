@@ -39,14 +39,19 @@
                         </div>
 
                         <div>
-                            <label class="block text-sm font-bold text-slate-700 mb-2">
-                                Hora de Retorno <span class="text-red-500">*</span>
+                            <label class="block text-sm font-bold text-slate-700 mb-2 flex items-center gap-2">
+                                Hora de Retorno
+                                <span class="flex h-2 w-2 relative">
+                                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                    <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                                </span>
+                                <span class="text-[10px] text-emerald-600 font-medium uppercase tracking-tight">Automático</span>
                             </label>
-                            <input type="time" v-model="horaRetorno" v-bind="horaRetornoProps"
-                                class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
-                                :class="returnFormErrors.hora_retorno ? 'border-red-400' : 'border-slate-200'" />
-                            <p v-if="returnFormErrors.hora_retorno" class="mt-1 text-sm text-red-600">{{
-                                returnFormErrors.hora_retorno }}</p>
+                            <div class="relative">
+                                <input type="time" :value="horaRetorno" disabled
+                                    class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-500 font-bold outline-none cursor-not-allowed" />
+                                <div class="absolute inset-0 z-10" title="La hora se asigna automáticamente"></div>
+                            </div>
                         </div>
                     </template>
 
@@ -89,13 +94,11 @@
                                         @keypress.enter.prevent
                                         type="text" placeholder="Escanee el DNI o busque por nombre..."
                                         class="w-full px-4 py-3 pl-10 border rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all outline-none"
-                                        :class="[
+                                        :class="
                                             scanStatus === 'success' ? 'border-green-400 bg-green-50' :
                                             scanStatus === 'error' ? 'border-red-400 bg-red-50' :
-                                            'border-green-200 bg-white',
-                                            isSearching ? 'opacity-50' : ''
-                                        ]"
-                                        :disabled="isSearching" />
+                                            'border-green-200 bg-white'
+                                        " />
                                     <div class="absolute left-3 top-1/2 -translate-y-1/2">
                                         <Loader2 v-if="isSearching" class="w-4 h-4 text-green-600 animate-spin" />
                                         <Search v-else class="w-4 h-4 text-slate-400" />
@@ -108,7 +111,7 @@
                                             class="px-4 py-3 text-center text-slate-500 text-sm flex items-center justify-center gap-2">
                                             <Loader2 class="w-4 h-4 animate-spin" /> Buscando...
                                         </div>
-                                        <div v-else-if="searchResults.length === 0 && searchQuery.length >= 2"
+                                        <div v-else-if="searchResults.length === 0 && searchQuery.length >= 3"
                                             class="px-4 py-3 text-center text-slate-500 text-sm">
                                             No se encontraron resultados.
                                         </div>
@@ -188,7 +191,7 @@
                             </div>
                         </div>
 
-                        <!-- Tipo de Motivo -->
+                        <!-- Tipo de Motivo (UI filter only, not submitted) -->
                         <div>
                             <label class="block text-sm font-bold text-slate-700 mb-2">
                                 Tipo de Motivo <span class="text-red-500">*</span>
@@ -196,21 +199,39 @@
                             <div class="flex gap-4">
                                 <label
                                     class="flex items-center p-3 border rounded-xl cursor-pointer hover:bg-slate-50 transition-colors flex-1"
-                                    :class="tipoMotivo === 'comision' ? 'ring-2 ring-green-500 border-green-500 bg-green-50' : 'border-slate-200'">
-                                    <input type="radio" v-model="tipoMotivo" value="comision"
+                                    :class="filterTipo === 'comision' ? 'ring-2 ring-green-500 border-green-500 bg-green-50' : 'border-slate-200'">
+                                    <input type="radio" v-model="filterTipo" value="comision"
                                         class="w-4 h-4 text-green-600 focus:ring-green-500 border-slate-300">
                                     <span class="ml-2 text-sm font-medium text-slate-700">Comisión de Servicios</span>
                                 </label>
                                 <label
                                     class="flex items-center p-3 border rounded-xl cursor-pointer hover:bg-slate-50 transition-colors flex-1"
-                                    :class="tipoMotivo === 'permiso' ? 'ring-2 ring-green-500 border-green-500 bg-green-50' : 'border-slate-200'">
-                                    <input type="radio" v-model="tipoMotivo" value="permiso"
+                                    :class="filterTipo === 'permiso' ? 'ring-2 ring-green-500 border-green-500 bg-green-50' : 'border-slate-200'">
+                                    <input type="radio" v-model="filterTipo" value="permiso"
                                         class="w-4 h-4 text-green-600 focus:ring-green-500 border-slate-300">
                                     <span class="ml-2 text-sm font-medium text-slate-700">Permiso Personal</span>
                                 </label>
                             </div>
-                            <p v-if="formErrors.tipo_motivo" class="mt-1 text-sm text-red-600">{{
-                                formErrors.tipo_motivo }}</p>
+                            <p v-if="formErrors.entry_exit_reason_id" class="mt-1 text-sm text-red-600">{{
+                                formErrors.entry_exit_reason_id }}</p>
+                        </div>
+
+                        <!-- Razones predefinidas -->
+                        <div v-if="filteredReasons.length">
+                            <label class="block text-sm font-bold text-slate-700 mb-2">
+                                Motivo predefinido <span class="text-slate-400 font-normal text-xs">(opcional)</span>
+                            </label>
+                            <div class="flex flex-wrap gap-2">
+                                <button v-for="reason in filteredReasons" :key="reason.id"
+                                    type="button"
+                                    @click="selectReason(reason)"
+                                    class="px-3 py-1.5 rounded-xl text-sm font-medium border-2 transition-all"
+                                    :class="selectedReasonId === reason.id
+                                        ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
+                                        : 'border-slate-200 bg-white text-slate-600 hover:border-emerald-300 hover:text-emerald-700'">
+                                    {{ reason.nombre }}
+                                </button>
+                            </div>
                         </div>
 
                         <!-- Motivo -->
@@ -220,7 +241,7 @@
                             </label>
                             <textarea v-model="motivo" v-bind="motivoProps" rows="3"
                                 placeholder="Indique el motivo de la salida..."
-                                class="w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 resize-none transition-colors"
+                                class="w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none resize-none transition-colors"
                                 :class="formErrors.motivo ? 'border-red-400' : 'border-slate-200'"></textarea>
                             <p v-if="formErrors.motivo" class="mt-1 text-sm text-red-600">{{ formErrors.motivo }}</p>
                         </div>
@@ -244,145 +265,99 @@
     </div>
 </template>
 
-<script setup>
-import { ref, watch, onMounted, onUnmounted, nextTick } from 'vue';
+<script setup lang="ts">
+import { shallowRef, computed, watch, onMounted, onUnmounted } from 'vue';
 import { useForm } from 'vee-validate';
 import { toTypedSchema } from '@vee-validate/yup';
 import * as yup from 'yup';
 import { router } from '@inertiajs/vue3';
+import Swal from 'sweetalert2';
 import { Plus, X, Loader2, LogIn, Clock, ScanBarcode, Search, CheckCircle, AlertCircle } from 'lucide-vue-next';
+import { usePersonnelSearch } from '@/Composables/usePersonnelSearch';
+import type { PersonResult } from '@/Composables/usePersonnelSearch';
 
-const props = defineProps({
-    entry: {
-        type: Object,
-        default: null
-    }
+interface Reason {
+    id: string;
+    nombre: string;
+    tipo: 'comision' | 'permiso' | 'ambos';
+}
+
+const props = defineProps<{
+    entry?: Record<string, any> | null;
+    reasons?: Reason[];
+}>();
+
+const emit = defineEmits<{
+    close: [];
+}>();
+
+const isSubmitting = shallowRef(false);
+const selectedReasonId = shallowRef<string>('');
+// UI-only filter for reasons (not submitted)
+const filterTipo = shallowRef<'comision' | 'permiso'>('comision');
+
+// Personnel search composable
+const {
+    searchQuery,
+    showDropdown,
+    searchResults,
+    isSearching,
+    scanMessage,
+    scanStatus,
+    selectedPersonDisplay,
+    selectPerson,
+    clearSelection: clearPersonSelection,
+    handleClickOutside,
+    focusSearchInput,
+} = usePersonnelSearch({
+    onPersonSelected: (person: PersonResult) => {
+        setFieldValue('employee_id', person.id);
+    },
+    onPersonCleared: () => {
+        setFieldValue('employee_id', '');
+    },
 });
 
-const emit = defineEmits(['close']);
-
-const isSubmitting = ref(false);
-const searchQuery = ref('');
-const showDropdown = ref(false);
-const dropdownContainerRef = ref(null);
-const searchResults = ref([]);
-const isSearching = ref(false);
-const searchInputRef = ref(null);
-const scanMessage = ref('');
-const scanStatus = ref('');
-const selectedPersonDisplay = ref(null);
-let searchTimeout = null;
-
-// Perform async search
-const performSearch = async (query) => {
-    if (!query || query.length < 2) {
-        searchResults.value = [];
-        return;
-    }
-
-    isSearching.value = true;
-    try {
-        const response = await fetch(`/entry-exits/api/search-personnel?query=${encodeURIComponent(query)}`);
-        if (response.ok) {
-            searchResults.value = await response.json();
-        }
-    } catch (e) {
-        console.error("Search error:", e);
-    } finally {
-        isSearching.value = false;
-    }
+const clearSelection = (): void => {
+    clearPersonSelection();
 };
 
-// Barcode scan - immediate DNI search with auto-select
-const performBarcodeSearch = async (dniValue) => {
-    isSearching.value = true;
-    scanMessage.value = '';
-    scanStatus.value = '';
-    showDropdown.value = false;
-
-    try {
-        const response = await fetch(`/entry-exits/api/search-personnel?query=${encodeURIComponent(dniValue)}`);
-        if (response.ok) {
-            const results = await response.json();
-            const exactMatch = results.find(r => r.dni === dniValue);
-
-            if (exactMatch) {
-                selectPerson(exactMatch);
-                scanMessage.value = `Personal encontrado: ${exactMatch.nombre}`;
-                scanStatus.value = 'success';
-                setTimeout(() => { scanMessage.value = ''; scanStatus.value = ''; }, 3000);
-            } else if (results.length > 0) {
-                searchResults.value = results;
-                showDropdown.value = true;
-            } else {
-                scanMessage.value = 'No se encontró personal con ese DNI';
-                scanStatus.value = 'error';
-                setTimeout(() => { scanMessage.value = ''; scanStatus.value = ''; }, 3000);
-            }
-        }
-    } catch (e) {
-        scanMessage.value = 'Error al buscar';
-        scanStatus.value = 'error';
-    } finally {
-        isSearching.value = false;
-    }
-};
-
-// Watch search query with debounce + barcode detection
-watch(searchQuery, (val) => {
-    if (searchTimeout) clearTimeout(searchTimeout);
-
-    // Detect barcode scan (exactly 8 digits)
-    if (/^\d{8}$/.test(val.trim())) {
-        performBarcodeSearch(val.trim());
-        return;
-    }
-
-    // Normal debounced text search
-    searchTimeout = setTimeout(() => {
-        performSearch(val);
-    }, 300);
+// Reasons filtered by UI tipo filter
+const filteredReasons = computed<Reason[]>(() => {
+    if (!props.reasons?.length) return [];
+    return props.reasons.filter(r => r.tipo === filterTipo.value || r.tipo === 'ambos');
 });
 
-// Select person from dropdown
-const selectPerson = (person) => {
-    setFieldValue('employee_id', person.id);
-    selectedPersonDisplay.value = {
-        nombre: person.nombre,
-        dni: person.dni,
-        cargo: person.cargo || 'N/A',
-        area: person.area || 'N/A',
-        regimen: person.regimen || '',
-    };
-    searchQuery.value = '';
-    showDropdown.value = false;
-};
-
-// Clear selected person
-const clearSelection = () => {
-    setFieldValue('employee_id', '');
-    selectedPersonDisplay.value = null;
-    searchQuery.value = '';
-    nextTick(() => { searchInputRef.value?.focus(); });
-};
-
-// Click outside handler
-const handleClickOutside = (event) => {
-    if (dropdownContainerRef.value && !dropdownContainerRef.value.contains(event.target)) {
-        showDropdown.value = false;
+const selectReason = (reason: Reason): void => {
+    if (selectedReasonId.value === reason.id) {
+        selectedReasonId.value = '';
+        setFieldValue('entry_exit_reason_id', '');
+    } else {
+        selectedReasonId.value = reason.id;
+        setFieldValue('entry_exit_reason_id', reason.id);
+        if (!motivo.value) {
+            setFieldValue('motivo', reason.nombre);
+        }
     }
 };
+
+// Reset reason when UI filter changes
+watch(filterTipo, () => {
+    selectedReasonId.value = '';
+    setFieldValue('entry_exit_reason_id', '');
+});
 
 onMounted(() => {
     document.addEventListener('click', handleClickOutside);
     // Auto-focus barcode/search input when creating new entry
     if (!props.entry) {
-        nextTick(() => { searchInputRef.value?.focus(); });
+        focusSearchInput();
     }
     // Update time automatically every 30 seconds
     timeInterval = setInterval(() => {
         currentTime.value = new Date().toTimeString().slice(0, 5);
         setFieldValue('hora_salida', currentTime.value);
+        setReturnFieldValue('hora_retorno', currentTime.value);
     }, 30000);
 });
 
@@ -408,17 +383,17 @@ const getShiftFromHour = (timeValue) => {
 // Get current shift based on current time
 const getCurrentShift = () => getShiftFromHour(new Date().getHours());
 
-const currentTime = ref(new Date().toTimeString().slice(0, 5));
+const currentTime = shallowRef(new Date().toTimeString().slice(0, 5));
 let timeInterval = null;
 
 // Validation Schema for exit form
 const exitSchema = toTypedSchema(
     yup.object({
-        employee_id: yup.string().required('Debe seleccionar un empleado'),
-        hora_salida: yup.string().required('La hora de salida es obligatoria'),
-        turno: yup.string().required('El turno es obligatorio'),
-        tipo_motivo: yup.string().required('Debe seleccionar el tipo de motivo'),
-        motivo: yup.string()
+        employee_id:          yup.string().required('Debe seleccionar un empleado'),
+        hora_salida:          yup.string().required('La hora de salida es obligatoria'),
+        turno:                yup.string().required('El turno es obligatorio'),
+        entry_exit_reason_id: yup.string().required('Debe seleccionar un motivo'),
+        motivo:               yup.string()
             .required('La descripción del motivo es obligatoria')
             .min(5, 'El motivo debe tener al menos 5 caracteres'),
     })
@@ -435,22 +410,21 @@ const returnSchema = toTypedSchema(
 const { errors: formErrors, defineField: defineExitField, handleSubmit: validateExitForm, resetForm, setFieldValue } = useForm({
     validationSchema: exitSchema,
     initialValues: {
-        employee_id: '',
-        hora_salida: currentTime.value,
-        turno: getCurrentShift(),
-        tipo_motivo: 'comision',
-        motivo: '',
+        employee_id:          '',
+        hora_salida:          currentTime.value,
+        turno:                getCurrentShift(),
+        entry_exit_reason_id: '',
+        motivo:               '',
     }
 });
 
 const [employeeId] = defineExitField('employee_id');
 const [horaSalida] = defineExitField('hora_salida');
 const [turno] = defineExitField('turno');
-const [tipoMotivo] = defineExitField('tipo_motivo');
 const [motivo, motivoProps] = defineExitField('motivo');
 
 // Return form
-const { errors: returnFormErrors, defineField: defineReturnField, handleSubmit: validateReturnForm, resetForm: resetReturnForm } = useForm({
+const { errors: returnFormErrors, defineField: defineReturnField, handleSubmit: validateReturnForm, resetForm: resetReturnForm, setFieldValue: setReturnFieldValue } = useForm({
     validationSchema: returnSchema,
     initialValues: {
         hora_retorno: currentTime.value,
@@ -475,6 +449,14 @@ const onSubmitExit = validateExitForm(async (values) => {
             resetForm();
             selectedPersonDisplay.value = null;
             emit('close');
+            Swal.fire({
+                title: '¡Papeleta registrada!',
+                text: 'La salida fue registrada correctamente.',
+                icon: 'success',
+                timer: 2500,
+                showConfirmButton: false,
+                timerProgressBar: true,
+            });
         },
         onFinish: () => {
             isSubmitting.value = false;
@@ -490,6 +472,14 @@ const onSubmitReturn = validateReturnForm(async (values) => {
         onSuccess: () => {
             resetReturnForm();
             emit('close');
+            Swal.fire({
+                title: '¡Retorno registrado!',
+                text: 'El retorno fue registrado correctamente.',
+                icon: 'success',
+                timer: 2500,
+                showConfirmButton: false,
+                timerProgressBar: true,
+            });
         },
         onFinish: () => {
             isSubmitting.value = false;

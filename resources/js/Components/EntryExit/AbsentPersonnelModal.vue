@@ -1,5 +1,5 @@
 <template>
-    <div v-if="show" class="fixed inset-0 z-[60] overflow-y-auto">
+    <div class="fixed inset-0 z-[60] overflow-y-auto">
         <div class="flex items-center justify-center min-h-screen px-4">
             <!-- Backdrop -->
             <div class="fixed inset-0 bg-slate-900/75 backdrop-blur-sm transition-opacity" @click="$emit('close')">
@@ -110,19 +110,27 @@
     </div>
 </template>
 
-<script setup>
-import { ref, onMounted, computed } from 'vue';
+<script setup lang="ts">
+import { shallowRef, ref, onMounted, computed } from 'vue';
 import axios from 'axios';
 import { X, UserMinus, Loader2, UserCheck } from 'lucide-vue-next';
 
-const props = defineProps({
-    show: Boolean
-});
+interface AbsentPerson {
+    id: string | number;
+    nombres: string;
+    dni: string;
+    type: string;
+    class: string;
+    desde: string;
+    hasta: string;
+}
 
-const emit = defineEmits(['close']);
+defineEmits<{
+    close: [];
+}>();
 
-const loading = ref(true);
-const absentPersonnel = ref([]);
+const loading = shallowRef(true);
+const absentPersonnel = ref<AbsentPerson[]>([]);
 
 const formattedDate = computed(() => {
     return new Date().toLocaleDateString('es-PE', {
@@ -133,10 +141,10 @@ const formattedDate = computed(() => {
     });
 });
 
-const fetchAbsentPersonnel = async () => {
+const fetchAbsentPersonnel = async (): Promise<void> => {
     loading.value = true;
     try {
-        const response = await axios.get('/entry-exits/api/absent');
+        const response = await axios.get<AbsentPerson[]>('/entry-exits/api/absent');
         absentPersonnel.value = response.data;
     } catch (error) {
         console.error('Error fetching absent personnel:', error);
@@ -146,8 +154,6 @@ const fetchAbsentPersonnel = async () => {
 };
 
 onMounted(() => {
-    if (props.show) {
-        fetchAbsentPersonnel();
-    }
+    fetchAbsentPersonnel();
 });
 </script>

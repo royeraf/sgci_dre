@@ -58,7 +58,15 @@ return new class extends Migration
 
         // Step 3: Drop deprecated columns
         Schema::table('entry_exits', function (Blueprint $table) {
-            $table->dropForeign(['staff_id']);
+            // Try to drop FK if it exists (may not exist in all environments)
+            try {
+                $table->dropForeign(['staff_id']);
+            } catch (\Exception $e) {
+                // FK doesn't exist, continue
+            }
+        });
+
+        Schema::table('entry_exits', function (Blueprint $table) {
             $table->dropColumn(['staff_id', 'dni', 'nombre_personal', 'regimen']);
         });
     }

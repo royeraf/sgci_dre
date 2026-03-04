@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\EntryExit;
 use App\Models\Employee;
+use App\Models\EntryExitReason;
 use App\Models\AuditLog;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -16,7 +17,7 @@ class EntryExitController extends Controller
      */
     public function index(Request $request)
     {
-        $query = EntryExit::with(['employee.person', 'employee.contractType', 'registeredBy'])
+        $query = EntryExit::with(['employee.person', 'employee.contractType', 'registeredBy', 'reason'])
             ->orderBy('fecha', 'desc')
             ->orderBy('hora_salida', 'desc');
 
@@ -48,6 +49,7 @@ class EntryExitController extends Controller
                 'hora_retorno' => $entry->hora_retorno ? $entry->hora_retorno->format('H:i') : null,
                 'motivo' => $entry->motivo,
                 'tipo_motivo' => $entry->tipo_motivo,
+                'reason_nombre' => $entry->reason?->nombre,
                 'papeleta' => $entry->papeleta,
                 'regimen' => $entry->regimen,
                 'is_pending' => is_null($entry->hora_retorno),
@@ -57,6 +59,7 @@ class EntryExitController extends Controller
         return Inertia::render('EntryExits/Index', [
             'entries' => $entries,
             'filters' => $request->only(['turno', 'fecha', 'estado']),
+            'reasons' => EntryExitReason::active()->orderBy('nombre')->get(['id', 'nombre', 'tipo']),
         ]);
     }
 
@@ -100,19 +103,20 @@ class EntryExitController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'employee_id' => 'required|exists:employees,id',
-            'hora_salida' => 'required',
-            'tipo_motivo' => 'required|in:comision,permiso',
-            'motivo' => 'required|string|min:5',
-            'turno' => 'required|in:Mañana,Tarde,Noche',
+            'employee_id'          => 'required|exists:employees,id',
+            'hora_salida'          => 'required',
+            'entry_exit_reason_id' => 'required|exists:entry_exit_reasons,id',
+            'motivo'               => 'required|string|min:5',
+            'turno'                => 'required|in:Mañana,Tarde,Noche',
         ], [
-            'employee_id.required' => 'Debe seleccionar un empleado.',
-            'employee_id.exists' => 'El empleado seleccionado no existe.',
-            'hora_salida.required' => 'La hora de salida es obligatoria.',
-            'tipo_motivo.required' => 'Debe seleccionar el tipo de motivo.',
-            'motivo.required' => 'El motivo es obligatorio.',
-            'motivo.min' => 'El motivo debe tener al menos 5 caracteres.',
-            'turno.required' => 'El turno es obligatorio.',
+            'employee_id.required'          => 'Debe seleccionar un empleado.',
+            'employee_id.exists'            => 'El empleado seleccionado no existe.',
+            'hora_salida.required'          => 'La hora de salida es obligatoria.',
+            'entry_exit_reason_id.required' => 'Debe seleccionar un motivo.',
+            'entry_exit_reason_id.exists'   => 'El motivo seleccionado no es válido.',
+            'motivo.required'               => 'La descripción del motivo es obligatoria.',
+            'motivo.min'                    => 'El motivo debe tener al menos 5 caracteres.',
+            'turno.required'                => 'El turno es obligatorio.',
         ]);
 
         $entryExit = EntryExit::create([
@@ -203,6 +207,117 @@ class EntryExitController extends Controller
             'entries' => $pending,
         ]);
     }
+
+    /**
+     * Report stats for a date range.
+     */
+    public function reportStats(Request $request)
+    {
+        $request->validate([
+            'start_date' => 'required|date',
+            'end_date'   => 'required|date|after_or_equal:start_date',
+        ]);
+
+        $query = EntryExit::whereBetween('fecha', [$request->start_date, $request->end_date]);
+
+        $total      = (clone $query)->count();
+        $retornados = (clone $query)->whereNotNull('hora_retorno')->count();
+        $pendientes = (clone $query)->whereNull('hora_retorno')->count();
+        $comisiones = (clone $query)->whereHas('reason', fn ($q) => $q->where('tipo', 'comision'))->count();
+        $permisos   = (clone $query)->whereHas('reason', fn ($q) => $q->where('tipo', 'permiso'))->count();
+
+        return response()->json([
+            'total'      => $total,
+            'retornados' => $retornados,
+            'pendientes' => $pendientes,
+            'comisiones' => $comisiones,
+            'permisos'   => $permisos,
+        ]);
+    }
+
+    /**
+     * Generate a list PDF report for a date range.
+     */
+    public function reportPdf(Request $request)
+    {
+        $request->validate([
+            'start_date' => 'required|date',
+            'end_date'   => 'required|date|after_or_equal:start_date',
+        ]);
+
+        $entries = EntryExit::with(['employee.person', 'employee.contractType'])
+            ->whereBetween('fecha', [$request->start_date, $request->end_date])
+            ->orderBy('fecha', 'asc')
+            ->orderBy('hora_salida', 'asc')
+            ->get()
+            ->map(function ($e) {
+                return [
+                    'fecha'          => $e->fecha->format('d/m/Y'),
+                    'dni'            => $e->dni,
+                    'personal'       => $e->nombre_personal,
+                    'regimen'        => $e->regimen,
+                    'turno'          => $e->turno,
+                    'hora_salida'    => $e->hora_salida ? $e->hora_salida->format('H:i') : '--:--',
+                    'hora_retorno'   => $e->hora_retorno ? $e->hora_retorno->format('H:i') : '--:--',
+                    'tipo_motivo'    => $e->tipo_motivo === 'comision' ? 'Comisión' : 'Permiso',
+                    'motivo'         => $e->motivo,
+                    'papeleta'       => $e->papeleta,
+                ];
+            });
+
+        $pdf = Pdf::loadView('pdf.entry_exit_report', [
+            'entries'    => $entries,
+            'start_date' => \Carbon\Carbon::parse($request->start_date)->format('d/m/Y'),
+            'end_date'   => \Carbon\Carbon::parse($request->end_date)->format('d/m/Y'),
+            'total'      => $entries->count(),
+            'retornados' => $entries->filter(fn($e) => $e['hora_retorno'] !== '--:--')->count(),
+            'pendientes' => $entries->filter(fn($e) => $e['hora_retorno'] === '--:--')->count(),
+        ])->setPaper('a4', 'landscape');
+
+        $filename = "control_personal_{$request->start_date}_{$request->end_date}.pdf";
+        return $pdf->download($filename);
+    }
+
+    // ─── Reasons CRUD ────────────────────────────────────────────────────────
+
+    public function getReasons()
+    {
+        return response()->json(EntryExitReason::orderBy('nombre')->get());
+    }
+
+    public function storeReason(Request $request)
+    {
+        $validated = $request->validate([
+            'nombre'      => 'required|string|max:100|unique:entry_exit_reasons,nombre',
+            'descripcion' => 'nullable|string|max:500',
+            'tipo'        => 'required|in:comision,permiso,ambos',
+            'is_active'   => 'boolean',
+        ]);
+
+        EntryExitReason::create($validated);
+        return response()->json(['message' => 'Motivo creado correctamente.'], 201);
+    }
+
+    public function updateReason(Request $request, EntryExitReason $reason)
+    {
+        $validated = $request->validate([
+            'nombre'      => 'required|string|max:100|unique:entry_exit_reasons,nombre,' . $reason->id,
+            'descripcion' => 'nullable|string|max:500',
+            'tipo'        => 'required|in:comision,permiso,ambos',
+            'is_active'   => 'boolean',
+        ]);
+
+        $reason->update($validated);
+        return response()->json(['message' => 'Motivo actualizado correctamente.']);
+    }
+
+    public function deleteReason(EntryExitReason $reason)
+    {
+        $reason->delete();
+        return response()->json(['message' => 'Motivo eliminado correctamente.']);
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
 
     /**
      * Get absent personnel (Vacations and Licenses).
