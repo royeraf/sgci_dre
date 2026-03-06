@@ -107,6 +107,28 @@ class Employee extends Model
         return $this->hasMany(EntryExit::class, 'employee_id');
     }
 
+    /**
+     * Relación con solicitudes de papeleta
+     */
+    public function papeletaRequests(): HasMany
+    {
+        return $this->hasMany(PapeletaRequest::class, 'employee_id');
+    }
+
+    /**
+     * Obtener el jefe inmediato: primero busca en office, luego fallback a direction
+     */
+    public function getJefeInmediatoAttribute(): ?Employee
+    {
+        if ($this->office && $this->office->jefe_inmediato_id) {
+            return $this->office->jefeInmediato;
+        }
+        if ($this->direction && $this->direction->jefe_inmediato_id) {
+            return $this->direction->jefeInmediato;
+        }
+        return null;
+    }
+
     // ===== ACCESSORS para compatibilidad =====
 
     /**

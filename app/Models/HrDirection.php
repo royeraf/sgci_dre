@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class HrDirection extends Model
@@ -20,6 +21,7 @@ class HrDirection extends Model
         'telefono_interno',
         'ubicacion',
         'activo',
+        'jefe_inmediato_id',
     ];
 
     protected $casts = [
@@ -40,6 +42,14 @@ class HrDirection extends Model
     public function employees(): HasMany
     {
         return $this->hasMany(Employee::class, 'direction_id');
+    }
+
+    /**
+     * Relacion con el jefe inmediato de la direccion
+     */
+    public function jefeInmediato(): BelongsTo
+    {
+        return $this->belongsTo(Employee::class, 'jefe_inmediato_id');
     }
 
     /**

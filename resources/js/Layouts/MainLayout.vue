@@ -182,6 +182,24 @@
                             Social</span>
                     </Link>
 
+                    <!-- Papeletas de Salida -->
+                    <Link v-if="hasModulePermission('papeletas', 'ver')" href="/papeletas"
+                        class="group flex items-center text-sm font-semibold rounded-xl transition-all duration-200 ease-in-out relative"
+                        :class="[
+                            $page.component.startsWith('Papeletas/') ? 'bg-gradient-to-r from-amber-600 to-orange-600 text-white shadow-lg shadow-amber-500/30 ring-1 ring-amber-400/50' : 'text-slate-300 hover:bg-slate-800/80 hover:text-white',
+                            isCollapsed ? 'justify-center py-3 px-0' : 'px-4 py-3.5'
+                        ]" :title="isCollapsed ? 'Papeletas de Salida' : ''">
+                        <div class="rounded-lg transition-colors duration-200 ease-in-out flex-shrink-0" :class="[
+                            $page.component.startsWith('Papeletas/') ? 'bg-white/20' : 'bg-slate-700/80 group-hover:bg-slate-600',
+                            isCollapsed ? 'p-2' : 'mr-4 p-2'
+                        ]">
+                            <FileText class="h-5 w-5"
+                                :class="$page.component.startsWith('Papeletas/') ? 'text-white' : 'text-slate-400 group-hover:text-white'" />
+                        </div>
+                        <span v-if="!isCollapsed" class="whitespace-nowrap transition-opacity duration-200">Papeletas de
+                            Salida</span>
+                    </Link>
+
                     <!-- Recursos Humanos -->
                     <Link v-if="hasModulePermission('recursos_humanos', 'ver')" href="/hr"
                         class="group flex items-center text-sm font-semibold rounded-xl transition-all duration-200 ease-in-out relative"
@@ -339,6 +357,13 @@
                             <Heart class="h-5 w-5" />
                             Bienestar Social
                         </Link>
+                        <Link v-if="hasModulePermission('papeletas', 'ver')" href="/papeletas"
+                            @click="mobileMenuOpen = false"
+                            class="flex items-center gap-3 px-4 py-3 rounded-xl text-base font-semibold transition-all duration-200"
+                            :class="$page.component.startsWith('Papeletas/') ? 'bg-gradient-to-r from-amber-600 to-orange-600 text-white shadow-lg' : 'text-slate-300 hover:bg-slate-700/50 hover:text-white'">
+                            <FileText class="h-5 w-5" />
+                            Papeletas de Salida
+                        </Link>
                         <Link v-if="hasModulePermission('recursos_humanos', 'ver')" href="/hr"
                             @click="mobileMenuOpen = false"
                             class="flex items-center gap-3 px-4 py-3 rounded-xl text-base font-semibold transition-all duration-200"
@@ -476,15 +501,21 @@ const hasModulePermission = (module, action = 'ver') => {
     }
 
     // Special case for Jefe de RRHH (ROL009)
-    // Shows: Dashboard + Recursos Humanos only
+    // Shows: Dashboard + Recursos Humanos + Papeletas
     if (user.rol_id === 'ROL009' || user.customRole?.codigo === 'jefe_rrhh') {
-        return module === 'recursos_humanos' || module === 'dashboard';
+        return module === 'recursos_humanos' || module === 'papeletas' || module === 'dashboard';
     }
 
     // Special case for Gestor de Citas (ROL010)
     // Shows: Dashboard + Gestión de Citas only
     if (user.rol_id === 'ROL010' || user.customRole?.codigo === 'gestor_citas') {
         return module === 'secretaria' || module === 'dashboard';
+    }
+
+    // Special case for Jefe Inmediato (ROL011)
+    // Shows: Dashboard + Papeletas only
+    if (user.rol_id === 'ROL011' || user.customRole?.codigo === 'jefe_inmediato') {
+        return module === 'papeletas' || module === 'dashboard';
     }
 
     const permisos = user.customRole?.permisos_json || {};

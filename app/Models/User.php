@@ -21,6 +21,7 @@ class User extends Authenticatable
     protected $fillable = [
         'person_id',
         'username',
+        'dni',
         'name',
         'email',
         'password',
@@ -118,6 +119,15 @@ class User extends Authenticatable
     public function person(): BelongsTo
     {
         return $this->belongsTo(Person::class, 'person_id');
+    }
+
+    /**
+     * Obtener el Employee asociado al usuario (a través de person)
+     */
+    public function getEmployeeAttribute(): ?Employee
+    {
+        if (!$this->person_id) return null;
+        return Employee::where('person_id', $this->person_id)->first();
     }
 
     /**

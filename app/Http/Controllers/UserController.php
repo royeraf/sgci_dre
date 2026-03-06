@@ -148,8 +148,18 @@ class UserController extends Controller
             'rol_id.exists' => 'El rol seleccionado no existe',
         ]);
 
+        // Generate unique username from email
+        $username = explode('@', $validated['email'])[0];
+        $baseUsername = $username;
+        $counter = 1;
+        while (User::where('username', $username)->exists()) {
+            $username = $baseUsername . $counter;
+            $counter++;
+        }
+
         $user = User::create([
             'dni' => $validated['dni'],
+            'username' => $username,
             'name' => $validated['name'],
             'apellidos' => $validated['apellidos'] ?? null,
             'titulo' => $validated['titulo'] ?? null,

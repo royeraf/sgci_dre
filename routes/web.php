@@ -10,6 +10,8 @@ use App\Http\Controllers\LicenseController;
 use App\Http\Controllers\VehicleController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\PapeletaPortalController;
+use App\Http\Controllers\PapeletaAdminController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -22,6 +24,9 @@ use Inertia\Inertia;
 // Root redirect (public)
 Route::get('/', function () {
     if (auth()->check()) {
+        $user = auth()->user();
+        if ($user->rol_id === 'ROL012') return redirect('/portal/papeletas');
+        if ($user->rol_id === 'ROL011') return redirect('/papeletas');
         return redirect('/dashboard');
     }
     return redirect('/login');
@@ -31,6 +36,24 @@ Route::get('/', function () {
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
     Route::post('/login', [AuthController::class, 'login']);
+});
+
+// Portal de Empleados (Papeletas)
+Route::prefix('portal')->group(function () {
+    Route::middleware('guest')->group(function () {
+        Route::get('/login', [PapeletaPortalController::class, 'showLogin'])->name('portal.login');
+        Route::post('/login', [PapeletaPortalController::class, 'login'])->name('portal.login.submit');
+    });
+    Route::middleware('auth')->group(function () {
+        Route::post('/logout', [PapeletaPortalController::class, 'logout'])->name('portal.logout');
+        Route::prefix('papeletas')->name('portal.papeletas.')->group(function () {
+            Route::get('/', [PapeletaPortalController::class, 'index'])->name('index');
+            Route::get('/nueva', [PapeletaPortalController::class, 'create'])->name('create');
+            Route::post('/', [PapeletaPortalController::class, 'store'])->name('store');
+            Route::get('/{papeleta}', [PapeletaPortalController::class, 'show'])->name('show');
+            Route::get('/{papeleta}/pdf', [PapeletaPortalController::class, 'getPapeletaPdf'])->name('pdf');
+        });
+    });
 });
 
 // Public Appointments Portal
@@ -186,6 +209,18 @@ Route::middleware('auth')->group(function () {
 
         // Summary
         Route::get('/summary', [HRController::class, 'getSummary'])->name('summary');
+    });
+
+    // Papeletas de Salida (Jefe Inmediato + RRHH)
+    Route::middleware('role:ROL011,ROL009')->prefix('papeletas')->name('papeletas.')->group(function () {
+        Route::get('/', [PapeletaAdminController::class, 'index'])->name('index');
+        Route::get('/api/pendientes', [PapeletaAdminController::class, 'getPendientes'])->name('pendientes');
+        Route::get('/api/historial', [PapeletaAdminController::class, 'getHistorial'])->name('historial');
+        Route::get('/api/stats', [PapeletaAdminController::class, 'getStats'])->name('stats');
+        Route::get('/report/pdf', [PapeletaAdminController::class, 'reportPdf'])->name('report-pdf');
+        Route::patch('/{papeleta}/aprobar', [PapeletaAdminController::class, 'aprobar'])->name('aprobar');
+        Route::patch('/{papeleta}/desaprobar', [PapeletaAdminController::class, 'desaprobar'])->name('desaprobar');
+        Route::get('/{papeleta}/pdf', [PapeletaAdminController::class, 'generatePdf'])->name('pdf');
     });
 
     // User Management (Admin only)

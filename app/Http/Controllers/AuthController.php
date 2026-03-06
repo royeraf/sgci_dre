@@ -78,6 +78,14 @@ class AuthController extends Controller
             return redirect()->intended('/citas');
         }
 
+        if ($user->rol_id === 'ROL011') {
+            return redirect()->intended('/papeletas');
+        }
+
+        if ($user->rol_id === 'ROL012') {
+            return redirect()->intended('/portal/papeletas');
+        }
+
         return redirect()->intended('/dashboard');
     }
 
@@ -96,11 +104,13 @@ class AuthController extends Controller
             );
         }
 
+        $isPortalUser = $user && in_array($user->rol_id, ['ROL011', 'ROL012']);
+
         Auth::logout();
 
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return redirect('/login');
+        return redirect($isPortalUser ? '/portal/login' : '/login');
     }
 }

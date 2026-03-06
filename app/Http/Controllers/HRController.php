@@ -445,6 +445,7 @@ class HRController extends Controller
             'telefono_interno' => 'nullable|string|max:50',
             'ubicacion' => 'nullable|string|max:255',
             'activo' => 'boolean',
+            'jefe_inmediato_id' => 'nullable|exists:employees,id',
             'office_ids' => 'nullable|array',
             'office_ids.*' => 'exists:hr_offices,id',
         ], [
@@ -482,6 +483,7 @@ class HRController extends Controller
             'telefono_interno' => 'nullable|string|max:50',
             'ubicacion' => 'nullable|string|max:255',
             'activo' => 'boolean',
+            'jefe_inmediato_id' => 'nullable|exists:employees,id',
             'office_ids' => 'nullable|array',
             'office_ids.*' => 'exists:hr_offices,id',
         ]);
@@ -612,6 +614,7 @@ class HRController extends Controller
             'ubicacion' => 'nullable|string|max:255',
             'telefono_interno' => 'nullable|string|max:50',
             'activo' => 'boolean',
+            'jefe_inmediato_id' => 'nullable|exists:employees,id',
         ]);
 
         $office = HrOffice::create($validated);
@@ -641,6 +644,7 @@ class HRController extends Controller
             'ubicacion' => 'nullable|string|max:255',
             'telefono_interno' => 'nullable|string|max:50',
             'activo' => 'boolean',
+            'jefe_inmediato_id' => 'nullable|exists:employees,id',
         ]);
 
         $office->update($validated);

@@ -45,9 +45,18 @@ class RoleAccessMiddleware
         }
 
         // Specific restriction for Gestor de Citas (ROL010)
-        // If they are not in the allowed roles for this specific route, redirect them to their home
         if ($user->rol_id === 'ROL010') {
             return redirect('/citas')->with('error', 'No tiene permisos para acceder a esta sección.');
+        }
+
+        // Specific restriction for Jefe Inmediato (ROL011)
+        if ($user->rol_id === 'ROL011') {
+            return redirect('/papeletas')->with('error', 'No tiene permisos para acceder a esta sección.');
+        }
+
+        // Specific restriction for Empleado Portal (ROL012)
+        if ($user->rol_id === 'ROL012') {
+            return redirect('/portal/papeletas')->with('error', 'No tiene permisos para acceder a esta sección.');
         }
 
         // Default redirect for other roles

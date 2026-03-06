@@ -22,6 +22,7 @@ class HrOffice extends Model
         'piso',
         'telefono_interno',
         'activo',
+        'jefe_inmediato_id',
     ];
 
     protected $casts = [
@@ -42,6 +43,14 @@ class HrOffice extends Model
     public function employees(): HasMany
     {
         return $this->hasMany(Employee::class, 'office_id');
+    }
+
+    /**
+     * Relacion con el jefe inmediato de la oficina
+     */
+    public function jefeInmediato(): BelongsTo
+    {
+        return $this->belongsTo(Employee::class, 'jefe_inmediato_id');
     }
 
     /**

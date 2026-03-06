@@ -115,6 +115,27 @@ class DatabaseSeeder extends Seeder
                     'reportes' => ['ver'],
                 ],
             ],
+            [
+                'rol_id' => 'ROL011',
+                'codigo' => 'jefe_inmediato',
+                'nombre' => 'Jefe Inmediato',
+                'descripcion' => 'Aprobación de papeletas de salida de su área',
+                'nivel_acceso' => 6,
+                'permisos_json' => [
+                    'papeletas' => ['leer', 'aprobar'],
+                    'personal' => ['leer'],
+                ],
+            ],
+            [
+                'rol_id' => 'ROL012',
+                'codigo' => 'empleado_portal',
+                'nombre' => 'Empleado Portal',
+                'descripcion' => 'Acceso al portal de empleados para solicitar papeletas',
+                'nivel_acceso' => 1,
+                'permisos_json' => [
+                    'papeletas' => ['crear', 'leer'],
+                ],
+            ],
         ];
 
         foreach ($roles as $role) {
