@@ -101,15 +101,7 @@ do_build() {
         exit 1
     fi
 
-    # Crear zip del build
-    echo "  Comprimiendo build..."
-    cd public
-    rm -f build.zip
-    zip -r build.zip build/ -q
-    BUILD_SIZE=$(du -h build.zip | cut -f1)
-    cd "$LOCAL_PROJECT_DIR"
-    print_ok "build.zip creado (${BUILD_SIZE})"
-    echo ""
+
 }
 
 # ─── 2. Sincronizar código al VPS ───────────────────────────
@@ -129,8 +121,8 @@ do_sync_code() {
         --exclude='storage/framework/cache/*' \
         --exclude='storage/framework/sessions/*' \
         --exclude='storage/framework/views/*' \
+        --exclude='public/hot' \
         --exclude='public/build' \
-        --exclude='public/build.zip' \
         --exclude='*.xlsx' \
         --exclude='*.csv' \
         --exclude='*.pdf' \
@@ -139,7 +131,6 @@ do_sync_code() {
         --exclude='error_log' \
         --exclude='.htaccess' \
         --exclude='public/.htaccess' \
-        --exclude='bun.lock' \
         --exclude='package-lock.json' \
         ./ "${VPS_SSH}:${VPS_PATH}/"
 
@@ -147,28 +138,7 @@ do_sync_code() {
     echo ""
 }
 
-# ─── 3. Subir build de assets ────────────────────────────────
-do_upload_build() {
-    print_step "PASO 3 — Subiendo build de assets al VPS"
 
-    cd "$LOCAL_PROJECT_DIR"
-
-    if [ ! -f "public/build.zip" ]; then
-        print_error "No se encontró public/build.zip. Ejecuta --build-only primero."
-        exit 1
-    fi
-
-    # Subir build.zip
-    echo "  Subiendo build.zip..."
-    scp public/build.zip "${VPS_SSH}:${VPS_PATH}/public/"
-
-    # Descomprimir en el VPS
-    echo "  Descomprimiendo en el VPS..."
-    ssh "${VPS_SSH}" "cd ${VPS_PATH}/public && rm -rf build && unzip -o build.zip -q && rm build.zip"
-
-    print_ok "Assets desplegados en public/build/"
-    echo ""
-}
 
 # ─── 4. Configurar el VPS ───────────────────────────────────
 do_remote_config() {
@@ -180,6 +150,15 @@ do_remote_config() {
 
         echo "  [VPS] PHP $(php -v | head -1 | awk '{print $2}')"
         echo "  [VPS] Laravel $(php artisan --version | awk '{print $NF}')"
+
+        echo "  [VPS] Descargando últimos cambios (git pull)..."
+        git pull || echo "  [VPS] ⚠ Advertencia: No se pudo hacer git pull (quizá hay cambios locales o no es un repo)."
+
+        echo "  [VPS] Instalando Node Modules con Bun..."
+        ~/.bun/bin/bun install || bun install
+
+        echo "  [VPS] Compilando Assets con Vite..."
+        ~/.bun/bin/bun run build || bun run build
 
         # ── Asegurar .user.ini con memory_limit ──
         if ! grep -q "memory_limit" .user.ini 2>/dev/null; then
@@ -321,10 +300,8 @@ main() {
             do_verify
             ;;
         *)
-            # Despliegue completo
-            do_build
+            # Despliegue completo (el build se hace en el VPS)
             do_sync_code
-            do_upload_build
             do_remote_config
             do_migrations
             do_verify
