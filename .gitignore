@@ -1,32 +1,51 @@
-/.phpunit.cache
-/node_modules
-/public/hot
-/public/storage
-/storage/*.key
+# ─── Laravel ──────────────────────────────────
 /vendor
-.env
-.env.backup
-.env.production
+/node_modules
+/.phpunit.cache
 .phpunit.result.cache
 Homestead.json
 Homestead.yaml
 auth.json
 npm-debug.log
 yarn-error.log
+
+# ─── Entorno ──────────────────────────────────
+.env
+.env.backup
+.env.production
+.user.ini
+public/.user.ini
+
+# ─── Build / Assets compilados ────────────────
+/public/build
+/public/hot
+/public/storage
+/storage/*.key
+
+# ─── Datos e importaciones ────────────────────
+/data
+*.xlsx
+*.xls
+*.csv
+*.pdf
+/imports
+
+# ─── IDE ──────────────────────────────────────
 /.fleet
 /.idea
 /.vscode
 
-# Production server files (cPanel)
-.htaccess
+# ─── Servidor (cPanel) ───────────────────────
+error_log
+*.log
+composer.phar
 /build
-favicon.ico
 /images
-storage/storage
-public/build/
+/storage/storage
 
-# Archivos de datos sensibles (importaciones)
-*.xlsx
-*.xls
-presonal.xlsx
-/imports/
+# ─── Temporales ───────────────────────────────
+*.swp
+*.swo
+.~lock.*
+/public/test_*.php
+/public/test.html
