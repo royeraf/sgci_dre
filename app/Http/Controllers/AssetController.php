@@ -10,11 +10,13 @@ use App\Models\AssetState;
 use App\Models\AssetOrigin;
 use App\Models\AssetCategory;
 use App\Models\AssetMovement;
+use App\Models\AssetMovementType;
 use App\Models\AssetResponsible;
 use App\Models\PatrimonioAsset;
 use App\Models\HrDirection;
 use App\Models\HrOffice;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 use PhpOffice\PhpSpreadsheet\IOFactory;
@@ -28,14 +30,19 @@ class AssetController extends Controller
      */
     public function index()
     {
+        $user = Auth::user();
+        $myEmployee = $user->employee?->load('person');
+
         return Inertia::render('Assets/Index', [
-            'categories' => AssetCategory::all(),
-            'brands' => AssetBrand::activas()->orderBy('nombre')->get(),
-            'colors' => AssetColor::activos()->orderBy('nombre')->get(),
-            'states' => AssetState::activos()->get(),
-            'origins' => AssetOrigin::activos()->orderBy('nombre')->get(),
-            'areas' => HrDirection::activas()->orderBy('nombre')->get(),
-            'offices' => HrOffice::activas()->with('direction')->orderBy('nombre')->get(),
+            'myEmployee'    => $myEmployee ? ['id' => $myEmployee->id, 'nombre_completo' => $myEmployee->full_name] : null,
+            'categories'    => AssetCategory::all(),
+            'brands'        => AssetBrand::activas()->orderBy('nombre')->get(),
+            'colors'        => AssetColor::activos()->orderBy('nombre')->get(),
+            'states'        => AssetState::activos()->get(),
+            'origins'       => AssetOrigin::activos()->orderBy('nombre')->get(),
+            'movementTypes' => AssetMovementType::activos()->get(),
+            'areas'         => HrDirection::activas()->orderBy('nombre')->get(),
+            'offices'       => HrOffice::activas()->with('direction')->orderBy('nombre')->get(),
             'employees' => Employee::with('person')
                 ->where('estado', 'ACTIVO')
                 ->whereHas('person', function($q) {
@@ -120,6 +127,44 @@ class AssetController extends Controller
         return response()->json($assets);
     }
     
+    /**
+     * API: bienes asignados al empleado autenticado (del último movimiento).
+     */
+    public function getMisBienes(Request $request)
+    {
+        $employee = Auth::user()->employee;
+
+        if (!$employee) {
+            return response()->json(['data' => [], 'total' => 0, 'current_page' => 1, 'last_page' => 1]);
+        }
+
+        $responsableIds = AssetResponsible::where('employee_id', $employee->id)->pluck('id');
+
+        $query = Asset::with([
+                'category',
+                'brand',
+                'latestMovement.state',
+                'latestMovement.office',
+            ])
+            ->whereHas('latestMovement', function ($q) use ($responsableIds) {
+                $q->whereIn('responsable_id', $responsableIds);
+            })
+            ->orderBy('denominacion');
+
+        if ($request->filled('search')) {
+            $s = $request->search;
+            $query->where(function ($q) use ($s) {
+                $q->where('denominacion', 'like', "%{$s}%")
+                  ->orWhere('codigo_patrimonio', 'like', "%{$s}%")
+                  ->orWhere('codigo_interno', 'like', "%{$s}%")
+                  ->orWhere('numero_serie', 'like', "%{$s}%");
+            });
+        }
+
+        $perPage = $request->input('per_page', 50);
+        return response()->json($query->paginate($perPage));
+    }
+
     public function getStats()
     {
         $total = Asset::count();
@@ -438,19 +483,90 @@ class AssetController extends Controller
     }
 
     /**
+     * Buscar un activo por código de barras (para el carrito de asignación masiva)
+     */
+    public function lookupByBarcode(Request $request)
+    {
+        $code = $request->query('code');
+        if (!$code) {
+            return response()->json(['found' => false]);
+        }
+
+        $asset = Asset::with([
+                'brand',
+                'latestMovement.state',
+            ])
+            ->where(function ($q) use ($code) {
+                $q->where('codigo_barras', $code)
+                  ->orWhere('codigo_completo', $code)
+                  ->orWhere('codigo_patrimonio', $code);
+            })
+            ->first();
+
+        if (!$asset) {
+            return response()->json(['found' => false]);
+        }
+
+        return response()->json(['found' => true, 'asset' => $asset]);
+    }
+
+    /**
+     * Registrar movimientos en lote (carrito de asignación masiva)
+     */
+    public function storeBatchMovements(Request $request)
+    {
+        $validated = $request->validate([
+            'tipo_movimiento_id' => 'required|exists:asset_movement_types,id',
+            'fecha'              => 'required|date',
+            'oficina_id'         => 'nullable|exists:hr_offices,id',
+            'responsable_id'     => 'nullable|exists:asset_responsibles,id',
+            'observaciones'      => 'nullable|string',
+            'items'              => 'required|array|min:1',
+            'items.*.asset_id'   => 'required|exists:assets,id',
+            'items.*.estado_id'  => 'required|exists:asset_states,id',
+        ]);
+
+        $movementType    = AssetMovementType::findOrFail($validated['tipo_movimiento_id']);
+        $inventariadorId = auth()->id();
+        $created         = 0;
+
+        foreach ($validated['items'] as $item) {
+            AssetMovement::create([
+                'asset_id'           => $item['asset_id'],
+                'tipo'               => $movementType->codigo,
+                'tipo_movimiento_id' => $movementType->id,
+                'fecha'              => $validated['fecha'],
+                'estado_id'          => $item['estado_id'],
+                'oficina_id'         => $validated['oficina_id'] ?? null,
+                'responsable_id'     => $validated['responsable_id'] ?? null,
+                'observaciones'      => $validated['observaciones'] ?? null,
+                'inventariador_id'   => $inventariadorId,
+            ]);
+            $created++;
+        }
+
+        return response()->json([
+            'message' => "Se registraron {$created} movimientos correctamente.",
+            'created' => $created,
+        ], 201);
+    }
+
+    /**
      * Registrar un nuevo movimiento para un activo
      */
     public function storeMovement(Request $request, Asset $asset)
     {
         $validated = $request->validate([
-            'tipo' => 'required|in:ASIGNACION,DEVOLUCION,TRASLADO,BAJA',
-            'fecha' => 'required|date',
-            'estado_id' => 'required|exists:asset_states,id',
-            'oficina_id' => 'nullable|exists:hr_offices,id',
-            'responsable_id' => 'nullable|exists:asset_responsibles,id',
-            'observaciones' => 'nullable|string',
+            'tipo_movimiento_id' => 'required|exists:asset_movement_types,id',
+            'fecha'              => 'required|date',
+            'estado_id'          => 'required|exists:asset_states,id',
+            'oficina_id'         => 'nullable|exists:hr_offices,id',
+            'responsable_id'     => 'nullable|exists:asset_responsibles,id',
+            'observaciones'      => 'nullable|string',
         ]);
 
+        $movementType = AssetMovementType::findOrFail($validated['tipo_movimiento_id']);
+        $validated['tipo']     = $movementType->codigo;
         $validated['asset_id'] = $asset->id;
         $validated['inventariador_id'] = auth()->id();
 
@@ -558,12 +674,12 @@ class AssetController extends Controller
 
         // Cabeceras de columna
         $row = 7;
-        $columns = ['A' => 'Item', 'B' => 'Código del Bien', 'C' => 'Código Interno', 'D' => 'Detalle del Bien', 'E' => 'Características', 'F' => 'Oficina', 'G' => 'Estado', 'H' => 'Cód. Anterior', 'I' => 'Cuenta Contable', 'J' => 'Importe'];
+        $columns = ['A' => 'Item', 'B' => 'Código del Bien', 'C' => 'Código Interno', 'D' => 'Detalle del Bien', 'E' => 'Características', 'F' => 'Oficina', 'G' => 'Estado', 'H' => 'Cant.', 'I' => 'Cód. Anterior', 'J' => 'Cuenta Contable', 'K' => 'Importe'];
 
         foreach ($columns as $col => $title) {
             $sheet->setCellValue("{$col}{$row}", $title);
         }
-        $sheet->getStyle("A{$row}:J{$row}")->applyFromArray($colHeaderStyle);
+        $sheet->getStyle("A{$row}:K{$row}")->applyFromArray($colHeaderStyle);
         $sheet->getRowDimension($row)->setRowHeight(25);
 
         // Anchos de columna
@@ -574,9 +690,10 @@ class AssetController extends Controller
         $sheet->getColumnDimension('E')->setWidth(22);  // Características
         $sheet->getColumnDimension('F')->setWidth(18);  // Oficina
         $sheet->getColumnDimension('G')->setWidth(6);   // Estado
-        $sheet->getColumnDimension('H')->setWidth(10);  // Cód. Anterior
-        $sheet->getColumnDimension('I')->setWidth(12);  // Cuenta Contable
-        $sheet->getColumnDimension('J')->setWidth(10);  // Importe
+        $sheet->getColumnDimension('H')->setWidth(6);   // Cant.
+        $sheet->getColumnDimension('I')->setWidth(10);  // Cód. Anterior
+        $sheet->getColumnDimension('J')->setWidth(12);  // Cuenta Contable
+        $sheet->getColumnDimension('K')->setWidth(10);  // Importe
 
         // Datos
         $dataRow = $row + 1;
@@ -608,12 +725,14 @@ class AssetController extends Controller
             $sheet->setCellValue("E{$dataRow}", $caracteristicas);
             $sheet->setCellValue("F{$dataRow}", $oficina);
             $sheet->setCellValue("G{$dataRow}", $estadoAbrev);
-            $sheet->setCellValue("H{$dataRow}", ''); // Cód. Anterior - vacío
-            $sheet->setCellValue("I{$dataRow}", ''); // Cuenta Contable - vacío
-            $sheet->setCellValue("J{$dataRow}", ''); // Importe - vacío
+            $sheet->setCellValue("H{$dataRow}", 1); // Cant.
+            $sheet->setCellValue("I{$dataRow}", ''); // Cód. Anterior - vacío
+            $sheet->setCellValue("J{$dataRow}", ''); // Cuenta Contable - vacío
+            $sheet->setCellValue("K{$dataRow}", ''); // Importe - vacío
 
             $sheet->getStyle("A{$dataRow}")->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
             $sheet->getStyle("G{$dataRow}")->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
+            $sheet->getStyle("H{$dataRow}")->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
 
             $dataRow++;
         }
@@ -621,14 +740,67 @@ class AssetController extends Controller
         // Estilo a todo el rango de datos
         $lastDataRow = $dataRow - 1;
         if ($lastDataRow >= $row + 1) {
-            $sheet->getStyle("A" . ($row + 1) . ":J{$lastDataRow}")->applyFromArray($dataCellStyle);
+            $sheet->getStyle("A" . ($row + 1) . ":K{$lastDataRow}")->applyFromArray($dataCellStyle);
         }
 
         // Total al final
-        $sheet->mergeCells("A{$dataRow}:F{$dataRow}");
+        $sheet->mergeCells("A{$dataRow}:G{$dataRow}");
         $sheet->setCellValue("A{$dataRow}", "Total de bienes: " . count($assets));
-        $sheet->getStyle("A{$dataRow}:J{$dataRow}")->getFont()->setBold(true)->setSize(9);
+        $sheet->getStyle("A{$dataRow}:K{$dataRow}")->getFont()->setBold(true)->setSize(9);
         $sheet->getStyle("A{$dataRow}")->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_RIGHT);
+        $sheet->setCellValue("H{$dataRow}", count($assets));
+        $sheet->getStyle("H{$dataRow}")->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
+
+        // ===== SECCIÓN DE FIRMAS (3 personas) =====
+        $signLabelStyle = [
+            'font' => ['bold' => true, 'size' => 8],
+            'alignment' => [
+                'horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER,
+                'vertical'   => \PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_CENTER,
+            ],
+        ];
+        $signSubStyle = [
+            'font' => ['size' => 7, 'italic' => true],
+            'alignment' => ['horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER],
+        ];
+
+        $signRow = $dataRow + 4;
+
+        // Líneas de firma (row $signRow)
+        foreach (['A', 'E', 'I'] as $startCol) {
+            $endCol = ['A' => 'C', 'E' => 'G', 'I' => 'K'][$startCol];
+            $sheet->mergeCells("{$startCol}{$signRow}:{$endCol}{$signRow}");
+            $sheet->setCellValue("{$startCol}{$signRow}", '____________________________');
+            $sheet->getStyle("{$startCol}{$signRow}")->applyFromArray($signLabelStyle);
+        }
+
+        // Etiquetas de cargo (row $signRow + 1)
+        $labelRow = $signRow + 1;
+        $sheet->mergeCells("A{$labelRow}:C{$labelRow}");
+        $sheet->setCellValue("A{$labelRow}", 'Jefe/a de Patrimonio');
+        $sheet->getStyle("A{$labelRow}")->applyFromArray($signLabelStyle);
+
+        $sheet->mergeCells("E{$labelRow}:G{$labelRow}");
+        $sheet->setCellValue("E{$labelRow}", strtoupper($nombreResponsable));
+        $sheet->getStyle("E{$labelRow}")->applyFromArray($signLabelStyle);
+
+        $sheet->mergeCells("I{$labelRow}:K{$labelRow}");
+        $sheet->setCellValue("I{$labelRow}", 'Inventariador');
+        $sheet->getStyle("I{$labelRow}")->applyFromArray($signLabelStyle);
+
+        // Sub-etiquetas (row $signRow + 2)
+        $subRow = $signRow + 2;
+        $sheet->mergeCells("A{$subRow}:C{$subRow}");
+        $sheet->setCellValue("A{$subRow}", 'Dirección Regional de Educación Huánuco');
+        $sheet->getStyle("A{$subRow}")->applyFromArray($signSubStyle);
+
+        $sheet->mergeCells("E{$subRow}:G{$subRow}");
+        $sheet->setCellValue("E{$subRow}", "DNI: {$dniResponsable}   —   Recibí Conforme");
+        $sheet->getStyle("E{$subRow}")->applyFromArray($signSubStyle);
+
+        $sheet->mergeCells("I{$subRow}:K{$subRow}");
+        $sheet->setCellValue("I{$subRow}", 'Control Patrimonial');
+        $sheet->getStyle("I{$subRow}")->applyFromArray($signSubStyle);
 
         // Generar respuesta
         $fileName = 'bienes_asignados_' . ($responsible->employee?->dni ?? $responsibleId) . '.xlsx';
@@ -640,6 +812,45 @@ class AssetController extends Controller
         }, $fileName, [
             'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         ]);
+    }
+
+    /**
+     * Vista previa PDF de bienes asignados a un responsable
+     */
+    public function reportByResponsiblePdf($responsibleId)
+    {
+        $responsible = AssetResponsible::with(['employee.person', 'direction', 'office'])
+            ->findOrFail($responsibleId);
+
+        $responsibleIds = collect([$responsibleId]);
+        $nombreResp = mb_strtoupper(trim($responsible->nombre_original ?? ''));
+        if ($nombreResp) {
+            $similarIds = AssetResponsible::whereRaw('UPPER(TRIM(nombre_original)) = ?', [$nombreResp])
+                ->pluck('id');
+            $responsibleIds = $responsibleIds->merge($similarIds)->unique();
+        }
+
+        $assets = Asset::whereHas('movements', function ($query) use ($responsibleIds) {
+            $query->whereIn('responsable_id', $responsibleIds)
+                ->whereIn('id', function ($sub) {
+                    $sub->selectRaw('MAX(id)')
+                        ->from('asset_movements')
+                        ->whereNotNull('responsable_id')
+                        ->groupBy('asset_id');
+                });
+        })->with([
+            'brand',
+            'color',
+            'latestMovement.state',
+            'latestMovement.office',
+        ])->orderBy('denominacion')->get();
+
+        $pdf = Pdf::loadView('pdf.bienes_asignados', [
+            'responsible' => $responsible,
+            'assets' => $assets,
+        ])->setPaper('a4', 'portrait');
+
+        return $pdf->stream('preview_bienes_' . ($responsible->employee?->dni ?? $responsibleId) . '.pdf');
     }
 
     // ===== PATRIMONIO SIGA =====

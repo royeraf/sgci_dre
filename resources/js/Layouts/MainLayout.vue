@@ -57,7 +57,7 @@
                     </Link>
 
                     <!-- Occurrences Link -->
-                    <Link v-if="hasModulePermission('vigilancia', 'ver')" href="/occurrences"
+                    <Link v-if="hasModulePermission('ocurrencias', 'ver')" href="/occurrences"
                         class="group flex items-center text-sm font-semibold rounded-xl transition-all duration-200 ease-in-out relative"
                         :class="[
                             $page.component.startsWith('Occurrences/') ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/30 ring-1 ring-blue-400/50' : 'text-slate-300 hover:bg-slate-800/80 hover:text-white',
@@ -75,7 +75,7 @@
                     </Link>
 
                     <!-- Entry/Exit Link -->
-                    <Link v-if="hasModulePermission('vigilancia', 'ver')" href="/entry-exits"
+                    <Link v-if="hasModulePermission('control_personal', 'ver')" href="/entry-exits"
                         class="group flex items-center text-sm font-semibold rounded-xl transition-all duration-200 ease-in-out relative"
                         :class="[
                             $page.component.startsWith('EntryExits/') ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-lg shadow-emerald-500/30 ring-1 ring-emerald-400/50' : 'text-slate-300 hover:bg-slate-800/80 hover:text-white',
@@ -93,7 +93,7 @@
                     </Link>
 
                     <!-- Visitas Externas -->
-                    <Link v-if="hasModulePermission('vigilancia', 'ver')" href="/visitors"
+                    <Link v-if="hasModulePermission('visitas', 'ver')" href="/visitors"
                         class="group flex items-center text-sm font-semibold rounded-xl transition-all duration-200 ease-in-out relative"
                         :class="[
                             $page.component.startsWith('Visitors/') ? 'bg-gradient-to-r from-purple-600 to-fuchsia-600 text-white shadow-lg shadow-purple-500/30 ring-1 ring-purple-400/50' : 'text-slate-300 hover:bg-slate-800/80 hover:text-white',
@@ -111,7 +111,7 @@
                     </Link>
 
                     <!-- Control Vehicular -->
-                    <Link v-if="hasModulePermission('vigilancia', 'ver')" href="/vehicles"
+                    <Link v-if="hasModulePermission('vehiculos', 'ver')" href="/vehicles"
                         class="group flex items-center text-sm font-semibold rounded-xl transition-all duration-200 ease-in-out relative"
                         :class="[
                             $page.component.startsWith('Vehicles/') ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-lg shadow-cyan-500/30 ring-1 ring-cyan-400/50' : 'text-slate-300 hover:bg-slate-800/80 hover:text-white',
@@ -198,6 +198,24 @@
                         </div>
                         <span v-if="!isCollapsed" class="whitespace-nowrap transition-opacity duration-200">Papeletas de
                             Salida</span>
+                    </Link>
+
+                    <!-- Marcas de Asistencia -->
+                    <Link v-if="hasModulePermission('asistencia', 'ver')" href="/asistencia"
+                        class="group flex items-center text-sm font-semibold rounded-xl transition-all duration-200 ease-in-out relative"
+                        :class="[
+                            $page.component.startsWith('Asistencia/') ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-lg shadow-cyan-500/30 ring-1 ring-cyan-400/50' : 'text-slate-300 hover:bg-slate-800/80 hover:text-white',
+                            isCollapsed ? 'justify-center py-3 px-0' : 'px-4 py-3.5'
+                        ]" :title="isCollapsed ? 'Marcas de Asistencia' : ''">
+                        <div class="rounded-lg transition-colors duration-200 ease-in-out flex-shrink-0" :class="[
+                            $page.component.startsWith('Asistencia/') ? 'bg-white/20' : 'bg-slate-700/80 group-hover:bg-slate-600',
+                            isCollapsed ? 'p-2' : 'mr-4 p-2'
+                        ]">
+                            <Fingerprint class="h-5 w-5"
+                                :class="$page.component.startsWith('Asistencia/') ? 'text-white' : 'text-slate-400 group-hover:text-white'" />
+                        </div>
+                        <span v-if="!isCollapsed" class="whitespace-nowrap transition-opacity duration-200">Marcas de
+                            Asistencia</span>
                     </Link>
 
                     <!-- Recursos Humanos -->
@@ -308,28 +326,28 @@
                             <LayoutDashboard class="h-5 w-5" />
                             Dashboard
                         </Link>
-                        <Link v-if="hasModulePermission('vigilancia', 'ver')" href="/occurrences"
+                        <Link v-if="hasModulePermission('ocurrencias', 'ver')" href="/occurrences"
                             @click="mobileMenuOpen = false"
                             class="flex items-center gap-3 px-4 py-3 rounded-xl text-base font-semibold transition-all duration-200"
                             :class="$page.component.startsWith('Occurrences/') ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg' : 'text-slate-300 hover:bg-slate-700/50 hover:text-white'">
                             <ClipboardList class="h-5 w-5" />
                             Libro de Ocurrencias
                         </Link>
-                        <Link v-if="hasModulePermission('vigilancia', 'ver')" href="/entry-exits"
+                        <Link v-if="hasModulePermission('control_personal', 'ver')" href="/entry-exits"
                             @click="mobileMenuOpen = false"
                             class="flex items-center gap-3 px-4 py-3 rounded-xl text-base font-semibold transition-all duration-200"
                             :class="$page.component.startsWith('EntryExits/') ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-lg' : 'text-slate-300 hover:bg-slate-700/50 hover:text-white'">
                             <UserCheck class="h-5 w-5" />
                             Control de Personal
                         </Link>
-                        <Link v-if="hasModulePermission('vigilancia', 'ver')" href="/visitors"
+                        <Link v-if="hasModulePermission('visitas', 'ver')" href="/visitors"
                             @click="mobileMenuOpen = false"
                             class="flex items-center gap-3 px-4 py-3 rounded-xl text-base font-semibold transition-all duration-200"
                             :class="$page.component.startsWith('Visitors/') ? 'bg-gradient-to-r from-purple-600 to-fuchsia-600 text-white shadow-lg' : 'text-slate-300 hover:bg-slate-700/50 hover:text-white'">
                             <Users class="h-5 w-5" />
                             Visitas Externas
                         </Link>
-                        <Link v-if="hasModulePermission('vigilancia', 'ver')" href="/vehicles"
+                        <Link v-if="hasModulePermission('vehiculos', 'ver')" href="/vehicles"
                             @click="mobileMenuOpen = false"
                             class="flex items-center gap-3 px-4 py-3 rounded-xl text-base font-semibold transition-all duration-200"
                             :class="$page.component.startsWith('Vehicles/') ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-lg' : 'text-slate-300 hover:bg-slate-700/50 hover:text-white'">
@@ -363,6 +381,13 @@
                             :class="$page.component.startsWith('Papeletas/') ? 'bg-gradient-to-r from-amber-600 to-orange-600 text-white shadow-lg' : 'text-slate-300 hover:bg-slate-700/50 hover:text-white'">
                             <FileText class="h-5 w-5" />
                             Papeletas de Salida
+                        </Link>
+                        <Link v-if="hasModulePermission('asistencia', 'ver')" href="/asistencia"
+                            @click="mobileMenuOpen = false"
+                            class="flex items-center gap-3 px-4 py-3 rounded-xl text-base font-semibold transition-all duration-200"
+                            :class="$page.component.startsWith('Asistencia/') ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-lg' : 'text-slate-300 hover:bg-slate-700/50 hover:text-white'">
+                            <Fingerprint class="h-5 w-5" />
+                            Marcas de Asistencia
                         </Link>
                         <Link v-if="hasModulePermission('recursos_humanos', 'ver')" href="/hr"
                             @click="mobileMenuOpen = false"
@@ -429,7 +454,8 @@ import {
     Bell,
     Heart,
     Shield,
-    Box
+    Box,
+    Fingerprint,
 } from 'lucide-vue-next';
 import UserProfileModal from '@/Components/Profile/UserProfileModal.vue';
 
@@ -494,43 +520,29 @@ const hasModulePermission = (module, action = 'ver') => {
     // Admin has access to everything
     if (user.rol_id === 'ROL001' || user.rol_id === '1') return true;
 
-    // Special case for Jefe de Bienestar Social (ROL008)
-    // Shows: Dashboard + Bienestar Social only
-    if (user.rol_id === 'ROL008' || user.customRole?.codigo === 'jefe_bienestar') {
-        return module === 'bienestar' || module === 'dashboard';
+    // Dashboard always accessible
+    if (module === 'dashboard') return true;
+
+    // Use explicitly assigned modules from user management
+    if (user.modulos_json && user.modulos_json.length > 0) {
+        return user.modulos_json.includes(module);
     }
 
-    // Special case for Jefe de RRHH (ROL009)
-    // Shows: Dashboard + Recursos Humanos + Papeletas
-    if (user.rol_id === 'ROL009' || user.customRole?.codigo === 'jefe_rrhh') {
-        return module === 'recursos_humanos' || module === 'papeletas' || module === 'dashboard';
-    }
-
-    // Special case for Gestor de Citas (ROL010)
-    // Shows: Dashboard + Gestión de Citas only
-    if (user.rol_id === 'ROL010' || user.customRole?.codigo === 'gestor_citas') {
-        return module === 'secretaria' || module === 'dashboard';
-    }
-
-    // Special case for Jefe Inmediato (ROL011)
-    // Shows: Dashboard + Papeletas only
-    if (user.rol_id === 'ROL011' || user.customRole?.codigo === 'jefe_inmediato') {
-        return module === 'papeletas' || module === 'dashboard';
-    }
-
+    // Fallback: permisos_json mapping for roles with custom permissions
     const permisos = user.customRole?.permisos_json || {};
 
-    // Mapping sidebar modules to database permission keys
     const mapping = {
-        'dashboard': true, // Everyone else has dashboard
-        'vigilancia': ['ocurrencias', 'personal', 'visitas', 'vehiculos'],
-        'secretaria': ['citas'],
+        'ocurrencias':      ['ocurrencias'],
+        'control_personal': ['personal'],
+        'visitas':          ['visitas'],
+        'vehiculos':        ['vehiculos'],
+        'secretaria':       ['citas'],
         'recursos_humanos': ['recursos_humanos', 'vacaciones', 'areas', 'cargos'],
-        'bienestar': ['licencias'],
-        'patrimonio': ['patrimonio', 'bienes'],
+        'bienestar':        ['licencias'],
+        'patrimonio':       ['patrimonio', 'bienes'],
+        'papeletas':        ['papeletas'],
+        'asistencia':       ['asistencia'],
     };
-
-    if (module === 'dashboard') return true;
 
     const dbKeys = mapping[module];
     if (!dbKeys) return false;

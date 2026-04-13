@@ -25,7 +25,7 @@ use Inertia\Inertia;
 Route::get('/', function () {
     if (auth()->check()) {
         $user = auth()->user();
-        if ($user->rol_id === 'ROL012') return redirect('/portal/papeletas');
+        if ($user->rol_id === 'ROL012') return redirect('/dashboard');
         if ($user->rol_id === 'ROL011') return redirect('/papeletas');
         return redirect('/dashboard');
     }
@@ -211,9 +211,15 @@ Route::middleware('auth')->group(function () {
         Route::get('/summary', [HRController::class, 'getSummary'])->name('summary');
     });
 
-    // Papeletas de Salida (Jefe Inmediato + RRHH)
-    Route::middleware('role:ROL011,ROL009')->prefix('papeletas')->name('papeletas.')->group(function () {
+    // Papeletas de Salida (Empleado + Jefe Inmediato + RRHH)
+    Route::middleware('role:ROL011,ROL009,ROL012')->prefix('papeletas')->name('papeletas.')->group(function () {
         Route::get('/', [PapeletaAdminController::class, 'index'])->name('index');
+
+        // Auto-servicio del empleado (cualquiera con empleado vinculado)
+        Route::get('/api/mis', [PapeletaAdminController::class, 'getMisPapeletas'])->name('mis');
+        Route::post('/solicitar', [PapeletaAdminController::class, 'storeMiPapeleta'])->name('solicitar');
+
+        // Administración (Jefe + RRHH)
         Route::get('/api/pendientes', [PapeletaAdminController::class, 'getPendientes'])->name('pendientes');
         Route::get('/api/historial', [PapeletaAdminController::class, 'getHistorial'])->name('historial');
         Route::get('/api/stats', [PapeletaAdminController::class, 'getStats'])->name('stats');
@@ -221,6 +227,14 @@ Route::middleware('auth')->group(function () {
         Route::patch('/{papeleta}/aprobar', [PapeletaAdminController::class, 'aprobar'])->name('aprobar');
         Route::patch('/{papeleta}/desaprobar', [PapeletaAdminController::class, 'desaprobar'])->name('desaprobar');
         Route::get('/{papeleta}/pdf', [PapeletaAdminController::class, 'generatePdf'])->name('pdf');
+    });
+
+    // Asistencia - Marcas de entrada/salida
+    Route::middleware('role:ROL009,ROL012')->prefix('asistencia')->name('asistencia.')->group(function () {
+        Route::get('/', [App\Http\Controllers\AsistenciaController::class, 'index'])->name('index');
+        Route::get('/api/marcas', [App\Http\Controllers\AsistenciaController::class, 'getMarcas'])->name('marcas');
+        Route::post('/api/marcas', [App\Http\Controllers\AsistenciaController::class, 'storeMarca'])->name('store');
+        Route::delete('/api/marcas/{marca}', [App\Http\Controllers\AsistenciaController::class, 'deleteMarca'])->name('delete');
     });
 
     // User Management (Admin only)
@@ -244,6 +258,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/', [App\Http\Controllers\AssetController::class, 'index'])->name('index');
         Route::get('/list', [App\Http\Controllers\AssetController::class, 'getAssets'])->name('list');
         Route::get('/summary', [App\Http\Controllers\AssetController::class, 'getStats'])->name('summary');
+        Route::get('/mis-bienes', [App\Http\Controllers\AssetController::class, 'getMisBienes'])->name('mis-bienes');
         Route::get('/check-code', [App\Http\Controllers\AssetController::class, 'checkCode'])->name('check-code');
         Route::get('/lookup-sbn', [App\Http\Controllers\AssetController::class, 'lookupSbnCatalog'])->name('lookup-sbn');
         Route::post('/', [App\Http\Controllers\AssetController::class, 'store'])->name('store');
@@ -253,14 +268,17 @@ Route::middleware('auth')->group(function () {
 
         // Reportes
         Route::get('/reports/responsible/{id}', [App\Http\Controllers\AssetController::class, 'reportByResponsible'])->name('reports.responsible');
+        Route::get('/reports/responsible/{id}/pdf', [App\Http\Controllers\AssetController::class, 'reportByResponsiblePdf'])->name('reports.responsible.pdf');
         Route::get('/reports/bienes-muebles-en-uso', [App\Http\Controllers\AssetController::class, 'reportBienesMueblesEnUso'])->name('reports.bienes-muebles');
 
         Route::put('/{asset}', [App\Http\Controllers\AssetController::class, 'update'])->name('update');
         Route::delete('/{asset}', [App\Http\Controllers\AssetController::class, 'destroy'])->name('destroy');
 
         // Movimientos
+        Route::get('/lookup-barcode', [App\Http\Controllers\AssetController::class, 'lookupByBarcode'])->name('lookup-barcode');
         Route::get('/movements', [App\Http\Controllers\AssetController::class, 'getMovements'])->name('movements.list');
         Route::get('/movements/stats', [App\Http\Controllers\AssetController::class, 'getMovementStats'])->name('movements.stats');
+        Route::post('/movements/batch', [App\Http\Controllers\AssetController::class, 'storeBatchMovements'])->name('movements.batch');
         Route::post('/{asset}/movements', [App\Http\Controllers\AssetController::class, 'storeMovement'])->name('movements.store');
 
         // Patrimonio SIGA
@@ -326,7 +344,15 @@ Route::middleware('auth')->group(function () {
             Route::put('/{id}', [App\Http\Controllers\AssetCatalogController::class, 'updateCategory'])->name('update');
             Route::delete('/{id}', [App\Http\Controllers\AssetCatalogController::class, 'deleteCategory'])->name('delete');
         });
-        
+
+        // Catálogos - Tipos de Movimiento
+        Route::prefix('catalogs/movement-types')->name('catalogs.movement_types.')->group(function () {
+            Route::get('/', [App\Http\Controllers\AssetCatalogController::class, 'getMovementTypes'])->name('list');
+            Route::post('/', [App\Http\Controllers\AssetCatalogController::class, 'storeMovementType'])->name('store');
+            Route::put('/{id}', [App\Http\Controllers\AssetCatalogController::class, 'updateMovementType'])->name('update');
+            Route::delete('/{id}', [App\Http\Controllers\AssetCatalogController::class, 'deleteMovementType'])->name('delete');
+        });
+
         // Responsibles (legacy routes)
         Route::get('/responsibles', [App\Http\Controllers\AssetResponsibleController::class, 'index'])->name('responsibles.index');
         Route::post('/responsibles', [App\Http\Controllers\AssetResponsibleController::class, 'store'])->name('responsibles.store');

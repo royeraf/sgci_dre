@@ -156,7 +156,7 @@
                             <label class="block text-sm font-bold text-slate-700 mb-2">
                                 Rol <span class="text-red-500">*</span>
                             </label>
-                            <select v-model="rolId" v-bind="rolIdProps"
+                            <select v-model="rolId" v-bind="rolIdProps" @change="applyRolePreset"
                                 class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
                                 :class="formErrors.rol_id ? 'border-red-400' : 'border-slate-200'">
                                 <option value="">Seleccionar rol...</option>
@@ -180,6 +180,76 @@
                                 </label>
                             </div>
                         </div>
+                    </div>
+
+                    <!-- Módulos Asignados -->
+                    <div class="pt-6 border-t border-slate-200">
+                        <div class="flex items-center justify-between mb-3">
+                            <h4 class="text-sm font-bold text-slate-700 flex items-center gap-2">
+                                <LayoutGrid class="w-4 h-4" />
+                                Módulos Asignados
+                            </h4>
+                            <div class="flex items-center gap-2">
+                                <span v-if="!useCustomModules" class="text-xs text-slate-500 bg-slate-100 px-2 py-1 rounded-lg">
+                                    Hereda del rol
+                                </span>
+                                <button type="button" @click="toggleCustomModules"
+                                    class="text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors"
+                                    :class="useCustomModules
+                                        ? 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200'
+                                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'">
+                                    {{ useCustomModules ? 'Personalizado' : 'Personalizar' }}
+                                </button>
+                            </div>
+                        </div>
+
+                        <div v-if="useCustomModules" class="space-y-2">
+                            <div v-for="mod in ALL_MODULES" :key="mod.key" class="rounded-xl border overflow-hidden transition-colors"
+                                :class="selectedModules.includes(mod.key) ? 'border-indigo-300' : 'border-slate-200'">
+
+                                <!-- Module row -->
+                                <label class="flex items-center gap-2.5 px-3 py-2.5 cursor-pointer transition-colors"
+                                    :class="selectedModules.includes(mod.key) ? 'bg-indigo-50 text-indigo-800' : 'bg-slate-50 text-slate-600 hover:bg-slate-100'">
+                                    <input type="checkbox" :checked="selectedModules.includes(mod.key)"
+                                        @change="toggleModule(mod.key)"
+                                        class="w-4 h-4 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500 flex-shrink-0" />
+                                    <component :is="mod.icon" class="w-4 h-4 flex-shrink-0"
+                                        :class="selectedModules.includes(mod.key) ? 'text-indigo-500' : 'text-slate-400'" />
+                                    <span class="text-xs font-semibold leading-tight flex-1">{{ mod.label }}</span>
+                                    <span v-if="selectedModules.includes(mod.key) && MODULE_TABS[mod.key]"
+                                        class="text-[10px] text-indigo-500 font-medium">
+                                        {{ (selectedTabs[mod.key] || []).length }}/{{ MODULE_TABS[mod.key].length }} tabs
+                                    </span>
+                                </label>
+
+                                <!-- Tab sub-list (only if module has tabs and is selected) -->
+                                <div v-if="selectedModules.includes(mod.key) && MODULE_TABS[mod.key]"
+                                    class="border-t border-indigo-100 bg-white px-3 py-2">
+                                    <div class="flex items-center justify-between mb-1.5">
+                                        <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Secciones</span>
+                                        <button type="button" @click="toggleAllTabs(mod.key)"
+                                            class="text-[10px] font-semibold text-indigo-600 hover:text-indigo-800 transition-colors">
+                                            {{ allTabsSelected(mod.key) ? 'Desmarcar todo' : 'Seleccionar todo' }}
+                                        </button>
+                                    </div>
+                                    <div class="flex flex-wrap gap-1.5">
+                                        <label v-for="tab in MODULE_TABS[mod.key]" :key="tab.key"
+                                            class="flex items-center gap-1.5 px-2 py-1 rounded-lg border cursor-pointer text-[11px] font-medium transition-colors"
+                                            :class="isTabSelected(mod.key, tab.key)
+                                                ? 'bg-indigo-100 border-indigo-300 text-indigo-700'
+                                                : 'bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100'">
+                                            <input type="checkbox" :checked="isTabSelected(mod.key, tab.key)"
+                                                @change="toggleTab(mod.key, tab.key)"
+                                                class="w-3 h-3 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500" />
+                                            {{ tab.label }}
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <p v-else class="text-xs text-slate-500">
+                            El usuario verá los módulos que su rol tenga asignados. Active "Personalizar" para asignar módulos específicos.
+                        </p>
                     </div>
 
                     <!-- Password Section (only for new users) -->
@@ -255,7 +325,42 @@ import { ref, watch, computed } from 'vue';
 import { useForm } from 'vee-validate';
 import { toTypedSchema } from '@vee-validate/yup';
 import * as yup from 'yup';
-import { X, UserCog, Key, Loader2, Eye, EyeOff, Search } from 'lucide-vue-next';
+import { X, UserCog, Key, Loader2, Eye, EyeOff, Search, LayoutGrid, LayoutDashboard, ClipboardList, UserCheck, Users, Car, Box, CalendarDays, Heart, FileText, Briefcase, Fingerprint } from 'lucide-vue-next';
+
+const ALL_MODULES = [
+    { key: 'dashboard',        label: 'Dashboard',              icon: LayoutDashboard },
+    { key: 'ocurrencias',      label: 'Libro de Ocurrencias',   icon: ClipboardList },
+    { key: 'control_personal', label: 'Control de Personal',    icon: UserCheck },
+    { key: 'visitas',          label: 'Visitas Externas',       icon: Users },
+    { key: 'vehiculos',        label: 'Control Vehicular',      icon: Car },
+    { key: 'patrimonio',       label: 'Patrimonio (Bienes)',     icon: Box },
+    { key: 'secretaria',       label: 'Gestión de Citas',       icon: CalendarDays },
+    { key: 'bienestar',        label: 'Bienestar Social',       icon: Heart },
+    { key: 'papeletas',        label: 'Papeletas de Salida',    icon: FileText },
+    { key: 'recursos_humanos', label: 'Recursos Humanos',       icon: Briefcase },
+    { key: 'asistencia',       label: 'Marcas de Asistencia',   icon: Fingerprint },
+];
+
+// Módulos pre-asignados por defecto según el rol seleccionado
+const ROLE_MODULE_PRESETS = {
+    'ROL008': ['dashboard', 'bienestar'],
+    'ROL009': ['dashboard', 'recursos_humanos', 'papeletas', 'asistencia'],
+    'ROL010': ['dashboard', 'secretaria'],
+    'ROL011': ['dashboard', 'papeletas'],
+    'ROL012': ['dashboard', 'papeletas', 'asistencia', 'patrimonio'],
+};
+
+const MODULE_TABS = {
+    ocurrencias:      [{ key: 'list', label: 'Lista' }, { key: 'reports', label: 'Reportes' }],
+    control_personal: [{ key: 'list', label: 'Lista' }, { key: 'reports', label: 'Reportes' }, { key: 'reasons', label: 'Motivos' }],
+    visitas:          [{ key: 'list', label: 'Lista' }, { key: 'reports', label: 'Reportes' }, { key: 'reasons', label: 'Motivos' }],
+    vehiculos:        [{ key: 'commissions', label: 'Comisiones' }, { key: 'inventory', label: 'Inventario' }, { key: 'maintenance', label: 'Mantenimiento' }, { key: 'handover', label: 'Acta de Entrega' }, { key: 'service', label: 'Servicios' }],
+    patrimonio:       [{ key: 'mis_bienes', label: 'Mis Bienes' }, { key: 'list', label: 'Bienes' }, { key: 'movements', label: 'Movimientos' }, { key: 'barcodes', label: 'Cód. de Barra' }, { key: 'reports', label: 'Reportes' }, { key: 'patrimonio', label: 'Patrimonio SIGA' }, { key: 'inventarios', label: 'Inventarios' }],
+    secretaria:       [{ key: 'pending', label: 'Pendientes' }, { key: 'completed', label: 'Completadas' }],
+    bienestar:        [{ key: 'licenses', label: 'Licencias' }, { key: 'balances', label: 'Saldos' }],
+    papeletas:        [{ key: 'pendientes', label: 'Pendientes' }, { key: 'pendientes_rrhh', label: 'Pendientes RRHH' }, { key: 'historial', label: 'Historial' }, { key: 'reportes', label: 'Reportes' }],
+    recursos_humanos: [{ key: 'personal', label: 'Personal' }, { key: 'vacaciones', label: 'Vacaciones' }, { key: 'directions', label: 'Direcciones' }, { key: 'cargos', label: 'Cargos' }, { key: 'tipos_contrato', label: 'Tipos de Contrato' }],
+};
 
 const props = defineProps({
     user: {
@@ -292,6 +397,53 @@ const emit = defineEmits(['close', 'submit']);
 
 const showPassword = ref(false);
 const showPasswordConfirmation = ref(false);
+
+const selectedModules = ref([]);
+const selectedTabs = ref({}); // { moduleKey: ['tab1', 'tab2', ...] }
+const useCustomModules = ref(false);
+
+const toggleCustomModules = () => {
+    useCustomModules.value = !useCustomModules.value;
+    if (!useCustomModules.value) {
+        selectedModules.value = [];
+        selectedTabs.value = {};
+    }
+};
+
+const toggleModule = (modKey) => {
+    const idx = selectedModules.value.indexOf(modKey);
+    if (idx > -1) {
+        selectedModules.value.splice(idx, 1);
+        const copy = { ...selectedTabs.value };
+        delete copy[modKey];
+        selectedTabs.value = copy;
+    } else {
+        selectedModules.value.push(modKey);
+        // Auto-select all tabs for this module
+        const allTabKeys = (MODULE_TABS[modKey] || []).map(t => t.key);
+        selectedTabs.value = { ...selectedTabs.value, [modKey]: [...allTabKeys] };
+    }
+};
+
+const isTabSelected = (modKey, tabKey) => (selectedTabs.value[modKey] || []).includes(tabKey);
+
+const toggleTab = (modKey, tabKey) => {
+    const current = [...(selectedTabs.value[modKey] || [])];
+    const idx = current.indexOf(tabKey);
+    if (idx > -1) current.splice(idx, 1);
+    else current.push(tabKey);
+    selectedTabs.value = { ...selectedTabs.value, [modKey]: current };
+};
+
+const allTabsSelected = (modKey) => {
+    const all = (MODULE_TABS[modKey] || []).map(t => t.key);
+    return all.length > 0 && all.every(k => isTabSelected(modKey, k));
+};
+
+const toggleAllTabs = (modKey) => {
+    const all = (MODULE_TABS[modKey] || []).map(t => t.key);
+    selectedTabs.value = { ...selectedTabs.value, [modKey]: allTabsSelected(modKey) ? [] : [...all] };
+};
 
 // Validation Schema
 const userSchema = toTypedSchema(
@@ -365,6 +517,27 @@ const [isActive, isActiveProps] = defineField('is_active');
 const [password, passwordProps] = defineField('password');
 const [passwordConfirmation, passwordConfirmationProps] = defineField('password_confirmation');
 
+// Aplicar preset de módulos cuando el usuario selecciona un rol manualmente (solo al crear)
+const applyRolePreset = (event) => {
+    if (props.isEditing) return;
+    const newRolId = event.target.value;
+    const preset = ROLE_MODULE_PRESETS[newRolId];
+    if (preset) {
+        useCustomModules.value = true;
+        selectedModules.value = [...preset];
+        const tabs = {};
+        for (const modKey of preset) {
+            const allTabKeys = (MODULE_TABS[modKey] || []).map(t => t.key);
+            if (allTabKeys.length > 0) tabs[modKey] = [...allTabKeys];
+        }
+        selectedTabs.value = tabs;
+    } else {
+        useCustomModules.value = false;
+        selectedModules.value = [];
+        selectedTabs.value = {};
+    }
+};
+
 watch(() => props.user, (newUser) => {
     if (newUser) {
         setValues({
@@ -381,8 +554,28 @@ watch(() => props.user, (newUser) => {
             password: '',
             password_confirmation: ''
         });
+        if (newUser.modulos_json && newUser.modulos_json.length > 0) {
+            useCustomModules.value = true;
+            selectedModules.value = [...newUser.modulos_json];
+            // Restore tab selections; default to all tabs if no restriction saved
+            const tabs = {};
+            for (const modKey of newUser.modulos_json) {
+                const allTabKeys = (MODULE_TABS[modKey] || []).map(t => t.key);
+                tabs[modKey] = newUser.tabs_json?.[modKey]
+                    ? [...newUser.tabs_json[modKey]]
+                    : [...allTabKeys];
+            }
+            selectedTabs.value = tabs;
+        } else {
+            useCustomModules.value = false;
+            selectedModules.value = [];
+            selectedTabs.value = {};
+        }
     } else {
         resetForm();
+        useCustomModules.value = false;
+        selectedModules.value = [];
+        selectedTabs.value = {};
     }
 }, { immediate: true });
 
@@ -431,6 +624,26 @@ const closeDropdown = () => {
 };
 
 const handleSubmit = validateForm((values) => {
-    emit('submit', values);
+    let tabs_json = null;
+    if (useCustomModules.value && selectedModules.value.length > 0) {
+        const restricted = {};
+        for (const modKey of selectedModules.value) {
+            const allTabKeys = (MODULE_TABS[modKey] || []).map(t => t.key);
+            const selected   = selectedTabs.value[modKey] || allTabKeys;
+            // Only persist if not all tabs are selected (null = all allowed)
+            if (allTabKeys.length > 0 && selected.length < allTabKeys.length) {
+                restricted[modKey] = selected;
+            }
+        }
+        if (Object.keys(restricted).length > 0) tabs_json = restricted;
+    }
+
+    emit('submit', {
+        ...values,
+        modulos_json: useCustomModules.value && selectedModules.value.length > 0
+            ? selectedModules.value
+            : null,
+        tabs_json,
+    });
 });
 </script>

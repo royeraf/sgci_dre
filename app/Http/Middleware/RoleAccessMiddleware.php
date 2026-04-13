@@ -14,6 +14,22 @@ class RoleAccessMiddleware
      *
      * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
      */
+    /**
+     * Mapeo de prefijo de URL → clave de módulo en modulos_json.
+     */
+    private const URL_MODULE_MAP = [
+        'ocurrencias' => 'ocurrencias',
+        'entry-exits' => 'control_personal',
+        'visitors'    => 'visitas',
+        'vehicles'    => 'vehiculos',
+        'assets'      => 'patrimonio',
+        'citas'       => 'secretaria',
+        'bienestar'   => 'bienestar',
+        'hr'          => 'recursos_humanos',
+        'papeletas'   => 'papeletas',
+        'asistencia'  => 'asistencia',
+    ];
+
     public function handle(Request $request, Closure $next, ...$roles): Response
     {
         if (!Auth::check()) {
@@ -32,34 +48,15 @@ class RoleAccessMiddleware
             return $next($request);
         }
 
-        // Specific restriction for Jefe de Bienestar Social (ROL008)
-        // If they are not in the allowed roles for this specific route, redirect them to their home
-        if ($user->rol_id === 'ROL008') {
-            return redirect('/bienestar')->with('error', 'No tiene permisos para acceder a esta sección.');
+        // Check modulos_json: if the user has been explicitly granted this module, allow access
+        if (!empty($user->modulos_json)) {
+            $prefix = explode('/', $request->path())[0];
+            $module = self::URL_MODULE_MAP[$prefix] ?? null;
+            if ($module && in_array($module, $user->modulos_json)) {
+                return $next($request);
+            }
         }
 
-        // Specific restriction for Jefe de RRHH (ROL009)
-        // If they are not in the allowed roles for this specific route, redirect them to their home
-        if ($user->rol_id === 'ROL009') {
-            return redirect('/hr')->with('error', 'No tiene permisos para acceder a esta sección.');
-        }
-
-        // Specific restriction for Gestor de Citas (ROL010)
-        if ($user->rol_id === 'ROL010') {
-            return redirect('/citas')->with('error', 'No tiene permisos para acceder a esta sección.');
-        }
-
-        // Specific restriction for Jefe Inmediato (ROL011)
-        if ($user->rol_id === 'ROL011') {
-            return redirect('/papeletas')->with('error', 'No tiene permisos para acceder a esta sección.');
-        }
-
-        // Specific restriction for Empleado Portal (ROL012)
-        if ($user->rol_id === 'ROL012') {
-            return redirect('/portal/papeletas')->with('error', 'No tiene permisos para acceder a esta sección.');
-        }
-
-        // Default redirect for other roles
         return redirect('/dashboard')->with('error', 'No tiene permisos para acceder a esta sección.');
     }
 }

@@ -32,12 +32,12 @@
             <!-- Tabs Navigation -->
             <div class="border-b border-slate-200 mb-8">
                 <nav class="-mb-px flex space-x-8">
-                    <button @click="activeTab = 'licenses'"
+                    <button v-if="canViewTab('licenses')" @click="activeTab = 'licenses'"
                         :class="[activeTab === 'licenses' ? 'border-purple-600 text-purple-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300', 'whitespace-nowrap py-4 px-1 border-b-2 font-bold text-sm flex items-center gap-2 transition-all duration-200']">
                         <BookOpen class="w-5 h-5" />
                         Historial de Licencias
                     </button>
-                    <button @click="activeTab = 'balances'"
+                    <button v-if="canViewTab('balances')" @click="activeTab = 'balances'"
                         :class="[activeTab === 'balances' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300', 'whitespace-nowrap py-4 px-1 border-b-2 font-bold text-sm flex items-center gap-2 transition-all duration-200']">
                         <CalendarDays class="w-5 h-5" />
                         Saldos y Cuotas
@@ -69,6 +69,7 @@ export default { layout: MainLayout }
 
 <script setup>
 import { ref, onMounted } from 'vue';
+import { useTabPermission } from '@/composables/useTabPermission';
 import axios from 'axios';
 import { Plus, BookOpen, CalendarDays, ArrowLeft } from 'lucide-vue-next';
 
@@ -77,7 +78,8 @@ import LicenseHistoryTable from '@/Components/Bienestar/Licenses/LicenseHistoryT
 import BalanceTable from '@/Components/Bienestar/Balances/BalanceTable.vue';
 import LicenseModal from '@/Components/Bienestar/Licenses/LicenseModal.vue';
 
-const activeTab = ref('licenses');
+const { canViewTab, firstAllowedTab } = useTabPermission('bienestar', ['licenses', 'balances']);
+const activeTab = ref(firstAllowedTab.value);
 const loading = ref(false);
 const showRegisterModal = ref(false);
 

@@ -9,6 +9,7 @@ export default {
 <script setup lang="ts">
 import { ref, onMounted, nextTick, watch } from 'vue';
 import { Link } from '@inertiajs/vue3';
+import { useTabPermission } from '@/composables/useTabPermission';
 import {
     Plus,
     ArrowLeft,
@@ -45,7 +46,8 @@ const props = defineProps<{
 const showCreateModal = ref(false);
 const showExitModal = ref(false);
 const selectedVisit = ref<Visit | null>(null);
-const activeTab = ref<'list' | 'reports' | 'reasons'>('list');
+const { canViewTab, firstAllowedTab } = useTabPermission('visitas', ['list', 'reports', 'reasons']);
+const activeTab = ref<'list' | 'reports' | 'reasons'>(firstAllowedTab.value as 'list' | 'reports' | 'reasons');
 const barcodeScanner = ref<any>(null);
 
 // Filtering logic from composable
@@ -161,7 +163,7 @@ watch(activeTab, (newTab) => {
             <!-- Tabs Navigation -->
             <div class="border-b border-slate-200 mb-8">
                 <nav class="-mb-px flex space-x-8">
-                    <button @click="activeTab = 'list'" :class="[
+                    <button v-if="canViewTab('list')" @click="activeTab = 'list'" :class="[
                         activeTab === 'list'
                             ? 'border-purple-600 text-purple-600'
                             : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300',
@@ -170,7 +172,7 @@ watch(activeTab, (newTab) => {
                         <ClipboardList class="w-5 h-5" />
                         Listado de Visitas
                     </button>
-                    <button @click="activeTab = 'reports'" :class="[
+                    <button v-if="canViewTab('reports')" @click="activeTab = 'reports'" :class="[
                         activeTab === 'reports'
                             ? 'border-fuchsia-600 text-fuchsia-600'
                             : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300',
@@ -179,7 +181,7 @@ watch(activeTab, (newTab) => {
                         <FileText class="w-5 h-5" />
                         Reportes
                     </button>
-                    <button @click="activeTab = 'reasons'" :class="[
+                    <button v-if="canViewTab('reasons')" @click="activeTab = 'reasons'" :class="[
                         activeTab === 'reasons'
                             ? 'border-indigo-600 text-indigo-600'
                             : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300',

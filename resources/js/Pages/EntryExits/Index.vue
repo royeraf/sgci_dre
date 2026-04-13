@@ -32,7 +32,7 @@
             <!-- Tabs Navigation -->
             <div class="border-b border-slate-200 mb-8">
                 <nav class="-mb-px flex space-x-8">
-                    <button @click="activeTab = 'list'" :class="[
+                    <button v-if="canViewTab('list')" @click="activeTab = 'list'" :class="[
                         activeTab === 'list'
                             ? 'border-emerald-600 text-emerald-600'
                             : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300',
@@ -41,7 +41,7 @@
                         <ClipboardList class="w-5 h-5" />
                         Listado de Papeletas
                     </button>
-                    <button @click="activeTab = 'reports'" :class="[
+                    <button v-if="canViewTab('reports')" @click="activeTab = 'reports'" :class="[
                         activeTab === 'reports'
                             ? 'border-teal-600 text-teal-600'
                             : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300',
@@ -50,7 +50,7 @@
                         <FileText class="w-5 h-5" />
                         Reportes
                     </button>
-                    <button @click="activeTab = 'reasons'" :class="[
+                    <button v-if="canViewTab('reasons')" @click="activeTab = 'reasons'" :class="[
                         activeTab === 'reasons'
                             ? 'border-emerald-700 text-emerald-700'
                             : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300',
@@ -317,6 +317,7 @@ export default {
 <script setup lang="ts">
 import { shallowRef } from 'vue';
 import { Link } from '@inertiajs/vue3';
+import { useTabPermission } from '@/composables/useTabPermission';
 import {
     Search,
     Plus,
@@ -361,7 +362,8 @@ const props = defineProps<{
 const showModal = shallowRef(false);
 const showAbsentModal = shallowRef(false);
 const selectedEntry = shallowRef<EntryExitRecord | null>(null);
-const activeTab = shallowRef<'list' | 'reports' | 'reasons'>('list');
+const { canViewTab, firstAllowedTab } = useTabPermission('control_personal', ['list', 'reports', 'reasons']);
+const activeTab = shallowRef<'list' | 'reports' | 'reasons'>(firstAllowedTab.value as 'list' | 'reports' | 'reasons');
 
 const {
     localFilters,

@@ -27,6 +27,8 @@ class User extends Authenticatable
         'password',
         'apellidos',
         'rol_id',
+        'modulos_json',
+        'tabs_json',
         'is_active',
         'ultimo_acceso',
     ];
@@ -51,6 +53,8 @@ class User extends Authenticatable
         'password' => 'hashed',
         'ultimo_acceso' => 'datetime',
         'is_active' => 'boolean',
+        'modulos_json' => 'array',
+        'tabs_json'    => 'array',
     ];
 
     /**
@@ -148,15 +152,22 @@ class User extends Authenticatable
 
     /**
      * Check if user has permission for a module action.
+     * If the user has explicit modulos_json set, those override role-based permissions.
      */
     public function hasModulePermission(string $module, string $action): bool
     {
+        // Per-user module overrides: if set, only these modules are allowed
+        if (!empty($this->modulos_json)) {
+            return in_array($module, $this->modulos_json);
+        }
+
+        // Fall back to role-based permissions
         if (!$this->customRole) {
             return false;
         }
 
         $permisos = $this->customRole->permisos_json;
-        
+
         if (!isset($permisos[$module])) {
             return false;
         }

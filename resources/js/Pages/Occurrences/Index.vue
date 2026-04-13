@@ -33,7 +33,7 @@
             <!-- Tabs Navigation -->
             <div class="border-b border-slate-200 mb-8">
                 <nav class="-mb-px flex space-x-8">
-                    <button
+                    <button v-if="canViewTab('list')"
                         @click="activeTab = 'list'"
                         :class="[
                             activeTab === 'list'
@@ -45,7 +45,7 @@
                         <ClipboardList class="w-5 h-5" />
                         Listado de Ocurrencias
                     </button>
-                    <button
+                    <button v-if="canViewTab('reports')"
                         @click="activeTab = 'reports'"
                         :class="[
                             activeTab === 'reports'
@@ -111,6 +111,7 @@ export default {
 <script setup>
 import { ref, computed, watch } from 'vue';
 import { Link } from '@inertiajs/vue3';
+import { useTabPermission } from '@/composables/useTabPermission';
 import {
     Plus,
     ArrowLeft,
@@ -139,7 +140,8 @@ const props = defineProps({
 });
 
 // State
-const activeTab = ref('list');
+const { canViewTab, firstAllowedTab } = useTabPermission('ocurrencias', ['list', 'reports']);
+const activeTab = ref(firstAllowedTab.value);
 const showRegisterModal = ref(false);
 const showDetailModal = ref(false);
 const selectedOccurrence = ref(null);

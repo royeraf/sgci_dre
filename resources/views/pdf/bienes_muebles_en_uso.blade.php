@@ -126,6 +126,36 @@
         .zero {
             color: #CBD5E0;
         }
+
+        .signatures {
+            margin-top: 60px;
+            width: 100%;
+            display: table;
+            table-layout: fixed;
+        }
+        .signature-box {
+            display: table-cell;
+            width: 33%;
+            text-align: center;
+            vertical-align: top;
+            padding: 0 15px;
+        }
+        .signature-line {
+            border-top: 1px solid #4A5568;
+            width: 85%;
+            margin: 0 auto 6px auto;
+        }
+        .signature-name {
+            font-size: 9px;
+            font-weight: bold;
+            color: #2D3748;
+            text-transform: uppercase;
+        }
+        .signature-role {
+            font-size: 8px;
+            color: #718096;
+            margin-top: 2px;
+        }
     </style>
 </head>
 <body>
@@ -172,6 +202,24 @@
 
     <div class="footer">
         <p>Este documento es un reporte generado por el sistema y tiene car&aacute;cter informativo.</p>
+    </div>
+
+    <div class="signatures">
+        <div class="signature-box">
+            <div class="signature-line"></div>
+            <div class="signature-name">Jefe/a de Patrimonio</div>
+            <div class="signature-role">Dirección Regional de Educación Huánuco</div>
+        </div>
+        <div class="signature-box">
+            <div class="signature-line"></div>
+            <div class="signature-name">Responsable</div>
+            <div class="signature-role">Recibí Conforme</div>
+        </div>
+        <div class="signature-box">
+            <div class="signature-line"></div>
+            <div class="signature-name">Inventariador</div>
+            <div class="signature-role">Control Patrimonial</div>
+        </div>
     </div>
 </body>
 </html>

@@ -68,13 +68,14 @@
     <table>
         <thead>
             <tr>
-                <th style="width: 5%;">#</th>
-                <th style="width: 15%;">Código Patrimonial</th>
-                <th style="width: 10%;">Cód. Interno</th>
-                <th style="width: 35%;">Descripción del Bien</th>
-                <th style="width: 15%;">Marca / Serie</th>
-                <th style="width: 10%;">Estado</th>
-                <th style="width: 10%;">Fecha Asign.</th>
+                <th style="width: 4%;">#</th>
+                <th style="width: 13%;">Código Patrimonial</th>
+                <th style="width: 8%;">Cód. Interno</th>
+                <th style="width: 33%;">Descripción del Bien</th>
+                <th style="width: 14%;">Marca / Serie</th>
+                <th style="width: 8%;">Estado</th>
+                <th style="width: 6%; text-align: center;">Cant.</th>
+                <th style="width: 14%;">Fecha Asign.</th>
             </tr>
         </thead>
         <tbody>
@@ -111,6 +112,7 @@
                     @endphp
                     <span class="status-badge {{ $class }}">{{ $estado }}</span>
                 </td>
+                <td style="text-align: center; font-weight: bold;">1</td>
                 <td style="font-size: 10px; text-align: center;">
                     {{ $asset->latestMovement->fecha ? \Carbon\Carbon::parse($asset->latestMovement->fecha)->format('d/m/Y') : '-' }}
                 </td>
@@ -132,15 +134,19 @@
     <div class="signatures">
         <div class="signature-box">
             <div class="signature-line"></div>
-            <strong>Control Patrimonial</strong><br>
-            <span style="font-size: 9px; color: #718096;">Entregué Conforme</span>
+            <strong>Jefe/a de Patrimonio</strong><br>
+            <span style="font-size: 9px; color: #718096;">Dirección Regional de Educación Huánuco</span>
         </div>
-        <div class="signature-box"></div> <!-- Espacio central -->
         <div class="signature-box">
             <div class="signature-line"></div>
             <strong>{{ strtoupper($responsible->full_name) }}</strong><br>
             <span style="font-size: 9px; color: #718096;">DNI: {{ $responsible->dni }}</span><br>
-            <span style="font-size: 9px; color: #718096;">Recibí Conforme</span>
+            <span style="font-size: 9px; color: #718096;">Responsable — Recibí Conforme</span>
+        </div>
+        <div class="signature-box">
+            <div class="signature-line"></div>
+            <strong>Inventariador</strong><br>
+            <span style="font-size: 9px; color: #718096;">Control Patrimonial</span>
         </div>
     </div>
 </body>

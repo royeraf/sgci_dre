@@ -64,7 +64,7 @@
                 <!-- Tabs Navigation -->
                 <div class="border-b border-slate-200 mb-8">
                     <nav class="-mb-px flex space-x-8">
-                        <button @click="activeTab = 'pending'"
+                        <button v-if="canViewTab('pending')" @click="activeTab = 'pending'"
                             :class="[activeTab === 'pending'
                                 ? 'border-pink-600 text-pink-600'
                                 : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300',
@@ -76,7 +76,7 @@
                                 {{ pendingCitas.length }}
                             </span>
                         </button>
-                        <button @click="activeTab = 'completed'"
+                        <button v-if="canViewTab('completed')" @click="activeTab = 'completed'"
                             :class="[activeTab === 'completed'
                                 ? 'border-rose-600 text-rose-600'
                                 : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300',
@@ -110,13 +110,15 @@ export default { layout: MainLayout }
 import PendingAppointmentList from '@/Components/Appointments/Pending/AppointmentList.vue';
 import CompletedAppointmentList from '@/Components/Appointments/Completed/AppointmentList.vue';
 import { ref, onMounted, onUnmounted, computed } from 'vue';
+import { useTabPermission } from '@/composables/useTabPermission';
 import axios from 'axios';
 import Swal from 'sweetalert2';
 import { RefreshCw, LoaderCircle, Clock, CheckCircle, ArrowLeft, Globe, ExternalLink } from 'lucide-vue-next';
 
 const citas = ref([]);
 const loading = ref(false);
-const activeTab = ref('pending');
+const { canViewTab, firstAllowedTab } = useTabPermission('secretaria', ['pending', 'completed']);
+const activeTab = ref(firstAllowedTab.value);
 let pollingInterval = null;
 
 // Computed properties for filtering

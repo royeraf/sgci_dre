@@ -28,7 +28,7 @@ class UserController extends Controller
     public function getUsers()
     {
         $users = User::with('customRole')
-            ->select('id', 'dni', 'name', 'apellidos', 'email', 'titulo', 'cargo', 'area', 'telefono', 'rol_id', 'is_active', 'ultimo_acceso', 'created_at')
+            ->select('id', 'dni', 'name', 'apellidos', 'email', 'titulo', 'cargo', 'area', 'telefono', 'rol_id', 'modulos_json', 'tabs_json', 'is_active', 'ultimo_acceso', 'created_at')
             ->orderBy('name')
             ->get()
             ->map(function ($user) {
@@ -45,6 +45,8 @@ class UserController extends Controller
                     'telefono' => $user->telefono,
                     'rol_id' => $user->rol_id,
                     'rol_nombre' => $user->customRole?->nombre,
+                    'modulos_json' => $user->modulos_json,
+                    'tabs_json' => $user->tabs_json,
                     'is_active' => $user->is_active,
                     'ultimo_acceso' => $user->ultimo_acceso?->format('Y-m-d H:i:s'),
                     'created_at' => $user->created_at->format('Y-m-d'),
@@ -73,6 +75,8 @@ class UserController extends Controller
             'telefono' => $user->telefono,
             'rol_id' => $user->rol_id,
             'rol_nombre' => $user->customRole?->nombre,
+            'modulos_json' => $user->modulos_json,
+            'tabs_json' => $user->tabs_json,
             'is_active' => $user->is_active,
             'ultimo_acceso' => $user->ultimo_acceso,
             'created_at' => $user->created_at,
@@ -132,6 +136,9 @@ class UserController extends Controller
             'area' => ['nullable', 'string', 'max:100'],
             'telefono' => ['nullable', 'string', 'max:20'],
             'rol_id' => ['required', 'exists:custom_roles,rol_id'],
+            'modulos_json' => ['nullable', 'array'],
+            'modulos_json.*' => ['string'],
+            'tabs_json' => ['nullable', 'array'],
             'is_active' => ['boolean'],
         ], [
             'dni.required' => 'El DNI es obligatorio',
@@ -169,6 +176,8 @@ class UserController extends Controller
             'area' => $validated['area'] ?? null,
             'telefono' => $validated['telefono'] ?? null,
             'rol_id' => $validated['rol_id'],
+            'modulos_json' => !empty($validated['modulos_json']) ? $validated['modulos_json'] : null,
+            'tabs_json' => !empty($validated['tabs_json']) ? $validated['tabs_json'] : null,
             'is_active' => $validated['is_active'] ?? true,
         ]);
 
@@ -195,6 +204,9 @@ class UserController extends Controller
             'area' => ['nullable', 'string', 'max:100'],
             'telefono' => ['nullable', 'string', 'max:20'],
             'rol_id' => ['required', 'exists:custom_roles,rol_id'],
+            'modulos_json' => ['nullable', 'array'],
+            'modulos_json.*' => ['string'],
+            'tabs_json' => ['nullable', 'array'],
             'is_active' => ['boolean'],
         ], [
             'dni.required' => 'El DNI es obligatorio',
@@ -218,6 +230,12 @@ class UserController extends Controller
             'area' => $validated['area'] ?? null,
             'telefono' => $validated['telefono'] ?? null,
             'rol_id' => $validated['rol_id'],
+            'modulos_json' => array_key_exists('modulos_json', $validated)
+                ? (!empty($validated['modulos_json']) ? $validated['modulos_json'] : null)
+                : $user->modulos_json,
+            'tabs_json' => array_key_exists('tabs_json', $validated)
+                ? (!empty($validated['tabs_json']) ? $validated['tabs_json'] : null)
+                : $user->tabs_json,
             'is_active' => $validated['is_active'] ?? $user->is_active,
         ]);
 

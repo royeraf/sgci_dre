@@ -367,238 +367,21 @@
             </div>
         </div>
 
-        <!-- New Movement Modal -->
-        <div v-if="showNewMovementModal" class="fixed inset-0 z-50 overflow-y-auto">
-            <div class="flex items-center justify-center min-h-screen px-4 py-8">
-                <div class="fixed inset-0 bg-black/50 transition-opacity" @click="closeModal"></div>
-
-                <div
-                    class="relative bg-white rounded-2xl shadow-2xl max-w-2xl w-full z-10 overflow-hidden flex flex-col max-h-[90vh]">
-                    <!-- Modal Header -->
-                    <div
-                        class="bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-4 flex justify-between items-center shrink-0">
-                        <div>
-                            <h3 class="text-xl font-bold text-white flex items-center gap-2">
-                                <ArrowRightLeft class="w-6 h-6" />
-                                Registrar Movimiento
-                            </h3>
-                            <p class="text-blue-100 text-sm mt-1">Seleccione un bien y registre el movimiento</p>
-                        </div>
-                        <button @click="closeModal" class="text-blue-100 hover:text-white transition-colors p-1">
-                            <X class="w-6 h-6" />
-                        </button>
-                    </div>
-
-                    <!-- Modal Body -->
-                    <div class="overflow-y-auto p-6">
-                        <form @submit.prevent="submitMovement" class="space-y-6">
-
-                            <!-- Sección 1: Seleccionar Bien -->
-                            <div>
-                                <h4
-                                    class="text-sm font-bold text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
-                                    <span class="w-8 h-[1px] bg-slate-200"></span> Seleccionar Bien
-                                </h4>
-                                <div class="relative" ref="assetDropdownRef">
-                                    <label class="block text-sm font-bold text-slate-700 mb-2">
-                                        Bien Patrimonial <span class="text-red-500">*</span>
-                                    </label>
-                                    <div class="relative">
-                                        <Search
-                                            class="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-slate-400" />
-                                        <input type="text" v-model="assetSearch" @focus="showAssetDropdown = true"
-                                            placeholder="Buscar por código patrimonial, denominación..."
-                                            class="w-full pl-10 pr-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors outline-none"
-                                            :class="modalErrors.asset_id ? 'border-red-400' : 'border-slate-200'" />
-                                    </div>
-                                    <p v-if="modalErrors.asset_id" class="mt-1 text-sm text-red-600">{{
-                                        modalErrors.asset_id }}
-                                    </p>
-
-                                    <!-- Asset search results -->
-                                    <div v-if="showAssetDropdown && assetSearchResults.length > 0"
-                                        class="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl max-h-60 overflow-y-auto">
-                                        <div v-if="searchingAssets" class="p-4 text-center">
-                                            <Loader2 class="w-5 h-5 mx-auto text-slate-400 animate-spin" />
-                                        </div>
-                                        <button type="button" v-for="asset in assetSearchResults" :key="asset.id"
-                                            @click="selectAsset(asset)"
-                                            class="w-full text-left px-4 py-3 hover:bg-blue-50 transition-colors flex items-center justify-between group border-b border-slate-50 last:border-b-0">
-                                            <div>
-                                                <p
-                                                    class="font-mono font-bold text-slate-700 group-hover:text-blue-700 text-sm">
-                                                    {{ asset.codigo_patrimonio }}
-                                                    <span class="text-slate-400 font-normal">{{ asset.codigo_interno
-                                                    }}</span>
-                                                </p>
-                                                <p class="text-xs text-slate-500 line-clamp-1">{{ asset.denominacion }}
-                                                </p>
-                                            </div>
-                                            <div v-if="asset.latest_movement?.state" class="ml-2 flex-shrink-0">
-                                                <span class="px-2 py-0.5 text-[10px] font-bold rounded-md"
-                                                    :class="getStateClass(asset.latest_movement.state.nombre)">
-                                                    {{ asset.latest_movement.state.nombre }}
-                                                </span>
-                                            </div>
-                                        </button>
-                                    </div>
-
-                                    <div v-if="showAssetDropdown && assetSearch.length >= 2 && assetSearchResults.length === 0 && !searchingAssets"
-                                        class="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl p-4 text-center text-sm text-slate-500">
-                                        No se encontraron bienes con ese criterio
-                                    </div>
-                                </div>
-
-                                <!-- Selected asset preview -->
-                                <div v-if="selectedAsset"
-                                    class="mt-3 bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-center justify-between">
-                                    <div>
-                                        <p class="font-mono font-bold text-blue-800 text-sm">
-                                            {{ selectedAsset.codigo_patrimonio }}{{ selectedAsset.codigo_interno }}
-                                        </p>
-                                        <p class="text-sm text-blue-700">{{ selectedAsset.denominacion }}</p>
-                                        <p v-if="selectedAsset.brand" class="text-xs text-blue-500">
-                                            {{ selectedAsset.brand.nombre }}
-                                            {{ selectedAsset.modelo ? `— ${selectedAsset.modelo}` : '' }}
-                                        </p>
-                                    </div>
-                                    <button type="button" @click="clearSelectedAsset"
-                                        class="text-blue-400 hover:text-blue-600 transition-colors p-1">
-                                        <X class="w-5 h-5" />
-                                    </button>
-                                </div>
-                            </div>
-
-                            <!-- Sección 2: Datos del Movimiento -->
-                            <div class="bg-slate-50 p-5 rounded-xl border border-slate-200">
-                                <h4
-                                    class="text-sm font-bold text-slate-500 uppercase tracking-widest mb-4 flex items-center gap-2">
-                                    <span class="w-2 h-2 rounded-full bg-blue-600"></span> Datos del Movimiento
-                                </h4>
-
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-                                    <!-- Tipo -->
-                                    <div>
-                                        <label class="block text-sm font-bold text-slate-700 mb-2">
-                                            Tipo de Movimiento <span class="text-red-500">*</span>
-                                        </label>
-                                        <select v-model="movForm.tipo"
-                                            class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-colors outline-none"
-                                            :class="modalErrors.tipo ? 'border-red-400' : 'border-slate-200'">
-                                            <option value="">Seleccione tipo</option>
-                                            <option value="ASIGNACION">Asignación</option>
-                                            <option value="DEVOLUCION">Devolución</option>
-                                            <option value="TRASLADO">Traslado</option>
-                                            <option value="BAJA">Baja</option>
-                                        </select>
-                                        <p v-if="modalErrors.tipo" class="mt-1 text-sm text-red-600">{{ modalErrors.tipo
-                                        }}</p>
-                                    </div>
-
-                                    <!-- Fecha -->
-                                    <div>
-                                        <label class="block text-sm font-bold text-slate-700 mb-2">
-                                            Fecha <span class="text-red-500">*</span>
-                                        </label>
-                                        <input type="date" v-model="movForm.fecha"
-                                            class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-colors outline-none"
-                                            :class="modalErrors.fecha ? 'border-red-400' : 'border-slate-200'" />
-                                        <p v-if="modalErrors.fecha" class="mt-1 text-sm text-red-600">{{
-                                            modalErrors.fecha }}
-                                        </p>
-                                    </div>
-
-                                    <!-- Estado -->
-                                    <div>
-                                        <label class="block text-sm font-bold text-slate-700 mb-2">
-                                            Estado del Bien <span class="text-red-500">*</span>
-                                        </label>
-                                        <select v-model="movForm.estado_id"
-                                            class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-colors outline-none"
-                                            :class="modalErrors.estado_id ? 'border-red-400' : 'border-slate-200'">
-                                            <option value="">Seleccione estado</option>
-                                            <option v-for="st in states" :key="st.id" :value="st.id">{{ st.nombre }}
-                                            </option>
-                                        </select>
-                                        <p v-if="modalErrors.estado_id" class="mt-1 text-sm text-red-600">{{
-                                            modalErrors.estado_id }}</p>
-                                    </div>
-
-                                    <!-- Oficina -->
-                                    <div>
-                                        <label class="block text-sm font-bold text-slate-700 mb-2">Ubicación /
-                                            Oficina</label>
-                                        <select v-model="movForm.oficina_id"
-                                            class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-colors outline-none">
-                                            <option value="">Sin especificar</option>
-                                            <option v-for="office in offices" :key="office.id" :value="office.id">
-                                                {{ office.nombre }} {{ office.direction ? `(${office.direction.nombre})`
-                                                : '' }}
-                                            </option>
-                                        </select>
-                                    </div>
-
-                                    <!-- Responsable -->
-                                    <div class="md:col-span-2 relative" ref="empDropdownRef">
-                                        <label class="block text-sm font-bold text-slate-700 mb-2">Responsable</label>
-                                        <div class="relative">
-                                            <input type="text" v-model="empSearchQuery" @focus="showEmpDropdown = true"
-                                                @input="onEmpSearchInput"
-                                                placeholder="Buscar personal por nombre o DNI..."
-                                                class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors outline-none pr-10" />
-                                            <ChevronDown
-                                                class="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                                        </div>
-                                        <!-- Employee dropdown -->
-                                        <div v-if="showEmpDropdown && filteredEmployees.length > 0"
-                                            class="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl max-h-60 overflow-y-auto">
-                                            <button type="button" v-for="emp in filteredEmployees" :key="emp.id"
-                                                @click="selectEmployee(emp)"
-                                                class="w-full text-left px-4 py-2 hover:bg-blue-50 transition-colors flex items-center justify-between group">
-                                                <div>
-                                                    <p
-                                                        class="font-medium text-slate-700 group-hover:text-slate-900 text-sm">
-                                                        {{ emp.nombre_completo }}</p>
-                                                    <p class="text-xs text-slate-400">{{ emp.dni }}</p>
-                                                </div>
-                                                <Check v-if="movForm.responsable_id && selectedEmployee?.id === emp.id"
-                                                    class="w-4 h-4 text-blue-600" />
-                                            </button>
-                                        </div>
-                                    </div>
-
-                                    <!-- Observaciones -->
-                                    <div class="md:col-span-2">
-                                        <label class="block text-sm font-bold text-slate-700 mb-2">Observaciones</label>
-                                        <textarea v-model="movForm.observaciones" rows="2"
-                                            placeholder="Detalle o motivo del movimiento (opcional)..."
-                                            class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none transition-colors outline-none"></textarea>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Footer Actions -->
-                            <div class="flex justify-end gap-3 pt-4 border-t border-slate-200">
-                                <button type="button" @click="closeModal"
-                                    class="px-6 py-2.5 border-2 border-slate-300 text-slate-600 font-bold rounded-xl hover:bg-slate-50 transition-all">
-                                    Cancelar
-                                </button>
-                                <button type="submit" :disabled="isSubmitting"
-                                    class="px-6 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all disabled:opacity-50 shadow-lg shadow-blue-600/20">
-                                    <Loader2 v-if="isSubmitting" class="w-5 h-5 animate-spin inline mr-2" />
-                                    {{ isSubmitting ? 'Registrando...' : 'Registrar Movimiento' }}
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            </div>
-        </div>
+        <!-- Movement Modal (Individual + Masiva) -->
+        <MovementModal
+            v-if="showMovementModal"
+            :states="states"
+            :offices="offices"
+            :employees="employees"
+            :movement-types="movementTypes"
+            @close="showMovementModal = false"
+            @success="handleMovementSuccess"
+        />
     </div>
 </template>
 
 <script setup>
-import { ref, watch, onMounted, onUnmounted, computed } from 'vue';
+import { ref, watch, onMounted } from 'vue';
 import {
     ArrowRightLeft,
     UserPlus,
@@ -614,17 +397,16 @@ import {
     ChevronRight,
     ChevronsLeft,
     ChevronsRight,
-    ChevronDown,
-    Check,
 } from 'lucide-vue-next';
 import axios from 'axios';
-import { router } from '@inertiajs/vue3';
 import Swal from 'sweetalert2';
+import MovementModal from '@/Components/Assets/MovementModal.vue';
 
 const props = defineProps({
-    states: { type: Array, default: () => [] },
-    offices: { type: Array, default: () => [] },
-    employees: { type: Array, default: () => [] },
+    states:        { type: Array, default: () => [] },
+    offices:       { type: Array, default: () => [] },
+    employees:     { type: Array, default: () => [] },
+    movementTypes: { type: Array, default: () => [] },
 });
 
 // ===== STATS =====
@@ -652,32 +434,13 @@ const lastPage = ref(1);
 const total = ref(0);
 const perPage = ref(15);
 
-// ===== NEW MOVEMENT MODAL =====
-const showNewMovementModal = ref(false);
-const isSubmitting = ref(false);
-const selectedAsset = ref(null);
-const assetSearch = ref('');
-const showAssetDropdown = ref(false);
-const assetSearchResults = ref([]);
-const searchingAssets = ref(false);
-const assetDropdownRef = ref(null);
+// ===== MOVEMENT MODAL =====
+const showMovementModal = ref(false);
 
-// Employee search for modal
-const empSearchQuery = ref('');
-const showEmpDropdown = ref(false);
-const selectedEmployee = ref(null);
-const empDropdownRef = ref(null);
-
-const movForm = ref({
-    tipo: '',
-    fecha: new Date().toISOString().split('T')[0],
-    estado_id: '',
-    oficina_id: '',
-    responsable_id: '',
-    observaciones: '',
-});
-
-const modalErrors = ref({});
+const handleMovementSuccess = () => {
+    fetchMovements(1);
+    fetchStats();
+};
 
 // ===== FETCH DATA =====
 const fetchStats = async () => {
@@ -714,180 +477,6 @@ const fetchMovements = async (page = 1) => {
     }
 };
 
-// ===== ASSET SEARCH (for modal) =====
-let assetSearchTimeout = null;
-watch(assetSearch, (val) => {
-    if (selectedAsset.value) return; // Don't search when an asset is already selected
-    clearTimeout(assetSearchTimeout);
-    if (val.length < 2) {
-        assetSearchResults.value = [];
-        return;
-    }
-    assetSearchTimeout = setTimeout(async () => {
-        searchingAssets.value = true;
-        try {
-            const response = await axios.get('/assets/list', {
-                params: { search: val, per_page: 8 },
-            });
-            assetSearchResults.value = response.data.data;
-        } catch (error) {
-            console.error('Error searching assets:', error);
-        } finally {
-            searchingAssets.value = false;
-        }
-    }, 300);
-});
-
-const selectAsset = (asset) => {
-    selectedAsset.value = asset;
-    assetSearch.value = `${asset.codigo_patrimonio} — ${asset.denominacion}`;
-    showAssetDropdown.value = false;
-    assetSearchResults.value = [];
-    modalErrors.value.asset_id = '';
-
-    // Pre-fill estado from current state
-    if (asset.latest_movement?.state?.id) {
-        movForm.value.estado_id = asset.latest_movement.state.id;
-    }
-};
-
-const clearSelectedAsset = () => {
-    selectedAsset.value = null;
-    assetSearch.value = '';
-    assetSearchResults.value = [];
-};
-
-// ===== EMPLOYEE SEARCH (for modal) =====
-const filteredEmployees = computed(() => {
-    if (!empSearchQuery.value || !empSearchQuery.value.trim()) {
-        return props.employees.slice(0, 10);
-    }
-    const s = empSearchQuery.value.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
-    const terms = s.split(' ').filter(t => t.length > 0);
-    return props.employees.filter(emp => {
-        const name = (emp.nombre_completo || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-        const dni = emp.dni || '';
-        if (dni.includes(empSearchQuery.value.trim())) return true;
-        return terms.every(t => name.includes(t));
-    }).slice(0, 10);
-});
-
-const onEmpSearchInput = () => {
-    showEmpDropdown.value = true;
-    selectedEmployee.value = null;
-    movForm.value.responsable_id = '';
-};
-
-const selectEmployee = async (emp) => {
-    selectedEmployee.value = emp;
-    empSearchQuery.value = emp.nombre_completo;
-    showEmpDropdown.value = false;
-
-    // Find or create the AssetResponsible for this employee
-    try {
-        const response = await axios.post('/assets/responsibles', {
-            employee_id: emp.id,
-        });
-        movForm.value.responsable_id = response.data.id;
-    } catch (error) {
-        console.error('Error creating responsible:', error);
-        // Fallback: try to find existing
-        try {
-            const resp = await axios.get('/assets/responsibles', {
-                params: { employee_id: emp.id }
-            });
-            if (resp.data.length > 0) {
-                movForm.value.responsable_id = resp.data[0].id;
-            }
-        } catch (err2) {
-            console.error('Error finding responsible:', err2);
-        }
-    }
-};
-
-// ===== SUBMIT MOVEMENT =====
-const submitMovement = async () => {
-    modalErrors.value = {};
-
-    // Validate
-    if (!selectedAsset.value) {
-        modalErrors.value.asset_id = 'Debe seleccionar un bien';
-        return;
-    }
-    if (!movForm.value.tipo) {
-        modalErrors.value.tipo = 'Seleccione el tipo de movimiento';
-        return;
-    }
-    if (!movForm.value.fecha) {
-        modalErrors.value.fecha = 'Ingrese la fecha del movimiento';
-        return;
-    }
-    if (!movForm.value.estado_id) {
-        modalErrors.value.estado_id = 'Seleccione el estado del bien';
-        return;
-    }
-
-    isSubmitting.value = true;
-    try {
-        const payload = {
-            tipo: movForm.value.tipo,
-            fecha: movForm.value.fecha,
-            estado_id: movForm.value.estado_id,
-            oficina_id: movForm.value.oficina_id || null,
-            responsable_id: movForm.value.responsable_id || null,
-            observaciones: movForm.value.observaciones || null,
-        };
-
-        await axios.post(`/assets/${selectedAsset.value.id}/movements`, payload);
-
-        closeModal();
-        fetchMovements(1);
-        fetchStats();
-
-        Swal.fire({
-            icon: 'success',
-            title: 'Movimiento registrado',
-            text: `Movimiento de ${getTypeLabel(payload.tipo).toLowerCase()} registrado correctamente.`,
-            toast: true,
-            position: 'top-end',
-            showConfirmButton: false,
-            timer: 3000,
-        });
-    } catch (error) {
-        console.error('Error creating movement:', error);
-        const serverErrors = error.response?.data?.errors;
-        if (serverErrors) {
-            modalErrors.value = serverErrors;
-        } else {
-            Swal.fire({
-                icon: 'error',
-                title: 'Error',
-                text: 'No se pudo registrar el movimiento. Intente nuevamente.',
-            });
-        }
-    } finally {
-        isSubmitting.value = false;
-    }
-};
-
-const closeModal = () => {
-    showNewMovementModal.value = false;
-    selectedAsset.value = null;
-    assetSearch.value = '';
-    assetSearchResults.value = [];
-    empSearchQuery.value = '';
-    selectedEmployee.value = null;
-    modalErrors.value = {};
-    movForm.value = {
-        tipo: '',
-        fecha: new Date().toISOString().split('T')[0],
-        estado_id: '',
-        oficina_id: '',
-        responsable_id: '',
-        observaciones: '',
-    };
-};
-
 // ===== WATCHERS =====
 let searchTimeout = null;
 watch(search, () => {
@@ -907,24 +496,9 @@ const clearFilters = () => {
     fetchMovements(1);
 };
 
-// ===== CLICK OUTSIDE (dropdowns) =====
-const handleClickOutside = (event) => {
-    if (assetDropdownRef.value && !assetDropdownRef.value.contains(event.target)) {
-        showAssetDropdown.value = false;
-    }
-    if (empDropdownRef.value && !empDropdownRef.value.contains(event.target)) {
-        showEmpDropdown.value = false;
-    }
-};
-
 onMounted(() => {
     fetchStats();
     fetchMovements(1);
-    document.addEventListener('click', handleClickOutside);
-});
-
-onUnmounted(() => {
-    document.removeEventListener('click', handleClickOutside);
 });
 
 // ===== FORMATTERS =====
@@ -987,7 +561,7 @@ const getStateClass = (nombre) => {
 
 // ===== EXPOSE =====
 const openModal = () => {
-    showNewMovementModal.value = true;
+    showMovementModal.value = true;
 };
 
 const setSearch = (code) => {

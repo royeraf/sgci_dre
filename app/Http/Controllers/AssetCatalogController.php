@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\AssetBrand;
 use App\Models\AssetCategory;
 use App\Models\AssetColor;
+use App\Models\AssetMovementType;
 use App\Models\AssetOrigin;
 use App\Models\AssetState;
 use Illuminate\Http\Request;
@@ -18,11 +19,12 @@ class AssetCatalogController extends Controller
     public function index()
     {
         return Inertia::render('Assets/Catalogs', [
-            'brands' => AssetBrand::orderBy('nombre')->get(),
-            'colors' => AssetColor::orderBy('nombre')->get(),
-            'states' => AssetState::orderBy('orden')->get(),
-            'origins' => AssetOrigin::orderBy('nombre')->get(),
-            'categories' => AssetCategory::orderBy('nombre')->get(),
+            'brands'         => AssetBrand::orderBy('nombre')->get(),
+            'colors'         => AssetColor::orderBy('nombre')->get(),
+            'states'         => AssetState::orderBy('orden')->get(),
+            'origins'        => AssetOrigin::orderBy('nombre')->get(),
+            'categories'     => AssetCategory::orderBy('nombre')->get(),
+            'movementTypes'  => AssetMovementType::orderBy('nombre')->get(),
         ]);
     }
 
@@ -244,12 +246,63 @@ class AssetCatalogController extends Controller
     public function deleteCategory($id)
     {
         $category = AssetCategory::findOrFail($id);
-        
+
         if ($category->assets()->exists()) {
             return response()->json(['error' => 'No se puede eliminar: hay bienes con esta categoría'], 422);
         }
-        
+
         $category->delete();
         return response()->json(['message' => 'Categoría eliminada correctamente']);
+    }
+
+    // ===== TIPOS DE MOVIMIENTO =====
+
+    public function getMovementTypes()
+    {
+        return response()->json(AssetMovementType::orderBy('nombre')->get());
+    }
+
+    public function storeMovementType(Request $request)
+    {
+        $validated = $request->validate([
+            'nombre'      => 'required|string|max:100|unique:asset_movement_types,nombre',
+            'codigo'      => 'required|string|max:50|unique:asset_movement_types,codigo',
+            'descripcion' => 'nullable|string',
+            'activo'      => 'boolean',
+        ]);
+
+        $validated['codigo'] = strtoupper($validated['codigo']);
+
+        $type = AssetMovementType::create($validated);
+        return response()->json($type, 201);
+    }
+
+    public function updateMovementType(Request $request, $id)
+    {
+        $type = AssetMovementType::findOrFail($id);
+
+        $validated = $request->validate([
+            'nombre'      => 'required|string|max:100|unique:asset_movement_types,nombre,' . $id,
+            'codigo'      => 'required|string|max:50|unique:asset_movement_types,codigo,' . $id,
+            'descripcion' => 'nullable|string',
+            'activo'      => 'boolean',
+        ]);
+
+        $validated['codigo'] = strtoupper($validated['codigo']);
+
+        $type->update($validated);
+        return response()->json($type);
+    }
+
+    public function deleteMovementType($id)
+    {
+        $type = AssetMovementType::findOrFail($id);
+
+        if ($type->movements()->exists()) {
+            return response()->json(['error' => 'No se puede eliminar: hay movimientos con este tipo'], 422);
+        }
+
+        $type->delete();
+        return response()->json(['message' => 'Tipo de movimiento eliminado correctamente']);
     }
 }

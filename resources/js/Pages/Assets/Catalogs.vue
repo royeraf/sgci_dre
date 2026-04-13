@@ -76,7 +76,11 @@
                                         class="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">
                                         Orden
                                     </th>
-                                    <th v-if="['states', 'origins'].includes(activeTab)"
+                                    <th v-if="activeTab === 'movement_types'"
+                                        class="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">
+                                        Código
+                                    </th>
+                                    <th v-if="['states', 'origins', 'movement_types'].includes(activeTab)"
                                         class="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">
                                         Descripción
                                     </th>
@@ -110,7 +114,12 @@
                                             {{ item.orden }}
                                         </span>
                                     </td>
-                                    <td v-if="['states', 'origins'].includes(activeTab)" class="px-6 py-4">
+                                    <td v-if="activeTab === 'movement_types'" class="px-6 py-4">
+                                        <span class="px-2.5 py-1 rounded-lg bg-blue-100 text-blue-700 font-mono text-xs font-bold tracking-wide">
+                                            {{ item.codigo }}
+                                        </span>
+                                    </td>
+                                    <td v-if="['states', 'origins', 'movement_types'].includes(activeTab)" class="px-6 py-4">
                                         <p class="text-sm text-slate-500 line-clamp-2 max-w-xs">
                                             {{ item.descripcion || '-' }}
                                         </p>
@@ -200,7 +209,17 @@
                                     placeholder="0" />
                             </div>
 
-                            <div v-if="['states', 'origins'].includes(activeTab)">
+                            <div v-if="activeTab === 'movement_types'">
+                                <label class="block text-sm font-bold text-slate-700 mb-2">
+                                    Código <span class="text-red-500">*</span>
+                                    <span class="ml-1 text-xs font-normal text-slate-400">(identificador único, ej: ASIGNACION)</span>
+                                </label>
+                                <input v-model="formData.codigo" type="text" required maxlength="50"
+                                    class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-slate-500 focus:border-slate-500 outline-none transition-colors font-mono uppercase"
+                                    placeholder="CODIGO" />
+                            </div>
+
+                            <div v-if="['states', 'origins', 'movement_types'].includes(activeTab)">
                                 <label class="block text-sm font-bold text-slate-700 mb-2">
                                     Descripción
                                 </label>
@@ -296,16 +315,18 @@ import {
     Palette,
     Activity,
     MapPin,
-    Layers
+    Layers,
+    ArrowRightLeft,
 } from 'lucide-vue-next';
 import axios from 'axios';
 
 const props = defineProps({
-    brands: { type: Array, default: () => [] },
-    colors: { type: Array, default: () => [] },
-    states: { type: Array, default: () => [] },
-    origins: { type: Array, default: () => [] },
-    categories: { type: Array, default: () => [] },
+    brands:        { type: Array, default: () => [] },
+    colors:        { type: Array, default: () => [] },
+    states:        { type: Array, default: () => [] },
+    origins:       { type: Array, default: () => [] },
+    categories:    { type: Array, default: () => [] },
+    movementTypes: { type: Array, default: () => [] },
 });
 
 // State
@@ -322,6 +343,7 @@ const deleteError = ref('');
 
 const formData = ref({
     nombre: '',
+    codigo: '',
     codigo_hex: '#000000',
     descripcion: '',
     orden: 0,
@@ -334,27 +356,32 @@ const localColors = ref([...props.colors]);
 const localStates = ref([...props.states]);
 const localOrigins = ref([...props.origins]);
 const localCategories = ref([...props.categories]);
+const localMovementTypes = ref([...props.movementTypes]);
 
 const tabs = [
-    { key: 'brands', label: 'Marcas', icon: Tag },
-    { key: 'colors', label: 'Colores', icon: Palette },
-    { key: 'states', label: 'Estados', icon: Activity },
-    { key: 'origins', label: 'Orígenes', icon: MapPin },
-    { key: 'categories', label: 'Categorías', icon: Layers },
+    { key: 'brands',         label: 'Marcas',             icon: Tag },
+    { key: 'colors',         label: 'Colores',            icon: Palette },
+    { key: 'states',         label: 'Estados',            icon: Activity },
+    { key: 'origins',        label: 'Orígenes',           icon: MapPin },
+    { key: 'categories',     label: 'Categorías',         icon: Layers },
+    { key: 'movement_types', label: 'Tipos de Movimiento', icon: ArrowRightLeft },
 ];
 
 const currentTabLabel = computed(() => {
     const tab = tabs.find(t => t.key === activeTab.value);
-    return tab ? tab.label.slice(0, -1) : ''; // Remove plural 's'
+    if (!tab) return '';
+    if (activeTab.value === 'movement_types') return 'Tipo de Movimiento';
+    return tab.label.slice(0, -1); // Remove plural 's'
 });
 
 const currentItems = computed(() => {
     switch (activeTab.value) {
-        case 'brands': return localBrands.value;
-        case 'colors': return localColors.value;
-        case 'states': return localStates.value;
-        case 'origins': return localOrigins.value;
-        case 'categories': return localCategories.value;
+        case 'brands':         return localBrands.value;
+        case 'colors':         return localColors.value;
+        case 'states':         return localStates.value;
+        case 'origins':        return localOrigins.value;
+        case 'categories':     return localCategories.value;
+        case 'movement_types': return localMovementTypes.value;
         default: return [];
     }
 });
@@ -369,11 +396,12 @@ const filteredItems = computed(() => {
 
 const getCatalogCount = (key) => {
     switch (key) {
-        case 'brands': return localBrands.value.length;
-        case 'colors': return localColors.value.length;
-        case 'states': return localStates.value.length;
-        case 'origins': return localOrigins.value.length;
-        case 'categories': return localCategories.value.length;
+        case 'brands':         return localBrands.value.length;
+        case 'colors':         return localColors.value.length;
+        case 'states':         return localStates.value.length;
+        case 'origins':        return localOrigins.value.length;
+        case 'categories':     return localCategories.value.length;
+        case 'movement_types': return localMovementTypes.value.length;
         default: return 0;
     }
 };
@@ -383,10 +411,12 @@ const getColSpan = () => {
     if (activeTab.value === 'colors') cols++;
     if (activeTab.value === 'states') cols += 2;
     if (activeTab.value === 'origins') cols++;
+    if (activeTab.value === 'movement_types') cols += 2; // codigo + descripcion
     return cols;
 };
 
 const getApiEndpoint = () => {
+    if (activeTab.value === 'movement_types') return '/assets/catalogs/movement-types';
     return `/assets/catalogs/${activeTab.value}`;
 };
 
@@ -399,6 +429,7 @@ const openModal = (mode, item = null) => {
     } else {
         formData.value = {
             nombre: '',
+            codigo: '',
             codigo_hex: '#000000',
             descripcion: '',
             orden: currentItems.value.length + 1,
@@ -473,11 +504,12 @@ const handleDelete = async () => {
 
 const addToLocalList = (item) => {
     switch (activeTab.value) {
-        case 'brands': localBrands.value.push(item); break;
-        case 'colors': localColors.value.push(item); break;
-        case 'states': localStates.value.push(item); break;
-        case 'origins': localOrigins.value.push(item); break;
-        case 'categories': localCategories.value.push(item); break;
+        case 'brands':         localBrands.value.push(item); break;
+        case 'colors':         localColors.value.push(item); break;
+        case 'states':         localStates.value.push(item); break;
+        case 'origins':        localOrigins.value.push(item); break;
+        case 'categories':     localCategories.value.push(item); break;
+        case 'movement_types': localMovementTypes.value.push(item); break;
     }
 };
 
@@ -499,11 +531,12 @@ const removeFromLocalList = (id) => {
 
 const getCurrentLocalList = () => {
     switch (activeTab.value) {
-        case 'brands': return localBrands.value;
-        case 'colors': return localColors.value;
-        case 'states': return localStates.value;
-        case 'origins': return localOrigins.value;
-        case 'categories': return localCategories.value;
+        case 'brands':         return localBrands.value;
+        case 'colors':         return localColors.value;
+        case 'states':         return localStates.value;
+        case 'origins':        return localOrigins.value;
+        case 'categories':     return localCategories.value;
+        case 'movement_types': return localMovementTypes.value;
         default: return [];
     }
 };

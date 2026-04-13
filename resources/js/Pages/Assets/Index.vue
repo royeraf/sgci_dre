@@ -14,31 +14,31 @@
                 </div>
 
                 <div class="flex gap-3">
-                    <a href="/assets/catalogs"
+                    <a v-if="!isEmployeeOnly" href="/assets/catalogs"
                         class="inline-flex items-center px-4 py-3 border-2 border-slate-300 text-sm font-bold rounded-xl text-slate-600 bg-white hover:bg-slate-50 focus:outline-none focus:ring-4 focus:ring-slate-200 transition-all duration-200">
                         <Settings class="w-5 h-5 mr-2" />
                         Catálogos
                     </a>
                     <!-- Escanear Código de Barras (visible en list y movements) -->
-                    <button v-if="activeTab === 'list' || activeTab === 'movements'" @click="showBarcodeScanner = true"
+                    <button v-if="!isEmployeeOnly && (activeTab === 'list' || activeTab === 'movements')" @click="showBarcodeScanner = true"
                         class="inline-flex items-center px-4 py-3 border-2 border-emerald-300 text-sm font-bold rounded-xl text-emerald-700 bg-emerald-50 hover:bg-emerald-100 focus:outline-none focus:ring-4 focus:ring-emerald-200 transition-all duration-200">
                         <ScanBarcode class="w-5 h-5 mr-2" />
                         Escanear
                     </button>
-                    <!-- Nuevo Bien (solo en tab list) -->
-                    <button v-if="activeTab === 'list'" @click="showCreateModal = true"
+                    <!-- Nuevo Bien (solo en tab list, no para empleados) -->
+                    <button v-if="!isEmployeeOnly && activeTab === 'list'" @click="showCreateModal = true"
                         class="inline-flex items-center px-6 py-3 border border-transparent text-sm font-bold rounded-xl shadow-lg shadow-slate-600/20 text-white bg-gradient-to-r from-slate-700 to-gray-700 hover:from-slate-800 hover:to-gray-800 focus:outline-none focus:ring-4 focus:ring-slate-300 transition-all duration-300 transform hover:scale-105 active:scale-95">
                         <Plus class="w-5 h-5 mr-2" />
                         Nuevo Bien
                     </button>
-                    <!-- Nuevo Movimiento (solo en tab movements) -->
-                    <button v-if="activeTab === 'movements'" @click="openNewMovement"
+                    <!-- Nuevo Movimiento (solo en tab movements, no para empleados) -->
+                    <button v-if="!isEmployeeOnly && activeTab === 'movements'" @click="openNewMovement"
                         class="inline-flex items-center px-6 py-3 border border-transparent text-sm font-bold rounded-xl shadow-lg shadow-blue-600/20 text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-4 focus:ring-blue-300 transition-all duration-300 transform hover:scale-105 active:scale-95">
                         <ArrowRightLeft class="w-5 h-5 mr-2" />
                         Nuevo Movimiento
                     </button>
-                    <!-- Nuevo Inventario (solo en tab inventarios) -->
-                    <button v-if="activeTab === 'inventarios'" @click="openNewInventario"
+                    <!-- Nuevo Inventario (solo en tab inventarios, no para empleados) -->
+                    <button v-if="!isEmployeeOnly && activeTab === 'inventarios'" @click="openNewInventario"
                         class="inline-flex items-center px-6 py-3 border border-transparent text-sm font-bold rounded-xl shadow-lg shadow-purple-600/20 text-white bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 focus:outline-none focus:ring-4 focus:ring-purple-300 transition-all duration-300 transform hover:scale-105 active:scale-95">
                         <Plus class="w-5 h-5 mr-2" />
                         Nuevo Inventario
@@ -58,7 +58,17 @@
             <!-- Tabs Navigation -->
             <div class="border-b border-slate-200 mb-8">
                 <nav class="-mb-px flex space-x-8">
-                    <button @click="activeTab = 'list'" :class="[
+                    <!-- Mis Bienes (solo ROL012) -->
+                    <button v-if="isEmployeeOnly && myEmployee" @click="activeTab = 'mis_bienes'" :class="[
+                        activeTab === 'mis_bienes'
+                            ? 'border-emerald-600 text-emerald-700'
+                            : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300',
+                        'whitespace-nowrap py-4 px-1 border-b-2 font-bold text-sm flex items-center gap-2 transition-all duration-200'
+                    ]">
+                        <UserCheck class="w-5 h-5" />
+                        Mis Bienes
+                    </button>
+                    <button v-if="!isEmployeeOnly && canViewTab('list')" @click="activeTab = 'list'" :class="[
                         activeTab === 'list'
                             ? 'border-slate-600 text-slate-700'
                             : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300',
@@ -67,7 +77,7 @@
                         <Box class="w-5 h-5" />
                         Inventario de Bienes
                     </button>
-                    <button @click="activeTab = 'movements'" :class="[
+                    <button v-if="!isEmployeeOnly && canViewTab('movements')" @click="activeTab = 'movements'" :class="[
                         activeTab === 'movements'
                             ? 'border-slate-600 text-slate-700'
                             : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300',
@@ -76,7 +86,7 @@
                         <ArrowRightLeft class="w-5 h-5" />
                         Movimientos
                     </button>
-                    <button @click="activeTab = 'barcodes'" :class="[
+                    <button v-if="!isEmployeeOnly && canViewTab('barcodes')" @click="activeTab = 'barcodes'" :class="[
                         activeTab === 'barcodes'
                             ? 'border-slate-600 text-slate-700'
                             : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300',
@@ -85,7 +95,7 @@
                         <Barcode class="w-5 h-5" />
                         Códigos de Barra
                     </button>
-                    <button @click="activeTab = 'reports'" :class="[
+                    <button v-if="!isEmployeeOnly && canViewTab('reports')" @click="activeTab = 'reports'" :class="[
                         activeTab === 'reports'
                             ? 'border-green-600 text-green-600'
                             : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300',
@@ -94,7 +104,7 @@
                         <FileDown class="w-5 h-5" />
                         Reportes
                     </button>
-                    <button @click="activeTab = 'patrimonio'" :class="[
+                    <button v-if="!isEmployeeOnly && canViewTab('patrimonio')" @click="activeTab = 'patrimonio'" :class="[
                         activeTab === 'patrimonio'
                             ? 'border-indigo-600 text-indigo-600'
                             : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300',
@@ -103,7 +113,7 @@
                         <DatabaseIcon class="w-5 h-5" />
                         Patrimonio SIGA
                     </button>
-                    <button @click="activeTab = 'inventarios'" :class="[
+                    <button v-if="!isEmployeeOnly && canViewTab('inventarios')" @click="activeTab = 'inventarios'" :class="[
                         activeTab === 'inventarios'
                             ? 'border-purple-600 text-purple-600'
                             : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300',
@@ -116,7 +126,7 @@
             </div>
 
             <!-- Stats Overview -->
-            <div v-if="activeTab === 'list'" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div v-if="!isEmployeeOnly && activeTab === 'list'" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                 <div
                     class="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm hover:shadow-md transition-all group relative overflow-hidden">
                     <div
@@ -179,7 +189,7 @@
             </div>
 
             <!-- List Content -->
-            <div v-if="activeTab === 'list'" class="space-y-6">
+            <div v-if="!isEmployeeOnly && activeTab === 'list'" class="space-y-6">
                 <!-- Filters (estilo Libro de Ocurrencias) -->
                 <div class="bg-white shadow-lg rounded-2xl border border-slate-200 p-4">
                     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -406,23 +416,124 @@
             <!-- Delete confirmation handled by SweetAlert2 -->
 
             <!-- Barcodes Tab -->
-            <BarcodeGenerator v-if="activeTab === 'barcodes'" />
+            <BarcodeGenerator v-if="!isEmployeeOnly && activeTab === 'barcodes'" />
 
             <!-- Movements Tab -->
-            <MovementsList v-if="activeTab === 'movements'" ref="movementsListRef" :states="states" :offices="offices"
-                :employees="employees" />
+            <MovementsList v-if="!isEmployeeOnly && activeTab === 'movements'" ref="movementsListRef" :states="states" :offices="offices"
+                :employees="employees" :movement-types="movementTypes" />
 
             <!-- Reports Tab -->
-            <div v-if="activeTab === 'reports'">
+            <div v-if="!isEmployeeOnly && activeTab === 'reports'">
                 <ReportsTab :employees="employees" />
             </div>
 
             <!-- Patrimonio SIGA Tab -->
-            <PatrimonioSigaTab v-if="activeTab === 'patrimonio'" />
+            <PatrimonioSigaTab v-if="!isEmployeeOnly && activeTab === 'patrimonio'" />
 
             <!-- Inventarios Tab -->
-            <InventariosTab v-if="activeTab === 'inventarios'" ref="inventariosTabRef"
+            <InventariosTab v-if="!isEmployeeOnly && activeTab === 'inventarios'" ref="inventariosTabRef"
                 :states="states" :offices="offices" :employees="employees" />
+
+            <!-- Mis Bienes Tab -->
+            <div v-if="activeTab === 'mis_bienes'" class="space-y-6">
+                <!-- Header -->
+                <div class="bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 rounded-2xl p-5 flex items-center gap-4">
+                    <div class="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center">
+                        <UserCheck class="w-6 h-6 text-emerald-700" />
+                    </div>
+                    <div>
+                        <h2 class="text-base font-bold text-emerald-900">Bienes asignados a {{ myEmployee?.nombre_completo }}</h2>
+                        <p class="text-sm text-emerald-700">{{ misBienesTotal }} bien{{ misBienesTotal !== 1 ? 'es' : '' }} registrado{{ misBienesTotal !== 1 ? 's' : '' }} a tu nombre</p>
+                    </div>
+                </div>
+
+                <!-- Search -->
+                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4">
+                    <div class="relative max-w-sm">
+                        <Search class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                        <input v-model="misBienesSearch" type="text" placeholder="Buscar por código, denominación..."
+                            class="w-full pl-9 pr-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all" />
+                    </div>
+                </div>
+
+                <!-- Table -->
+                <div class="bg-white rounded-2xl border border-slate-200 shadow-xl overflow-hidden">
+                    <!-- Loading -->
+                    <div v-if="misBienesLoading" class="p-12 text-center">
+                        <Loader2 class="w-8 h-8 mx-auto text-slate-400 animate-spin" />
+                        <p class="text-sm text-slate-400 mt-2">Cargando bienes...</p>
+                    </div>
+
+                    <!-- Empty -->
+                    <div v-else-if="misBienes.length === 0" class="px-6 py-16 text-center">
+                        <div class="flex flex-col items-center">
+                            <div class="bg-slate-100 rounded-full p-4 mb-4">
+                                <PackageOpen class="h-12 w-12 text-slate-400" />
+                            </div>
+                            <h3 class="text-lg font-bold text-slate-900 mb-1">Sin bienes asignados</h3>
+                            <p class="text-sm text-slate-500">No se encontraron bienes registrados a tu nombre.</p>
+                        </div>
+                    </div>
+
+                    <!-- Data -->
+                    <template v-else>
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-slate-100">
+                                <thead class="bg-slate-50">
+                                    <tr>
+                                        <th class="px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Código</th>
+                                        <th class="px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Denominación</th>
+                                        <th class="px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider hidden sm:table-cell">Categoría</th>
+                                        <th class="px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider hidden md:table-cell">Estado</th>
+                                        <th class="px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider hidden lg:table-cell">Ubicación</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-50">
+                                    <tr v-for="bien in misBienes" :key="bien.id" class="hover:bg-emerald-50/30 transition-colors">
+                                        <td class="px-4 py-3">
+                                            <span class="font-mono text-xs font-semibold text-slate-700 bg-slate-100 px-2 py-1 rounded">
+                                                {{ bien.codigo_patrimonio || bien.codigo_interno || '—' }}
+                                            </span>
+                                        </td>
+                                        <td class="px-4 py-3">
+                                            <p class="text-sm font-semibold text-slate-800">{{ bien.denominacion }}</p>
+                                            <p v-if="bien.numero_serie" class="text-xs text-slate-400 mt-0.5">S/N: {{ bien.numero_serie }}</p>
+                                        </td>
+                                        <td class="px-4 py-3 hidden sm:table-cell">
+                                            <span class="text-sm text-slate-600">{{ bien.category?.nombre || '—' }}</span>
+                                        </td>
+                                        <td class="px-4 py-3 hidden md:table-cell">
+                                            <span v-if="bien.latest_movement?.state" :class="[
+                                                'inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold',
+                                                getStateClass(bien.latest_movement.state.nombre)
+                                            ]">{{ bien.latest_movement.state.nombre }}</span>
+                                            <span v-else class="text-slate-400 text-sm">—</span>
+                                        </td>
+                                        <td class="px-4 py-3 hidden lg:table-cell">
+                                            <span class="text-sm text-slate-600">{{ bien.latest_movement?.office?.nombre || '—' }}</span>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Pagination -->
+                        <div v-if="misBienesLastPage > 1" class="flex items-center justify-between px-4 py-3 border-t border-slate-100">
+                            <p class="text-sm text-slate-500">Página {{ misBienesPage }} de {{ misBienesLastPage }}</p>
+                            <div class="flex gap-2">
+                                <button @click="fetchMisBienes(misBienesPage - 1)" :disabled="misBienesPage <= 1"
+                                    class="px-3 py-1.5 text-sm rounded-lg border border-slate-200 disabled:opacity-40 hover:bg-slate-50 transition-colors">
+                                    <ChevronLeft class="w-4 h-4" />
+                                </button>
+                                <button @click="fetchMisBienes(misBienesPage + 1)" :disabled="misBienesPage >= misBienesLastPage"
+                                    class="px-3 py-1.5 text-sm rounded-lg border border-slate-200 disabled:opacity-40 hover:bg-slate-50 transition-colors">
+                                    <ChevronRight class="w-4 h-4" />
+                                </button>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </div>
         </div>
     </div>
 </template>
@@ -436,7 +547,8 @@ export default {
 </script>
 
 <script setup>
-import { ref, watch, onMounted } from 'vue';
+import { ref, computed, watch, onMounted } from 'vue';
+import { usePage } from '@inertiajs/vue3';
 import {
     Plus,
     Search,
@@ -460,6 +572,7 @@ import {
     X,
     Database as DatabaseIcon,
     ClipboardList,
+    UserCheck,
 } from 'lucide-vue-next';
 import axios from 'axios';
 import Swal from 'sweetalert2';
@@ -470,19 +583,27 @@ import BarcodeScannerModal from '@/Components/Assets/BarcodeScannerModal.vue';
 import ReportsTab from '@/Components/Assets/ReportsTab.vue';
 import PatrimonioSigaTab from '@/Components/Assets/PatrimonioSigaTab.vue';
 import InventariosTab from '@/Components/Assets/InventariosTab.vue';
+import { useTabPermission } from '@/composables/useTabPermission';
 
 const props = defineProps({
-    categories: { type: Array, default: () => [] },
-    brands: { type: Array, default: () => [] },
-    colors: { type: Array, default: () => [] },
-    states: { type: Array, default: () => [] },
-    origins: { type: Array, default: () => [] },
-    areas: { type: Array, default: () => [] },
-    offices: { type: Array, default: () => [] },
-    employees: { type: Array, default: () => [] },
+    myEmployee:    { type: Object, default: null },
+    categories:    { type: Array, default: () => [] },
+    brands:        { type: Array, default: () => [] },
+    colors:        { type: Array, default: () => [] },
+    states:        { type: Array, default: () => [] },
+    origins:       { type: Array, default: () => [] },
+    areas:         { type: Array, default: () => [] },
+    offices:       { type: Array, default: () => [] },
+    employees:     { type: Array, default: () => [] },
+    movementTypes: { type: Array, default: () => [] },
 });
 
-const activeTab = ref('list');
+const page = usePage();
+const userRole = computed(() => page.props.auth?.user?.rol_id);
+const isEmployeeOnly = computed(() => userRole.value === 'ROL012');
+
+const { canViewTab, firstAllowedTab } = useTabPermission('patrimonio', ['list', 'movements', 'barcodes', 'reports', 'patrimonio', 'inventarios']);
+const activeTab = ref(props.myEmployee && isEmployeeOnly.value ? 'mis_bienes' : firstAllowedTab.value);
 const showCreateModal = ref(false);
 const showEditModal = ref(false);
 const editingAsset = ref(null);
@@ -501,6 +622,7 @@ const openNewInventario = () => {
         inventariosTabRef.value.openCreateModal();
     }
 };
+
 
 const handleBarcodeFound = (code) => {
     showBarcodeScanner.value = false;
@@ -658,8 +780,46 @@ const handleAssetCreated = () => {
     });
 };
 
+// ===== MIS BIENES =====
+const misBienes = ref([]);
+const misBienesLoading = ref(false);
+const misBienesSearch = ref('');
+const misBienesPage = ref(1);
+const misBienesLastPage = ref(1);
+const misBienesTotal = ref(0);
+
+const fetchMisBienes = async (page = 1) => {
+    misBienesLoading.value = true;
+    try {
+        const response = await axios.get('/assets/mis-bienes', {
+            params: {
+                search: misBienesSearch.value || undefined,
+                per_page: 50,
+                page,
+            },
+        });
+        misBienes.value = response.data.data;
+        misBienesPage.value = response.data.current_page;
+        misBienesLastPage.value = response.data.last_page;
+        misBienesTotal.value = response.data.total;
+    } catch {
+        misBienes.value = [];
+    } finally {
+        misBienesLoading.value = false;
+    }
+};
+
+let misBienesTimeout = null;
+watch(misBienesSearch, () => {
+    clearTimeout(misBienesTimeout);
+    misBienesTimeout = setTimeout(() => fetchMisBienes(1), 400);
+});
+
 onMounted(() => {
-    fetchStats();
-    fetchListAssets(1);
+    if (props.myEmployee) fetchMisBienes(1);
+    if (!isEmployeeOnly.value) {
+        fetchStats();
+        fetchListAssets(1);
+    }
 });
 </script>

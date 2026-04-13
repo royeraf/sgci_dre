@@ -14,6 +14,7 @@ class AssetMovement extends Model
     protected $fillable = [
         'asset_id',
         'tipo',
+        'tipo_movimiento_id',
         'fecha',
         'responsable_id',
         'estado_id',
@@ -29,6 +30,14 @@ class AssetMovement extends Model
 
     // ===== RELACIONES =====
     
+    /**
+     * Tipo de movimiento del catálogo
+     */
+    public function movementType(): BelongsTo
+    {
+        return $this->belongsTo(AssetMovementType::class, 'tipo_movimiento_id');
+    }
+
     /**
      * Activo al que pertenece el movimiento
      */

@@ -7,8 +7,8 @@
                 <p class="text-sm text-slate-500 mt-1">Gestion y aprobacion de solicitudes de papeletas</p>
             </div>
 
-            <!-- Stats -->
-            <div class="grid grid-cols-2 sm:grid-cols-5 gap-3 sm:gap-4 mb-6">
+            <!-- Stats (admin only) -->
+            <div v-if="isAdminRole" class="grid grid-cols-2 sm:grid-cols-5 gap-3 sm:gap-4 mb-6">
                 <div class="bg-white rounded-xl p-4 shadow-sm border border-slate-100">
                     <p class="text-xs font-semibold text-slate-500 uppercase">Total</p>
                     <p class="text-2xl font-black text-slate-900">{{ stats.total }}</p>
@@ -37,7 +37,12 @@
             <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
                 <div class="border-b border-slate-100">
                     <nav class="flex">
-                        <button @click="activeTab = 'pendientes'"
+                        <button v-if="myEmployee" @click="activeTab = 'mis_papeletas'"
+                            :class="[activeTab === 'mis_papeletas' ? 'border-indigo-600 text-indigo-600 bg-indigo-50/50' : 'border-transparent text-slate-500 hover:text-slate-700', 'flex-1 sm:flex-none px-6 py-4 border-b-2 font-bold text-sm transition-all']">
+                            <ClipboardList class="h-4 w-4 inline-block mr-1.5 -mt-0.5" />
+                            Mis Papeletas
+                        </button>
+                        <button v-if="isAdminRole && canViewTab('pendientes')" @click="activeTab = 'pendientes'"
                             :class="[activeTab === 'pendientes' ? 'border-blue-600 text-blue-600 bg-blue-50/50' : 'border-transparent text-slate-500 hover:text-slate-700', 'flex-1 sm:flex-none px-6 py-4 border-b-2 font-bold text-sm transition-all']">
                             <Clock class="h-4 w-4 inline-block mr-1.5 -mt-0.5" />
                             Pendientes
@@ -45,7 +50,7 @@
                                 {{ stats.pendientes }}
                             </span>
                         </button>
-                        <button @click="activeTab = 'pendientes_rrhh'"
+                        <button v-if="isAdminRole && canViewTab('pendientes_rrhh')" @click="activeTab = 'pendientes_rrhh'"
                             :class="[activeTab === 'pendientes_rrhh' ? 'border-blue-600 text-blue-600 bg-blue-50/50' : 'border-transparent text-slate-500 hover:text-slate-700', 'flex-1 sm:flex-none px-6 py-4 border-b-2 font-bold text-sm transition-all']">
                             <Clock class="h-4 w-4 inline-block mr-1.5 -mt-0.5" />
                             Pendientes RRHH
@@ -53,17 +58,90 @@
                                 {{ stats.pendientes_rrhh }}
                             </span>
                         </button>
-                        <button @click="activeTab = 'historial'"
+                        <button v-if="isAdminRole && canViewTab('historial')" @click="activeTab = 'historial'"
                             :class="[activeTab === 'historial' ? 'border-blue-600 text-blue-600 bg-blue-50/50' : 'border-transparent text-slate-500 hover:text-slate-700', 'flex-1 sm:flex-none px-6 py-4 border-b-2 font-bold text-sm transition-all']">
                             <History class="h-4 w-4 inline-block mr-1.5 -mt-0.5" />
                             Historial
                         </button>
-                        <button v-if="userRole === 'ROL009' || userRole === 'ROL001'" @click="activeTab = 'reportes'"
+                        <button v-if="(userRole === 'ROL009' || userRole === 'ROL001') && canViewTab('reportes')" @click="activeTab = 'reportes'"
                             :class="[activeTab === 'reportes' ? 'border-blue-600 text-blue-600 bg-blue-50/50' : 'border-transparent text-slate-500 hover:text-slate-700', 'flex-1 sm:flex-none px-6 py-4 border-b-2 font-bold text-sm transition-all']">
                             <FileBarChart class="h-4 w-4 inline-block mr-1.5 -mt-0.5" />
                             Reportes
                         </button>
                     </nav>
+                </div>
+
+                <!-- Tab: Mis Papeletas -->
+                <div v-if="activeTab === 'mis_papeletas'" class="p-4 sm:p-6">
+                    <!-- Mini stats -->
+                    <div class="grid grid-cols-3 gap-3 mb-5">
+                        <div class="bg-slate-50 rounded-xl p-3 text-center">
+                            <p class="text-xs font-semibold text-slate-500 uppercase">Total</p>
+                            <p class="text-xl font-black text-slate-800">{{ misPapeletas.length }}</p>
+                        </div>
+                        <div class="bg-green-50 rounded-xl p-3 text-center">
+                            <p class="text-xs font-semibold text-green-600 uppercase">Aprobadas</p>
+                            <p class="text-xl font-black text-green-700">{{ misPapeletas.filter(p => p.estado === 'APROBADO').length }}</p>
+                        </div>
+                        <div class="bg-red-50 rounded-xl p-3 text-center">
+                            <p class="text-xs font-semibold text-red-600 uppercase">Rechazadas</p>
+                            <p class="text-xl font-black text-red-700">{{ misPapeletas.filter(p => p.estado === 'DESAPROBADO').length }}</p>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="font-bold text-slate-700">Mis solicitudes</h3>
+                        <button @click="openCreateModal"
+                            class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 shadow-md shadow-indigo-500/20 transition-all">
+                            <Plus class="h-4 w-4" />
+                            Nueva Papeleta
+                        </button>
+                    </div>
+
+                    <div v-if="misPapeletasLoading" class="text-center py-10 text-slate-400">
+                        <Loader2 class="h-7 w-7 animate-spin mx-auto mb-2" />
+                    </div>
+
+                    <div v-else-if="misPapeletas.length === 0" class="text-center py-12 text-slate-400">
+                        <ClipboardList class="h-12 w-12 mx-auto mb-3 opacity-40" />
+                        <p class="font-semibold">No tiene papeletas registradas</p>
+                        <p class="text-sm mt-1">Cree una nueva papeleta para comenzar</p>
+                    </div>
+
+                    <div v-else class="overflow-x-auto">
+                        <table class="w-full text-sm">
+                            <thead>
+                                <tr class="bg-slate-50 border-b border-slate-100">
+                                    <th class="text-left px-4 py-3 font-semibold text-slate-600">N°</th>
+                                    <th class="text-left px-4 py-3 font-semibold text-slate-600">Fecha Salida</th>
+                                    <th class="text-left px-4 py-3 font-semibold text-slate-600 hidden sm:table-cell">Motivo</th>
+                                    <th class="text-left px-4 py-3 font-semibold text-slate-600 hidden md:table-cell">Horario</th>
+                                    <th class="text-center px-4 py-3 font-semibold text-slate-600">Estado</th>
+                                    <th class="text-center px-4 py-3 font-semibold text-slate-600">PDF</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-50">
+                                <tr v-for="p in misPapeletas" :key="p.id" class="hover:bg-slate-50/60 transition-colors">
+                                    <td class="px-4 py-3 font-mono font-bold text-indigo-600">{{ p.numero_papeleta }}</td>
+                                    <td class="px-4 py-3 text-slate-700">{{ formatDate(p.fecha_salida) }}</td>
+                                    <td class="px-4 py-3 text-slate-500 hidden sm:table-cell">{{ p.reason?.nombre ?? '-' }}</td>
+                                    <td class="px-4 py-3 text-slate-500 hidden md:table-cell">
+                                        {{ p.hora_salida_estimada }} - {{ p.hora_retorno_estimada || '--:--' }}
+                                    </td>
+                                    <td class="px-4 py-3 text-center">
+                                        <span :class="estadoBadgeClass(p.estado)" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold">
+                                            {{ p.estado === 'PENDIENTE' ? 'Pendiente (Jefe)' : p.estado === 'PENDIENTE_RRHH' ? 'Pendiente (RRHH)' : p.estado }}
+                                        </span>
+                                    </td>
+                                    <td class="px-4 py-3 text-center">
+                                        <a :href="`/papeletas/${p.id}/pdf`" target="_blank" class="text-slate-400 hover:text-indigo-600 transition-colors">
+                                            <FileText class="h-4 w-4 inline-block" />
+                                        </a>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
 
                 <!-- Tab: Pendientes -->
@@ -283,6 +361,85 @@
             </div>
         </div>
 
+        <!-- Create Papeleta Modal -->
+        <Teleport to="body">
+            <div v-if="showCreateModal" class="fixed inset-0 z-50 flex items-center justify-center p-4">
+                <div class="fixed inset-0 bg-black/50 backdrop-blur-sm" @click="showCreateModal = false"></div>
+                <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden">
+                    <div class="bg-gradient-to-r from-indigo-600 to-blue-600 px-6 py-4">
+                        <h3 class="text-lg font-bold text-white">Nueva Solicitud de Papeleta</h3>
+                        <p class="text-indigo-100 text-sm mt-0.5">{{ myEmployee?.person?.apellidos }}, {{ myEmployee?.person?.nombres }}</p>
+                    </div>
+                    <form @submit.prevent="handleStorePapeleta" class="p-6 space-y-4">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div class="sm:col-span-2">
+                                <label class="block text-sm font-bold text-slate-700 mb-1.5">Motivo de salida <span class="text-red-500">*</span></label>
+                                <select v-model="createForm.entry_exit_reason_id"
+                                    class="w-full px-3 py-2.5 border rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white outline-none"
+                                    :class="createErrors.entry_exit_reason_id ? 'border-red-400' : 'border-slate-200'">
+                                    <option value="">Seleccione motivo</option>
+                                    <option v-for="r in reasons" :key="r.id" :value="r.id">{{ r.nombre }}</option>
+                                </select>
+                                <p v-if="createErrors.entry_exit_reason_id" class="mt-1 text-xs text-red-600">{{ createErrors.entry_exit_reason_id[0] }}</p>
+                            </div>
+                            <div class="sm:col-span-2">
+                                <label class="block text-sm font-bold text-slate-700 mb-1.5">Justificación <span class="text-red-500">*</span></label>
+                                <textarea v-model="createForm.motivo" rows="3" maxlength="500"
+                                    class="w-full px-3 py-2.5 border rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none resize-none"
+                                    :class="createErrors.motivo ? 'border-red-400' : 'border-slate-200'"
+                                    placeholder="Describa brevemente el motivo de la salida..."></textarea>
+                                <p v-if="createErrors.motivo" class="mt-1 text-xs text-red-600">{{ createErrors.motivo[0] }}</p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-bold text-slate-700 mb-1.5">Fecha de salida <span class="text-red-500">*</span></label>
+                                <input type="date" v-model="createForm.fecha_salida"
+                                    class="w-full px-3 py-2.5 border rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+                                    :class="createErrors.fecha_salida ? 'border-red-400' : 'border-slate-200'" />
+                                <p v-if="createErrors.fecha_salida" class="mt-1 text-xs text-red-600">{{ createErrors.fecha_salida[0] }}</p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-bold text-slate-700 mb-1.5">Turno <span class="text-red-500">*</span></label>
+                                <select v-model="createForm.turno"
+                                    class="w-full px-3 py-2.5 border rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white outline-none"
+                                    :class="createErrors.turno ? 'border-red-400' : 'border-slate-200'">
+                                    <option value="">Seleccione turno</option>
+                                    <option value="Manana">Mañana</option>
+                                    <option value="Tarde">Tarde</option>
+                                    <option value="Noche">Noche</option>
+                                </select>
+                                <p v-if="createErrors.turno" class="mt-1 text-xs text-red-600">{{ createErrors.turno[0] }}</p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-bold text-slate-700 mb-1.5">Hora de salida <span class="text-red-500">*</span></label>
+                                <input type="time" v-model="createForm.hora_salida_estimada"
+                                    class="w-full px-3 py-2.5 border rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+                                    :class="createErrors.hora_salida_estimada ? 'border-red-400' : 'border-slate-200'" />
+                                <p v-if="createErrors.hora_salida_estimada" class="mt-1 text-xs text-red-600">{{ createErrors.hora_salida_estimada[0] }}</p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-bold text-slate-700 mb-1.5">Hora de retorno <span class="text-slate-400 font-normal">(opcional)</span></label>
+                                <input type="time" v-model="createForm.hora_retorno_estimada"
+                                    class="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none" />
+                                <p v-if="createErrors.hora_retorno_estimada" class="mt-1 text-xs text-red-600">{{ createErrors.hora_retorno_estimada[0] }}</p>
+                            </div>
+                        </div>
+
+                        <div class="flex justify-end gap-3 pt-2 border-t border-slate-100">
+                            <button type="button" @click="showCreateModal = false"
+                                class="px-5 py-2.5 rounded-xl text-sm font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors">
+                                Cancelar
+                            </button>
+                            <button type="submit" :disabled="createSubmitting"
+                                class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 disabled:opacity-50 transition-all shadow-md">
+                                <Loader2 v-if="createSubmitting" class="h-4 w-4 animate-spin" />
+                                {{ createSubmitting ? 'Enviando...' : 'Enviar Solicitud' }}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </Teleport>
+
         <!-- Approve Modal -->
         <Teleport to="body">
             <div v-if="showApproveModal" class="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -351,21 +508,87 @@
 
 <script setup>
 import { ref, reactive, computed, onMounted, watch } from 'vue';
+import { useTabPermission } from '@/composables/useTabPermission';
 import MainLayout from '@/Layouts/MainLayout.vue';
 import { usePapeletaList } from '@/Composables/usePapeletaList';
 import { usePapeletaApproval } from '@/Composables/usePapeletaApproval';
-import { Clock, History, FileBarChart, FileText, CheckCircle, XCircle, Loader2 } from 'lucide-vue-next';
+import { Clock, History, FileBarChart, FileText, CheckCircle, XCircle, Loader2, Plus, ClipboardList } from 'lucide-vue-next';
+import axios from 'axios';
 
 const props = defineProps({
     userRole: String,
+    myEmployee: { type: Object, default: null },
+    reasons: { type: Array, default: () => [] },
 });
 
-const activeTab = ref('pendientes');
+const isAdminRole = computed(() => ['ROL001', 'ROL009', 'ROL011'].includes(props.userRole));
+
+const { canViewTab, firstAllowedTab } = useTabPermission('papeletas', ['pendientes', 'pendientes_rrhh', 'historial', 'reportes']);
+
+// First tab: if employee → 'mis_papeletas', else use permission-based first tab
+const activeTab = ref(props.myEmployee ? 'mis_papeletas' : firstAllowedTab.value);
 const showApproveModal = ref(false);
 const showRejectModal = ref(false);
 const selectedPapeleta = ref(null);
 const modalComentario = ref('');
 const rejectError = ref('');
+
+// ===== MIS PAPELETAS =====
+const misPapeletas = ref([]);
+const misPapeletasLoading = ref(false);
+const showCreateModal = ref(false);
+const createForm = reactive({
+    entry_exit_reason_id: '',
+    motivo: '',
+    fecha_salida: '',
+    hora_salida_estimada: '',
+    hora_retorno_estimada: '',
+    turno: '',
+});
+const createErrors = ref({});
+const createSubmitting = ref(false);
+
+const fetchMisPapeletas = async () => {
+    misPapeletasLoading.value = true;
+    try {
+        const res = await axios.get('/papeletas/api/mis');
+        misPapeletas.value = res.data;
+    } finally {
+        misPapeletasLoading.value = false;
+    }
+};
+
+const openCreateModal = () => {
+    Object.assign(createForm, {
+        entry_exit_reason_id: '',
+        motivo: '',
+        fecha_salida: '',
+        hora_salida_estimada: '',
+        hora_retorno_estimada: '',
+        turno: '',
+    });
+    createErrors.value = {};
+    showCreateModal.value = true;
+};
+
+const handleStorePapeleta = async () => {
+    createSubmitting.value = true;
+    createErrors.value = {};
+    try {
+        const res = await axios.post('/papeletas/solicitar', createForm);
+        misPapeletas.value.unshift(res.data);
+        showCreateModal.value = false;
+        window.Swal?.fire({ icon: 'success', title: `Papeleta #${res.data.numero_papeleta} creada`, toast: true, position: 'top-end', showConfirmButton: false, timer: 3500 });
+    } catch (err) {
+        if (err.response?.data?.errors) {
+            createErrors.value = err.response.data.errors;
+        } else {
+            window.Swal?.fire({ icon: 'error', title: err.response?.data?.message || 'Error al crear la papeleta', toast: true, position: 'top-end', showConfirmButton: false, timer: 3500 });
+        }
+    } finally {
+        createSubmitting.value = false;
+    }
+};
 
 const { pendientes, historial, stats, loading, filtros, fetchPendientes, fetchHistorial, fetchStats } = usePapeletaList();
 const { processing: approvalProcessing, aprobar, desaprobar } = usePapeletaApproval();
@@ -464,11 +687,17 @@ watch(activeTab, (newTab) => {
     if (newTab === 'historial') {
         fetchHistorial();
     }
+    if (newTab === 'mis_papeletas') {
+        fetchMisPapeletas();
+    }
 });
 
 onMounted(() => {
-    fetchPendientes();
-    fetchHistorial();
-    fetchStats();
+    if (props.myEmployee) fetchMisPapeletas();
+    if (isAdminRole.value) {
+        fetchPendientes();
+        fetchHistorial();
+        fetchStats();
+    }
 });
 </script>

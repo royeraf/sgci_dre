@@ -50,27 +50,27 @@
             <!-- Tabs Navigation -->
             <div class="border-b border-slate-200 mb-8">
                 <nav class="-mb-px flex space-x-8 overflow-x-auto">
-                    <button @click="activeTab = 'commissions'"
+                    <button v-if="canViewTab('commissions')" @click="activeTab = 'commissions'"
                         :class="[activeTab === 'commissions' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300', 'whitespace-nowrap py-4 px-1 border-b-2 font-bold text-sm flex items-center gap-2 transition-all duration-200']">
                         <MapPin class="w-5 h-5" />
                         Comisiones
                     </button>
-                    <button @click="activeTab = 'inventory'"
+                    <button v-if="canViewTab('inventory')" @click="activeTab = 'inventory'"
                         :class="[activeTab === 'inventory' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300', 'whitespace-nowrap py-4 px-1 border-b-2 font-bold text-sm flex items-center gap-2 transition-all duration-200']">
                         <Car class="w-5 h-5" />
                         Inventario
                     </button>
-                    <button @click="activeTab = 'maintenance'"
+                    <button v-if="canViewTab('maintenance')" @click="activeTab = 'maintenance'"
                         :class="[activeTab === 'maintenance' ? 'border-emerald-600 text-emerald-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300', 'whitespace-nowrap py-4 px-1 border-b-2 font-bold text-sm flex items-center gap-2 transition-all duration-200']">
                         <Wrench class="w-5 h-5" />
                         Gastos
                     </button>
-                    <button @click="activeTab = 'handover'"
+                    <button v-if="canViewTab('handover')" @click="activeTab = 'handover'"
                         :class="[activeTab === 'handover' ? 'border-amber-600 text-amber-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300', 'whitespace-nowrap py-4 px-1 border-b-2 font-bold text-sm flex items-center gap-2 transition-all duration-200']">
                         <FileText class="w-5 h-5" />
                         Actas de Entrega
                     </button>
-                    <button @click="activeTab = 'service'"
+                    <button v-if="canViewTab('service')" @click="activeTab = 'service'"
                         :class="[activeTab === 'service' ? 'border-pink-600 text-pink-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300', 'whitespace-nowrap py-4 px-1 border-b-2 font-bold text-sm flex items-center gap-2 transition-all duration-200']">
                         <Settings class="w-5 h-5" />
                         Requerimientos
@@ -344,6 +344,7 @@ export default { layout: MainLayout }
 
 <script setup>
 import { ref, computed, onMounted } from 'vue';
+import { useTabPermission } from '@/composables/useTabPermission';
 import { ArrowLeft, Plus, FilePlus, MapPin, Car, Wrench, FileText, Settings, Search } from 'lucide-vue-next';
 import VehicleModal from '@/Components/Vehicles/Inventory/VehicleModal.vue';
 import CommissionModal from '@/Components/Vehicles/Commissions/CommissionModal.vue';
@@ -352,7 +353,8 @@ import HandoverModal from '@/Components/Vehicles/Handovers/HandoverModal.vue';
 import ServiceReqModal from '@/Components/Vehicles/ServiceRequirements/ServiceReqModal.vue';
 import axios from 'axios';
 
-const activeTab = ref('commissions');
+const { canViewTab, firstAllowedTab } = useTabPermission('vehiculos', ['commissions', 'inventory', 'maintenance', 'handover', 'service']);
+const activeTab = ref(firstAllowedTab.value);
 
 // Data
 const inventory = ref([]);

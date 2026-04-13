@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Employee;
+use App\Models\EntryExitReason;
 use App\Models\PapeletaRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -57,14 +58,84 @@ class PapeletaAdminController extends Controller
     }
 
     /**
-     * Show admin papeletas page.
+     * Show papeletas page.
      */
     public function index()
     {
         $user = Auth::user();
+        $employee = $user->employee?->load('person', 'direction', 'office', 'position');
+
         return Inertia::render('Papeletas/Index', [
-            'userRole' => $user->rol_id,
+            'userRole'   => $user->rol_id,
+            'myEmployee' => $employee,
+            'reasons'    => EntryExitReason::active()->get(['id', 'nombre']),
         ]);
+    }
+
+    /**
+     * Get current user's own papeletas (API).
+     */
+    public function getMisPapeletas()
+    {
+        $user = Auth::user();
+        $employee = $user->employee;
+
+        if (!$employee) {
+            return response()->json([]);
+        }
+
+        $papeletas = PapeletaRequest::where('employee_id', $employee->id)
+            ->with(['reason', 'aprobadorJefe.person', 'aprobadorRrhh.person'])
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return response()->json($papeletas);
+    }
+
+    /**
+     * Create a papeleta for the current user (self-service).
+     */
+    public function storeMiPapeleta(Request $request)
+    {
+        $user = Auth::user();
+        $employee = $user->employee;
+
+        if (!$employee) {
+            return response()->json(['message' => 'No tiene un empleado asociado a su cuenta.'], 422);
+        }
+
+        $validated = $request->validate([
+            'entry_exit_reason_id'    => 'required|exists:entry_exit_reasons,id',
+            'motivo'                  => 'required|string|max:500',
+            'fecha_salida'            => 'required|date|after_or_equal:today',
+            'hora_salida_estimada'    => 'required|date_format:H:i',
+            'hora_retorno_estimada'   => 'nullable|date_format:H:i|after:hora_salida_estimada',
+            'turno'                   => 'required|in:Manana,Tarde,Noche',
+        ], [
+            'entry_exit_reason_id.required' => 'Seleccione un motivo de salida.',
+            'motivo.required'               => 'La justificación es obligatoria.',
+            'fecha_salida.required'         => 'La fecha de salida es obligatoria.',
+            'fecha_salida.after_or_equal'   => 'La fecha no puede ser anterior a hoy.',
+            'hora_salida_estimada.required' => 'La hora de salida es obligatoria.',
+            'hora_retorno_estimada.after'   => 'La hora de retorno debe ser posterior a la salida.',
+            'turno.required'                => 'Seleccione un turno.',
+        ]);
+
+        $papeleta = PapeletaRequest::create([
+            'numero_papeleta'      => PapeletaRequest::generateNumeroPapeleta(),
+            'employee_id'          => $employee->id,
+            'entry_exit_reason_id' => $validated['entry_exit_reason_id'],
+            'motivo'               => $validated['motivo'],
+            'fecha_salida'         => $validated['fecha_salida'],
+            'hora_salida_estimada' => $validated['hora_salida_estimada'],
+            'hora_retorno_estimada'=> $validated['hora_retorno_estimada'] ?? null,
+            'turno'                => $validated['turno'],
+        ]);
+
+        return response()->json(
+            $papeleta->load(['reason', 'aprobadorJefe.person', 'aprobadorRrhh.person']),
+            201
+        );
     }
 
     /**
