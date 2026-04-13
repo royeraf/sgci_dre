@@ -9,14 +9,16 @@ return new class extends Migration
 {
     public function up(): void
     {
-        // Step 1: Add employee_id column
-        Schema::table('entry_exits', function (Blueprint $table) {
-            $table->uuid('employee_id')->nullable()->after('id');
-            $table->foreign('employee_id')
-                  ->references('id')
-                  ->on('employees')
-                  ->onDelete('set null');
-        });
+        // Step 1: Add employee_id column (idempotent)
+        if (!Schema::hasColumn('entry_exits', 'employee_id')) {
+            Schema::table('entry_exits', function (Blueprint $table) {
+                $table->uuid('employee_id')->nullable()->after('id');
+                $table->foreign('employee_id')
+                      ->references('id')
+                      ->on('employees')
+                      ->onDelete('set null');
+            });
+        }
 
         // Step 2: Backfill employee_id from existing data
 
@@ -57,17 +59,20 @@ return new class extends Migration
         }
 
         // Step 3: Drop deprecated columns
-        Schema::table('entry_exits', function (Blueprint $table) {
-            // Try to drop FK if it exists (may not exist in all environments)
-            try {
+        try {
+            Schema::table('entry_exits', function (Blueprint $table) {
                 $table->dropForeign(['staff_id']);
-            } catch (\Exception $e) {
-                // FK doesn't exist, continue
-            }
-        });
+            });
+        } catch (\Exception $e) {
+            // FK doesn't exist in this environment, continue
+        }
 
         Schema::table('entry_exits', function (Blueprint $table) {
-            $table->dropColumn(['staff_id', 'dni', 'nombre_personal', 'regimen']);
+            $columnsToCheck = ['staff_id', 'dni', 'nombre_personal', 'regimen'];
+            $existing = array_filter($columnsToCheck, fn($col) => Schema::hasColumn('entry_exits', $col));
+            if (!empty($existing)) {
+                $table->dropColumn(array_values($existing));
+            }
         });
     }
 
