@@ -126,11 +126,12 @@ class UserController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
+            'person_id' => ['nullable', 'string', 'exists:people,id'],
             'dni' => ['required', 'string', 'size:8', 'unique:users,dni'],
             'name' => ['required', 'string', 'max:255'],
             'apellidos' => ['nullable', 'string', 'max:100'],
             'titulo' => ['nullable', 'string', 'max:20'],
-            'email' => ['required', 'email', 'unique:users,email'],
+            'email' => ['nullable', 'email', 'unique:users,email'],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
             'cargo' => ['nullable', 'string', 'max:100'],
             'area' => ['nullable', 'string', 'max:100'],
@@ -145,7 +146,6 @@ class UserController extends Controller
             'dni.size' => 'El DNI debe tener 8 dígitos',
             'dni.unique' => 'Este DNI ya está registrado',
             'name.required' => 'El nombre es obligatorio',
-            'email.required' => 'El email es obligatorio',
             'email.email' => 'El email debe ser válido',
             'email.unique' => 'Este email ya está registrado',
             'password.required' => 'La contraseña es obligatoria',
@@ -155,9 +155,11 @@ class UserController extends Controller
             'rol_id.exists' => 'El rol seleccionado no existe',
         ]);
 
-        // Generate unique username from email
-        $username = explode('@', $validated['email'])[0];
-        $baseUsername = $username;
+        // Generate unique username: use email prefix if available, otherwise use DNI
+        $baseUsername = !empty($validated['email'])
+            ? explode('@', $validated['email'])[0]
+            : $validated['dni'];
+        $username = $baseUsername;
         $counter = 1;
         while (User::where('username', $username)->exists()) {
             $username = $baseUsername . $counter;
@@ -165,6 +167,7 @@ class UserController extends Controller
         }
 
         $user = User::create([
+            'person_id' => $validated['person_id'] ?? null,
             'dni' => $validated['dni'],
             'username' => $username,
             'name' => $validated['name'],
@@ -199,7 +202,7 @@ class UserController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'apellidos' => ['nullable', 'string', 'max:100'],
             'titulo' => ['nullable', 'string', 'max:20'],
-            'email' => ['required', 'email', Rule::unique('users')->ignore($user->id)],
+            'email' => ['nullable', 'email', Rule::unique('users')->ignore($user->id)],
             'cargo' => ['nullable', 'string', 'max:100'],
             'area' => ['nullable', 'string', 'max:100'],
             'telefono' => ['nullable', 'string', 'max:20'],
@@ -213,7 +216,6 @@ class UserController extends Controller
             'dni.size' => 'El DNI debe tener 8 dígitos',
             'dni.unique' => 'Este DNI ya está registrado',
             'name.required' => 'El nombre es obligatorio',
-            'email.required' => 'El email es obligatorio',
             'email.email' => 'El email debe ser válido',
             'email.unique' => 'Este email ya está registrado',
             'rol_id.required' => 'El rol es obligatorio',
