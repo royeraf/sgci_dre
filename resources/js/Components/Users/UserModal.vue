@@ -52,9 +52,42 @@
                         </p>
                     </div>
 
+                    <!-- Datos del personal vinculado (solo lectura) -->
+                    <div v-if="hasLinkedPerson && linkedPersonData"
+                        class="bg-emerald-50 border border-emerald-200 rounded-xl p-4 mb-2">
+                        <div class="flex items-center gap-2 mb-3">
+                            <UserCheck class="w-4 h-4 text-emerald-600 flex-shrink-0" />
+                            <span class="text-sm font-bold text-emerald-700">Personal Vinculado (RRHH)</span>
+                        </div>
+                        <div class="grid grid-cols-2 gap-x-6 gap-y-1 text-sm">
+                            <div>
+                                <span class="text-emerald-600 font-medium">DNI:</span>
+                                <span class="ml-1 text-slate-800 font-semibold">{{ linkedPersonData.dni }}</span>
+                            </div>
+                            <div>
+                                <span class="text-emerald-600 font-medium">Teléfono:</span>
+                                <span class="ml-1 text-slate-700">{{ linkedPersonData.telefono || '—' }}</span>
+                            </div>
+                            <div class="col-span-2">
+                                <span class="text-emerald-600 font-medium">Nombre:</span>
+                                <span class="ml-1 text-slate-800 font-semibold">
+                                    {{ linkedPersonData.nombres }} {{ linkedPersonData.apellidos }}
+                                </span>
+                            </div>
+                            <div class="col-span-2">
+                                <span class="text-emerald-600 font-medium">Email:</span>
+                                <span class="ml-1 text-slate-700">{{ linkedPersonData.email || '—' }}</span>
+                            </div>
+                        </div>
+                        <p class="text-xs text-emerald-600 mt-2">
+                            Datos personales del registro de RRHH — no se duplican en el sistema de usuarios.
+                            Para editar nombre, DNI, email o teléfono, hazlo desde el módulo de Recursos Humanos.
+                        </p>
+                    </div>
+
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <!-- DNI -->
-                        <div>
+                        <!-- DNI (solo sin persona vinculada) -->
+                        <div v-if="!hasLinkedPerson">
                             <label class="block text-sm font-bold text-slate-700 mb-2">
                                 DNI <span class="text-red-500">*</span>
                             </label>
@@ -74,8 +107,8 @@
                                 class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors" />
                         </div>
 
-                        <!-- Nombre -->
-                        <div>
+                        <!-- Nombre (solo sin persona vinculada) -->
+                        <div v-if="!hasLinkedPerson">
                             <label class="block text-sm font-bold text-slate-700 mb-2">
                                 Nombre <span class="text-red-500">*</span>
                             </label>
@@ -86,8 +119,8 @@
                             <p v-if="formErrors.name" class="mt-1 text-sm text-red-600">{{ formErrors.name }}</p>
                         </div>
 
-                        <!-- Apellidos -->
-                        <div>
+                        <!-- Apellidos (solo sin persona vinculada) -->
+                        <div v-if="!hasLinkedPerson">
                             <label class="block text-sm font-bold text-slate-700 mb-2">
                                 Apellidos <span class="text-red-500">*</span>
                             </label>
@@ -99,8 +132,8 @@
                             </p>
                         </div>
 
-                        <!-- Email -->
-                        <div>
+                        <!-- Email (solo sin persona vinculada — para vinculados viene de people) -->
+                        <div v-if="!hasLinkedPerson">
                             <label class="block text-sm font-bold text-slate-700 mb-2">
                                 Email
                             </label>
@@ -110,8 +143,8 @@
                             <p v-if="formErrors.email" class="mt-1 text-sm text-red-600">{{ formErrors.email }}</p>
                         </div>
 
-                        <!-- Teléfono -->
-                        <div>
+                        <!-- Teléfono (solo sin persona vinculada) -->
+                        <div v-if="!hasLinkedPerson">
                             <label class="block text-sm font-bold text-slate-700 mb-2">
                                 Teléfono
                             </label>
@@ -325,7 +358,7 @@ import { ref, watch, computed } from 'vue';
 import { useForm } from 'vee-validate';
 import { toTypedSchema } from '@vee-validate/yup';
 import * as yup from 'yup';
-import { X, UserCog, Key, Loader2, Eye, EyeOff, Search, LayoutGrid, LayoutDashboard, ClipboardList, UserCheck, Users, Car, Box, CalendarDays, Heart, FileText, Briefcase, Fingerprint } from 'lucide-vue-next';
+import { X, UserCog, UserCheck, Key, Loader2, Eye, EyeOff, Search, LayoutGrid, LayoutDashboard, ClipboardList, Users, Car, Box, CalendarDays, Heart, FileText, Briefcase, Fingerprint } from 'lucide-vue-next';
 
 const ALL_MODULES = [
     { key: 'dashboard',        label: 'Dashboard',              icon: LayoutDashboard },
@@ -398,6 +431,35 @@ const emit = defineEmits(['close', 'submit']);
 const showPassword = ref(false);
 const showPasswordConfirmation = ref(false);
 
+// --- Persona vinculada ---
+const selectedPersonId = ref(null);
+const selectedEmployee = ref(null); // empleado seleccionado (para tarjeta de solo lectura)
+const employeeSearch = ref('');
+const showEmployeeDropdown = ref(false);
+
+// True cuando el usuario tiene o tendrá una persona de RRHH vinculada
+const hasLinkedPerson = computed(() => {
+    if (props.isEditing) return !!(props.user?.person_id);
+    return !!selectedPersonId.value;
+});
+
+// Datos de la persona vinculada para mostrar en la tarjeta de solo lectura
+const linkedPersonData = computed(() => {
+    if (props.isEditing && props.user?.person) {
+        return props.user.person;
+    }
+    if (selectedEmployee.value) {
+        return {
+            nombres:   selectedEmployee.value.nombres,
+            apellidos: selectedEmployee.value.apellidos,
+            dni:       selectedEmployee.value.dni,
+            email:     selectedEmployee.value.correo,
+            telefono:  selectedEmployee.value.telefono,
+        };
+    }
+    return null;
+});
+
 const selectedModules = ref([]);
 const selectedTabs = ref({}); // { moduleKey: ['tab1', 'tab2', ...] }
 const useCustomModules = ref(false);
@@ -446,45 +508,42 @@ const toggleAllTabs = (modKey) => {
 };
 
 // Validation Schema
-const userSchema = toTypedSchema(
+// Computed so that hasLinkedPerson and isEditing are evaluated reactively.
+// VeeValidate 4 supports a reactive (computed) validationSchema; passing context
+// via useForm options is NOT supported and was causing the schema conditions to
+// never fire, which silently blocked form submission.
+const userSchema = computed(() => toTypedSchema(
     yup.object({
-        dni: yup.string()
-            .required('El DNI es obligatorio')
-            .matches(/^\d{8}$/, 'El DNI debe tener 8 dígitos'),
+        dni: hasLinkedPerson.value
+            ? yup.string().transform(() => undefined).nullable()
+            : yup.string().required('El DNI es obligatorio').matches(/^\d{8}$/, 'El DNI debe tener 8 dígitos'),
         titulo: yup.string().transform((value) => value || null).nullable(),
-        name: yup.string().required('El nombre es obligatorio'),
-        apellidos: yup.string().required('Los apellidos son obligatorios'),
+        name: hasLinkedPerson.value
+            ? yup.string().transform(() => undefined).nullable()
+            : yup.string().required('El nombre es obligatorio'),
+        apellidos: hasLinkedPerson.value
+            ? yup.string().transform(() => undefined).nullable()
+            : yup.string().required('Los apellidos son obligatorios'),
         email: yup.string()
             .transform((value) => value || null)
             .nullable()
             .email('El email no es válido'),
-        telefono: yup.string()
-            .transform((value) => value || null)
-            .nullable()
-            .test('length', 'El teléfono debe tener exactamente 9 dígitos', (value) => {
-                if (!value) return true;
-                return /^\d{9}$/.test(value);
-            }),
+        telefono: hasLinkedPerson.value
+            ? yup.string().transform(() => undefined).nullable()
+            : yup.string().transform((v) => v || null).nullable()
+                .test('length', 'El teléfono debe tener exactamente 9 dígitos', (v) => !v || /^\d{9}$/.test(v)),
         cargo: yup.string().transform((value) => value || null).nullable(),
         area: yup.string().transform((value) => value || null).nullable(),
         rol_id: yup.string().required('El rol es obligatorio'),
         is_active: yup.boolean(),
-        password: yup.string().when('$isEditing', {
-            is: false,
-            then: (schema) => schema
-                .required('La contraseña es obligatoria')
-                .min(8, 'La contraseña debe tener al menos 8 caracteres'),
-            otherwise: (schema) => schema.transform((value) => value || null).nullable()
-        }),
-        password_confirmation: yup.string().when('$isEditing', {
-            is: false,
-            then: (schema) => schema
-                .required('Debe confirmar la contraseña')
-                .oneOf([yup.ref('password')], 'Las contraseñas no coinciden'),
-            otherwise: (schema) => schema.transform((value) => value || null).nullable()
-        })
+        password: props.isEditing
+            ? yup.string().transform((value) => value || null).nullable()
+            : yup.string().required('La contraseña es obligatoria').min(8, 'La contraseña debe tener al menos 8 caracteres'),
+        password_confirmation: props.isEditing
+            ? yup.string().transform((value) => value || null).nullable()
+            : yup.string().required('Debe confirmar la contraseña').oneOf([yup.ref('password')], 'Las contraseñas no coinciden'),
     })
-);
+));
 
 const { errors: formErrors, defineField, handleSubmit: validateForm, setValues, resetForm } = useForm({
     validationSchema: userSchema,
@@ -502,7 +561,6 @@ const { errors: formErrors, defineField, handleSubmit: validateForm, setValues, 
         password: '',
         password_confirmation: ''
     },
-    context: computed(() => ({ isEditing: props.isEditing }))
 });
 
 const [dni, dniProps] = defineField('dni');
@@ -541,6 +599,10 @@ const applyRolePreset = (event) => {
 
 watch(() => props.user, (newUser) => {
     if (newUser) {
+        // Restaurar persona vinculada al editar
+        selectedPersonId.value = newUser.person_id || null;
+        selectedEmployee.value = null;
+
         setValues({
             dni: newUser.dni || '',
             titulo: newUser.titulo || '',
@@ -558,7 +620,6 @@ watch(() => props.user, (newUser) => {
         if (newUser.modulos_json && newUser.modulos_json.length > 0) {
             useCustomModules.value = true;
             selectedModules.value = [...newUser.modulos_json];
-            // Restore tab selections; default to all tabs if no restriction saved
             const tabs = {};
             for (const modKey of newUser.modulos_json) {
                 const allTabKeys = (MODULE_TABS[modKey] || []).map(t => t.key);
@@ -578,6 +639,7 @@ watch(() => props.user, (newUser) => {
         selectedModules.value = [];
         selectedTabs.value = {};
         selectedPersonId.value = null;
+        selectedEmployee.value = null;
         employeeSearch.value = '';
     }
 }, { immediate: true });
@@ -587,10 +649,6 @@ const modalSubtitle = computed(() => {
         ? 'Actualice la información del usuario'
         : 'Complete los datos del nuevo usuario del sistema';
 });
-
-const employeeSearch = ref('');
-const showEmployeeDropdown = ref(false);
-const selectedPersonId = ref(null);
 
 const filteredEmployees = computed(() => {
     if (!employeeSearch.value) return [];
@@ -605,14 +663,12 @@ const selectEmployee = (emp) => {
     employeeSearch.value = `${emp.nombres} ${emp.apellidos}`;
     showEmployeeDropdown.value = false;
     selectedPersonId.value = emp.person_id || null;
+    selectedEmployee.value = emp;
 
+    // Solo precargamos los campos del usuario (cargo, área) que pueden diferir
+    // de los datos personales que ahora vienen de RRHH sin duplicarse
     setValues({
-        dni: emp.dni || '',
         titulo: titulo.value,
-        name: (emp.nombres || '').toUpperCase(),
-        apellidos: (emp.apellidos || '').toUpperCase(),
-        email: emp.correo || '',
-        telefono: emp.telefono || '',
         cargo: emp.cargo || '',
         area: emp.area || '',
         rol_id: '',
@@ -635,7 +691,6 @@ const handleSubmit = validateForm((values) => {
         for (const modKey of selectedModules.value) {
             const allTabKeys = (MODULE_TABS[modKey] || []).map(t => t.key);
             const selected   = selectedTabs.value[modKey] || allTabKeys;
-            // Only persist if not all tabs are selected (null = all allowed)
             if (allTabKeys.length > 0 && selected.length < allTabKeys.length) {
                 restricted[modKey] = selected;
             }
@@ -643,13 +698,37 @@ const handleSubmit = validateForm((values) => {
         if (Object.keys(restricted).length > 0) tabs_json = restricted;
     }
 
-    emit('submit', {
-        ...values,
-        person_id: selectedPersonId.value,
-        modulos_json: useCustomModules.value && selectedModules.value.length > 0
-            ? selectedModules.value
-            : null,
+    const modulos_json = useCustomModules.value && selectedModules.value.length > 0
+        ? selectedModules.value
+        : null;
+
+    // Payload base (datos que siempre se envían)
+    const payload = {
+        person_id:    selectedPersonId.value || null,
+        titulo:       values.titulo   || null,
+        email:        values.email    || null,
+        cargo:        values.cargo    || null,
+        area:         values.area     || null,
+        rol_id:       values.rol_id,
+        is_active:    values.is_active,
+        modulos_json,
         tabs_json,
-    });
+    };
+
+    // Contraseña (solo en creación)
+    if (!props.isEditing) {
+        payload.password              = values.password;
+        payload.password_confirmation = values.password_confirmation;
+    }
+
+    // Datos personales solo cuando NO hay persona vinculada
+    if (!hasLinkedPerson.value) {
+        payload.dni      = values.dni;
+        payload.name     = values.name;
+        payload.apellidos= values.apellidos;
+        payload.telefono = values.telefono || null;
+    }
+
+    emit('submit', payload);
 });
 </script>

@@ -12,6 +12,11 @@ defineEmits<{
     (e: 'page-change', page: number): void;
     (e: 'update:perPage', perPage: string | number): void;
 }>();
+
+const formatDate = (dateString?: string) => {
+    if (!dateString) return '';
+    return dateString.split('-').reverse().join('/');
+};
 </script>
 
 <template>
@@ -47,7 +52,7 @@ defineEmits<{
                     <tr v-for="visit in visits.data" :key="visit.id"
                         class="hover:bg-purple-50 transition-colors duration-200">
                         <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="text-sm font-semibold text-slate-900">{{ visit.fecha }}</div>
+                            <div class="text-sm font-semibold text-slate-900">{{ formatDate(visit.fecha) }}</div>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
                             <div class="flex items-center">

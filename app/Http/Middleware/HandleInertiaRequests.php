@@ -38,17 +38,21 @@ class HandleInertiaRequests extends Middleware
         return [
             ...parent::share($request),
             'auth' => [
-                'user' => $request->user() ? [
-                    'id'           => $request->user()->id,
-                    'name'         => $request->user()->name,
-                    'apellidos'    => $request->user()->apellidos,
-                    'dni'          => $request->user()->dni,
-                    'email'        => $request->user()->email,
-                    'rol_id'       => $request->user()->rol_id,
-                    'modulos_json' => $request->user()->modulos_json,
-                    'tabs_json'    => $request->user()->tabs_json,
-                    'customRole'   => $request->user()->customRole,
-                ] : null,
+                'user' => $request->user() ? (function () use ($request) {
+                    $user = $request->user()->loadMissing('person', 'customRole');
+                    return [
+                        'id'           => $user->id,
+                        'name'         => $user->name,
+                        'apellidos'    => $user->apellidos,
+                        'full_name'    => $user->full_name,
+                        'dni'          => $user->dni,
+                        'email'        => $user->email,
+                        'rol_id'       => $user->rol_id,
+                        'modulos_json' => $user->modulos_json,
+                        'tabs_json'    => $user->tabs_json,
+                        'customRole'   => $user->customRole,
+                    ];
+                })() : null,
             ],
             'flash' => [
                 'message' => fn () => $request->session()->get('message'),

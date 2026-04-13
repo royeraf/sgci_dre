@@ -32,13 +32,14 @@ class CreatePortalUsers extends Command
 
         foreach ($employees as $employee) {
             $dni = $employee->person->dni;
-            $existingByDni = User::where('dni', $dni)->first();
-            $existingByEmail = $employee->person->email ? User::where('email', $employee->person->email)->first() : null;
+            // Verificar si ya existe un usuario para esta persona o DNI
+            $existingByPerson = User::where('person_id', $employee->person_id)->first();
+            $existingByDni    = User::where('dni', $dni)->first();
 
-            if ($existingByDni || $existingByEmail) {
+            if ($existingByPerson || $existingByDni) {
                 $skipped++;
                 if ($this->getOutput()->isVerbose()) {
-                    $reason = $existingByDni ? "DNI ya existe (rol {$existingByDni->rol_id})" : "email ya existe ({$existingByEmail->email})";
+                    $reason = $existingByPerson ? "persona ya vinculada (rol {$existingByPerson->rol_id})" : "DNI ya existe (rol {$existingByDni->rol_id})";
                     $this->line("  Omitido: {$dni} ({$employee->full_name}) - {$reason}");
                 }
                 continue;
@@ -50,32 +51,22 @@ class CreatePortalUsers extends Command
                 continue;
             }
 
-            // Generate unique username from email or DNI
-            $username = $employee->person->email
-                ? explode('@', $employee->person->email)[0]
-                : 'emp' . $dni;
-            $baseUsername = $username;
-            $counter = 1;
+            // Username generado desde el DNI (que es la clave de login)
+            $username = $dni;
+            $counter  = 1;
             while (User::where('username', $username)->exists()) {
-                $username = $baseUsername . $counter;
+                $username = $dni . $counter;
                 $counter++;
             }
 
-            // Generate unique email if employee has none
-            $email = $employee->person->email ?: $dni . '@portal.dre.gob.pe';
-            if (User::where('email', $email)->exists()) {
-                $email = $dni . '.portal@dre.gob.pe';
-            }
-
+            // Datos personales (nombre, email, tel) ya están en people a través de person_id
+            // Solo guardamos person_id y dni (clave de login) en users
             User::create([
                 'person_id' => $employee->person_id,
-                'username' => $username,
-                'dni' => $dni,
-                'name' => $employee->person->nombres,
-                'apellidos' => $employee->person->apellidos,
-                'email' => $email,
-                'password' => Hash::make($dni),
-                'rol_id' => $role,
+                'username'  => $username,
+                'dni'       => $dni,
+                'password'  => Hash::make($dni),
+                'rol_id'    => $role,
                 'is_active' => true,
             ]);
 

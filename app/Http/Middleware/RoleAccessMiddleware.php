@@ -18,6 +18,7 @@ class RoleAccessMiddleware
      * Mapeo de prefijo de URL → clave de módulo en modulos_json.
      */
     private const URL_MODULE_MAP = [
+        'occurrences' => 'ocurrencias',
         'ocurrencias' => 'ocurrencias',
         'entry-exits' => 'control_personal',
         'visitors'    => 'visitas',

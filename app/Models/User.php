@@ -25,7 +25,11 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'titulo',
         'apellidos',
+        'cargo',
+        'area',
+        'telefono',
         'rol_id',
         'modulos_json',
         'tabs_json',
@@ -99,21 +103,51 @@ class User extends Authenticatable
     ];
 
     /**
+     * Nombre del usuario: de people si está vinculado, si no del campo directo.
+     */
+    public function getNameAttribute(): ?string
+    {
+        if ($this->person_id) {
+            $person = $this->relationLoaded('person') ? $this->person : $this->person()->first();
+            return $person?->nombres ?? $this->attributes['name'] ?? null;
+        }
+        return $this->attributes['name'] ?? null;
+    }
+
+    /**
+     * Apellidos del usuario: de people si está vinculado, si no del campo directo.
+     */
+    public function getApellidosAttribute(): ?string
+    {
+        if ($this->person_id) {
+            $person = $this->relationLoaded('person') ? $this->person : $this->person()->first();
+            return $person?->apellidos ?? $this->attributes['apellidos'] ?? null;
+        }
+        return $this->attributes['apellidos'] ?? null;
+    }
+
+    /**
+     * Email del usuario: de people si está vinculado, si no del campo directo.
+     */
+    public function getEmailAttribute(): ?string
+    {
+        if ($this->person_id) {
+            $person = $this->relationLoaded('person') ? $this->person : $this->person()->first();
+            return $person?->email ?? $this->attributes['email'] ?? null;
+        }
+        return $this->attributes['email'] ?? null;
+    }
+
+    /**
      * Get the full name with title.
      */
     public function getFullNameAttribute(): string
     {
-        // Si tiene persona asociada, usar datos de person
-        if ($this->relationLoaded('person') && $this->person) {
-            return $this->person->nombres . ' ' . $this->person->apellidos;
-        }
-        
-        // Fallback a campos directos
-        $titulo = $this->attributes['titulo'] ?? ''; 
-        $titulo = $titulo ? $titulo . ' ' : '';
-        $nombre = $this->attributes['name'] ?? '';
-        $apellidos = $this->attributes['apellidos'] ?? '';
-        
+        $nombre    = $this->getNameAttribute() ?? '';
+        $apellidos = $this->getApellidosAttribute() ?? '';
+        $titulo    = $this->attributes['titulo'] ?? '';
+        $titulo    = $titulo ? $titulo . ' ' : '';
+
         return trim($titulo . $nombre . ($apellidos ? ' ' . $apellidos : ''));
     }
 
