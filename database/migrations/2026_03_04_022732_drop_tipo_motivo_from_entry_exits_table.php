@@ -11,12 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('entry_exits', function (Blueprint $table) {
-            // Make entry_exit_reason_id required
-            $table->uuid('entry_exit_reason_id')->nullable(false)->change();
-            // Drop tipo_motivo (now derived from the reason)
-            $table->dropColumn('tipo_motivo');
-        });
+        // Drop tipo_motivo (now derived from the reason)
+        // Note: entry_exit_reason_id stays nullable to preserve existing records
+        if (Schema::hasColumn('entry_exits', 'tipo_motivo')) {
+            Schema::table('entry_exits', function (Blueprint $table) {
+                $table->dropColumn('tipo_motivo');
+            });
+        }
     }
 
     public function down(): void
