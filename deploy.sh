@@ -132,6 +132,8 @@ do_sync_code() {
         --exclude='.htaccess' \
         --exclude='public/.htaccess' \
         --exclude='package-lock.json' \
+        --exclude='bun.lock' \
+        --exclude='bun.lockb' \
         ./ "${VPS_SSH}:${VPS_PATH}/"
 
     print_ok "Código sincronizado"
@@ -151,11 +153,18 @@ do_remote_config() {
         echo "  [VPS] PHP $(php -v | head -1 | awk '{print $2}')"
         echo "  [VPS] Laravel $(php artisan --version | awk '{print $NF}')"
 
+        echo "  [VPS] Preparando repo para el git pull..."
+        git checkout -- public/build.zip 2>/dev/null || true
+        git stash 2>/dev/null || true
+        
         echo "  [VPS] Descargando últimos cambios (git pull)..."
-        git pull || echo "  [VPS] ⚠ Advertencia: No se pudo hacer git pull (quizá hay cambios locales o no es un repo)."
+        git pull || echo "  [VPS] ⚠ Advertencia: No se pudo hacer git pull (revisa manualmente si hay más conflictos)."
+        
+        git stash pop 2>/dev/null || true
 
-        echo "  [VPS] Instalando Node Modules con Bun..."
-        ~/.bun/bin/bun install || bun install
+        echo "  [VPS] Instalando Node Modules con Bun (borrando caché previa)..."
+        rm -rf node_modules bun.lock bun.lockb
+        ~/.bun/bin/bun install || bun install --verbose
 
         echo "  [VPS] Compilando Assets con Vite..."
         ~/.bun/bin/bun run build || bun run build
