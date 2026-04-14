@@ -28,7 +28,9 @@ fi
 VPS_USER="drehua5"
 VPS_HOST="drehuanuco.gob.pe"
 VPS_PATH="~/documentos.drehuanuco.gob.pe"
+SSH_KEY="${HOME}/.ssh/dre_vps"   # Clave SSH sin contraseña para el VPS
 VPS_SSH="${VPS_USER}@${VPS_HOST}"
+SSH_OPTS="-i ${SSH_KEY} -o StrictHostKeyChecking=no -o BatchMode=yes"
 DOMAIN="https://documentos.drehuanuco.gob.pe"
 LOCAL_PROJECT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
@@ -120,7 +122,7 @@ do_sync_code() {
 
     # Archivos y carpetas a sincronizar
     echo "  Subiendo código PHP, rutas, config..."
-    rsync -avz --delete \
+    rsync -az --delete -e "ssh ${SSH_OPTS}" \
         --exclude='node_modules' \
         --exclude='vendor' \
         --exclude='.git' \
@@ -165,10 +167,10 @@ do_upload_build() {
     print_ok "build.zip creado (${BUILD_SIZE})"
 
     echo "  Subiendo build.zip al VPS..."
-    scp public/build.zip "${VPS_SSH}:${VPS_PATH}/public/"
+    scp -i "${SSH_KEY}" public/build.zip "${VPS_SSH}:${VPS_PATH}/public/"
 
     echo "  Descomprimiendo en el VPS..."
-    ssh "${VPS_SSH}" "cd ${VPS_PATH}/public && rm -rf build && unzip -o build.zip -q && rm build.zip"
+    ssh ${SSH_OPTS} "${VPS_SSH}" "cd ${VPS_PATH}/public && rm -rf build && unzip -o build.zip -q && rm build.zip"
 
     print_ok "Assets desplegados en public/build/"
     echo ""
@@ -178,7 +180,7 @@ do_upload_build() {
 do_remote_config() {
     print_step "PASO 4 — Configurando el VPS"
 
-    ssh "${VPS_SSH}" bash -s << 'REMOTE_SCRIPT'
+    ssh ${SSH_OPTS} "${VPS_SSH}" bash -s << 'REMOTE_SCRIPT'
         set -e
         cd ~/documentos.drehuanuco.gob.pe
 
@@ -283,7 +285,7 @@ REMOTE_SCRIPT
 do_migrations() {
     if confirm "¿Ejecutar migraciones en el VPS?"; then
         print_step "Ejecutando migraciones..."
-        ssh "${VPS_SSH}" "cd ${VPS_PATH} && php artisan migrate --force"
+        ssh ${SSH_OPTS} "${VPS_SSH}" "cd ${VPS_PATH} && php artisan migrate --force"
         print_ok "Migraciones ejecutadas"
     fi
     echo ""
