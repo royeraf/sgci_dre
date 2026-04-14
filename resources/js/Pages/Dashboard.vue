@@ -51,7 +51,7 @@
         <h2 class="text-2xl font-extrabold text-slate-800 tracking-tight">Accesos Rápidos</h2>
       </div>
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Link v-if="hasModulePermission('vigilancia')" href="/occurrences"
+        <Link v-if="hasModulePermission('ocurrencias')" href="/occurrences"
           class="flex flex-col items-center p-6 bg-white rounded-2xl hover:bg-blue-50/50 border-2 border-slate-100 hover:border-blue-200 transition-all group shadow-sm hover:shadow-md">
           <div
             class="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center mb-4 shadow-lg shadow-blue-600/30 group-hover:scale-110 group-hover:-rotate-3 transition-all duration-300">
@@ -61,7 +61,7 @@
           <span class="text-xs text-slate-500 mt-1 font-medium text-center">Registrar incidentes y novedades</span>
         </Link>
 
-        <Link v-if="hasModulePermission('vigilancia')" href="/entry-exits"
+        <Link v-if="hasModulePermission('control_personal')" href="/entry-exits"
           class="flex flex-col items-center p-6 bg-white rounded-2xl hover:bg-emerald-50/50 border-2 border-slate-100 hover:border-emerald-200 transition-all group shadow-sm hover:shadow-md">
           <div
             class="w-16 h-16 bg-emerald-600 rounded-2xl flex items-center justify-center mb-4 shadow-lg shadow-emerald-600/30 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300">
@@ -71,7 +71,7 @@
           <span class="text-xs text-slate-500 mt-1 font-medium text-center">Entradas y salidas (Papeletas)</span>
         </Link>
 
-        <Link v-if="hasModulePermission('vigilancia')" href="/visitors"
+        <Link v-if="hasModulePermission('visitas')" href="/visitors"
           class="flex flex-col items-center p-6 bg-white rounded-2xl hover:bg-purple-50/50 border-2 border-slate-100 hover:border-purple-200 transition-all group shadow-sm hover:shadow-md">
           <div
             class="w-16 h-16 bg-purple-600 rounded-2xl flex items-center justify-center mb-4 shadow-lg shadow-purple-600/30 group-hover:scale-110 group-hover:-rotate-3 transition-all duration-300">
@@ -81,7 +81,7 @@
           <span class="text-xs text-slate-500 mt-1 font-medium text-center">Registro de ciudadanos visitantes</span>
         </Link>
 
-        <Link v-if="hasModulePermission('vigilancia')" href="/vehicles"
+        <Link v-if="hasModulePermission('vehiculos')" href="/vehicles"
           class="flex flex-col items-center p-6 bg-white rounded-2xl hover:bg-cyan-50/50 border-2 border-slate-100 hover:border-cyan-200 transition-all group shadow-sm hover:shadow-md">
           <div
             class="w-16 h-16 bg-cyan-600 rounded-2xl flex items-center justify-center mb-4 shadow-lg shadow-cyan-600/30 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300">
@@ -134,7 +134,7 @@
     </div>
 
     <!-- Section: Libro de Ocurrencias Stats -->
-    <div v-if="hasModulePermission('vigilancia')" class="mb-10">
+    <div v-if="hasModulePermission('ocurrencias')" class="mb-10">
       <div class="flex items-center gap-3 mb-6">
         <div class="bg-blue-100 rounded-xl p-2.5">
           <ClipboardList class="w-6 h-6 text-blue-600" />
@@ -197,7 +197,7 @@
     </div>
 
     <!-- Section: Control de Personal Stats -->
-    <div v-if="hasModulePermission('vigilancia')" class="mb-10">
+    <div v-if="hasModulePermission('control_personal')" class="mb-10">
       <div class="flex items-center gap-3 mb-6">
         <div class="bg-emerald-100 rounded-xl p-2.5">
           <UserCheck class="w-6 h-6 text-emerald-600" />
@@ -246,7 +246,7 @@
       </div>
     </div>
     <!-- Section: Visitantes Externos Stats -->
-    <div v-if="hasModulePermission('vigilancia')" class="mb-10">
+    <div v-if="hasModulePermission('visitas')" class="mb-10">
       <div class="flex items-center gap-3 mb-6">
         <div class="bg-purple-100 rounded-xl p-2.5">
           <Users class="w-6 h-6 text-purple-600" />
@@ -369,38 +369,48 @@ const hasModulePermission = (module, action = 'ver') => {
   const user = page.props.auth?.user;
   if (!user) return false;
 
-  // Admin has access to everything
+  // Admin siempre tiene acceso
   if (user.rol_id === 'ROL001' || user.rol_id === '1') return true;
 
-  // Special case for Jefe de Bienestar Social (ROL008)
+  // Si el usuario tiene módulos explícitos asignados, usarlos directamente
+  if (user.modulos_json && user.modulos_json.length > 0) {
+    // Módulos individuales (claves exactas de modulos_json)
+    if (user.modulos_json.includes(module)) return true;
+    // Alias: 'vigilancia' agrupa los módulos de seguridad
+    if (module === 'vigilancia') {
+      return ['ocurrencias', 'control_personal', 'visitas', 'vehiculos']
+        .some(k => user.modulos_json.includes(k));
+    }
+    return false;
+  }
+
+  // Sin modulos_json: usar permisos del rol con los roles especiales
   if (user.rol_id === 'ROL008' || user.customRole?.codigo === 'jefe_bienestar') {
     return module === 'bienestar';
   }
-
-  // Special case for Jefe de RRHH (ROL009)
   if (user.rol_id === 'ROL009' || user.customRole?.codigo === 'jefe_rrhh') {
     return module === 'recursos_humanos';
   }
-
-  // Special case for Gestor de Citas (ROL010)
   if (user.rol_id === 'ROL010' || user.customRole?.codigo === 'gestor_citas') {
     return module === 'secretaria';
   }
 
+  // Fallback: permisos_json del rol
   const permisos = user.customRole?.permisos_json || {};
-
-  // Mapping dashboard modules to database permission keys
   const mapping = {
-    'vigilancia': ['ocurrencias', 'personal', 'visitas', 'vehiculos'],
-    'secretaria': ['citas'],
+    'ocurrencias':      ['ocurrencias'],
+    'control_personal': ['personal', 'control_personal'],
+    'visitas':          ['visitas'],
+    'vehiculos':        ['vehiculos'],
+    'vigilancia':       ['ocurrencias', 'personal', 'control_personal', 'visitas', 'vehiculos'],
+    'secretaria':       ['secretaria', 'citas'],
     'recursos_humanos': ['recursos_humanos', 'vacaciones', 'areas', 'cargos'],
-    'bienestar': ['licencias'],
-    'patrimonio': ['patrimonio', 'bienes'],
+    'bienestar':        ['bienestar', 'licencias'],
+    'patrimonio':       ['patrimonio', 'bienes'],
   };
 
   const dbKeys = mapping[module];
   if (!dbKeys) return false;
-
   return dbKeys.some(key => permisos[key] !== undefined);
 };
 
