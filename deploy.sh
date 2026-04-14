@@ -79,17 +79,20 @@ do_vps_deploy() {
     git pull origin main || { print_error "git pull falló. Revisa conflictos."; exit 1; }
     print_ok "Código actualizado"
 
-    # ── Bun install + build ───────────────────────────────
+    # ── Install + build (npm preferido en VPS ploop/OpenVZ) ──
     print_step "Instalando dependencias y compilando assets"
-    BUN_BIN="${HOME}/.bun/bin/bun"
-    [ ! -f "$BUN_BIN" ] && BUN_BIN="$(command -v bun 2>/dev/null || echo '')"
-    if [ -z "$BUN_BIN" ]; then
-        print_error "Bun no encontrado. Instalar: curl -fsSL https://bun.sh/install | bash"
-        exit 1
+    if command -v npm &>/dev/null; then
+        npm install --prefer-offline 2>/dev/null || npm install
+        print_ok "Dependencias instaladas (npm)"
+        npm run build
+    else
+        BUN_BIN="${HOME}/.bun/bin/bun"
+        [ ! -f "$BUN_BIN" ] && BUN_BIN="$(command -v bun 2>/dev/null || echo '')"
+        [ -z "$BUN_BIN" ] && { print_error "Ni npm ni bun encontrados."; exit 1; }
+        "$BUN_BIN" install
+        print_ok "Dependencias instaladas (bun)"
+        "$BUN_BIN" run build
     fi
-    "$BUN_BIN" install --frozen-lockfile 2>/dev/null || "$BUN_BIN" install
-    print_ok "Dependencias instaladas"
-    "$BUN_BIN" run build
     print_ok "Assets compilados"
 
     # ── Caché Laravel ─────────────────────────────────────
@@ -183,13 +186,17 @@ do_remote_config() {
         echo "  [VPS] PHP $(php -v | head -1 | awk '{print $2}')"
         echo "  [VPS] Laravel $(php artisan --version | awk '{print $NF}')"
 
-        BUN_BIN="${HOME}/.bun/bin/bun"
-        [ ! -f "$BUN_BIN" ] && BUN_BIN="$(command -v bun 2>/dev/null || echo '')"
-        if [ -z "$BUN_BIN" ]; then echo "  [VPS] ✗ Bun no encontrado."; exit 1; fi
-        echo "  [VPS] Instalando dependencias..."
-        "$BUN_BIN" install --frozen-lockfile 2>/dev/null || "$BUN_BIN" install
-        echo "  [VPS] Compilando assets..."
-        "$BUN_BIN" run build
+        echo "  [VPS] Instalando dependencias y compilando assets..."
+        if command -v npm &>/dev/null; then
+            npm install --prefer-offline 2>/dev/null || npm install
+            npm run build
+        else
+            BUN_BIN="${HOME}/.bun/bin/bun"
+            [ ! -f "$BUN_BIN" ] && BUN_BIN="$(command -v bun 2>/dev/null || echo '')"
+            [ -z "$BUN_BIN" ] && { echo "  [VPS] ✗ Ni npm ni bun encontrados."; exit 1; }
+            "$BUN_BIN" install
+            "$BUN_BIN" run build
+        fi
         echo "  [VPS] ✓ Assets compilados"
 
         grep -q "memory_limit" .user.ini 2>/dev/null || echo "memory_limit = 256M" > .user.ini
