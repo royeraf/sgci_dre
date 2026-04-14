@@ -1,9 +1,10 @@
 import { ref, computed } from 'vue';
 
 export interface Employee {
-    id: string | number;
+    id: string;
     nombre_completo: string;
     dni: string;
+    cargo?: string | null;
 }
 
 export function useEmployeeSearch(employees: Employee[]) {

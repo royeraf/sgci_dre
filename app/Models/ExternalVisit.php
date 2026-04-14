@@ -17,10 +17,10 @@ class ExternalVisit extends Model
         'direction_id',
         'office_id',
         'visit_reason_id',
+        'employee_id',
         'hora_ingreso',
         'hora_salida',
         'motivo',
-        'a_quien_visita',
         'fecha',
         'registrado_por',
         'observacion_salida',
@@ -41,6 +41,7 @@ class ExternalVisit extends Model
         'direction_nombre',
         'office_nombre',
         'motivo_nombre',
+        'a_quien_visita_nombre',
     ];
 
     /**
@@ -52,7 +53,7 @@ class ExternalVisit extends Model
     }
 
     /**
-     * Relación con la dirección que visita
+     * Relación con la dirección de destino
      */
     public function direction(): BelongsTo
     {
@@ -60,7 +61,7 @@ class ExternalVisit extends Model
     }
 
     /**
-     * Relación con la oficina que visita
+     * Relación con la oficina de destino
      */
     public function office(): BelongsTo
     {
@@ -68,7 +69,7 @@ class ExternalVisit extends Model
     }
 
     /**
-     * Relación con el empleado visitado
+     * Relación con el empleado visitado (DRE)
      */
     public function employee(): BelongsTo
     {
@@ -91,10 +92,10 @@ class ExternalVisit extends Model
         return $this->belongsTo(User::class, 'registrado_por');
     }
 
-    // ===== ACCESSORS para compatibilidad =====
+    // ===== ACCESSORS =====
 
     /**
-     * Acceso al DNI a través de person
+     * DNI del visitante vía person
      */
     public function getDniAttribute(): ?string
     {
@@ -102,7 +103,7 @@ class ExternalVisit extends Model
     }
 
     /**
-     * Acceso al nombre completo a través de person
+     * Nombre completo del visitante vía person
      */
     public function getNombresAttribute(): ?string
     {
@@ -110,7 +111,7 @@ class ExternalVisit extends Model
     }
 
     /**
-     * Acceso al nombre de la dirección
+     * Nombre de la dirección de destino
      */
     public function getDirectionNombreAttribute(): ?string
     {
@@ -118,7 +119,7 @@ class ExternalVisit extends Model
     }
 
     /**
-     * Acceso al nombre de la oficina
+     * Nombre de la oficina de destino
      */
     public function getOfficeNombreAttribute(): ?string
     {
@@ -126,11 +127,20 @@ class ExternalVisit extends Model
     }
 
     /**
-     * Acceso al nombre del motivo
+     * Nombre del motivo de visita
      */
     public function getMotivoNombreAttribute(): ?string
     {
         return $this->reason?->nombre;
+    }
+
+    /**
+     * Nombre completo del empleado visitado (vía employee → person)
+     */
+    public function getAQuienVisitaNombreAttribute(): ?string
+    {
+        $emp = $this->relationLoaded('employee') ? $this->employee : $this->employee()->with('person')->first();
+        return $emp?->person?->nombre_full;
     }
 
     /**
@@ -143,27 +153,18 @@ class ExternalVisit extends Model
 
     // ===== SCOPES =====
 
-    /**
-     * Scope para visitas de hoy
-     */
     public function scopeHoy($query)
     {
         return $query->whereDate('fecha', today());
     }
 
-    /**
-     * Scope para visitas pendientes (sin hora de salida)
-     */
     public function scopePendientes($query)
     {
         return $query->whereNull('hora_salida');
     }
 
-    /**
-     * Scope con todas las relaciones
-     */
     public function scopeWithAllRelations($query)
     {
-        return $query->with(['person', 'direction', 'office', 'registrador']);
+        return $query->with(['person', 'direction', 'office', 'registrador', 'employee.person']);
     }
 }

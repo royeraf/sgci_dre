@@ -9,7 +9,7 @@ export interface Visit {
     motivo_nombre?: string;
     visit_reason_id?: string;
     destino: string;
-    a_quien_visita: string | null;
+    a_quien_visita_nombre: string | null;
     is_pending: boolean;
     observacion_salida?: string | null;
 }

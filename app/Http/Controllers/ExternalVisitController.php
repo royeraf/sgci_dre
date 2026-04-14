@@ -21,7 +21,7 @@ class ExternalVisitController extends Controller
      */
     public function index(Request $request)
     {
-        $query = ExternalVisit::with(['registrador', 'person', 'direction', 'office'])
+        $query = ExternalVisit::with(['registrador', 'person', 'direction', 'office', 'employee.person'])
             ->orderBy('fecha', 'desc')
             ->orderBy('hora_ingreso', 'desc');
 
@@ -74,7 +74,7 @@ class ExternalVisitController extends Controller
                 'motivo' => $visit->motivo,
                 'motivo_nombre' => $visit->motivo_nombre, // Accessor from model
                 'destino' => $destino, // Muestra Oficina - Área o solo Área
-                'a_quien_visita' => $visit->a_quien_visita,
+                'a_quien_visita_nombre' => $visit->a_quien_visita_nombre,
                 'is_pending' => is_null($visit->hora_salida),
                 'registrado_por' => $visit->registrador ? $visit->registrador->name : 'N/A',
                 'observacion_salida' => $visit->observacion_salida,
@@ -86,7 +86,7 @@ class ExternalVisitController extends Controller
             'filters' => $request->only(['fecha', 'estado', 'search']),
             'directions' => HrDirection::where('activo', true)->orderBy('nombre')->get(),
             'offices' => HrOffice::where('activo', true)->with('direction')->orderBy('nombre')->get(),
-            'employees' => Employee::with('person')
+            'employees' => Employee::with(['person', 'position'])
                 ->where('estado', 'ACTIVO')
                 ->whereHas('person', function($q) {
                     $q->whereNotNull('nombres')
@@ -97,9 +97,10 @@ class ExternalVisitController extends Controller
                 ->get()
                 ->map(function($emp) {
                     return [
-                        'id' => $emp->id,
-                        'nombre_completo' => trim($emp->person->nombre_full),
-                        'dni' => $emp->dni
+                        'id'             => $emp->id,
+                        'nombre_completo'=> $emp->person->nombre_full,
+                        'dni'            => $emp->dni,
+                        'cargo'          => $emp->position?->nombre,
                     ];
                 })
                 ->sortBy('nombre_completo')
@@ -122,8 +123,7 @@ class ExternalVisitController extends Controller
             'motivo' => 'nullable|string',
             'direction_id' => 'nullable|uuid|exists:hr_directions,id',
             'office_id' => 'nullable|uuid|exists:hr_offices,id',
-            'a_quien_visita' => 'nullable|string|max:200',
-            'employee_id' => 'nullable|uuid|exists:employees,id',
+            'employee_id' => 'required|uuid|exists:employees,id',
         ], [
             'dni.required' => 'El DNI es obligatorio.',
             'dni.size' => 'El DNI debe tener exactamente 8 dígitos.',
@@ -164,8 +164,7 @@ class ExternalVisitController extends Controller
             'visit_reason_id' => $validated['visit_reason_id'],
             'hora_ingreso' => $validated['hora_ingreso'],
             'motivo' => $validated['motivo'] ?? null,
-            'a_quien_visita' => $validated['a_quien_visita'],
-            'employee_id' => $validated['employee_id'] ?? null,
+            'employee_id' => $validated['employee_id'],
             'fecha' => now()->toDateString(),
             'registrado_por' => auth()->id(),
         ]);
@@ -318,7 +317,7 @@ class ExternalVisitController extends Controller
         ]);
 
         // Buscar visita pendiente del día de hoy con ese DNI
-        $visit = ExternalVisit::with(['person', 'direction', 'office'])
+        $visit = ExternalVisit::with(['person', 'direction', 'office', 'employee.person'])
             ->whereHas('person', function($q) use ($validated) {
                 $q->where('dni', $validated['dni']);
             })
@@ -349,7 +348,7 @@ class ExternalVisitController extends Controller
                 'hora_salida' => $visit->hora_salida ? $visit->hora_salida->format('H:i') : null,
                 'motivo' => $visit->motivo,
                 'destino' => $destino,
-                'a_quien_visita' => $visit->a_quien_visita,
+                'a_quien_visita_nombre' => $visit->a_quien_visita_nombre,
                 'is_pending' => is_null($visit->hora_salida),
                 'registrado_por' => $visit->registrador ? $visit->registrador->name : 'N/A',
             ]

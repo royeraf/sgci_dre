@@ -160,7 +160,7 @@
 
             <!-- Employee Modal -->
             <EmployeeModal v-if="showEmployeeModal" :employee="selectedEmployee" :is-editing="isEditing"
-                :submitting="isSubmitting" :directions="directions" :positions="positions"
+                :submitting="isSubmitting" :directions="directions" :offices="offices" :positions="positions"
                 :contract-types="contractTypes" @close="closeEmployeeModal" @submit="saveEmployee" />
 
             <!-- Employee Detail Modal -->

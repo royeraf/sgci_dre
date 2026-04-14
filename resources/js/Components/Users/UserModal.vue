@@ -33,7 +33,7 @@
                                 class="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-indigo-400" />
                             <input type="text" v-model="employeeSearch" placeholder="Buscar por nombre o DNI..."
                                 @focus="showEmployeeDropdown = true" @blur="closeDropdown"
-                                class="w-full pl-9 pr-4 py-2.5 border border-indigo-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors bg-white text-indigo-900 placeholder-indigo-300" />
+                                class="w-full pl-9 pr-4 py-2.5 border border-indigo-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors bg-white text-indigo-900 placeholder-indigo-300" />
 
                             <div v-if="showEmployeeDropdown && filteredEmployees.length > 0"
                                 class="absolute z-50 w-full mt-1 bg-white rounded-xl shadow-lg border border-indigo-100 max-h-60 overflow-auto">
@@ -71,17 +71,25 @@
                             <div class="col-span-2">
                                 <span class="text-emerald-600 font-medium">Nombre:</span>
                                 <span class="ml-1 text-slate-800 font-semibold">
-                                    {{ linkedPersonData.nombres }} {{ linkedPersonData.apellidos }}
+                                    {{ linkedPersonData.titulo ? linkedPersonData.titulo + ' ' : '' }}{{ linkedPersonData.nombres }} {{ linkedPersonData.apellidos }}
                                 </span>
                             </div>
                             <div class="col-span-2">
                                 <span class="text-emerald-600 font-medium">Email:</span>
                                 <span class="ml-1 text-slate-700">{{ linkedPersonData.email || '—' }}</span>
                             </div>
+                            <div>
+                                <span class="text-emerald-600 font-medium">Cargo:</span>
+                                <span class="ml-1 text-slate-700">{{ linkedPersonData.cargo || '—' }}</span>
+                            </div>
+                            <div>
+                                <span class="text-emerald-600 font-medium">Área:</span>
+                                <span class="ml-1 text-slate-700">{{ linkedPersonData.area || '—' }}</span>
+                            </div>
                         </div>
                         <p class="text-xs text-emerald-600 mt-2">
                             Datos personales del registro de RRHH — no se duplican en el sistema de usuarios.
-                            Para editar nombre, DNI, email o teléfono, hazlo desde el módulo de Recursos Humanos.
+                            Para editar nombre, DNI, título, email o teléfono, hazlo desde el módulo de Recursos Humanos.
                         </p>
                     </div>
 
@@ -93,18 +101,29 @@
                             </label>
                             <input type="text" v-model="dni" v-bind="dniProps" maxlength="8" placeholder="12345678"
                                 @input="dni = $event.target.value.replace(/\D/g, '')"
-                                class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                                class="w-full px-4 py-2.5 border rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
                                 :class="formErrors.dni ? 'border-red-400' : 'border-slate-200'" />
                             <p v-if="formErrors.dni" class="mt-1 text-sm text-red-600">{{ formErrors.dni }}</p>
                         </div>
 
-                        <!-- Título -->
-                        <div>
+                        <!-- Título (solo sin persona vinculada) -->
+                        <div v-if="!hasLinkedPerson">
                             <label class="block text-sm font-bold text-slate-700 mb-2">
-                                Título
+                                Título Profesional
                             </label>
-                            <input type="text" v-model="titulo" v-bind="tituloProps" maxlength="20" placeholder="Ing., Dr., Lic., etc."
-                                class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors" />
+                            <select v-model="titulo" v-bind="tituloProps"
+                                class="w-full px-4 py-2.5 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors bg-white">
+                                <option value="">Sin título</option>
+                                <option value="Lic.">Lic.</option>
+                                <option value="Ing.">Ing.</option>
+                                <option value="Dr.">Dr.</option>
+                                <option value="Dra.">Dra.</option>
+                                <option value="Mg.">Mg.</option>
+                                <option value="Prof.">Prof.</option>
+                                <option value="Abog.">Abog.</option>
+                                <option value="CPC">CPC</option>
+                                <option value="Téc.">Téc.</option>
+                            </select>
                         </div>
 
                         <!-- Nombre (solo sin persona vinculada) -->
@@ -114,7 +133,7 @@
                             </label>
                             <input type="text" v-model="name" v-bind="nameProps" placeholder="JUAN"
                                 @input="name = $event.target.value.toUpperCase()"
-                                class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                                class="w-full px-4 py-2.5 border rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
                                 :class="formErrors.name ? 'border-red-400' : 'border-slate-200'" />
                             <p v-if="formErrors.name" class="mt-1 text-sm text-red-600">{{ formErrors.name }}</p>
                         </div>
@@ -126,7 +145,7 @@
                             </label>
                             <input type="text" v-model="apellidos" v-bind="apellidosProps" placeholder="PÉREZ GARCÍA"
                                 @input="apellidos = $event.target.value.toUpperCase()"
-                                class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                                class="w-full px-4 py-2.5 border rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
                                 :class="formErrors.apellidos ? 'border-red-400' : 'border-slate-200'" />
                             <p v-if="formErrors.apellidos" class="mt-1 text-sm text-red-600">{{ formErrors.apellidos }}
                             </p>
@@ -138,7 +157,7 @@
                                 Email
                             </label>
                             <input type="email" v-model="email" v-bind="emailProps" placeholder="usuario@ejemplo.com"
-                                class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                                class="w-full px-4 py-2.5 border rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
                                 :class="formErrors.email ? 'border-red-400' : 'border-slate-200'" />
                             <p v-if="formErrors.email" class="mt-1 text-sm text-red-600">{{ formErrors.email }}</p>
                         </div>
@@ -150,19 +169,19 @@
                             </label>
                             <input type="text" v-model="telefono" v-bind="telefonoProps" placeholder="999888777" maxlength="9"
                                 @input="telefono = $event.target.value.replace(/\D/g, '')"
-                                class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                                class="w-full px-4 py-2.5 border rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
                                 :class="formErrors.telefono ? 'border-red-400' : 'border-slate-200'" />
                             <p v-if="formErrors.telefono" class="mt-1 text-sm text-red-600">{{ formErrors.telefono }}
                             </p>
                         </div>
 
                         <!-- Cargo -->
-                        <div>
+                        <div v-if="!hasLinkedPerson">
                             <label class="block text-sm font-bold text-slate-700 mb-2">
                                 Cargo
                             </label>
                             <select v-model="cargo" v-bind="cargoProps"
-                                class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors">
+                                class="w-full px-4 py-2.5 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors">
                                 <option value="">Seleccionar cargo...</option>
                                 <option v-for="position in positions" :key="position.id" :value="position.nombre">
                                     {{ position.nombre }}
@@ -171,12 +190,12 @@
                         </div>
 
                         <!-- Área -->
-                        <div>
+                        <div v-if="!hasLinkedPerson">
                             <label class="block text-sm font-bold text-slate-700 mb-2">
                                 Área
                             </label>
                             <select v-model="area" v-bind="areaProps"
-                                class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors">
+                                class="w-full px-4 py-2.5 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors">
                                 <option value="">Seleccionar área...</option>
                                 <option v-for="a in areas" :key="a.id" :value="a.nombre">
                                     {{ a.nombre }}
@@ -190,7 +209,7 @@
                                 Rol <span class="text-red-500">*</span>
                             </label>
                             <select v-model="rolId" v-bind="rolIdProps" @change="applyRolePreset"
-                                class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                                class="w-full px-4 py-2.5 border rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
                                 :class="formErrors.rol_id ? 'border-red-400' : 'border-slate-200'">
                                 <option value="">Seleccionar rol...</option>
                                 <option v-for="role in roles" :key="role.rol_id" :value="role.rol_id">
@@ -300,7 +319,7 @@
                                 <div class="relative">
                                     <input :type="showPassword ? 'text' : 'password'" v-model="password" v-bind="passwordProps"
                                         placeholder="Mínimo 8 caracteres"
-                                        class="w-full px-4 py-2.5 pr-12 border rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                                        class="w-full px-4 py-2.5 pr-12 border rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
                                         :class="formErrors.password ? 'border-red-400' : 'border-slate-200'" />
                                     <button type="button" @click="showPassword = !showPassword"
                                         class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
@@ -320,7 +339,7 @@
                                 <div class="relative">
                                     <input :type="showPasswordConfirmation ? 'text' : 'password'"
                                         v-model="passwordConfirmation" v-bind="passwordConfirmationProps" placeholder="Repetir contraseña"
-                                        class="w-full px-4 py-2.5 pr-12 border rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                                        class="w-full px-4 py-2.5 pr-12 border rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
                                         :class="formErrors.password_confirmation ? 'border-red-400' : 'border-slate-200'" />
                                     <button type="button" @click="showPasswordConfirmation = !showPasswordConfirmation"
                                         class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
@@ -446,15 +465,23 @@ const hasLinkedPerson = computed(() => {
 // Datos de la persona vinculada para mostrar en la tarjeta de solo lectura
 const linkedPersonData = computed(() => {
     if (props.isEditing && props.user?.person) {
-        return props.user.person;
+        return {
+            ...props.user.person,
+            titulo: props.user.titulo || null,
+            cargo:  props.user.cargo  || null,
+            area:   props.user.area   || null,
+        };
     }
     if (selectedEmployee.value) {
         return {
+            titulo:    selectedEmployee.value.person?.titulo || selectedEmployee.value.titulo || null,
             nombres:   selectedEmployee.value.nombres,
             apellidos: selectedEmployee.value.apellidos,
             dni:       selectedEmployee.value.dni,
             email:     selectedEmployee.value.correo,
             telefono:  selectedEmployee.value.telefono,
+            cargo:     selectedEmployee.value.cargo        || null,
+            area:      selectedEmployee.value.direction_nombre || null,
         };
     }
     return null;
@@ -705,10 +732,7 @@ const handleSubmit = validateForm((values) => {
     // Payload base (datos que siempre se envían)
     const payload = {
         person_id:    selectedPersonId.value || null,
-        titulo:       values.titulo   || null,
         email:        values.email    || null,
-        cargo:        values.cargo    || null,
-        area:         values.area     || null,
         rol_id:       values.rol_id,
         is_active:    values.is_active,
         modulos_json,
@@ -723,10 +747,13 @@ const handleSubmit = validateForm((values) => {
 
     // Datos personales solo cuando NO hay persona vinculada
     if (!hasLinkedPerson.value) {
+        payload.titulo   = values.titulo   || null;
         payload.dni      = values.dni;
         payload.name     = values.name;
         payload.apellidos= values.apellidos;
         payload.telefono = values.telefono || null;
+        payload.cargo    = values.cargo    || null;
+        payload.area     = values.area     || null;
     }
 
     emit('submit', payload);

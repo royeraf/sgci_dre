@@ -30,7 +30,7 @@ class HRController extends Controller
     {
         // Cargamos la relación person para tener acceso a nombres/apellidos
         // Ordenamos la colección resultante usando el accessor 'apellidos'
-        $employees = Employee::with(['person', 'direction', 'position'])
+        $employees = Employee::with(['person', 'direction', 'office.direction', 'position'])
             ->get()
             ->sortBy('apellidos', SORT_NATURAL | SORT_FLAG_CASE)
             ->values(); // Reindexar array
@@ -43,7 +43,7 @@ class HRController extends Controller
      */
     public function getEmployee(string $id)
     {
-        $employee = Employee::with(['person', 'vacations', 'direction', 'position'])->find($id);
+        $employee = Employee::with(['person', 'vacations', 'direction', 'office.direction', 'position'])->find($id);
         
         if (!$employee) {
             return response()->json(['message' => 'Empleado no encontrado'], 404);
@@ -82,16 +82,18 @@ class HRController extends Controller
             'dni' => 'required|string|size:8',
             'nombres' => 'required|string|max:255',
             'apellidos' => 'required|string|max:255',
+            'titulo' => 'nullable|string|max:20',
             'fecha_nacimiento' => 'nullable|date',
             'genero' => 'nullable|in:M,F,Masculino,Femenino',
             'direccion' => 'nullable|string|max:255',
             'telefono' => 'nullable|string|max:20',
             'correo' => 'nullable|email|max:255',
             // Datos laborales
-            'cargo_id' => 'nullable|exists:hr_positions,id', // Idealmente usar IDs
-            'direction_id' => 'nullable|exists:hr_directions,id',     // Idealmente usar IDs
+            'cargo_id' => 'nullable|exists:hr_positions,id',
+            'direction_id' => 'nullable|exists:hr_directions,id',
+            'office_id' => 'nullable|exists:hr_offices,id',
             'fecha_ingreso' => 'nullable|date',
-            'tipo_contrato' => 'nullable|string', // Ahora puede ser ID o nombre
+            'tipo_contrato' => 'nullable|string',
             'contract_type_id' => 'nullable|exists:hr_contract_types,id',
             'observaciones' => 'nullable|string',
         ]);
@@ -102,8 +104,16 @@ class HRController extends Controller
         // Actualizar datos personales
         $person->nombres = $validated['nombres'];
         $person->apellidos = $validated['apellidos'];
+        $person->titulo = $validated['titulo'] ?? $person->titulo;
         $person->fecha_nacimiento = $validated['fecha_nacimiento'] ?? $person->fecha_nacimiento;
-        $person->genero = $validated['genero'] === 'Masculino' ? 'M' : ($validated['genero'] === 'Femenino' ? 'F' : ($validated['genero'] ?? $person->genero));
+        $generoRaw = $validated['genero'] ?? null;
+        $person->genero = match($generoRaw) {
+            'M'         => 'Masculino',
+            'F'         => 'Femenino',
+            'Masculino' => 'Masculino',
+            'Femenino'  => 'Femenino',
+            default     => $person->genero,
+        };
         $person->direccion = $validated['direccion'] ?? $person->direccion;
         $person->telefono = $validated['telefono'] ?? $person->telefono;
         $person->email = $validated['correo'] ?? $person->email;
@@ -149,13 +159,19 @@ class HRController extends Controller
              }
         }
 
+        $officeId = $validated['office_id'] ?? null;
+        if ($officeId && !$directionId) {
+            $office = HrOffice::find($officeId);
+            $directionId = $office?->direction_id;
+        }
+
         $employee = Employee::create([
             'person_id' => $person->id,
             'direction_id' => $directionId,
+            'office_id' => $officeId,
             'position_id' => $positionId,
             'contract_type_id' => $contractTypeId,
             'fecha_ingreso' => $validated['fecha_ingreso'] ?? now(),
-            // 'tipo_contrato' ya no se usa directamente
             'observaciones' => $validated['observaciones'],
             'estado' => 'ACTIVO',
         ]);
@@ -179,16 +195,18 @@ class HRController extends Controller
 
         // Validación
         $validated = $request->validate([
-            'dni' => 'sometimes|string|size:8', // Validar unicidad en people si cambia, pero es complejo aqui
+            'dni' => 'sometimes|string|size:8',
             'nombres' => 'sometimes|string|max:255',
             'apellidos' => 'sometimes|string|max:255',
+            'titulo' => 'nullable|string|max:20',
+            'genero' => 'nullable|in:M,F,Masculino,Femenino',
             'telefono' => 'nullable|string|max:20',
             'correo' => 'nullable|email|max:255',
             'direccion' => 'nullable|string|max:255',
             // Laborales
             'cargo_id' => 'nullable|exists:hr_positions,id',
             'direction_id' => 'nullable|exists:hr_directions,id',
-            'fecha_ingreso' => 'nullable|date',
+            'office_id' => 'nullable|exists:hr_offices,id',
             'fecha_ingreso' => 'nullable|date',
             'tipo_contrato' => 'nullable|string',
             'contract_type_id' => 'nullable|exists:hr_contract_types,id',
@@ -201,6 +219,16 @@ class HRController extends Controller
             $personData = [];
             if ($request->has('nombres')) $personData['nombres'] = $validated['nombres'];
             if ($request->has('apellidos')) $personData['apellidos'] = $validated['apellidos'];
+            if ($request->has('titulo')) $personData['titulo'] = $validated['titulo'];
+            if ($request->has('genero') && !is_null($validated['genero'] ?? null)) {
+                $personData['genero'] = match($validated['genero']) {
+                    'M'         => 'Masculino',
+                    'F'         => 'Femenino',
+                    'Masculino' => 'Masculino',
+                    'Femenino'  => 'Femenino',
+                    default     => $employee->person->genero,
+                };
+            }
             if ($request->has('telefono')) $personData['telefono'] = $validated['telefono'];
             if ($request->has('correo')) $personData['email'] = $validated['correo'];
             if ($request->has('direccion')) $personData['direccion'] = $validated['direccion'];
@@ -241,13 +269,20 @@ class HRController extends Controller
         }
         
         // Mapeo de IDs
+        if ($request->has('office_id')) {
+            $employeeData['office_id'] = $validated['office_id'];
+            if ($validated['office_id'] && !$request->has('direction_id')) {
+                $office = HrOffice::find($validated['office_id']);
+                if ($office) $employeeData['direction_id'] = $office->direction_id;
+            }
+        }
         if ($request->has('direction_id')) $employeeData['direction_id'] = $validated['direction_id'];
         elseif ($request->has('area_id')) $employeeData['direction_id'] = $validated['area_id'];
-        elseif ($request->has('direction')) { // fallback nombre
+        elseif ($request->has('direction')) {
              $dirObj = HrDirection::where('nombre', $request->direction)->first();
              if ($dirObj) $employeeData['direction_id'] = $dirObj->id;
         }
-        elseif ($request->has('area')) { // fallback nombre
+        elseif ($request->has('area')) {
              $dirObj = HrDirection::where('nombre', $request->area)->first();
              if ($dirObj) $employeeData['direction_id'] = $dirObj->id;
         }

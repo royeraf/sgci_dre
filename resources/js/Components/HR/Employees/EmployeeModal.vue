@@ -100,6 +100,24 @@
                                 formErrors.contract_type_id }}</p>
                         </div>
 
+                        <!-- Título -->
+                        <div>
+                            <label class="block text-sm font-bold text-slate-700 mb-2">Título Profesional</label>
+                            <select v-model="titulo" v-bind="tituloProps"
+                                class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white outline-none">
+                                <option value="">Sin título</option>
+                                <option value="Lic.">Lic.</option>
+                                <option value="Ing.">Ing.</option>
+                                <option value="Dr.">Dr.</option>
+                                <option value="Dra.">Dra.</option>
+                                <option value="Mg.">Mg.</option>
+                                <option value="Prof.">Prof.</option>
+                                <option value="Abog.">Abog.</option>
+                                <option value="CPC">CPC</option>
+                                <option value="Téc.">Téc.</option>
+                            </select>
+                        </div>
+
                         <!-- Nombres -->
                         <div>
                             <label class="block text-sm font-bold text-slate-700 mb-2">
@@ -162,22 +180,64 @@
                             <p v-if="formErrors.cargo" class="mt-1 text-sm text-red-600">{{ formErrors.cargo }}</p>
                         </div>
 
-                        <!-- Dirección (SELECT) -->
+                        <!-- Dirección (chip UI) -->
                         <div>
-                            <label class="block text-sm font-bold text-slate-700 mb-2">
-                                Dirección / Oficina
-                            </label>
-                            <select v-model="direction" v-bind="directionProps"
-                                class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white transition-colors"
-                                :class="formErrors.direction ? 'border-red-400' : 'border-slate-200'">
-                                <option value="">Seleccione dirección...</option>
-                                <option v-for="d in directions" :key="d.id" :value="d.nombre">
-                                    {{ d.nombre }}
-                                </option>
-                                <option v-if="directions.length === 0" disabled>No hay direcciones registradas</option>
-                            </select>
-                            <p v-if="formErrors.direction" class="mt-1 text-sm text-red-600">{{ formErrors.direction }}
-                            </p>
+                            <label class="block text-sm font-bold text-slate-700 mb-2">Dirección</label>
+                            <div v-if="selectedDirectionData"
+                                class="flex items-center gap-2 px-4 py-2.5 border border-emerald-300 bg-emerald-50 rounded-xl">
+                                <Check class="w-4 h-4 text-emerald-600 flex-shrink-0" />
+                                <p class="flex-1 text-sm font-semibold text-emerald-900 truncate">{{ selectedDirectionData.nombre }}</p>
+                                <button type="button" @click="clearDirection" class="flex-shrink-0 p-0.5 rounded-full hover:bg-emerald-200 transition-colors text-emerald-500">
+                                    <X class="w-4 h-4" />
+                                </button>
+                            </div>
+                            <div v-else class="relative">
+                                <input type="text" v-model="directionQuery" @focus="showDirectionDropdown = true"
+                                    placeholder="Buscar dirección..."
+                                    class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none pr-10" />
+                                <ChevronDown class="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                                <div v-if="showDirectionDropdown && filteredDirections.length > 0"
+                                    class="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl max-h-48 overflow-y-auto">
+                                    <button type="button" v-for="d in filteredDirections" :key="d.id" @click="selectDirection(d)"
+                                        class="w-full text-left px-4 py-2.5 hover:bg-emerald-50 transition-colors flex items-center justify-between group border-b border-slate-50 last:border-0">
+                                        <span class="text-sm font-medium text-slate-700 group-hover:text-emerald-700">{{ d.nombre }}</span>
+                                        <Check v-if="directionId === d.id" class="w-4 h-4 text-emerald-600" />
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Oficina (chip UI) -->
+                        <div>
+                            <label class="block text-sm font-bold text-slate-700 mb-2">Oficina</label>
+                            <div v-if="selectedOfficeData"
+                                class="flex items-center gap-2 px-4 py-2.5 border border-emerald-300 bg-emerald-50 rounded-xl">
+                                <Check class="w-4 h-4 text-emerald-600 flex-shrink-0" />
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-sm font-semibold text-emerald-900 truncate">{{ selectedOfficeData.nombre }}</p>
+                                    <p v-if="selectedOfficeData.direction?.nombre" class="text-xs text-emerald-500 truncate">{{ selectedOfficeData.direction.nombre }}</p>
+                                </div>
+                                <button type="button" @click="clearOffice" class="flex-shrink-0 p-0.5 rounded-full hover:bg-emerald-200 transition-colors text-emerald-500">
+                                    <X class="w-4 h-4" />
+                                </button>
+                            </div>
+                            <div v-else class="relative">
+                                <input type="text" v-model="officeQuery" @focus="showOfficeDropdown = true"
+                                    placeholder="Buscar oficina..."
+                                    class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none pr-10" />
+                                <ChevronDown class="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                                <div v-if="showOfficeDropdown && filteredOffices.length > 0"
+                                    class="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl max-h-48 overflow-y-auto">
+                                    <button type="button" v-for="o in filteredOffices" :key="o.id" @click="selectOffice(o)"
+                                        class="w-full text-left px-4 py-2.5 hover:bg-emerald-50 transition-colors flex flex-col group border-b border-slate-50 last:border-0">
+                                        <div class="flex items-center justify-between">
+                                            <span class="text-sm font-bold text-slate-700 group-hover:text-emerald-700">{{ o.nombre }}</span>
+                                            <Check v-if="officeId === o.id" class="w-4 h-4 text-emerald-600" />
+                                        </div>
+                                        <span class="text-[10px] text-slate-400">{{ o.direction?.nombre || 'Sin Dirección' }}</span>
+                                    </button>
+                                </div>
+                            </div>
                         </div>
 
                         <!-- Teléfono -->
@@ -252,11 +312,11 @@
 </template>
 
 <script setup>
-import { watch, ref } from 'vue';
+import { watch, ref, computed } from 'vue';
 import { useForm } from 'vee-validate';
 import { toTypedSchema } from '@vee-validate/yup';
 import * as yup from 'yup';
-import { X, UserPlus, Pencil, Loader2, Lock, Unlock, Search, ScanBarcode } from 'lucide-vue-next';
+import { X, UserPlus, Pencil, Loader2, Lock, Unlock, Search, ScanBarcode, Check, ChevronDown } from 'lucide-vue-next';
 import axios from 'axios';
 
 const props = defineProps({
@@ -273,6 +333,10 @@ const props = defineProps({
         default: false
     },
     directions: {
+        type: Array,
+        default: () => []
+    },
+    offices: {
         type: Array,
         default: () => []
     },
@@ -294,6 +358,7 @@ const employeeSchema = toTypedSchema(
         dni: yup.string()
             .required('El DNI es obligatorio')
             .matches(/^\d{8}$/, 'El DNI debe tener exactamente 8 dígitos'),
+        titulo: yup.string().transform((value) => value || null).nullable(),
         nombres: yup.string()
             .required('Los nombres son obligatorios')
             .min(2, 'Debe tener al menos 2 caracteres'),
@@ -306,7 +371,8 @@ const employeeSchema = toTypedSchema(
         telefono: yup.string().transform((value) => value || null).nullable(),
         correo: yup.string().transform((value) => value || null).email('Ingrese un correo válido').nullable(),
         cargo: yup.string().required('Debe seleccionar un cargo'),
-        direction: yup.string().transform((value) => value || null).nullable(),
+        direction_id: yup.string().transform((value) => value || null).nullable(),
+        office_id: yup.string().transform((value) => value || null).nullable(),
         fecha_ingreso: yup.string().transform((value) => value || null).nullable(),
         contract_type_id: yup.string().required('Debe seleccionar un tipo de contrato'),
         estado: yup.string().transform((value) => value || null).nullable(),
@@ -318,6 +384,7 @@ const { errors: formErrors, defineField, handleSubmit: validateForm, setValues, 
     validationSchema: employeeSchema,
     initialValues: {
         dni: '',
+        titulo: '',
         nombres: '',
         apellidos: '',
         fecha_nacimiento: '',
@@ -326,7 +393,8 @@ const { errors: formErrors, defineField, handleSubmit: validateForm, setValues, 
         telefono: '',
         correo: '',
         cargo: '',
-        direction: '',
+        direction_id: '',
+        office_id: '',
         fecha_ingreso: '',
         contract_type_id: '',
         estado: 'ACTIVO',
@@ -335,6 +403,7 @@ const { errors: formErrors, defineField, handleSubmit: validateForm, setValues, 
 });
 
 const [dni, dniProps] = defineField('dni');
+const [titulo, tituloProps] = defineField('titulo');
 const [nombres, nombresProps] = defineField('nombres');
 const [apellidos, apellidosProps] = defineField('apellidos');
 const [fechaNacimiento, fechaNacimientoProps] = defineField('fecha_nacimiento');
@@ -343,11 +412,63 @@ const [direccion, direccionProps] = defineField('direccion');
 const [telefono, telefonoProps] = defineField('telefono');
 const [correo, correoProps] = defineField('correo');
 const [cargo, cargoProps] = defineField('cargo');
-const [direction, directionProps] = defineField('direction');
+const [directionId, directionIdProps] = defineField('direction_id');
+const [officeId, officeIdProps] = defineField('office_id');
 const [fechaIngreso, fechaIngresoProps] = defineField('fecha_ingreso');
 const [contractTypeId, contractTypeIdProps] = defineField('contract_type_id');
 const [estado, estadoProps] = defineField('estado');
 const [observaciones, observacionesProps] = defineField('observaciones');
+
+// Destino chip UI
+const directionQuery = ref('');
+const officeQuery = ref('');
+const showDirectionDropdown = ref(false);
+const showOfficeDropdown = ref(false);
+const selectedDirectionData = ref(null);
+const selectedOfficeData = ref(null);
+
+const normalizeText = (text) => {
+    if (!text) return '';
+    return text.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+};
+
+const filteredDirections = computed(() => {
+    if (!directionQuery.value) return props.directions.slice(0, 10);
+    const q = normalizeText(directionQuery.value);
+    return props.directions.filter(d => normalizeText(d.nombre).includes(q)).slice(0, 10);
+});
+
+const filteredOffices = computed(() => {
+    if (!officeQuery.value) return props.offices.slice(0, 10);
+    const q = normalizeText(officeQuery.value);
+    return props.offices.filter(o =>
+        normalizeText(o.nombre).includes(q) ||
+        (o.direction?.nombre && normalizeText(o.direction.nombre).includes(q))
+    ).slice(0, 10);
+});
+
+const selectDirection = (d) => {
+    selectedDirectionData.value = d;
+    directionId.value = d.id;
+    directionQuery.value = d.nombre;
+    showDirectionDropdown.value = false;
+};
+const clearDirection = () => {
+    selectedDirectionData.value = null;
+    directionId.value = '';
+    directionQuery.value = '';
+};
+const selectOffice = (o) => {
+    selectedOfficeData.value = o;
+    officeId.value = o.id;
+    officeQuery.value = o.nombre;
+    showOfficeDropdown.value = false;
+};
+const clearOffice = () => {
+    selectedOfficeData.value = null;
+    officeId.value = '';
+    officeQuery.value = '';
+};
 
 const isDniEditable = ref(true);
 const isConsultando = ref(false);
@@ -360,6 +481,7 @@ watch(() => props.employee, (emp) => {
     if (emp && props.isEditing) {
         setValues({
             dni: emp.dni || '',
+            titulo: emp.titulo || emp.person?.titulo || '',
             nombres: emp.nombres || '',
             apellidos: emp.apellidos || '',
             fecha_nacimiento: emp.fecha_nacimiento ? emp.fecha_nacimiento.split('T')[0] : '',
@@ -368,15 +490,29 @@ watch(() => props.employee, (emp) => {
             telefono: emp.telefono || '',
             correo: emp.correo || '',
             cargo: emp.cargo || '',
-            direction: emp.direction || '',
+            direction_id: emp.direction_id || '',
+            office_id: emp.office_id || '',
             fecha_ingreso: emp.fecha_ingreso ? emp.fecha_ingreso.split('T')[0] : '',
             contract_type_id: emp.contract_type_id || '',
             estado: emp.estado || 'ACTIVO',
             observaciones: emp.observaciones || '',
         });
+        // Pre-poblar chips
+        if (emp.office_id && emp.office) {
+            selectedOfficeData.value = emp.office;
+            officeQuery.value = emp.office.nombre;
+        }
+        if (emp.direction_id && emp.direction) {
+            selectedDirectionData.value = emp.direction;
+            directionQuery.value = emp.direction.nombre;
+        }
         isDniEditable.value = false;
     } else {
         resetForm();
+        selectedDirectionData.value = null;
+        selectedOfficeData.value = null;
+        directionQuery.value = '';
+        officeQuery.value = '';
         isDniEditable.value = true;
     }
 }, { immediate: true });

@@ -60,6 +60,63 @@ const destinoTipo = ref<'direction' | 'office'>('office');
 const camposEditables = ref(true);
 const dropdownContainerRef = ref<HTMLElement | null>(null);
 
+// Custom scrollbar
+const scrollRef = ref<HTMLElement | null>(null);
+const trackRef = ref<HTMLElement | null>(null);
+const thumbTop = ref(0);
+const thumbHeight = ref(0);
+const showThumb = ref(false);
+
+const syncThumb = () => {
+    if (!scrollRef.value || !trackRef.value) return;
+    const { scrollTop, scrollHeight, clientHeight } = scrollRef.value;
+    const trackH = trackRef.value.clientHeight;
+    const ratio = clientHeight / scrollHeight;
+    showThumb.value = ratio < 1;
+    const tH = Math.max(40, trackH * ratio);
+    thumbHeight.value = tH;
+    thumbTop.value = scrollHeight > clientHeight
+        ? (scrollTop / (scrollHeight - clientHeight)) * (trackH - tH)
+        : 0;
+};
+
+let resizeObserver: ResizeObserver | null = null;
+
+let dragging = false;
+let dragStartY = 0;
+let dragStartScrollTop = 0;
+
+const startDrag = (e: MouseEvent) => {
+    dragging = true;
+    dragStartY = e.clientY;
+    dragStartScrollTop = scrollRef.value?.scrollTop ?? 0;
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', stopDrag);
+};
+const onMouseMove = (e: MouseEvent) => {
+    if (!dragging || !scrollRef.value || !trackRef.value) return;
+    const { scrollHeight, clientHeight } = scrollRef.value;
+    const trackH = trackRef.value.clientHeight;
+    const delta = e.clientY - dragStartY;
+    const trackScrollable = trackH - thumbHeight.value;
+    if (trackScrollable > 0)
+        scrollRef.value.scrollTop = dragStartScrollTop + (delta / trackScrollable) * (scrollHeight - clientHeight);
+};
+const stopDrag = () => {
+    dragging = false;
+    document.removeEventListener('mousemove', onMouseMove);
+    document.removeEventListener('mouseup', stopDrag);
+};
+const onTrackClick = (e: MouseEvent) => {
+    if (!scrollRef.value || !trackRef.value) return;
+    const rect = trackRef.value.getBoundingClientRect();
+    const clickY = e.clientY - rect.top;
+    const { scrollHeight, clientHeight } = scrollRef.value;
+    const trackH = trackRef.value.clientHeight;
+    const ratio = (clickY - thumbHeight.value / 2) / (trackH - thumbHeight.value);
+    scrollRef.value.scrollTop = ratio * (scrollHeight - clientHeight);
+};
+
 // Composables logic
 const { isConsultando, consultaMessage, consultaSuccess, consultarDni } = useDniConsultation();
 const { searchQuery, showDropdown, filteredEmployees } = useEmployeeSearch(props.employees);
@@ -102,8 +159,7 @@ const entrySchema = toTypedSchema(yup.object({
     office_id: yup.string().nullable().test('office-required', 'Debe seleccionar una oficina', function (val) {
         return destinoTipo.value === 'direction' || (!!val && val.length > 0);
     }),
-    a_quien_visita: yup.string().nullable(),
-    employee_id: yup.string().nullable(),
+    employee_id: yup.string().required('Debe seleccionar a quién visita'),
     visit_reason_id: yup.string().required('Debe seleccionar un motivo'),
     motivo: yup.string().nullable(),
 }));
@@ -117,7 +173,6 @@ const { errors: formErrors, defineField: defineEntryField, handleSubmit: validat
         hora_ingreso: currentTime.value,
         direction_id: '',
         office_id: '',
-        a_quien_visita: '',
         employee_id: '',
         visit_reason_id: '',
         motivo: '',
@@ -130,25 +185,25 @@ const [apellidos] = defineEntryField('apellidos');
 const [horaIngreso] = defineEntryField('hora_ingreso');
 const [directionId] = defineEntryField('direction_id');
 const [officeId] = defineEntryField('office_id');
-const [aQuienVisita] = defineEntryField('a_quien_visita');
 const [employeeId] = defineEntryField('employee_id');
 const [visitReasonId] = defineEntryField('visit_reason_id');
 const [motivo] = defineEntryField('motivo');
 
 // Logic for employee search interaction
+const selectedEmployeeData = ref<Employee | null>(null);
+
 const selectEmployee = (emp: Employee) => {
+    selectedEmployeeData.value = emp;
     setFieldValue('employee_id', String(emp.id));
-    setFieldValue('a_quien_visita', emp.nombre_completo);
-    searchQuery.value = emp.nombre_completo;
+    searchQuery.value = '';
     showDropdown.value = false;
 };
 
-const handleAQuienVisitaInput = (e: Event) => {
-    const val = (e.target as HTMLInputElement).value;
-    setFieldValue('employee_id', null);
-    setFieldValue('a_quien_visita', val);
-    searchQuery.value = val;
-    showDropdown.value = true;
+const clearEmployee = () => {
+    selectedEmployeeData.value = null;
+    setFieldValue('employee_id', '');
+    searchQuery.value = '';
+    showDropdown.value = false;
 };
 
 const toggleDestino = (tipo: 'direction' | 'office') => {
@@ -156,22 +211,41 @@ const toggleDestino = (tipo: 'direction' | 'office') => {
     if (tipo === 'direction') {
         setFieldValue('office_id', '');
         officeQuery.value = '';
+        selectedOfficeData.value = null;
     } else {
         setFieldValue('direction_id', '');
         directionQuery.value = '';
+        selectedDirectionData.value = null;
     }
 };
 
+const selectedDirectionData = ref<Direction | null>(null);
+const selectedOfficeData = ref<Office | null>(null);
+
 const selectDirection = (d: Direction) => {
+    selectedDirectionData.value = d;
     setFieldValue('direction_id', d.id);
     directionQuery.value = d.nombre;
     showDirectionDropdown.value = false;
 };
 
+const clearDirection = () => {
+    selectedDirectionData.value = null;
+    setFieldValue('direction_id', '');
+    directionQuery.value = '';
+};
+
 const selectOffice = (o: Office) => {
+    selectedOfficeData.value = o;
     setFieldValue('office_id', o.id);
     officeQuery.value = o.nombre;
     showOfficeDropdown.value = false;
+};
+
+const clearOffice = () => {
+    selectedOfficeData.value = null;
+    setFieldValue('office_id', '');
+    officeQuery.value = '';
 };
 
 const handleDniInput = (event: Event) => {
@@ -213,6 +287,7 @@ const onSubmit = validateEntryForm(async (values) => {
     router.post('/visitors', payload as any, {
         onSuccess: (page: any) => {
             resetForm();
+            selectedEmployeeData.value = null;
             emit('close');
             const newVisitId = page.props.flash?.new_visit_id;
             if (newVisitId) {
@@ -252,24 +327,35 @@ const handleClickOutside = (event: MouseEvent) => {
 };
 
 onMounted(() => {
-    nextTick(() => { dniInputRef.value?.focus(); });
+    nextTick(() => {
+        dniInputRef.value?.focus();
+        syncThumb();
+        if (scrollRef.value) {
+            resizeObserver = new ResizeObserver(() => syncThumb());
+            resizeObserver.observe(scrollRef.value);
+        }
+    });
     document.addEventListener('click', handleClickOutside);
 });
 
 onUnmounted(() => {
     document.removeEventListener('click', handleClickOutside);
+    document.removeEventListener('mousemove', onMouseMove);
+    document.removeEventListener('mouseup', stopDrag);
+    resizeObserver?.disconnect();
 });
 </script>
 
 <template>
-    <div class="fixed inset-0 z-50 overflow-y-auto">
-        <div class="flex items-center justify-center min-h-screen px-4">
-            <div class="fixed inset-0 bg-black/50 transition-opacity" @click="$emit('close')"></div>
+    <div class="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div class="fixed inset-0 bg-black/40 backdrop-blur-sm transition-opacity" @click="$emit('close')"></div>
 
-            <div class="relative bg-white rounded-2xl shadow-2xl max-w-2xl w-full z-10 overflow-hidden">
-                <!-- Header -->
+        <!-- Modal + scrollbar custom fuera de la tarjeta -->
+        <div class="relative z-10 flex items-stretch gap-2 max-h-[90vh] w-full max-w-2xl">
+            <div class="bg-white rounded-2xl shadow-2xl flex flex-col flex-1 min-w-0 overflow-hidden">
+                <!-- Header (fijo) -->
                 <div
-                    class="bg-gradient-to-r from-purple-600 to-fuchsia-600 px-6 py-4 flex justify-between items-center">
+                    class="bg-gradient-to-r from-purple-600 to-fuchsia-600 px-6 py-4 flex justify-between items-center flex-shrink-0 rounded-t-2xl">
                     <div>
                         <h3 class="text-xl font-bold text-white flex items-center gap-2">
                             <LogIn class="w-6 h-6" />
@@ -286,8 +372,9 @@ onUnmounted(() => {
                     </button>
                 </div>
 
-                <!-- Form -->
-                <form @submit.prevent="onSubmit" class="p-6 space-y-6">
+                <!-- Form (scrolleable, sin scrollbar nativo) -->
+                <form id="entry-form" @submit.prevent="onSubmit" class="flex-1 min-h-0">
+                <div ref="scrollRef" @scroll="syncThumb" class="p-6 space-y-6 overflow-y-scroll h-full no-scrollbar">
                     <!-- DNI Scanner Section -->
                     <div class="bg-gradient-to-br from-purple-50 to-fuchsia-50 rounded-xl p-4 border border-purple-100">
                         <div class="flex items-center gap-2 mb-3">
@@ -396,82 +483,122 @@ onUnmounted(() => {
                             </label>
                         </div>
 
-                        <div v-if="destinoTipo === 'direction'" class="relative" id="direction-dropdown-container">
-                            <div class="relative">
+                        <!-- Dirección -->
+                        <div v-if="destinoTipo === 'direction'" id="direction-dropdown-container">
+                            <!-- Chip seleccionado -->
+                            <div v-if="selectedDirectionData"
+                                class="flex items-center gap-2 px-4 py-2.5 border border-purple-300 bg-purple-50 rounded-xl">
+                                <Check class="w-4 h-4 text-purple-600 flex-shrink-0" />
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-sm font-semibold text-purple-900 truncate">{{ selectedDirectionData.nombre }}</p>
+                                </div>
+                                <button type="button" @click="clearDirection"
+                                    class="flex-shrink-0 p-0.5 rounded-full hover:bg-purple-200 transition-colors text-purple-500 hover:text-purple-700">
+                                    <X class="w-4 h-4" />
+                                </button>
+                            </div>
+                            <!-- Buscador -->
+                            <div v-else class="relative">
                                 <input type="text" v-model="directionQuery" @focus="showDirectionDropdown = true"
                                     placeholder="Buscar dirección..."
                                     class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors outline-none pr-10"
                                     :class="{ 'border-red-400': formErrors.direction_id }" />
-                                <ChevronDown
-                                    class="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                                <ChevronDown class="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                                <div v-if="showDirectionDropdown && filteredDirections.length > 0"
+                                    class="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl max-h-48 overflow-y-auto custom-scrollbar">
+                                    <button type="button" v-for="d in filteredDirections" :key="d.id"
+                                        @click="selectDirection(d)"
+                                        class="w-full text-left px-4 py-2.5 hover:bg-purple-50 transition-colors flex items-center justify-between group border-b border-slate-50 last:border-0">
+                                        <span class="text-sm font-medium text-slate-700 group-hover:text-purple-700">{{ d.nombre }}</span>
+                                        <Check v-if="directionId === d.id" class="w-4 h-4 text-purple-600" />
+                                    </button>
+                                </div>
                             </div>
-                            <div v-if="showDirectionDropdown && filteredDirections.length > 0"
-                                class="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl max-h-48 overflow-y-auto custom-scrollbar">
-                                <button type="button" v-for="d in filteredDirections" :key="d.id"
-                                    @click="selectDirection(d)"
-                                    class="w-full text-left px-4 py-2.5 hover:bg-purple-50 transition-colors flex items-center justify-between group border-b border-slate-50 last:border-0">
-                                    <span class="text-sm font-medium text-slate-700 group-hover:text-purple-700">{{
-                                        d.nombre }}</span>
-                                    <Check v-if="directionId === d.id" class="w-4 h-4 text-purple-600" />
-                                </button>
-                            </div>
-                            <p v-if="formErrors.direction_id" class="mt-1 text-sm text-red-600">{{
-                                formErrors.direction_id }}</p>
+                            <p v-if="formErrors.direction_id" class="mt-1 text-sm text-red-600">{{ formErrors.direction_id }}</p>
                         </div>
 
-                        <div v-if="destinoTipo === 'office'" class="relative" id="office-dropdown-container">
-                            <div class="relative">
+                        <!-- Oficina -->
+                        <div v-if="destinoTipo === 'office'" id="office-dropdown-container">
+                            <!-- Chip seleccionado -->
+                            <div v-if="selectedOfficeData"
+                                class="flex items-center gap-2 px-4 py-2.5 border border-purple-300 bg-purple-50 rounded-xl">
+                                <Check class="w-4 h-4 text-purple-600 flex-shrink-0" />
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-sm font-semibold text-purple-900 truncate">{{ selectedOfficeData.nombre }}</p>
+                                    <p v-if="selectedOfficeData.direction?.nombre" class="text-xs text-purple-500 truncate">{{ selectedOfficeData.direction.nombre }}</p>
+                                </div>
+                                <button type="button" @click="clearOffice"
+                                    class="flex-shrink-0 p-0.5 rounded-full hover:bg-purple-200 transition-colors text-purple-500 hover:text-purple-700">
+                                    <X class="w-4 h-4" />
+                                </button>
+                            </div>
+                            <!-- Buscador -->
+                            <div v-else class="relative">
                                 <input type="text" v-model="officeQuery" @focus="showOfficeDropdown = true"
                                     placeholder="Buscar oficina..."
                                     class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors outline-none pr-10"
                                     :class="{ 'border-red-400': formErrors.office_id }" />
-                                <ChevronDown
-                                    class="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                                <ChevronDown class="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                                <div v-if="showOfficeDropdown && filteredOffices.length > 0"
+                                    class="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl max-h-48 overflow-y-auto custom-scrollbar">
+                                    <button type="button" v-for="off in filteredOffices" :key="off.id"
+                                        @click="selectOffice(off)"
+                                        class="w-full text-left px-4 py-2.5 hover:bg-purple-50 transition-colors flex flex-col group border-b border-slate-50 last:border-0">
+                                        <div class="flex items-center justify-between">
+                                            <span class="text-sm font-bold text-slate-700 group-hover:text-purple-700">{{ off.nombre }}</span>
+                                            <Check v-if="officeId === off.id" class="w-4 h-4 text-purple-600" />
+                                        </div>
+                                        <span class="text-[10px] text-slate-400 font-medium">{{ off.direction?.nombre || 'Sin Dirección' }}</span>
+                                    </button>
+                                </div>
                             </div>
-                            <div v-if="showOfficeDropdown && filteredOffices.length > 0"
-                                class="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl max-h-48 overflow-y-auto custom-scrollbar">
-                                <button type="button" v-for="off in filteredOffices" :key="off.id"
-                                    @click="selectOffice(off)"
-                                    class="w-full text-left px-4 py-2.5 hover:bg-purple-50 transition-colors flex flex-col group border-b border-slate-50 last:border-0">
-                                    <div class="flex items-center justify-between">
-                                        <span class="text-sm font-bold text-slate-700 group-hover:text-purple-700">{{
-                                            off.nombre }}</span>
-                                        <Check v-if="officeId === off.id" class="w-4 h-4 text-purple-600" />
-                                    </div>
-                                    <span class="text-[10px] text-slate-400 font-medium">{{ off.direction?.nombre ||
-                                        'Sin Dirección' }}</span>
-                                </button>
-                            </div>
-                            <p v-if="formErrors.office_id" class="mt-1 text-sm text-red-600">{{ formErrors.office_id }}
-                            </p>
+                            <p v-if="formErrors.office_id" class="mt-1 text-sm text-red-600">{{ formErrors.office_id }}</p>
                         </div>
                     </div>
 
                     <!-- A quien visita & Hora Ingreso -->
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
                         <div class="relative" ref="dropdownContainerRef">
-                            <label class="block text-sm font-bold text-slate-700 mb-2">A quién visita</label>
-                            <div class="relative">
-                                <input type="text" :value="aQuienVisita" @input="handleAQuienVisitaInput"
-                                    @focus="showDropdown = true" placeholder="Buscar personal o escribir nombre..."
-                                    class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors outline-none pr-10" />
-                                <ChevronDown
-                                    class="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                            </div>
-                            <!-- Dropdown -->
-                            <div v-if="showDropdown && filteredEmployees.length > 0"
-                                class="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl max-h-60 overflow-y-auto custom-scrollbar">
-                                <button type="button" v-for="emp in filteredEmployees" :key="emp.id"
-                                    @click="selectEmployee(emp)"
-                                    class="w-full text-left px-4 py-2 hover:bg-purple-50 transition-colors flex items-center justify-between group">
-                                    <div>
-                                        <p class="font-medium text-slate-700 group-hover:text-purple-700 text-sm">
-                                            {{ emp.nombre_completo }}</p>
-                                        <p class="text-xs text-slate-400">{{ emp.dni }}</p>
-                                    </div>
-                                    <Check v-if="employeeId === emp.id" class="w-4 h-4 text-purple-600" />
+                            <label class="block text-sm font-bold text-slate-700 mb-2">
+                                A quién visita <span class="text-red-500">*</span>
+                            </label>
+
+                            <!-- Empleado seleccionado (chip) -->
+                            <div v-if="selectedEmployeeData"
+                                class="flex items-center gap-2 px-4 py-2.5 border border-purple-300 bg-purple-50 rounded-xl">
+                                <Check class="w-4 h-4 text-purple-600 flex-shrink-0" />
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-sm font-semibold text-purple-900 truncate">{{ selectedEmployeeData.nombre_completo }}</p>
+                                    <p v-if="selectedEmployeeData.cargo" class="text-xs text-purple-500 truncate">{{ selectedEmployeeData.cargo }}</p>
+                                </div>
+                                <button type="button" @click="clearEmployee"
+                                    class="flex-shrink-0 p-0.5 rounded-full hover:bg-purple-200 transition-colors text-purple-500 hover:text-purple-700">
+                                    <X class="w-4 h-4" />
                                 </button>
                             </div>
+
+                            <!-- Buscador (solo cuando no hay selección) -->
+                            <div v-else class="relative">
+                                <input type="text" v-model="searchQuery" @focus="showDropdown = true"
+                                    placeholder="Buscar por nombre o DNI..."
+                                    class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors outline-none pr-10"
+                                    :class="formErrors.employee_id ? 'border-red-400' : 'border-slate-200'" />
+                                <ChevronDown
+                                    class="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                                <!-- Dropdown -->
+                                <div v-if="showDropdown && filteredEmployees.length > 0"
+                                    class="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl max-h-60 overflow-y-auto custom-scrollbar">
+                                    <button type="button" v-for="emp in filteredEmployees" :key="emp.id"
+                                        @click="selectEmployee(emp)"
+                                        class="w-full text-left px-4 py-2.5 hover:bg-purple-50 transition-colors flex items-center gap-3 group border-b border-slate-50 last:border-0">
+                                        <div class="flex-1 min-w-0">
+                                            <p class="font-semibold text-slate-700 group-hover:text-purple-700 text-sm truncate">{{ emp.nombre_completo }}</p>
+                                            <p class="text-xs text-slate-400 truncate">{{ emp.cargo || 'Sin cargo' }} · DNI: {{ emp.dni }}</p>
+                                        </div>
+                                    </button>
+                                </div>
+                            </div>
+                            <p v-if="formErrors.employee_id" class="mt-1 text-sm text-red-600">{{ formErrors.employee_id }}</p>
                         </div>
 
                         <!-- Hora Ingreso (Automática) -->
@@ -521,20 +648,37 @@ onUnmounted(() => {
                         <p v-if="formErrors.motivo" class="mt-1 text-sm text-red-600">{{ formErrors.motivo }}</p>
                     </div>
 
-                    <!-- Actions -->
-                    <div class="flex justify-end gap-3 pt-4 border-t border-slate-200">
-                        <button type="button" @click="$emit('close')"
-                            class="px-6 py-2.5 border-2 border-slate-300 text-slate-600 font-bold rounded-xl hover:bg-slate-50 transition-all">
-                            Cancelar
-                        </button>
-                        <button type="submit" :disabled="isSubmitting"
-                            class="px-6 py-2.5 bg-gradient-to-r from-purple-600 to-fuchsia-600 text-white font-bold rounded-xl hover:from-purple-700 hover:to-fuchsia-700 transition-all disabled:opacity-50">
-                            <Loader2 v-if="isSubmitting" class="w-5 h-5 animate-spin inline mr-2" />
-                            Registrar Ingreso
-                        </button>
-                    </div>
+                </div>
                 </form>
+
+                <!-- Footer (fijo) -->
+                <div class="flex justify-end gap-3 px-6 py-4 border-t border-slate-200 flex-shrink-0 rounded-b-2xl bg-white">
+                    <button type="button" @click="$emit('close')"
+                        class="px-6 py-2.5 border-2 border-slate-300 text-slate-600 font-bold rounded-xl hover:bg-slate-50 transition-all">
+                        Cancelar
+                    </button>
+                    <button type="submit" form="entry-form" :disabled="isSubmitting"
+                        class="px-6 py-2.5 bg-gradient-to-r from-purple-600 to-fuchsia-600 text-white font-bold rounded-xl hover:from-purple-700 hover:to-fuchsia-700 transition-all disabled:opacity-50">
+                        <Loader2 v-if="isSubmitting" class="w-5 h-5 animate-spin inline mr-2" />
+                        Registrar Ingreso
+                    </button>
+                </div>
+            </div>
+
+            <!-- Scrollbar custom (fuera de la tarjeta blanca) -->
+            <div v-show="showThumb" class="flex-shrink-0 flex items-stretch my-2">
+                <div class="bg-white rounded-3xl px-2 py-2 flex items-stretch">
+                    <div ref="trackRef" @click="onTrackClick"
+                        class="w-3 relative cursor-pointer rounded-full">
+                        <div v-show="showThumb"
+                            class="absolute left-0 right-0 rounded-full bg-zinc-400 hover:bg-zinc-500 transition-colors cursor-grab active:cursor-grabbing"
+                            :style="{ top: thumbTop + 'px', height: thumbHeight + 'px' }"
+                            @mousedown.prevent="startDrag">
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 </template>
+

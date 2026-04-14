@@ -86,8 +86,8 @@ const formatDate = (dateString?: string) => {
                         </td>
                         <td class="px-6 py-4">
                             <div class="text-sm font-bold text-slate-700">{{ visit.destino }}</div>
-                            <div v-if="visit.a_quien_visita" class="text-xs text-slate-500">Visita a: {{
-                                visit.a_quien_visita }}</div>
+                            <div v-if="visit.a_quien_visita_nombre" class="text-xs text-slate-500">Visita a: {{
+                                visit.a_quien_visita_nombre }}</div>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                             <div class="flex flex-col gap-2 items-end">

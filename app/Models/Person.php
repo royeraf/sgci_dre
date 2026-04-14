@@ -18,6 +18,7 @@ class Person extends Model
         'dni',
         'nombres',
         'apellidos',
+        'titulo',
         'fecha_nacimiento',
         'genero',
         'direccion',
@@ -41,11 +42,12 @@ class Person extends Model
     }
 
     /**
-     * Obtener el nombre completo en formato normal
+     * Obtener el nombre completo en formato normal (incluye título si existe)
      */
     public function getNombreFullAttribute(): string
     {
-        return "{$this->nombres} {$this->apellidos}";
+        $titulo = $this->titulo ? $this->titulo . ' ' : '';
+        return trim("{$titulo}{$this->nombres} {$this->apellidos}");
     }
 
     /**

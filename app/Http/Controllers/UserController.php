@@ -28,7 +28,7 @@ class UserController extends Controller
      */
     public function getUsers()
     {
-        $users = User::with(['customRole', 'person'])
+        $users = User::with(['customRole', 'person', 'employee.position', 'employee.direction'])
             ->select('id', 'person_id', 'username', 'dni', 'name', 'apellidos', 'email', 'titulo', 'cargo', 'area', 'telefono', 'rol_id', 'modulos_json', 'tabs_json', 'is_active', 'ultimo_acceso', 'created_at')
             ->orderByRaw('COALESCE(name, (SELECT nombres FROM people WHERE people.id = users.person_id)) ASC')
             ->get()
@@ -42,9 +42,9 @@ class UserController extends Controller
                     'apellidos'   => $p?->apellidos ?? $user->getRawOriginal('apellidos'),
                     'full_name'   => $user->full_name,
                     'email'       => $p?->email ?? $user->getRawOriginal('email'),
-                    'titulo'      => $user->getRawOriginal('titulo'),
-                    'cargo'       => $user->getRawOriginal('cargo'),
-                    'area'        => $user->getRawOriginal('area'),
+                    'titulo'      => $user->titulo,
+                    'cargo'       => $user->cargo,
+                    'area'        => $user->area,
                     'telefono'    => $p?->telefono ?? $user->getRawOriginal('telefono'),
                     'rol_id'      => $user->rol_id,
                     'rol_nombre'  => $user->customRole?->nombre,
@@ -71,7 +71,7 @@ class UserController extends Controller
      */
     public function getUser($id)
     {
-        $user = User::with(['customRole', 'person'])->findOrFail($id);
+        $user = User::with(['customRole', 'person', 'employee.position', 'employee.direction'])->findOrFail($id);
         $p = $user->person;
 
         return response()->json([
@@ -82,9 +82,9 @@ class UserController extends Controller
             'apellidos'   => $p?->apellidos ?? $user->getRawOriginal('apellidos'),
             'full_name'   => $user->full_name,
             'email'       => $p?->email ?? $user->getRawOriginal('email'),
-            'titulo'      => $user->getRawOriginal('titulo'),
-            'cargo'       => $user->getRawOriginal('cargo'),
-            'area'        => $user->getRawOriginal('area'),
+            'titulo'      => $user->titulo,
+            'cargo'       => $user->cargo,
+            'area'        => $user->area,
             'telefono'    => $p?->telefono ?? $user->getRawOriginal('telefono'),
             'rol_id'      => $user->rol_id,
             'rol_nombre'  => $user->customRole?->nombre,
@@ -200,10 +200,7 @@ class UserController extends Controller
 
         $userData = [
             'username'    => $username,
-            'titulo'      => $validated['titulo'] ?? null,
             'password'    => Hash::make($validated['password']),
-            'cargo'       => $validated['cargo'] ?? null,
-            'area'        => $validated['area'] ?? null,
             'rol_id'      => $validated['rol_id'],
             'modulos_json'=> !empty($validated['modulos_json']) ? $validated['modulos_json'] : null,
             'tabs_json'   => !empty($validated['tabs_json']) ? $validated['tabs_json'] : null,
@@ -213,16 +210,19 @@ class UserController extends Controller
         if ($hasPersonId) {
             $person = Person::findOrFail($validated['person_id']);
             // Vinculado a RRHH: solo guardamos person_id y el DNI como clave de login
-            // Nombre, apellidos, email, teléfono vienen de people (no se duplican)
+            // Nombre, apellidos, email, teléfono, título, cargo y área vienen de RRHH (no se duplican)
             $userData['person_id'] = $validated['person_id'];
             $userData['dni']       = $person->dni;
         } else {
             // Sin persona: guardar todos los datos directamente en users
+            $userData['titulo']   = $validated['titulo'] ?? null;
             $userData['dni']      = $validated['dni'];
             $userData['name']     = $validated['name'];
             $userData['apellidos']= $validated['apellidos'] ?? null;
             $userData['email']    = $validated['email'] ?? null;
             $userData['telefono'] = $validated['telefono'] ?? null;
+            $userData['cargo']    = $validated['cargo'] ?? null;
+            $userData['area']     = $validated['area'] ?? null;
         }
 
         $user = User::create($userData);
@@ -296,9 +296,6 @@ class UserController extends Controller
         $validated = $request->validate($rules, $messages);
 
         $updateData = [
-            'titulo'      => $validated['titulo'] ?? null,
-            'cargo'       => $validated['cargo'] ?? null,
-            'area'        => $validated['area'] ?? null,
             'rol_id'      => $validated['rol_id'],
             'modulos_json'=> array_key_exists('modulos_json', $validated)
                 ? (!empty($validated['modulos_json']) ? $validated['modulos_json'] : null)
@@ -310,18 +307,21 @@ class UserController extends Controller
         ];
 
         if (!$hasPersonId) {
+            $updateData['titulo']   = $validated['titulo'] ?? null;
             $updateData['dni']      = $validated['dni'];
             $updateData['name']     = $validated['name'];
             $updateData['apellidos']= $validated['apellidos'] ?? null;
             $updateData['email']    = $validated['email'] ?? null;
             $updateData['telefono'] = $validated['telefono'] ?? null;
+            $updateData['cargo']    = $validated['cargo'] ?? null;
+            $updateData['area']     = $validated['area'] ?? null;
         }
 
         $user->update($updateData);
 
         return response()->json([
             'message' => 'Usuario actualizado exitosamente',
-            'user'    => $user->load(['customRole', 'person']),
+            'user'    => $user->load(['customRole', 'person', 'employee.position', 'employee.direction']),
         ]);
     }
 

@@ -98,6 +98,7 @@ class User extends Authenticatable
      */
     protected $appends = [
         'full_name',
+        'titulo',
         'dni',
         'telefono',
     ];
@@ -139,13 +140,25 @@ class User extends Authenticatable
     }
 
     /**
+     * Título del usuario: de people si está vinculado, si no del campo directo.
+     */
+    public function getTituloAttribute(): ?string
+    {
+        if ($this->person_id) {
+            $person = $this->relationLoaded('person') ? $this->person : $this->person()->first();
+            return $person?->titulo ?? $this->attributes['titulo'] ?? null;
+        }
+        return $this->attributes['titulo'] ?? null;
+    }
+
+    /**
      * Get the full name with title.
      */
     public function getFullNameAttribute(): string
     {
         $nombre    = $this->getNameAttribute() ?? '';
         $apellidos = $this->getApellidosAttribute() ?? '';
-        $titulo    = $this->attributes['titulo'] ?? '';
+        $titulo    = $this->getTituloAttribute() ?? '';
         $titulo    = $titulo ? $titulo . ' ' : '';
 
         return trim($titulo . $nombre . ($apellidos ? ' ' . $apellidos : ''));
@@ -160,12 +173,50 @@ class User extends Authenticatable
     }
 
     /**
+     * Relación directa con Employee (comparte person_id como FK)
+     */
+    public function employee(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(Employee::class, 'person_id', 'person_id');
+    }
+
+    /**
      * Obtener el Employee asociado al usuario (a través de person)
+     * @deprecated Usar la relación employee() con eager-load en lugar de este accessor
      */
     public function getEmployeeAttribute(): ?Employee
     {
         if (!$this->person_id) return null;
+        if ($this->relationLoaded('employee')) return $this->getRelation('employee');
         return Employee::where('person_id', $this->person_id)->first();
+    }
+
+    /**
+     * Cargo del usuario: desde hr_positions si está vinculado a RRHH, si no del campo directo.
+     */
+    public function getCargoAttribute(): ?string
+    {
+        if ($this->person_id) {
+            $employee = $this->relationLoaded('employee')
+                ? $this->getRelation('employee')
+                : $this->employee()->with('position')->first();
+            return $employee?->position?->nombre ?? $this->attributes['cargo'] ?? null;
+        }
+        return $this->attributes['cargo'] ?? null;
+    }
+
+    /**
+     * Área del usuario: desde hr_directions si está vinculado a RRHH, si no del campo directo.
+     */
+    public function getAreaAttribute(): ?string
+    {
+        if ($this->person_id) {
+            $employee = $this->relationLoaded('employee')
+                ? $this->getRelation('employee')
+                : $this->employee()->with('direction')->first();
+            return $employee?->direction?->nombre ?? $this->attributes['area'] ?? null;
+        }
+        return $this->attributes['area'] ?? null;
     }
 
     /**
