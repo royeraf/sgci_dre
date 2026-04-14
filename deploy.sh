@@ -17,6 +17,13 @@
 
 set -euo pipefail
 
+# ─── Guardia: evitar ejecución accidental en el VPS ──────────
+if [ "$(hostname)" = "drehuanuco.gob.pe" ] || [[ "$(whoami)" == "drehua5" && -d "/home/drehua5" ]]; then
+    echo "ERROR: Este script debe ejecutarse en tu máquina LOCAL, no en el VPS."
+    echo "       Desde tu PC: ./deploy.sh"
+    exit 1
+fi
+
 # ─── Configuración ───────────────────────────────────────────
 VPS_USER="drehua5"
 VPS_HOST="drehuanuco.gob.pe"
@@ -143,6 +150,30 @@ do_sync_code() {
 
 
 
+# ─── 3. Subir build de assets ────────────────────────────────
+do_upload_build() {
+    print_step "PASO 3 — Subiendo build de assets al VPS"
+
+    cd "$LOCAL_PROJECT_DIR"
+
+    echo "  Comprimiendo build..."
+    cd public
+    rm -f build.zip
+    zip -r build.zip build/ -q
+    BUILD_SIZE=$(du -h build.zip | cut -f1)
+    cd "$LOCAL_PROJECT_DIR"
+    print_ok "build.zip creado (${BUILD_SIZE})"
+
+    echo "  Subiendo build.zip al VPS..."
+    scp public/build.zip "${VPS_SSH}:${VPS_PATH}/public/"
+
+    echo "  Descomprimiendo en el VPS..."
+    ssh "${VPS_SSH}" "cd ${VPS_PATH}/public && rm -rf build && unzip -o build.zip -q && rm build.zip"
+
+    print_ok "Assets desplegados en public/build/"
+    echo ""
+}
+
 # ─── 4. Configurar el VPS ───────────────────────────────────
 do_remote_config() {
     print_step "PASO 4 — Configurando el VPS"
@@ -154,21 +185,18 @@ do_remote_config() {
         echo "  [VPS] PHP $(php -v | head -1 | awk '{print $2}')"
         echo "  [VPS] Laravel $(php artisan --version | awk '{print $NF}')"
 
-        echo "  [VPS] Preparando repo para el git pull..."
-        git checkout -- public/build.zip 2>/dev/null || true
-        git stash 2>/dev/null || true
-        
-        echo "  [VPS] Descargando últimos cambios (git pull)..."
-        git pull || echo "  [VPS] ⚠ Advertencia: No se pudo hacer git pull (revisa manualmente si hay más conflictos)."
-        
-        git stash pop 2>/dev/null || true
-
-        echo "  [VPS] Instalando Node Modules con Bun (borrando caché previa)..."
-        rm -rf node_modules bun.lock bun.lockb
-        ~/.bun/bin/bun install || bun install --verbose
-
-        echo "  [VPS] Compilando Assets con Vite..."
-        ~/.bun/bin/bun run build || bun run build
+        # ── Instalar dependencias y compilar assets con Bun ──
+        echo "  [VPS] Instalando dependencias con Bun..."
+        BUN_BIN="${HOME}/.bun/bin/bun"
+        if [ ! -f "$BUN_BIN" ]; then BUN_BIN="$(command -v bun 2>/dev/null || echo '')"; fi
+        if [ -z "$BUN_BIN" ]; then
+            echo "  [VPS] ✗ Bun no encontrado. Instálalo con: curl -fsSL https://bun.sh/install | bash"
+            exit 1
+        fi
+        "$BUN_BIN" install --frozen-lockfile 2>/dev/null || "$BUN_BIN" install
+        echo "  [VPS] Compilando assets con Vite..."
+        "$BUN_BIN" run build
+        echo "  [VPS] ✓ Assets compilados"
 
         # ── Asegurar .user.ini con memory_limit ──
         if ! grep -q "memory_limit" .user.ini 2>/dev/null; then
@@ -315,7 +343,7 @@ main() {
             do_verify
             ;;
         *)
-            # Despliegue completo (el build se hace en el VPS)
+            # Despliegue completo: rsync código → config VPS (bun build incluido) → migraciones
             do_sync_code
             do_remote_config
             do_migrations
