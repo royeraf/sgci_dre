@@ -2,48 +2,53 @@
 
 # ╔════════════════════════════════════════════════════════════╗
 # ║  SGCI DRE Huánuco — Script de Despliegue                  ║
-# ║  Uso: Se ejecuta LOCALMENTE para preparar + subir cambios ║
-# ║  al VPS en documentos.drehuanuco.gob.pe                   ║
+# ╠════════════════════════════════════════════════════════════╣
+# ║  DESDE TU PC LOCAL:                                        ║
+# ║    ./deploy.sh              → rsync + build VPS + config   ║
+# ║    ./deploy.sh --sync-code  → solo rsync código PHP        ║
+# ║    ./deploy.sh --upload-assets → build local + subir zip   ║
+# ║    ./deploy.sh --build-only → solo compilar local          ║
+# ║    ./deploy.sh --remote     → solo config remota VPS       ║
+# ║                                                            ║
+# ║  DESDE EL TERMINAL DEL VPS (cPanel):                       ║
+# ║    bash deploy.sh --vps     → git pull + build + artisan   ║
 # ╚════════════════════════════════════════════════════════════╝
-#
-# USO:
-#   ./deploy.sh              → Despliegue completo (build + subir + configurar)
-#   ./deploy.sh --build-only → Solo compilar assets localmente
-#   ./deploy.sh --remote     → Solo ejecutar configuración en el VPS
-#   ./deploy.sh --help       → Mostrar ayuda
-#
-# REQUISITOS LOCALES: node, npm, git, scp/rsync, ssh
-# REQUISITOS VPS:     php 8.1+, composer, mysql
 
 set -euo pipefail
 
+# ─── Detectar modo VPS ───────────────────────────────────────
+VPS_MODE=false
+for arg in "$@"; do
+    [[ "$arg" == "--vps" ]] && VPS_MODE=true
+done
+
 # ─── Guardia: evitar ejecución accidental en el VPS ──────────
-if [ "$(hostname)" = "drehuanuco.gob.pe" ] || [[ "$(whoami)" == "drehua5" && -d "/home/drehua5" ]]; then
-    echo "ERROR: Este script debe ejecutarse en tu máquina LOCAL, no en el VPS."
-    echo "       Desde tu PC: ./deploy.sh"
-    exit 1
+if [ "$VPS_MODE" = false ]; then
+    if [ "$(whoami)" = "drehua5" ] || [ "$(hostname)" = "drehuanuco.gob.pe" ]; then
+        echo "ERROR: Para ejecutar en el VPS usa: bash deploy.sh --vps"
+        exit 1
+    fi
 fi
 
-# ─── Configuración ───────────────────────────────────────────
+# ─── Configuración (solo relevante en modo local) ────────────
 VPS_USER="drehua5"
 VPS_HOST="drehuanuco.gob.pe"
+VPS_PORT="22"                    # Cambiar si el VPS usa otro puerto SSH
 VPS_PATH="~/documentos.drehuanuco.gob.pe"
-SSH_KEY="${HOME}/.ssh/dre_vps"   # Clave SSH sin contraseña para el VPS
+SSH_KEY="${HOME}/.ssh/dre_vps"
 VPS_SSH="${VPS_USER}@${VPS_HOST}"
-SSH_OPTS="-i ${SSH_KEY} -o StrictHostKeyChecking=no -o BatchMode=yes"
+if [ -f "${SSH_KEY}" ]; then
+    SSH_OPTS="-i ${SSH_KEY} -p ${VPS_PORT} -o StrictHostKeyChecking=no -o BatchMode=yes"
+else
+    SSH_OPTS="-p ${VPS_PORT} -o StrictHostKeyChecking=no"
+fi
 DOMAIN="https://documentos.drehuanuco.gob.pe"
 LOCAL_PROJECT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
-# Colores
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-CYAN='\033[0;36m'
-BOLD='\033[1m'
-NC='\033[0m'
+# ─── Colores ─────────────────────────────────────────────────
+RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'
+BLUE='\033[0;34m'; CYAN='\033[0;36m'; BOLD='\033[1m'; NC='\033[0m'
 
-# ─── Funciones ───────────────────────────────────────────────
 print_header() {
     echo ""
     echo -e "${BLUE}╔════════════════════════════════════════════════╗${NC}"
@@ -52,75 +57,81 @@ print_header() {
     echo -e "${BLUE}╚════════════════════════════════════════════════╝${NC}"
     echo ""
 }
-
-print_step() {
-    echo -e "${CYAN}━━━ $1${NC}"
-}
-
-print_ok() {
-    echo -e "  ${GREEN}✓${NC} $1"
-}
-
-print_warn() {
-    echo -e "  ${YELLOW}⚠${NC} $1"
-}
-
-print_error() {
-    echo -e "  ${RED}✗${NC} $1"
-}
-
-print_help() {
-    echo "USO: ./deploy.sh [opción]"
-    echo ""
-    echo "Opciones:"
-    echo "  (sin argumentos)   Despliegue completo: build + subir + configurar"
-    echo "  --build-only       Solo compilar assets localmente (npm run build)"
-    echo "  --upload-assets    Compilar y subir solo los assets al VPS (sin rsync de código)"
-    echo "  --remote           Solo ejecutar configuración remota en el VPS"
-    echo "  --sync-code        Sincronizar código PHP/Blade al VPS (sin build)"
-    echo "  --help             Mostrar esta ayuda"
-    echo ""
-}
-
+print_step() { echo -e "${CYAN}━━━ $1${NC}"; }
+print_ok()   { echo -e "  ${GREEN}✓${NC} $1"; }
+print_warn() { echo -e "  ${YELLOW}⚠${NC} $1"; }
+print_error(){ echo -e "  ${RED}✗${NC} $1"; }
 confirm() {
     echo -e "${YELLOW}❓ $1 (s/n)${NC}"
     read -r respuesta
     [[ "$respuesta" =~ ^[sS]$ ]]
 }
 
-# ─── 1. Build local ─────────────────────────────────────────
-do_build() {
-    print_step "PASO 1 — Compilando assets localmente"
+# ════════════════════════════════════════════════════════════
+# MODO VPS — se ejecuta directamente en el servidor
+# ════════════════════════════════════════════════════════════
+do_vps_deploy() {
+    APP_DIR="${HOME}/documentos.drehuanuco.gob.pe"
+    cd "$APP_DIR"
 
-    cd "$LOCAL_PROJECT_DIR"
+    # ── Git pull ──────────────────────────────────────────
+    print_step "Descargando cambios (git pull)"
+    git pull origin main || { print_error "git pull falló. Revisa conflictos."; exit 1; }
+    print_ok "Código actualizado"
 
-    # Verificar que node_modules existe
-    if [ ! -d "node_modules" ]; then
-        echo "  Instalando dependencias npm..."
-        npm install
-    fi
-
-    # Compilar assets
-    echo "  Compilando con Vite..."
-    npm run build
-
-    if [ $? -eq 0 ]; then
-        print_ok "Assets compilados en public/build/"
-    else
-        print_error "Error al compilar. Revisa los errores de Vite."
+    # ── Bun install + build ───────────────────────────────
+    print_step "Instalando dependencias y compilando assets"
+    BUN_BIN="${HOME}/.bun/bin/bun"
+    [ ! -f "$BUN_BIN" ] && BUN_BIN="$(command -v bun 2>/dev/null || echo '')"
+    if [ -z "$BUN_BIN" ]; then
+        print_error "Bun no encontrado. Instalar: curl -fsSL https://bun.sh/install | bash"
         exit 1
     fi
+    "$BUN_BIN" install --frozen-lockfile 2>/dev/null || "$BUN_BIN" install
+    print_ok "Dependencias instaladas"
+    "$BUN_BIN" run build
+    print_ok "Assets compilados"
 
+    # ── Caché Laravel ─────────────────────────────────────
+    print_step "Configurando Laravel"
+    php artisan config:clear -q && php artisan cache:clear -q
+    php artisan route:clear -q  && php artisan view:clear -q
+    php artisan config:cache -q && php artisan route:cache -q && php artisan view:cache -q
+    print_ok "Caché regenerada"
 
+    # ── Migraciones ───────────────────────────────────────
+    if confirm "¿Ejecutar migraciones?"; then
+        print_step "Ejecutando migraciones"
+        php artisan migrate --force
+        print_ok "Migraciones ejecutadas"
+    fi
+
+    # ── Permisos ──────────────────────────────────────────
+    chmod -R 755 storage bootstrap/cache 2>/dev/null || true
+    chmod -R 775 storage/logs 2>/dev/null || true
+    : > error_log 2>/dev/null || true
+    print_ok "Permisos y logs configurados"
+
+    echo ""
+    echo -e "${GREEN}╔════════════════════════════════════════════════╗${NC}"
+    echo -e "${GREEN}║  ✅ Deploy VPS completado                      ║${NC}"
+    echo -e "${GREEN}╚════════════════════════════════════════════════╝${NC}"
+    echo ""
 }
 
-# ─── 2. Sincronizar código al VPS ───────────────────────────
+# ════════════════════════════════════════════════════════════
+# MODO LOCAL — rsync + SSH al VPS
+# ════════════════════════════════════════════════════════════
+do_build() {
+    print_step "PASO 1 — Compilando assets localmente"
+    cd "$LOCAL_PROJECT_DIR"
+    [ ! -d "node_modules" ] && npm install
+    npm run build && print_ok "Assets compilados en public/build/" || { print_error "Error al compilar."; exit 1; }
+}
+
 do_sync_code() {
     print_step "PASO 2 — Sincronizando código al VPS"
-
     cd "$LOCAL_PROJECT_DIR"
-
-    # Archivos y carpetas a sincronizar
     echo "  Subiendo código PHP, rutas, config..."
     rsync -az --delete -e "ssh ${SSH_OPTS}" \
         --exclude='node_modules' \
@@ -145,143 +156,84 @@ do_sync_code() {
         --exclude='bun.lock' \
         --exclude='bun.lockb' \
         ./ "${VPS_SSH}:${VPS_PATH}/"
-
     print_ok "Código sincronizado"
     echo ""
 }
 
-
-
-# ─── 3. Subir build de assets ────────────────────────────────
 do_upload_build() {
     print_step "PASO 3 — Subiendo build de assets al VPS"
-
     cd "$LOCAL_PROJECT_DIR"
-
     echo "  Comprimiendo build..."
-    cd public
-    rm -f build.zip
-    zip -r build.zip build/ -q
+    cd public && rm -f build.zip && zip -r build.zip build/ -q
     BUILD_SIZE=$(du -h build.zip | cut -f1)
     cd "$LOCAL_PROJECT_DIR"
     print_ok "build.zip creado (${BUILD_SIZE})"
-
-    echo "  Subiendo build.zip al VPS..."
-    scp -i "${SSH_KEY}" public/build.zip "${VPS_SSH}:${VPS_PATH}/public/"
-
-    echo "  Descomprimiendo en el VPS..."
+    echo "  Subiendo al VPS..."
+    scp -i "${SSH_KEY}" -P "${VPS_PORT}" public/build.zip "${VPS_SSH}:${VPS_PATH}/public/"
     ssh ${SSH_OPTS} "${VPS_SSH}" "cd ${VPS_PATH}/public && rm -rf build && unzip -o build.zip -q && rm build.zip"
-
     print_ok "Assets desplegados en public/build/"
     echo ""
 }
 
-# ─── 4. Configurar el VPS ───────────────────────────────────
 do_remote_config() {
-    print_step "PASO 4 — Configurando el VPS"
-
+    print_step "PASO 4 — Configurando el VPS vía SSH"
     ssh ${SSH_OPTS} "${VPS_SSH}" bash -s << 'REMOTE_SCRIPT'
         set -e
         cd ~/documentos.drehuanuco.gob.pe
-
         echo "  [VPS] PHP $(php -v | head -1 | awk '{print $2}')"
         echo "  [VPS] Laravel $(php artisan --version | awk '{print $NF}')"
 
-        # ── Instalar dependencias y compilar assets con Bun ──
-        echo "  [VPS] Instalando dependencias con Bun..."
         BUN_BIN="${HOME}/.bun/bin/bun"
-        if [ ! -f "$BUN_BIN" ]; then BUN_BIN="$(command -v bun 2>/dev/null || echo '')"; fi
-        if [ -z "$BUN_BIN" ]; then
-            echo "  [VPS] ✗ Bun no encontrado. Instálalo con: curl -fsSL https://bun.sh/install | bash"
-            exit 1
-        fi
+        [ ! -f "$BUN_BIN" ] && BUN_BIN="$(command -v bun 2>/dev/null || echo '')"
+        if [ -z "$BUN_BIN" ]; then echo "  [VPS] ✗ Bun no encontrado."; exit 1; fi
+        echo "  [VPS] Instalando dependencias..."
         "$BUN_BIN" install --frozen-lockfile 2>/dev/null || "$BUN_BIN" install
-        echo "  [VPS] Compilando assets con Vite..."
+        echo "  [VPS] Compilando assets..."
         "$BUN_BIN" run build
         echo "  [VPS] ✓ Assets compilados"
 
-        # ── Asegurar .user.ini con memory_limit ──
-        if ! grep -q "memory_limit" .user.ini 2>/dev/null; then
-            echo "memory_limit = 256M" > .user.ini
-            echo "  [VPS] ✓ .user.ini creado con memory_limit=256M"
-        fi
-        if ! grep -q "memory_limit" public/.user.ini 2>/dev/null; then
-            echo "memory_limit = 256M" > public/.user.ini
-            echo "  [VPS] ✓ public/.user.ini creado con memory_limit=256M"
-        fi
+        grep -q "memory_limit" .user.ini 2>/dev/null || echo "memory_limit = 256M" > .user.ini
+        grep -q "memory_limit" public/.user.ini 2>/dev/null || echo "memory_limit = 256M" > public/.user.ini
 
-        # ── Asegurar .htaccess raíz (rewrite a public/) ──
-        if [ ! -f .htaccess ]; then
-            cat > .htaccess << 'HTACCESS'
+        [ ! -f .htaccess ] && cat > .htaccess << 'HTACCESS'
 <IfModule mod_rewrite.c>
     RewriteEngine On
     RewriteCond %{REQUEST_URI} !^/public/
     RewriteRule ^(.*)$ public/$1 [L]
 </IfModule>
-
 # php -- BEGIN cPanel-generated handler, do not edit
-# Set the "ea-php81" package as the default "PHP" programming language.
 <IfModule mime_module>
   AddHandler application/x-httpd-ea-php81 .php .php8 .phtml
 </IfModule>
 # php -- END cPanel-generated handler, do not edit
 HTACCESS
-            echo "  [VPS] ✓ .htaccess raíz creado"
-        fi
 
-        # ── Asegurar public/.htaccess (SIN Options) ──
         cat > public/.htaccess << 'HTACCESS_PUBLIC'
 <IfModule mod_rewrite.c>
     RewriteEngine On
-
-    # Handle Authorization Header
     RewriteCond %{HTTP:Authorization} .
     RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
-
-    # Redirect Trailing Slashes If Not A Folder...
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteCond %{REQUEST_URI} (.+)/$
     RewriteRule ^ %1 [L,R=301]
-
-    # Send Requests To Front Controller...
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteRule ^ index.php [L]
 </IfModule>
 HTACCESS_PUBLIC
-        echo "  [VPS] ✓ public/.htaccess configurado (sin Options)"
 
-        # ── Permisos ──
         chmod -R 755 storage bootstrap/cache 2>/dev/null
         chmod -R 775 storage/logs 2>/dev/null
-        echo "  [VPS] ✓ Permisos configurados"
-
-        # ── Limpiar caché ──
-        php artisan config:clear -q
-        php artisan cache:clear -q
-        php artisan route:clear -q
-        php artisan view:clear -q
-        echo "  [VPS] ✓ Caché limpiada"
-
-        # ── Regenerar caché de producción ──
-        php artisan config:cache -q
-        php artisan route:cache -q
-        php artisan view:cache -q
-        echo "  [VPS] ✓ Caché de producción generada"
-
-        # ── Limpiar error_log antiguo ──
+        php artisan config:clear -q && php artisan cache:clear -q
+        php artisan route:clear -q  && php artisan view:clear -q
+        php artisan config:cache -q && php artisan route:cache -q && php artisan view:cache -q
         : > error_log 2>/dev/null
-        echo "  [VPS] ✓ error_log limpiado"
-
-        echo ""
-        echo "  [VPS] 🎉 Configuración completada"
+        echo "  [VPS] ✓ Configuración completada"
 REMOTE_SCRIPT
-
     print_ok "VPS configurado exitosamente"
     echo ""
 }
 
-# ─── 5. Migraciones (opcional) ───────────────────────────────
 do_migrations() {
     if confirm "¿Ejecutar migraciones en el VPS?"; then
         print_step "Ejecutando migraciones..."
@@ -291,24 +243,14 @@ do_migrations() {
     echo ""
 }
 
-# ─── 6. Verificación ────────────────────────────────────────
 do_verify() {
     print_step "VERIFICACIÓN FINAL"
-
-    # Verificar que el sitio responde
     HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "${DOMAIN}/login" 2>/dev/null || echo "000")
-
-    if [ "$HTTP_STATUS" = "200" ]; then
-        print_ok "Sitio respondiendo correctamente (HTTP ${HTTP_STATUS})"
-    elif [ "$HTTP_STATUS" = "302" ]; then
-        print_ok "Sitio respondiendo con redirección (HTTP ${HTTP_STATUS}) — OK"
-    elif [ "$HTTP_STATUS" = "000" ]; then
-        print_warn "No se pudo conectar al sitio. Verifica manualmente: ${DOMAIN}"
-    else
-        print_error "Sitio respondió con HTTP ${HTTP_STATUS}. Revisa los logs."
-        echo "  Comando para revisar: ssh ${VPS_SSH} 'tail -20 ${VPS_PATH}/storage/logs/laravel.log'"
+    if   [ "$HTTP_STATUS" = "200" ]; then print_ok "Sitio OK (HTTP 200)"
+    elif [ "$HTTP_STATUS" = "302" ]; then print_ok "Sitio OK con redirección (HTTP 302)"
+    elif [ "$HTTP_STATUS" = "000" ]; then print_warn "No se pudo conectar. Verifica: ${DOMAIN}"
+    else print_error "Sitio respondió HTTP ${HTTP_STATUS}. Revisa: storage/logs/laravel.log"
     fi
-
     echo ""
     echo -e "${GREEN}╔════════════════════════════════════════════════╗${NC}"
     echo -e "${GREEN}║  ✅ DESPLIEGUE COMPLETADO                      ║${NC}"
@@ -317,22 +259,42 @@ do_verify() {
     echo ""
 }
 
+print_help() {
+    echo "USO: ./deploy.sh [opción]"
+    echo ""
+    echo "  Desde tu PC local:"
+    echo "  (sin argumentos)   rsync código + build en VPS + config + migraciones"
+    echo "  --sync-code        Solo rsync código PHP al VPS"
+    echo "  --upload-assets    Build local + subir zip al VPS (si SSH no puede ejecutar bun)"
+    echo "  --remote           Solo config remota en VPS (bun build + artisan)"
+    echo "  --build-only       Solo compilar assets localmente"
+    echo ""
+    echo "  Desde el terminal web del VPS (cPanel):"
+    echo "  --vps              git pull + bun build + artisan cache + migraciones"
+    echo ""
+    echo "  --help             Mostrar esta ayuda"
+    echo ""
+}
+
 # ─── Main ────────────────────────────────────────────────────
 main() {
     print_header
 
     case "${1:-}" in
+        --vps)
+            do_vps_deploy
+            ;;
         --help)
             print_help
             ;;
         --build-only)
             do_build
-            print_ok "Build completado. Usa './deploy.sh' para despliegue completo."
+            print_ok "Build local completado."
             ;;
         --upload-assets)
             do_build
             do_upload_build
-            print_ok "Assets compilados y subidos al VPS."
+            print_ok "Assets subidos al VPS."
             ;;
         --remote)
             do_remote_config
@@ -345,7 +307,6 @@ main() {
             do_verify
             ;;
         *)
-            # Despliegue completo: rsync código → config VPS (bun build incluido) → migraciones
             do_sync_code
             do_remote_config
             do_migrations
