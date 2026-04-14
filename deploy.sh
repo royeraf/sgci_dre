@@ -66,6 +66,7 @@ print_help() {
     echo "Opciones:"
     echo "  (sin argumentos)   Despliegue completo: build + subir + configurar"
     echo "  --build-only       Solo compilar assets localmente (npm run build)"
+    echo "  --upload-assets    Compilar y subir solo los assets al VPS (sin rsync de código)"
     echo "  --remote           Solo ejecutar configuración remota en el VPS"
     echo "  --sync-code        Sincronizar código PHP/Blade al VPS (sin build)"
     echo "  --help             Mostrar esta ayuda"
@@ -297,6 +298,11 @@ main() {
         --build-only)
             do_build
             print_ok "Build completado. Usa './deploy.sh' para despliegue completo."
+            ;;
+        --upload-assets)
+            do_build
+            do_upload_build
+            print_ok "Assets compilados y subidos al VPS."
             ;;
         --remote)
             do_remote_config
