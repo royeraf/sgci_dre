@@ -4,14 +4,13 @@
             <!-- Header -->
             <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
                 <div>
-                    <h1
-                        class="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+                    <h1 class="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
                         Gestión de Usuarios
                     </h1>
                     <p class="mt-2 text-slate-600">Administración de usuarios del sistema y sus roles</p>
                 </div>
                 <div class="flex flex-wrap gap-2">
-                    <button @click="createNewUser"
+                    <button v-if="activeTab === 'usuarios'" @click="createNewUser"
                         class="inline-flex items-center px-5 py-2.5 text-sm font-bold rounded-xl shadow-lg text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 transition-all">
                         <UserPlus class="w-5 h-5 mr-2" />
                         Nuevo Usuario
@@ -22,24 +21,52 @@
             <!-- Summary Cards -->
             <SummaryCards :summary="summary" />
 
-            <!-- Filters -->
-            <UserFilters :filters="localFilters" :result-count="filteredUsers.length" :roles="roles" :areas="areas"
-                :positions="positions" @update:filters="localFilters = $event" @clear="clearFilters" />
+            <!-- Tabs Navigation -->
+            <div class="border-b border-slate-200 mb-8">
+                <nav class="-mb-px flex space-x-8">
+                    <button @click="activeTab = 'usuarios'" :class="[
+                        activeTab === 'usuarios'
+                            ? 'border-indigo-600 text-indigo-600'
+                            : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300',
+                        'whitespace-nowrap py-4 px-1 border-b-2 font-bold text-sm flex items-center gap-2 transition-all duration-200'
+                    ]">
+                        <Users class="w-5 h-5" />
+                        Usuarios
+                    </button>
+                    <button @click="activeTab = 'roles'" :class="[
+                        activeTab === 'roles'
+                            ? 'border-purple-600 text-purple-600'
+                            : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300',
+                        'whitespace-nowrap py-4 px-1 border-b-2 font-bold text-sm flex items-center gap-2 transition-all duration-200'
+                    ]">
+                        <Shield class="w-5 h-5" />
+                        Roles
+                    </button>
+                </nav>
+            </div>
 
-            <!-- Users Table -->
-            <UserTable :users="filteredUsers" :loading="isLoading" @view="viewUser" @edit="editUser"
-                @toggle-status="toggleUserStatus" @reset-password="resetUserPassword" @delete="handleDeleteUser" />
+            <!-- Tab: Usuarios -->
+            <template v-if="activeTab === 'usuarios'">
+                <!-- Filters -->
+                <UserFilters :filters="localFilters" :result-count="filteredUsers.length" :roles="roles" :areas="areas"
+                    :positions="positions" @update:filters="localFilters = $event" @clear="clearFilters" />
 
-            <!-- User Modal -->
+                <!-- Users Table -->
+                <UserTable :users="filteredUsers" :loading="isLoading" @view="viewUser" @edit="editUser"
+                    @toggle-status="toggleUserStatus" @reset-password="resetUserPassword" @delete="handleDeleteUser" />
+            </template>
+
+            <!-- Tab: Roles -->
+            <RolesManager v-if="activeTab === 'roles'" />
+
+            <!-- Modals -->
             <UserModal v-if="showUserModal" :user="selectedUser" :is-editing="isEditing" :submitting="isSubmitting"
                 :roles="roles" :areas="areas" :positions="positions" :employees="employees" @close="closeUserModal"
                 @submit="saveUser" />
 
-            <!-- User Detail Modal -->
             <UserDetailModal v-if="showViewUserModal" :user="selectedUser" @close="closeViewUserModal"
                 @edit="editFromView" />
 
-            <!-- Password Reset Modal -->
             <PasswordModal v-if="showPasswordModal" :user="selectedUser" :submitting="isSubmitting"
                 @close="closePasswordModal" @submit="savePassword" />
         </div>
@@ -57,7 +84,7 @@ export default {
 <script setup>
 import { ref, onMounted, computed } from 'vue';
 import axios from 'axios';
-import { UserPlus } from 'lucide-vue-next';
+import { UserPlus, Users, Shield } from 'lucide-vue-next';
 
 // Components
 import SummaryCards from '@/Components/Users/SummaryCards.vue';
@@ -66,6 +93,9 @@ import UserTable from '@/Components/Users/UserTable.vue';
 import UserModal from '@/Components/Users/UserModal.vue';
 import UserDetailModal from '@/Components/Users/UserDetailModal.vue';
 import PasswordModal from '@/Components/Users/PasswordModal.vue';
+import RolesManager from '@/Components/Users/RolesManager.vue';
+
+const activeTab = ref('usuarios');
 
 const isLoading = ref(false);
 const isSubmitting = ref(false);

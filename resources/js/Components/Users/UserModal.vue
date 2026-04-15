@@ -1,11 +1,12 @@
 <template>
-    <div class="fixed inset-0 z-50 overflow-y-auto">
-        <div class="flex items-center justify-center min-h-screen px-4">
-            <div class="fixed inset-0 bg-black/50 transition-opacity" @click="$emit('close')"></div>
+    <div class="fixed inset-0 z-50 flex items-center justify-center px-4">
+        <div class="fixed inset-0 bg-black/40 backdrop-blur-sm transition-opacity" @click="$emit('close')"></div>
 
-            <div class="relative bg-white rounded-2xl shadow-2xl max-w-3xl w-full z-10 overflow-hidden">
+        <!-- Modal + scrollbar custom fuera de la tarjeta -->
+        <div class="relative z-10 flex items-stretch gap-2 max-h-[90vh] w-full max-w-3xl">
+            <div class="bg-white rounded-2xl shadow-2xl flex flex-col flex-1 min-w-0 overflow-hidden">
                 <!-- Header -->
-                <div class="bg-gradient-to-r from-indigo-600 to-purple-600 px-6 py-4 flex justify-between items-center">
+                <div class="bg-gradient-to-r from-indigo-600 to-purple-600 px-6 py-4 flex justify-between items-center flex-shrink-0">
                     <div>
                         <h3 class="text-xl font-bold text-white flex items-center gap-2">
                             <UserCog class="w-6 h-6" />
@@ -20,8 +21,9 @@
                     </button>
                 </div>
 
-                <!-- Form -->
-                <form @submit.prevent="handleSubmit" class="p-6 space-y-6">
+                <!-- Form (scrolleable, sin scrollbar nativo) -->
+                <form id="user-form" @submit.prevent="handleSubmit" class="flex-1 min-h-0">
+                <div ref="scrollRef" @scroll="syncThumb" class="p-6 space-y-6 overflow-y-scroll h-full no-scrollbar">
                     <!-- Importar desde Empleado -->
                     <div v-if="!isEditing && employees.length > 0"
                         class="bg-indigo-50 p-4 rounded-xl border border-indigo-100 mb-2">
@@ -354,30 +356,118 @@
                         </div>
                     </div>
 
-                    <!-- Actions -->
-                    <div class="flex justify-end gap-3 pt-6 border-t border-slate-200">
-                        <button type="button" @click="$emit('close')" :disabled="submitting"
-                            class="px-6 py-2.5 border-2 border-slate-300 text-slate-600 font-bold rounded-xl hover:bg-slate-50 transition-all disabled:opacity-50">
-                            Cancelar
-                        </button>
-                        <button type="submit" :disabled="submitting"
-                            class="px-6 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all disabled:opacity-50">
-                            <Loader2 v-if="submitting" class="w-5 h-5 animate-spin inline mr-2" />
-                            {{ isEditing ? 'Actualizar Usuario' : 'Crear Usuario' }}
-                        </button>
-                    </div>
+                </div>
                 </form>
+
+                <!-- Footer (fijo) -->
+                <div class="flex justify-end gap-3 px-6 py-4 border-t border-slate-200 flex-shrink-0 rounded-b-2xl bg-white">
+                    <button type="button" @click="$emit('close')" :disabled="submitting"
+                        class="px-6 py-2.5 border-2 border-slate-300 text-slate-600 font-bold rounded-xl hover:bg-slate-50 transition-all disabled:opacity-50">
+                        Cancelar
+                    </button>
+                    <button type="submit" form="user-form" :disabled="submitting"
+                        class="px-6 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all disabled:opacity-50">
+                        <Loader2 v-if="submitting" class="w-5 h-5 animate-spin inline mr-2" />
+                        {{ isEditing ? 'Actualizar Usuario' : 'Crear Usuario' }}
+                    </button>
+                </div>
+            </div>
+
+            <!-- Scrollbar custom (fuera de la tarjeta blanca) -->
+            <div v-show="showThumb" class="flex-shrink-0 flex items-stretch my-2">
+                <div class="bg-white rounded-3xl px-2 py-2 flex items-stretch">
+                    <div ref="trackRef" @click="onTrackClick"
+                        class="w-3 relative cursor-pointer rounded-full">
+                        <div v-show="showThumb"
+                            class="absolute left-0 right-0 rounded-full bg-zinc-400 hover:bg-zinc-500 transition-colors cursor-grab active:cursor-grabbing"
+                            :style="{ top: thumbTop + 'px', height: thumbHeight + 'px' }"
+                            @mousedown.prevent="startDrag">
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 </template>
 
 <script setup>
-import { ref, watch, computed } from 'vue';
+import { ref, watch, computed, onMounted, onUnmounted, nextTick } from 'vue';
 import { useForm } from 'vee-validate';
 import { toTypedSchema } from '@vee-validate/yup';
 import * as yup from 'yup';
 import { X, UserCog, UserCheck, Key, Loader2, Eye, EyeOff, Search, LayoutGrid, LayoutDashboard, ClipboardList, Users, Car, Box, CalendarDays, Heart, FileText, Briefcase, Fingerprint } from 'lucide-vue-next';
+
+// Custom scrollbar
+const scrollRef = ref(null);
+const trackRef = ref(null);
+const thumbTop = ref(0);
+const thumbHeight = ref(0);
+const showThumb = ref(false);
+
+const syncThumb = () => {
+    if (!scrollRef.value || !trackRef.value) return;
+    const { scrollTop, scrollHeight, clientHeight } = scrollRef.value;
+    const trackH = trackRef.value.clientHeight;
+    const ratio = clientHeight / scrollHeight;
+    showThumb.value = ratio < 1;
+    const tH = Math.max(40, trackH * ratio);
+    thumbHeight.value = tH;
+    thumbTop.value = scrollHeight > clientHeight
+        ? (scrollTop / (scrollHeight - clientHeight)) * (trackH - tH)
+        : 0;
+};
+
+let resizeObserver = null;
+let dragging = false;
+let dragStartY = 0;
+let dragStartScrollTop = 0;
+
+const startDrag = (e) => {
+    dragging = true;
+    dragStartY = e.clientY;
+    dragStartScrollTop = scrollRef.value?.scrollTop ?? 0;
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', stopDrag);
+};
+const onMouseMove = (e) => {
+    if (!dragging || !scrollRef.value || !trackRef.value) return;
+    const { scrollHeight, clientHeight } = scrollRef.value;
+    const trackH = trackRef.value.clientHeight;
+    const delta = e.clientY - dragStartY;
+    const trackScrollable = trackH - thumbHeight.value;
+    if (trackScrollable > 0)
+        scrollRef.value.scrollTop = dragStartScrollTop + (delta / trackScrollable) * (scrollHeight - clientHeight);
+};
+const stopDrag = () => {
+    dragging = false;
+    document.removeEventListener('mousemove', onMouseMove);
+    document.removeEventListener('mouseup', stopDrag);
+};
+const onTrackClick = (e) => {
+    if (!scrollRef.value || !trackRef.value) return;
+    const rect = trackRef.value.getBoundingClientRect();
+    const clickY = e.clientY - rect.top;
+    const { scrollHeight, clientHeight } = scrollRef.value;
+    const trackH = trackRef.value.clientHeight;
+    const ratio = (clickY - thumbHeight.value / 2) / (trackH - thumbHeight.value);
+    scrollRef.value.scrollTop = ratio * (scrollHeight - clientHeight);
+};
+
+onMounted(() => {
+    nextTick(() => {
+        syncThumb();
+        if (scrollRef.value) {
+            resizeObserver = new ResizeObserver(() => syncThumb());
+            resizeObserver.observe(scrollRef.value);
+        }
+    });
+});
+
+onUnmounted(() => {
+    document.removeEventListener('mousemove', onMouseMove);
+    document.removeEventListener('mouseup', stopDrag);
+    resizeObserver?.disconnect();
+});
 
 const ALL_MODULES = [
     { key: 'dashboard',        label: 'Dashboard',              icon: LayoutDashboard },

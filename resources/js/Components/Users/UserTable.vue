@@ -25,7 +25,7 @@
                         <th class="px-6 py-3 text-left text-xs font-bold text-slate-700 uppercase tracking-wider">
                             Estado
                         </th>
-                        <th class="px-6 py-3 text-left text-xs font-bold text-slate-700 uppercase tracking-wider">
+                        <th class="px-6 py-3 text-right text-xs font-bold text-slate-700 uppercase tracking-wider">
                             Acciones
                         </th>
                     </tr>
@@ -90,22 +90,24 @@
                             </span>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                            <div class="flex items-center space-x-2">
+                            <div class="flex justify-end gap-2">
                                 <button @click="$emit('view', user)" title="Ver detalles"
-                                    class="text-blue-600 hover:text-blue-900 transition-colors">
+                                    class="p-2 text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-all shadow-sm">
                                     <Eye class="w-4 h-4" />
                                 </button>
                                 <button @click="$emit('edit', user)" title="Editar"
-                                    class="text-indigo-600 hover:text-indigo-900 transition-colors">
+                                    class="p-2 text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition-all shadow-sm">
                                     <Edit class="w-4 h-4" />
                                 </button>
                                 <button @click="$emit('toggleStatus', user)"
                                     :title="user.is_active ? 'Desactivar' : 'Activar'"
-                                    :class="[user.is_active ? 'text-orange-600 hover:text-orange-900' : 'text-emerald-600 hover:text-emerald-900', 'transition-colors']">
+                                    :class="user.is_active
+                                        ? 'p-2 text-orange-600 bg-orange-50 hover:bg-orange-100 rounded-lg transition-all shadow-sm'
+                                        : 'p-2 text-emerald-600 bg-emerald-50 hover:bg-emerald-100 rounded-lg transition-all shadow-sm'">
                                     <Power class="w-4 h-4" />
                                 </button>
                                 <button @click="$emit('resetPassword', user)" title="Cambiar contraseña"
-                                    class="text-amber-600 hover:text-amber-900 transition-colors">
+                                    class="p-2 text-amber-600 bg-amber-50 hover:bg-amber-100 rounded-lg transition-all shadow-sm">
                                     <Key class="w-4 h-4" />
                                 </button>
                             </div>

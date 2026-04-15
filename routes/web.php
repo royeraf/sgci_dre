@@ -242,6 +242,11 @@ Route::middleware('auth')->group(function () {
         Route::get('/', [UserController::class, 'index'])->name('index');
         Route::get('/list', [UserController::class, 'getUsers'])->name('list');
         Route::get('/roles', [UserController::class, 'getRoles'])->name('roles');
+        Route::get('/roles/all', [UserController::class, 'getAllRoles'])->name('roles.all');
+        Route::post('/roles', [UserController::class, 'storeRole'])->name('roles.store');
+        Route::put('/roles/{rolId}', [UserController::class, 'updateRole'])->name('roles.update');
+        Route::patch('/roles/{rolId}/toggle-status', [UserController::class, 'toggleRoleStatus'])->name('roles.toggle-status');
+        Route::delete('/roles/{rolId}', [UserController::class, 'destroyRole'])->name('roles.destroy');
         Route::get('/areas', [UserController::class, 'getAreas'])->name('areas');
         Route::get('/positions', [UserController::class, 'getPositions'])->name('positions');
         Route::get('/summary', [UserController::class, 'getSummary'])->name('summary');

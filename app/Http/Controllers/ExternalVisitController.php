@@ -123,7 +123,7 @@ class ExternalVisitController extends Controller
             'motivo' => 'nullable|string',
             'direction_id' => 'nullable|uuid|exists:hr_directions,id',
             'office_id' => 'nullable|uuid|exists:hr_offices,id',
-            'employee_id' => 'required|uuid|exists:employees,id',
+            'employee_id' => 'nullable|uuid|exists:employees,id',
         ], [
             'dni.required' => 'El DNI es obligatorio.',
             'dni.size' => 'El DNI debe tener exactamente 8 dígitos.',

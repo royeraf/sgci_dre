@@ -388,6 +388,94 @@ class UserController extends Controller
     }
 
     /**
+     * Get all roles (including inactive) for the roles manager.
+     */
+    public function getAllRoles()
+    {
+        $roles = CustomRole::withCount('users')
+            ->select('rol_id', 'codigo', 'nombre', 'descripcion', 'nivel_acceso', 'activo', 'created_at')
+            ->orderBy('nombre')
+            ->get();
+
+        return response()->json($roles);
+    }
+
+    /**
+     * Store a new role.
+     */
+    public function storeRole(Request $request)
+    {
+        $data = $request->validate([
+            'nombre'      => ['required', 'string', 'max:100', 'unique:custom_roles,nombre'],
+            'descripcion' => ['nullable', 'string', 'max:255'],
+            'nivel_acceso'=> ['required', 'integer', 'min:1', 'max:10'],
+        ]);
+
+        $last = CustomRole::orderByRaw("CAST(SUBSTRING(rol_id, 4) AS UNSIGNED) DESC")->first();
+        $nextNum = $last ? ((int) substr($last->rol_id, 3)) + 1 : 1;
+        $rolId = 'ROL' . str_pad($nextNum, 3, '0', STR_PAD_LEFT);
+
+        $role = CustomRole::create([
+            'rol_id'      => $rolId,
+            'codigo'      => strtoupper(substr(preg_replace('/\s+/', '_', $data['nombre']), 0, 20)),
+            'nombre'      => $data['nombre'],
+            'descripcion' => $data['descripcion'] ?? null,
+            'nivel_acceso'=> $data['nivel_acceso'],
+            'activo'      => true,
+        ]);
+
+        return response()->json(['message' => 'Rol creado exitosamente', 'role' => $role], 201);
+    }
+
+    /**
+     * Update an existing role.
+     */
+    public function updateRole(Request $request, string $rolId)
+    {
+        $role = CustomRole::findOrFail($rolId);
+
+        $data = $request->validate([
+            'nombre'      => ['required', 'string', 'max:100', Rule::unique('custom_roles', 'nombre')->ignore($rolId, 'rol_id')],
+            'descripcion' => ['nullable', 'string', 'max:255'],
+            'nivel_acceso'=> ['required', 'integer', 'min:1', 'max:10'],
+            'activo'      => ['boolean'],
+        ]);
+
+        $role->update($data);
+
+        return response()->json(['message' => 'Rol actualizado exitosamente', 'role' => $role]);
+    }
+
+    /**
+     * Toggle role active status.
+     */
+    public function toggleRoleStatus(string $rolId)
+    {
+        $role = CustomRole::findOrFail($rolId);
+        $role->update(['activo' => !$role->activo]);
+
+        return response()->json(['message' => 'Estado actualizado', 'activo' => $role->activo]);
+    }
+
+    /**
+     * Delete a role (only if no users assigned).
+     */
+    public function destroyRole(string $rolId)
+    {
+        $role = CustomRole::withCount('users')->findOrFail($rolId);
+
+        if ($role->users_count > 0) {
+            return response()->json([
+                'message' => "No se puede eliminar: {$role->users_count} usuario(s) tienen este rol asignado."
+            ], 422);
+        }
+
+        $role->delete();
+
+        return response()->json(['message' => 'Rol eliminado exitosamente']);
+    }
+
+    /**
      * Get users summary/statistics.
      */
     public function getSummary()

@@ -159,7 +159,7 @@ const entrySchema = toTypedSchema(yup.object({
     office_id: yup.string().nullable().test('office-required', 'Debe seleccionar una oficina', function (val) {
         return destinoTipo.value === 'direction' || (!!val && val.length > 0);
     }),
-    employee_id: yup.string().required('Debe seleccionar a quién visita'),
+    employee_id: yup.string().nullable().optional(),
     visit_reason_id: yup.string().required('Debe seleccionar un motivo'),
     motivo: yup.string().nullable(),
 }));
