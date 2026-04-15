@@ -6,9 +6,8 @@
 
             <!-- Toggle Button -->
             <button @click="toggleSidebar"
-                class="absolute -right-3 top-24 bg-blue-600 text-white p-1 rounded-full shadow-lg hover:bg-blue-700 focus:outline-none z-50 transform hover:scale-110 transition-all duration-200">
-                <ChevronLeft v-if="!isCollapsed" class="h-4 w-4" />
-                <ChevronRight v-else class="h-4 w-4" />
+                class="absolute -right-4 top-24 bg-blue-600 text-white p-1.5 rounded-full shadow-lg hover:bg-blue-700 focus:outline-none z-50 transform hover:scale-110 transition-all duration-200">
+                <PanelLeft class="h-5 w-5" />
             </button>
 
             <!-- Logo Header -->
@@ -440,6 +439,7 @@ import axios from 'axios';
 import {
     ChevronLeft,
     ChevronRight,
+    PanelLeft,
     LayoutDashboard,
     X,
     Users,
