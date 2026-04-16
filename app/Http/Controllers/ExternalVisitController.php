@@ -76,7 +76,7 @@ class ExternalVisitController extends Controller
                 'destino' => $destino, // Muestra Oficina - Área o solo Área
                 'a_quien_visita_nombre' => $visit->a_quien_visita_nombre,
                 'is_pending' => is_null($visit->hora_salida),
-                'registrado_por' => $visit->registrador ? $visit->registrador->name : 'N/A',
+                'registrado_por' => $visit->registrador ? $visit->registrador->full_name : 'N/A',
                 'observacion_salida' => $visit->observacion_salida,
             ];
         });
@@ -350,7 +350,7 @@ class ExternalVisitController extends Controller
                 'destino' => $destino,
                 'a_quien_visita_nombre' => $visit->a_quien_visita_nombre,
                 'is_pending' => is_null($visit->hora_salida),
-                'registrado_por' => $visit->registrador ? $visit->registrador->name : 'N/A',
+                'registrado_por' => $visit->registrador ? $visit->registrador->full_name : 'N/A',
             ]
         ]);
     }
