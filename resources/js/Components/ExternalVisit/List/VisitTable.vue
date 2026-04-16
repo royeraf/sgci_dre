@@ -45,6 +45,9 @@ const formatDate = (dateString?: string) => {
                             Destino</th>
                         <th scope="col"
                             class="px-6 py-4 text-left text-xs font-bold text-slate-600 uppercase tracking-wider">
+                            Registrado por</th>
+                        <th scope="col"
+                            class="px-6 py-4 text-left text-xs font-bold text-slate-600 uppercase tracking-wider">
                             Acciones</th>
                     </tr>
                 </thead>
@@ -89,6 +92,9 @@ const formatDate = (dateString?: string) => {
                             <div v-if="visit.a_quien_visita_nombre" class="text-xs text-slate-500">Visita a: {{
                                 visit.a_quien_visita_nombre }}</div>
                         </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm text-slate-700">{{ visit.registrado_por || 'N/A' }}</div>
+                        </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                             <div class="flex flex-col gap-2 items-end">
                                 <button v-if="visit.is_pending" @click="$emit('exit', visit)"
@@ -107,7 +113,7 @@ const formatDate = (dateString?: string) => {
                         </td>
                     </tr>
                     <tr v-if="visits.data.length === 0">
-                        <td colspan="7" class="px-6 py-16 text-center">
+                        <td colspan="8" class="px-6 py-16 text-center">
                             <div class="flex flex-col items-center">
                                 <div class="bg-slate-100 rounded-full p-4 mb-4">
                                     <Users class="h-12 w-12 text-slate-400" />

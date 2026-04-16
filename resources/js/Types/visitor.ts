@@ -12,6 +12,7 @@ export interface Visit {
     a_quien_visita_nombre: string | null;
     is_pending: boolean;
     observacion_salida?: string | null;
+    registrado_por?: string | null;
 }
 
 export interface PaginationLinks {
