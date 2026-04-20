@@ -61,7 +61,7 @@
                         :class="[
                             $page.component.startsWith('Occurrences/') ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/30 ring-1 ring-blue-400/50' : 'text-slate-300 hover:bg-slate-800/80 hover:text-white',
                             isCollapsed ? 'justify-center py-3 px-0' : 'px-4 py-3.5'
-                        ]" :title="isCollapsed ? 'Libro de Ocurrencias' : ''">
+                        ]" :title="isCollapsed ? 'Cuaderno de Ocurrencias' : ''">
                         <div class="rounded-lg transition-colors duration-200 ease-in-out flex-shrink-0" :class="[
                             $page.component.startsWith('Occurrences/') ? 'bg-white/20' : 'bg-slate-700/80 group-hover:bg-slate-600',
                             isCollapsed ? 'p-2' : 'mr-4 p-2'
@@ -69,8 +69,7 @@
                             <ClipboardList class="h-5 w-5"
                                 :class="$page.component.startsWith('Occurrences/') ? 'text-white' : 'text-slate-400 group-hover:text-white'" />
                         </div>
-                        <span v-if="!isCollapsed" class="whitespace-nowrap transition-opacity duration-200">Libro de
-                            Ocurrencias</span>
+                        <span v-if="!isCollapsed" class="whitespace-nowrap transition-opacity duration-200">Cuaderno de Ocurrencias</span>
                     </Link>
 
                     <!-- Entry/Exit Link -->
@@ -330,7 +329,7 @@
                             class="flex items-center gap-3 px-4 py-3 rounded-xl text-base font-semibold transition-all duration-200"
                             :class="$page.component.startsWith('Occurrences/') ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg' : 'text-slate-300 hover:bg-slate-700/50 hover:text-white'">
                             <ClipboardList class="h-5 w-5" />
-                            Libro de Ocurrencias
+                            Cuaderno de Ocurrencias
                         </Link>
                         <Link v-if="hasModulePermission('control_personal', 'ver')" href="/entry-exits"
                             @click="mobileMenuOpen = false"

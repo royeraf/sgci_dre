@@ -471,7 +471,7 @@ onUnmounted(() => {
 
 const ALL_MODULES = [
     { key: 'dashboard',        label: 'Dashboard',              icon: LayoutDashboard },
-    { key: 'ocurrencias',      label: 'Libro de Ocurrencias',   icon: ClipboardList },
+    { key: 'ocurrencias',      label: 'Cuaderno de Ocurrencias',   icon: ClipboardList },
     { key: 'control_personal', label: 'Control de Personal',    icon: UserCheck },
     { key: 'visitas',          label: 'Visitas Externas',       icon: Users },
     { key: 'vehiculos',        label: 'Control Vehicular',      icon: Car },

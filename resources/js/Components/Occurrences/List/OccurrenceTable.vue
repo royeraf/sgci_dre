@@ -19,8 +19,8 @@
                         <th scope="col" class="px-6 py-4 text-center text-xs font-bold text-slate-600 uppercase tracking-wider">
                             Estado
                         </th>
-                        <th scope="col" class="relative px-6 py-4">
-                            <span class="sr-only">Acciones</span>
+                        <th scope="col" class="px-6 py-4 text-right text-xs font-bold text-slate-600 uppercase tracking-wider">
+                            Acciones
                         </th>
                     </tr>
                 </thead>
@@ -31,7 +31,7 @@
                         class="hover:bg-blue-50 transition-colors duration-200"
                     >
                         <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="text-sm font-semibold text-slate-900">{{ occurrence.fecha }}</div>
+                            <div class="text-sm font-semibold text-slate-900">{{ formatDate(occurrence.fecha) }}</div>
                             <div class="text-xs text-slate-500 font-medium">{{ occurrence.hora }}</div>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
@@ -65,13 +65,17 @@
                                 {{ occurrence.estado }}
                             </span>
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                            <button
-                                @click="$emit('view', occurrence)"
-                                class="text-slate-400 hover:text-blue-600 transition-colors duration-200 p-2 hover:bg-blue-50 rounded-lg"
-                            >
-                                <Eye class="h-5 w-5" />
-                            </button>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <div class="flex justify-end gap-2">
+                                <button @click="$emit('view', occurrence)" title="Ver detalles"
+                                    class="p-2 text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-all shadow-sm">
+                                    <Eye class="w-4 h-4" />
+                                </button>
+                                <button @click="$emit('edit', occurrence)" title="Editar"
+                                    class="p-2 text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition-all shadow-sm">
+                                    <Pencil class="w-4 h-4" />
+                                </button>
+                            </div>
                         </td>
                     </tr>
                     <tr v-if="paginatedOccurrences.length === 0">
@@ -149,6 +153,7 @@
 import { computed } from 'vue';
 import {
     Eye,
+    Pencil,
     ClipboardList,
     ChevronLeft,
     ChevronRight,
@@ -171,7 +176,7 @@ const props = defineProps({
     }
 });
 
-defineEmits(['view', 'update:currentPage', 'update:perPage']);
+defineEmits(['view', 'edit', 'update:currentPage', 'update:perPage']);
 
 const paginatedOccurrences = computed(() => {
     const start = (props.currentPage - 1) * props.perPage;
@@ -182,6 +187,12 @@ const paginatedOccurrences = computed(() => {
 const totalPages = computed(() => {
     return Math.ceil(props.occurrences.length / props.perPage) || 1;
 });
+
+const formatDate = (fecha) => {
+    if (!fecha) return '';
+    const [y, m, d] = fecha.split('-');
+    return `${d}/${m}/${y}`;
+};
 
 const getTypeClass = (tipo) => {
     const classes = {

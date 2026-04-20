@@ -5,7 +5,7 @@
             <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
                 <div>
                     <h1 class="text-3xl font-extrabold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent tracking-tight">
-                        Libro de Ocurrencias
+                        Cuaderno de Ocurrencias
                     </h1>
                     <p class="mt-1 text-slate-500 font-medium">
                         Registro y seguimiento de incidentes institucionales
@@ -76,6 +76,7 @@
                     v-model:current-page="currentPage"
                     v-model:per-page="perPage"
                     @view="openDetailModal"
+                    @edit="openEditModal"
                 />
             </div>
 
@@ -88,6 +89,13 @@
             <OccurrenceModal
                 v-if="showRegisterModal"
                 @close="showRegisterModal = false"
+            />
+
+            <!-- Edit Modal -->
+            <OccurrenceModal
+                v-if="showEditModal"
+                :occurrence="editingOccurrence"
+                @close="showEditModal = false; editingOccurrence = null"
             />
 
             <!-- Detail Modal -->
@@ -144,7 +152,9 @@ const { canViewTab, firstAllowedTab } = useTabPermission('ocurrencias', ['list',
 const activeTab = ref(firstAllowedTab.value);
 const showRegisterModal = ref(false);
 const showDetailModal = ref(false);
+const showEditModal = ref(false);
 const selectedOccurrence = ref(null);
+const editingOccurrence = ref(null);
 
 // Local filters (for client-side filtering)
 const localFilters = ref({
@@ -203,5 +213,10 @@ const clearFilters = () => {
 const openDetailModal = (occurrence) => {
     selectedOccurrence.value = occurrence;
     showDetailModal.value = true;
+};
+
+const openEditModal = (occurrence) => {
+    editingOccurrence.value = occurrence;
+    showEditModal.value = true;
 };
 </script>

@@ -57,7 +57,7 @@
             class="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center mb-4 shadow-lg shadow-blue-600/30 group-hover:scale-110 group-hover:-rotate-3 transition-all duration-300">
             <ClipboardList class="w-8 h-8 text-white" />
           </div>
-          <span class="text-base font-bold text-slate-900">Libro de Ocurrencias</span>
+          <span class="text-base font-bold text-slate-900">Cuaderno de Ocurrencias</span>
           <span class="text-xs text-slate-500 mt-1 font-medium text-center">Registrar incidentes y novedades</span>
         </Link>
 

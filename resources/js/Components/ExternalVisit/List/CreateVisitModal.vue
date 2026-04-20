@@ -560,7 +560,7 @@ onUnmounted(() => {
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
                         <div class="relative" ref="dropdownContainerRef">
                             <label class="block text-sm font-bold text-slate-700 mb-2">
-                                A quién visita <span class="text-red-500">*</span>
+                                A quién visita
                             </label>
 
                             <!-- Empleado seleccionado (chip) -->

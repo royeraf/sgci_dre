@@ -11,7 +11,7 @@
                             <Eye class="w-6 h-6" />
                             Detalle de Ocurrencia
                         </h3>
-                        <p class="text-white/80 text-sm mt-1">{{ occurrence?.tipo }} - {{ occurrence?.fecha }}</p>
+                        <p class="text-white/80 text-sm mt-1">{{ occurrence?.tipo }} - {{ formatDate(occurrence?.fecha) }}</p>
                     </div>
                     <button @click="$emit('close')" class="text-white/80 hover:text-white transition-colors p-1">
                         <X class="w-6 h-6" />
@@ -25,7 +25,7 @@
                         <div class="bg-slate-50 rounded-xl p-4 text-center">
                             <Calendar class="w-6 h-6 text-blue-600 mx-auto mb-2" />
                             <p class="text-xs text-slate-500 font-medium">Fecha</p>
-                            <p class="text-sm font-bold text-slate-900">{{ occurrence?.fecha }}</p>
+                            <p class="text-sm font-bold text-slate-900">{{ formatDate(occurrence?.fecha) }}</p>
                         </div>
                         <div class="bg-slate-50 rounded-xl p-4 text-center">
                             <Clock class="w-6 h-6 text-green-600 mx-auto mb-2" />
@@ -140,6 +140,12 @@ const getHeaderClass = (tipo) => {
         'Otros': 'bg-gradient-to-r from-gray-600 to-gray-700'
     };
     return classes[tipo] || classes['Otros'];
+};
+
+const formatDate = (fecha) => {
+    if (!fecha) return '';
+    const [y, m, d] = fecha.split('-');
+    return `${d}/${m}/${y}`;
 };
 
 const getStatusClass = (estado) => {

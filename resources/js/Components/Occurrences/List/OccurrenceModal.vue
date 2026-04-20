@@ -8,10 +8,10 @@
                 <div class="bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-4 flex justify-between items-center">
                     <div>
                         <h3 class="text-xl font-bold text-white flex items-center gap-2">
-                            <Plus class="w-6 h-6" />
-                            Registrar Nueva Ocurrencia
+                            <component :is="isEditMode ? Pencil : Plus" class="w-6 h-6" />
+                            {{ isEditMode ? 'Editar Ocurrencia' : 'Registrar Nueva Ocurrencia' }}
                         </h3>
-                        <p class="text-blue-100 text-sm mt-1">Complete los datos del evento</p>
+                        <p class="text-blue-100 text-sm mt-1">{{ isEditMode ? 'Modifique los datos del evento' : 'Complete los datos del evento' }}</p>
                     </div>
                     <button @click="$emit('close')" class="text-blue-100 hover:text-white transition-colors p-1">
                         <X class="w-6 h-6" />
@@ -27,7 +27,7 @@
                                 Fecha <span class="text-red-500">*</span>
                             </label>
                             <input type="date" v-model="fecha" v-bind="fechaProps"
-                                class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                                class="w-full px-4 py-2.5 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                                 :class="formErrors.fecha ? 'border-red-400' : 'border-slate-200'" />
                             <p v-if="formErrors.fecha" class="mt-1 text-sm text-red-600">{{ formErrors.fecha }}</p>
                         </div>
@@ -38,7 +38,7 @@
                                 Hora <span class="text-red-500">*</span>
                             </label>
                             <input type="time" v-model="hora" v-bind="horaProps"
-                                class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                                class="w-full px-4 py-2.5 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                                 :class="formErrors.hora ? 'border-red-400' : 'border-slate-200'" />
                             <p v-if="formErrors.hora" class="mt-1 text-sm text-red-600">{{ formErrors.hora }}</p>
                         </div>
@@ -68,7 +68,7 @@
                                 Tipo <span class="text-red-500">*</span>
                             </label>
                             <select v-model="tipo" v-bind="tipoProps"
-                                class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-colors"
+                                class="w-full px-4 py-2.5 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-colors"
                                 :class="formErrors.tipo ? 'border-red-400' : 'border-slate-200'">
                                 <option value="">Seleccione tipo</option>
                                 <option value="Rutina">Rutina</option>
@@ -89,7 +89,7 @@
                         </label>
                         <textarea v-model="descripcion" v-bind="descripcionProps" rows="4"
                             placeholder="Describa detalladamente el evento ocurrido..."
-                            class="w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none transition-colors"
+                            class="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none transition-colors"
                             :class="formErrors.descripcion ? 'border-red-400' : 'border-slate-200'"></textarea>
                         <p v-if="formErrors.descripcion" class="mt-1 text-sm text-red-600">{{ formErrors.descripcion }}
                         </p>
@@ -102,7 +102,7 @@
                         </label>
                         <textarea v-model="acciones" v-bind="accionesProps" rows="3"
                             placeholder="Describa las acciones tomadas ante el evento (opcional)..."
-                            class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none transition-colors"></textarea>
+                            class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none transition-colors"></textarea>
                     </div>
 
                     <!-- Actions -->
@@ -114,7 +114,7 @@
                         <button type="submit" :disabled="isSubmitting"
                             class="px-6 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all disabled:opacity-50">
                             <Loader2 v-if="isSubmitting" class="w-5 h-5 animate-spin inline mr-2" />
-                            {{ isSubmitting ? 'Guardando...' : 'Registrar Ocurrencia' }}
+                            {{ isSubmitting ? 'Guardando...' : (isEditMode ? 'Guardar Cambios' : 'Registrar Ocurrencia') }}
                         </button>
                     </div>
                 </form>
@@ -124,15 +124,23 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue';
+import { ref, watch, computed } from 'vue';
 import { useForm } from 'vee-validate';
 import { toTypedSchema } from '@vee-validate/yup';
 import * as yup from 'yup';
 import { router } from '@inertiajs/vue3';
-import { Plus, X, Loader2, Clock } from 'lucide-vue-next';
+import { Plus, Pencil, X, Loader2, Clock } from 'lucide-vue-next';
+
+const props = defineProps({
+    occurrence: {
+        type: Object,
+        default: null
+    }
+});
 
 const emit = defineEmits(['close']);
 
+const isEditMode = computed(() => !!props.occurrence);
 const isSubmitting = ref(false);
 
 // Get shift based on hour (HH:mm format or hour number)
@@ -174,12 +182,12 @@ const occurrenceSchema = toTypedSchema(
 const { errors: formErrors, defineField, handleSubmit: validateForm, resetForm } = useForm({
     validationSchema: occurrenceSchema,
     initialValues: {
-        fecha: currentDate,
-        hora: currentTime,
-        turno: getCurrentShift(),
-        tipo: '',
-        descripcion: '',
-        acciones: '',
+        fecha: props.occurrence?.fecha ?? currentDate,
+        hora: props.occurrence?.hora ?? currentTime,
+        turno: props.occurrence?.turno ?? getCurrentShift(),
+        tipo: props.occurrence?.tipo ?? '',
+        descripcion: props.occurrence?.descripcion ?? '',
+        acciones: props.occurrence?.acciones ?? '',
     }
 });
 
@@ -200,15 +208,20 @@ watch(hora, (newHora) => {
 const onSubmitForm = validateForm(async (values) => {
     isSubmitting.value = true;
 
-    router.post('/occurrences', values, {
-        onSuccess: () => {
-            resetForm();
-            emit('close');
-        },
-        onFinish: () => {
-            isSubmitting.value = false;
-        }
-    });
+    if (isEditMode.value) {
+        router.put(`/occurrences/${props.occurrence.id}`, values, {
+            onSuccess: () => emit('close'),
+            onFinish: () => { isSubmitting.value = false; }
+        });
+    } else {
+        router.post('/occurrences', values, {
+            onSuccess: () => {
+                resetForm();
+                emit('close');
+            },
+            onFinish: () => { isSubmitting.value = false; }
+        });
+    }
 });
 
 const handleSubmit = () => {

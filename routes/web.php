@@ -76,6 +76,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/occurrences', [OccurrenceController::class, 'store'])->name('occurrences.store');
         Route::get('/occurrences/weekly-report', [OccurrenceController::class, 'weeklyReport'])->name('occurrences.weekly-report');
         Route::get('/occurrences/{occurrence}', [OccurrenceController::class, 'show'])->name('occurrences.show');
+        Route::put('/occurrences/{occurrence}', [OccurrenceController::class, 'update'])->name('occurrences.update');
         Route::get('/api/occurrences/summary', [OccurrenceController::class, 'summary'])->name('occurrences.summary');
     });
     

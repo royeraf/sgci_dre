@@ -104,6 +104,41 @@ class OccurrenceController extends Controller
     }
 
     /**
+     * Update the specified occurrence.
+     */
+    public function update(Request $request, Occurrence $occurrence)
+    {
+        $validated = $request->validate([
+            'fecha' => 'required|date',
+            'hora' => 'required',
+            'turno' => 'required|in:Mañana,Tarde,Noche',
+            'tipo' => 'required|in:Incidente,Emergencia,Rutina,Aviso,Robo,Otros',
+            'descripcion' => 'required|string|min:10',
+            'acciones' => 'nullable|string',
+        ], [
+            'fecha.required' => 'La fecha es obligatoria.',
+            'hora.required' => 'La hora es obligatoria.',
+            'turno.required' => 'El turno es obligatorio.',
+            'tipo.required' => 'El tipo es obligatorio.',
+            'descripcion.required' => 'La descripción es obligatoria.',
+            'descripcion.min' => 'La descripción debe tener al menos 10 caracteres.',
+        ]);
+
+        $occurrence->update($validated);
+
+        AuditLog::log(
+            auth()->id(),
+            'Editar Ocurrencia',
+            "Se editó la ocurrencia de tipo {$occurrence->tipo}",
+            Occurrence::class,
+            $occurrence->id
+        );
+
+        return redirect()->route('occurrences.index')
+            ->with('success', 'Ocurrencia actualizada correctamente.');
+    }
+
+    /**
      * Display the specified occurrence.
      */
     public function show(Occurrence $occurrence)
