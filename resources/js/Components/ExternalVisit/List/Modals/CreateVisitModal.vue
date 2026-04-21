@@ -35,7 +35,7 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-    (e: 'close'): void;
+    close: [];
 }>();
 
 // State
@@ -348,7 +348,7 @@ onUnmounted(() => {
 
 <template>
     <div class="fixed inset-0 z-50 flex items-center justify-center p-4">
-        <div class="fixed inset-0 bg-black/40 backdrop-blur-sm transition-opacity" @click="$emit('close')"></div>
+        <div class="fixed inset-0 bg-black/40 backdrop-blur-sm transition-opacity" @click="emit('close')"></div>
 
         <!-- Modal + scrollbar custom fuera de la tarjeta -->
         <div class="relative z-10 flex items-stretch gap-2 max-h-[90vh] w-full max-w-2xl">
@@ -365,7 +365,7 @@ onUnmounted(() => {
                             Escanee el DNI o ingrese los datos manualmente
                         </p>
                     </div>
-                    <button type="button" @click="$emit('close')"
+                    <button type="button" @click="emit('close')"
                         class="bg-white/10 rounded-md p-2 inline-flex items-center justify-center text-white hover:text-white hover:bg-white/20 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white/50 transition-colors">
                         <span class="sr-only">Cerrar</span>
                         <X class="h-6 w-6" stroke-width="2" />
@@ -653,7 +653,7 @@ onUnmounted(() => {
 
                 <!-- Footer (fijo) -->
                 <div class="flex justify-end gap-3 px-6 py-4 border-t border-slate-200 flex-shrink-0 rounded-b-2xl bg-white">
-                    <button type="button" @click="$emit('close')"
+                    <button type="button" @click="emit('close')"
                         class="px-6 py-2.5 border-2 border-slate-300 text-slate-600 font-bold rounded-xl hover:bg-slate-50 transition-all">
                         Cancelar
                     </button>

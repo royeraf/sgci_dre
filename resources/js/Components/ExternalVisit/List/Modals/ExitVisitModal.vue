@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, nextTick, onMounted } from 'vue';
+import { shallowRef, computed, nextTick, onMounted, onUnmounted, useTemplateRef } from 'vue';
 import { useForm } from 'vee-validate';
 import { toTypedSchema } from '@vee-validate/yup';
 import * as yup from 'yup';
@@ -14,39 +14,18 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-    (e: 'close'): void;
-    (e: 'success'): void;
+    close: [];
+    success: [];
 }>();
 
-const isSubmitting = ref(false);
-const currentTime = ref(new Date().toTimeString().slice(0, 5));
-
-// Update time every 30 seconds
-let timeInterval: any;
-onMounted(() => {
-    timeInterval = setInterval(() => {
-        currentTime.value = new Date().toTimeString().slice(0, 5);
-        setFieldValue('hora_salida', currentTime.value);
-    }, 30000);
-});
-
-import { onUnmounted } from 'vue';
-onUnmounted(() => {
-    if (timeInterval) clearInterval(timeInterval);
-});
-const verifyDni = ref('');
-const verifyDniInput = ref<HTMLInputElement | null>(null);
+const isSubmitting = shallowRef(false);
+const currentTime = shallowRef(new Date().toTimeString().slice(0, 5));
+const verifyDni = shallowRef('');
+const verifyDniInput = useTemplateRef<HTMLInputElement>('verifyDniInput');
 
 // DNI Verification
 const isDniVerified = computed(() => {
     return props.visit && verifyDni.value === props.visit.dni;
-});
-
-// Focus on mount
-onMounted(() => {
-    nextTick(() => {
-        verifyDniInput.value?.focus();
-    });
 });
 
 // Validation Schema
@@ -71,10 +50,8 @@ const [observacionSalida] = defineField('observacion_salida');
 // Auto-submit if verified via enter or scanner
 const checkDniAndSubmit = () => {
     if (isDniVerified.value) {
-        // Update exit time to current moment on verification
         const now = new Date().toTimeString().slice(0, 5);
         if (horaSalida) horaSalida.value = now;
-
         handleFormSubmit();
     }
 };
@@ -115,12 +92,31 @@ const handleFormSubmit = validateForm(async (values) => {
 const handleSubmit = () => {
     handleFormSubmit();
 };
+
+let timeInterval: ReturnType<typeof setInterval>;
+
+onMounted(() => {
+    // Update exit time every 30 seconds
+    timeInterval = setInterval(() => {
+        currentTime.value = new Date().toTimeString().slice(0, 5);
+        setFieldValue('hora_salida', currentTime.value);
+    }, 30000);
+
+    // Focus DNI input on open
+    nextTick(() => {
+        verifyDniInput.value?.focus();
+    });
+});
+
+onUnmounted(() => {
+    clearInterval(timeInterval);
+});
 </script>
 
 <template>
     <div class="fixed inset-0 z-50 overflow-y-auto">
         <div class="flex items-center justify-center min-h-screen px-4">
-            <div class="fixed inset-0 bg-black/50 transition-opacity" @click="$emit('close')"></div>
+            <div class="fixed inset-0 bg-black/50 transition-opacity" @click="emit('close')"></div>
 
             <div class="relative bg-white rounded-2xl shadow-2xl max-w-lg w-full z-10 overflow-hidden">
                 <!-- Header -->
@@ -135,7 +131,7 @@ const handleSubmit = () => {
                             Confirmar salida de visita
                         </p>
                     </div>
-                    <button type="button" @click="$emit('close')"
+                    <button type="button" @click="emit('close')"
                         class="bg-white/10 rounded-md p-2 inline-flex items-center justify-center text-white hover:text-white hover:bg-white/20 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white/50 transition-colors">
                         <span class="sr-only">Cerrar</span>
                         <X class="h-6 w-6" stroke-width="2" />
@@ -217,7 +213,7 @@ const handleSubmit = () => {
 
                     <!-- Actions -->
                     <div class="flex justify-end gap-3 pt-4 border-t border-slate-200">
-                        <button type="button" @click="$emit('close')"
+                        <button type="button" @click="emit('close')"
                             class="px-6 py-2.5 border-2 border-slate-300 text-slate-600 font-bold rounded-xl hover:bg-slate-50 transition-all">
                             Cancelar
                         </button>

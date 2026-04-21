@@ -19,8 +19,8 @@ import {
 } from 'lucide-vue-next';
 
 // Components
-import CreateVisitModal from '@/Components/ExternalVisit/List/CreateVisitModal.vue';
-import ExitVisitModal from '@/Components/ExternalVisit/List/ExitVisitModal.vue';
+import CreateVisitModal from '@/Components/ExternalVisit/List/Modals/CreateVisitModal.vue';
+import ExitVisitModal from '@/Components/ExternalVisit/List/Modals/ExitVisitModal.vue';
 import VisitFilters from '@/Components/ExternalVisit/List/VisitFilters.vue';
 import VisitTable from '@/Components/ExternalVisit/List/VisitTable.vue';
 import VisitReports from '@/Components/ExternalVisit/Reports/VisitReports.vue';
