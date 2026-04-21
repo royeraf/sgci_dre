@@ -86,7 +86,7 @@ const formatDate = (dateString?: string) => {
                                 <div class="bg-violet-100 rounded-lg p-1.5 shrink-0">
                                     <Calendar class="w-4 h-4 text-violet-600" />
                                 </div>
-                                <div>
+                                <div class="min-w-0">
                                     <p class="text-xs text-slate-500 font-medium">Fecha</p>
                                     <p class="text-sm font-bold text-slate-800">{{ formatDate(visit.fecha) || 'N/A' }}</p>
                                 </div>
@@ -97,7 +97,7 @@ const formatDate = (dateString?: string) => {
                                 <div class="bg-purple-100 rounded-lg p-1.5 shrink-0">
                                     <LogIn class="w-4 h-4 text-purple-600" />
                                 </div>
-                                <div>
+                                <div class="min-w-0">
                                     <p class="text-xs text-slate-500 font-medium">Hora de ingreso</p>
                                     <p class="text-sm font-bold text-slate-800">{{ visit.hora_ingreso || '--:--' }}</p>
                                 </div>
@@ -108,7 +108,7 @@ const formatDate = (dateString?: string) => {
                                 <div class="bg-red-100 rounded-lg p-1.5 shrink-0">
                                     <LogOut class="w-4 h-4 text-red-500" />
                                 </div>
-                                <div>
+                                <div class="min-w-0">
                                     <p class="text-xs text-slate-500 font-medium">Hora de salida</p>
                                     <p class="text-sm font-bold text-slate-800">{{ visit.hora_salida || '--:--' }}</p>
                                 </div>
@@ -119,9 +119,9 @@ const formatDate = (dateString?: string) => {
                                 <div class="bg-blue-100 rounded-lg p-1.5 shrink-0">
                                     <MapPin class="w-4 h-4 text-blue-600" />
                                 </div>
-                                <div>
+                                <div class="min-w-0">
                                     <p class="text-xs text-slate-500 font-medium">Destino</p>
-                                    <p class="text-sm font-bold text-slate-800 truncate">{{ visit.destino || 'N/A' }}</p>
+                                    <p class="text-sm font-bold text-slate-800 break-words">{{ visit.destino || 'N/A' }}</p>
                                 </div>
                             </div>
 
@@ -132,7 +132,7 @@ const formatDate = (dateString?: string) => {
                                 </div>
                                 <div class="min-w-0">
                                     <p class="text-xs text-slate-500 font-medium">A quien visita</p>
-                                    <p class="text-sm font-bold text-slate-800">{{ visit.a_quien_visita_nombre || 'N/A' }}</p>
+                                    <p class="text-sm font-bold text-slate-800 break-words">{{ visit.a_quien_visita_nombre || 'N/A' }}</p>
                                 </div>
                             </div>
 
@@ -143,8 +143,8 @@ const formatDate = (dateString?: string) => {
                                 </div>
                                 <div class="min-w-0">
                                     <p class="text-xs text-slate-500 font-medium">Motivo</p>
-                                    <p class="text-sm font-bold text-slate-800">{{ visit.motivo_nombre || 'No especificado' }}</p>
-                                    <p v-if="visit.motivo" class="text-xs text-slate-500 mt-0.5">{{ visit.motivo }}</p>
+                                    <p class="text-sm font-bold text-slate-800 break-words">{{ visit.motivo_nombre || 'No especificado' }}</p>
+                                    <p v-if="visit.motivo" class="text-xs text-slate-500 mt-0.5 break-words">{{ visit.motivo }}</p>
                                 </div>
                             </div>
 
@@ -153,9 +153,9 @@ const formatDate = (dateString?: string) => {
                                 <div class="bg-slate-200 rounded-lg p-1.5 shrink-0">
                                     <Users class="w-4 h-4 text-slate-600" />
                                 </div>
-                                <div>
+                                <div class="min-w-0">
                                     <p class="text-xs text-slate-500 font-medium">Registrado por</p>
-                                    <p class="text-sm font-bold text-slate-800">{{ visit.registrado_por || 'N/A' }}</p>
+                                    <p class="text-sm font-bold text-slate-800 break-words">{{ visit.registrado_por || 'N/A' }}</p>
                                 </div>
                             </div>
                         </div>
