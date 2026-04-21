@@ -36,4 +36,9 @@ return [
         'token' => env('RENIEC_API_TOKEN'),
     ],
 
+    'apiperu' => [
+        'url' => env('APIPERU_DNI_URL', 'https://apiperu.dev/api/dni'),
+        'token' => env('APIPERU_DNI_TOKEN'),
+    ],
+
 ];
