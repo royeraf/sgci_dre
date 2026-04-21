@@ -9,15 +9,19 @@ class ReniecService
 {
     protected string $apiUrl;
     protected string $token;
-    protected ?string $contingencyUrl;
-    protected ?string $contingencyToken;
+    protected ?string $contingencyUrl1;
+    protected ?string $contingencyToken1;
+    protected ?string $contingencyUrl2;
+    protected ?string $contingencyToken2;
 
     public function __construct()
     {
         $this->apiUrl = config('services.reniec.url');
         $this->token = config('services.reniec.token');
-        $this->contingencyUrl = config('services.apiperu.url');
-        $this->contingencyToken = config('services.apiperu.token');
+        $this->contingencyUrl1 = config('services.perudevs.url');
+        $this->contingencyToken1 = config('services.perudevs.token');
+        $this->contingencyUrl2 = config('services.apiperu.url');
+        $this->contingencyToken2 = config('services.apiperu.token');
     }
 
     /**
@@ -83,14 +87,23 @@ class ReniecService
             Log::error('RENIEC API Exception', ['error' => $e->getMessage()]);
         }
 
-        // --- PLAN DE CONTINGENCIA ---
-        // Si llegamos aquí, la API principal falló o no devolvió resultados
-        $contingencyData = $this->consultarContingencia($dni);
-        if ($contingencyData) {
+        // --- PLAN DE CONTINGENCIA 1 (PeruDevs) ---
+        $contingencyData1 = $this->consultarContingenciaPerudevs($dni);
+        if ($contingencyData1) {
+            return [
+                'success' => true,
+                'message' => 'Consulta exitosa (Contingencia PeruDevs)',
+                'data' => $contingencyData1
+            ];
+        }
+
+        // --- PLAN DE CONTINGENCIA 2 (ApiPeru) ---
+        $contingencyData2 = $this->consultarContingenciaApiPeru($dni);
+        if ($contingencyData2) {
             return [
                 'success' => true,
                 'message' => 'Consulta exitosa (Contingencia APIPeru)',
-                'data' => $contingencyData
+                'data' => $contingencyData2
             ];
         }
 
@@ -123,21 +136,58 @@ class ReniecService
     }
 
     /**
-     * Consulta de contingencia usando apiperu.dev
+     * Consulta de contingencia 1 usando api.perudevs.com
      */
-    private function consultarContingencia(string $dni): ?array
+    private function consultarContingenciaPerudevs(string $dni): ?array
     {
-        if (!$this->contingencyUrl || !$this->contingencyToken) {
+        if (!$this->contingencyUrl1 || !$this->contingencyToken1) {
+            return null;
+        }
+
+        try {
+            $response = Http::timeout(10)->get($this->contingencyUrl1, [
+                'document' => $dni,
+                'key' => $this->contingencyToken1
+            ]);
+
+            if ($response->successful()) {
+                $data = $response->json();
+                
+                if (isset($data['estado']) && $data['estado'] === true && isset($data['resultado'])) {
+                    $personData = $data['resultado'];
+                    
+                    return [
+                        'dni' => $personData['id'] ?? $dni,
+                        'nombres' => $personData['nombres'] ?? '',
+                        'apellido_paterno' => $personData['apellido_paterno'] ?? '',
+                        'apellido_materno' => $personData['apellido_materno'] ?? '',
+                        'nombre_completo' => $personData['nombre_completo'] ?? $this->formatContingenciaNombreCompleto($personData),
+                    ];
+                }
+            }
+            return null;
+        } catch (\Exception $e) {
+            Log::error('PERUDEVS Contingency Exception', ['error' => $e->getMessage()]);
+            return null;
+        }
+    }
+
+    /**
+     * Consulta de contingencia 2 usando apiperu.dev
+     */
+    private function consultarContingenciaApiPeru(string $dni): ?array
+    {
+        if (!$this->contingencyUrl2 || !$this->contingencyToken2) {
             return null;
         }
 
         try {
             $response = Http::withHeaders([
                 'Content-Type' => 'application/json',
-                'Authorization' => 'Bearer ' . $this->contingencyToken,
+                'Authorization' => 'Bearer ' . $this->contingencyToken2,
             ])
             ->timeout(10)
-            ->post($this->contingencyUrl, [
+            ->post($this->contingencyUrl2, [
                 'dni' => $dni
             ]);
 
