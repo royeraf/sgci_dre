@@ -125,7 +125,8 @@ const closeDetails = () => {
                         <td class="px-3 py-3 whitespace-nowrap text-xs font-medium">
                             <div class="flex flex-col gap-1.5 items-start">
                                 <button v-if="visit.is_pending" @click="$emit('exit', visit)"
-                                    class="text-indigo-600 hover:text-indigo-900 bg-indigo-50 hover:bg-indigo-100 px-2 py-1 rounded-lg transition-colors duration-200 whitespace-nowrap">
+                                    class="text-indigo-600 hover:text-indigo-900 bg-indigo-50 hover:bg-indigo-100 px-2 py-1 rounded-lg transition-colors duration-200 flex items-center gap-1 whitespace-nowrap">
+                                    <LogOut class="w-3.5 h-3.5" />
                                     Registrar Salida
                                 </button>
                                 <span v-else class="text-green-600 bg-green-50 px-2 py-1 rounded-lg whitespace-nowrap">
