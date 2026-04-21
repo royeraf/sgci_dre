@@ -220,12 +220,19 @@ class ExternalVisitController extends Controller
      */
     public function generateTicket(ExternalVisit $visit)
     {
-        // 80mm width, auto height (approximated for A7/Ticket roll)
-        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.pase_visita', [
-            'visit' => $visit,
-        ])->setPaper([0, 0, 226, 350], 'portrait'); // ~80mm width, reduced height ticket
+        $visit->load(['person', 'direction', 'office', 'reason', 'employee.person']);
 
-        return $pdf->stream("ticket_visita_{$visit->id}.pdf"); // Stream instead of download for better print experience
+        // Build destino string the same way the index does
+        $destino = $visit->office_nombre
+            ? ($visit->office_nombre . ($visit->direction_nombre ? " - {$visit->direction_nombre}" : ''))
+            : $visit->direction_nombre;
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.pase_visita', [
+            'visit'   => $visit,
+            'destino' => $destino,
+        ])->setPaper([0, 0, 226, 350], 'portrait');
+
+        return $pdf->stream("ticket_visita_{$visit->id}.pdf");
     }
 
     /**

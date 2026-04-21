@@ -98,15 +98,18 @@
         <div class="divider"></div>
 
         <div class="label">DESTINO (ÁREA):</div>
-        <div class="value">{{ Str::upper($visit->area_nombre) }}</div>
+        <div class="value">{{ Str::upper($destino ?? 'N/A') }}</div>
 
-        @if($visit->a_quien_visita)
+        @if($visit->a_quien_visita_nombre)
         <div class="label">A QUIEN VISITA:</div>
-        <div class="value">{{ Str::upper($visit->a_quien_visita) }}</div>
+        <div class="value">{{ Str::upper($visit->a_quien_visita_nombre) }}</div>
         @endif
 
         <div class="label">MOTIVO:</div>
-        <div class="value" style="font-size: 10px;">{{ Str::limit($visit->motivo, 100) }}</div>
+        <div class="value">{{ Str::upper($visit->motivo_nombre ?? 'No especificado') }}</div>
+        @if($visit->motivo)
+        <div class="value" style="font-size: 9px; font-weight: normal;">{{ Str::limit($visit->motivo, 100) }}</div>
+        @endif
     </div>
 
     <div class="divider"></div>
