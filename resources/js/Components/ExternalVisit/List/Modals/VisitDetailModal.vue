@@ -43,9 +43,9 @@ const formatDate = (dateString?: string) => {
                     leave-to-class="opacity-0 scale-95 translate-y-4"
                     appear
                 >
-                    <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden">
+                    <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden max-h-[90vh] flex flex-col">
                         <!-- Header -->
-                        <div class="bg-gradient-to-r from-violet-600 to-fuchsia-600 px-6 py-5 flex items-center justify-between">
+                        <div class="bg-gradient-to-r from-violet-600 to-fuchsia-600 px-6 py-5 flex items-center justify-between flex-shrink-0">
                             <div class="flex items-center gap-3">
                                 <div class="bg-white/20 rounded-xl p-2">
                                     <Info class="w-5 h-5 text-white" />
@@ -62,7 +62,7 @@ const formatDate = (dateString?: string) => {
                         </div>
 
                         <!-- Visitante Hero -->
-                        <div class="px-6 pt-5 pb-3 flex items-center gap-4 border-b border-slate-100">
+                        <div class="px-6 pt-5 pb-3 flex items-center gap-4 border-b border-slate-100 flex-shrink-0">
                             <div class="h-14 w-14 shrink-0 rounded-2xl bg-gradient-to-br from-purple-500 to-fuchsia-600 flex items-center justify-center text-xl font-extrabold text-white shadow-lg">
                                 {{ visit.nombres?.charAt(0) || '?' }}
                             </div>
@@ -80,7 +80,7 @@ const formatDate = (dateString?: string) => {
                         </div>
 
                         <!-- Detalles Grid -->
-                        <div class="px-6 py-4 grid grid-cols-2 gap-4">
+                        <div class="px-6 py-4 grid grid-cols-2 gap-4 overflow-y-auto">
                             <!-- Fecha -->
                             <div class="flex items-start gap-3 bg-slate-50 rounded-xl p-3">
                                 <div class="bg-violet-100 rounded-lg p-1.5 shrink-0">
@@ -161,7 +161,7 @@ const formatDate = (dateString?: string) => {
                         </div>
 
                         <!-- Footer -->
-                        <div class="px-6 pb-5 flex justify-end gap-3">
+                        <div class="px-6 pb-5 pt-4 flex justify-end gap-3 flex-shrink-0 border-t border-slate-100">
                             <a :href="`/visitors/${visit.id}/ticket`" target="_blank"
                                 class="cursor-pointer flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-50 text-blue-700 hover:bg-blue-100 text-sm font-semibold transition-colors duration-150">
                                 <FileText class="w-4 h-4" />
