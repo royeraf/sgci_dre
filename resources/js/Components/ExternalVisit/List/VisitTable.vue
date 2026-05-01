@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { shallowRef } from 'vue';
-import { LogIn, LogOut, FileText, Users, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Eye } from 'lucide-vue-next';
+import { LogIn, LogOut, FileText, Users, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Eye, CheckCheck } from 'lucide-vue-next';
 
 import { Visit, PaginatedVisits } from '@/Types/visitor';
 import VisitDetailModal from '@/Components/ExternalVisit/List/Modals/VisitDetailModal.vue';
@@ -125,20 +125,21 @@ const closeDetails = () => {
                         <td class="px-3 py-3 whitespace-nowrap text-xs font-medium">
                             <div class="flex flex-col gap-1.5 items-start">
                                 <button v-if="visit.is_pending" @click="$emit('exit', visit)"
-                                    class="text-indigo-600 hover:text-indigo-900 bg-indigo-50 hover:bg-indigo-100 px-2 py-1 rounded-lg transition-colors duration-200 flex items-center gap-1 whitespace-nowrap">
+                                    class="cursor-pointer text-indigo-600 hover:text-indigo-900 bg-indigo-50 hover:bg-indigo-100 px-2 py-1 rounded-xl font-bold transition-all flex items-center gap-1 whitespace-nowrap">
                                     <LogOut class="w-3.5 h-3.5" />
                                     Registrar Salida
                                 </button>
-                                <span v-else class="text-green-600 bg-green-50 px-2 py-1 rounded-lg whitespace-nowrap">
+                                <span v-else class="text-green-600 bg-green-50 px-2 py-1 rounded-xl whitespace-nowrap flex items-center gap-1">
+                                    <CheckCheck class="w-3.5 h-3.5" />
                                     Completado
                                 </span>
                                 <a :href="`/visitors/${visit.id}/ticket`" target="_blank"
-                                    class="text-blue-600 hover:text-blue-900 bg-blue-50 hover:bg-blue-100 px-2 py-1 rounded-lg transition-colors duration-200 flex items-center gap-1 whitespace-nowrap">
+                                    class="cursor-pointer text-blue-600 hover:text-blue-900 bg-blue-50 hover:bg-blue-100 px-2 py-1 rounded-xl font-bold transition-all flex items-center gap-1 whitespace-nowrap">
                                     <FileText class="w-3.5 h-3.5" />
                                     Ticket
                                 </a>
                                 <button @click="openDetails(visit)"
-                                    class="text-violet-600 hover:text-violet-900 bg-violet-50 hover:bg-violet-100 px-2 py-1 rounded-lg transition-colors duration-200 flex items-center gap-1 whitespace-nowrap">
+                                    class="cursor-pointer text-violet-600 hover:text-violet-900 bg-violet-50 hover:bg-violet-100 px-2 py-1 rounded-xl font-bold transition-all flex items-center gap-1 whitespace-nowrap">
                                     <Eye class="w-3.5 h-3.5" />
                                     Ver detalles
                                 </button>
@@ -167,7 +168,7 @@ const closeDetails = () => {
                     <span>Mostrar</span>
                     <select :value="visits.per_page"
                         @change="$emit('update:perPage', ($event.target as HTMLSelectElement).value)"
-                        class="border border-slate-200 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-purple-500 bg-white">
+                        class="cursor-pointer border-2 border-slate-200 rounded-xl px-3 py-1.5 text-sm focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 bg-white outline-none transition-all">
                         <option :value="10">10</option>
                         <option :value="25">25</option>
                         <option :value="50">50</option>
@@ -179,21 +180,21 @@ const closeDetails = () => {
                 </div>
                 <div class="flex items-center gap-1">
                     <button @click="$emit('page-change', 1)" :disabled="visits.current_page === 1"
-                        class="p-2 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed">
+                        class="cursor-pointer p-2 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed transition-all">
                         <ChevronsLeft class="w-4 h-4" />
                     </button>
                     <button @click="$emit('page-change', visits.current_page - 1)" :disabled="visits.current_page === 1"
-                        class="p-2 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed">
+                        class="cursor-pointer p-2 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed transition-all">
                         <ChevronLeft class="w-4 h-4" />
                     </button>
                     <button @click="$emit('page-change', visits.current_page + 1)"
                         :disabled="visits.current_page === visits.last_page"
-                        class="p-2 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed">
+                        class="cursor-pointer p-2 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed transition-all">
                         <ChevronRight class="w-4 h-4" />
                     </button>
                     <button @click="$emit('page-change', visits.last_page)"
                         :disabled="visits.current_page === visits.last_page"
-                        class="p-2 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed">
+                        class="cursor-pointer p-2 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed transition-all">
                         <ChevronsRight class="w-4 h-4" />
                     </button>
                 </div>

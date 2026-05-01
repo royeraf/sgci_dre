@@ -38,7 +38,7 @@ onMounted(() => {
                     visitas</p>
             </div>
             <button @click="openCreateModal"
-                class="inline-flex items-center px-4 py-2 bg-gradient-to-r from-purple-600 to-fuchsia-600 text-white text-sm font-bold rounded-xl hover:from-purple-700 hover:to-fuchsia-700 transition-all shadow-md shadow-purple-200">
+                class="cursor-pointer inline-flex items-center px-4 py-2 bg-gradient-to-r from-purple-600 to-fuchsia-600 text-white text-sm font-bold rounded-xl hover:from-purple-700 hover:to-fuchsia-700 transition-all shadow-lg shadow-purple-200 active:scale-95">
                 <Plus class="w-4 h-4 mr-2" />
                 Nuevo Motivo
             </button>
@@ -79,7 +79,7 @@ onMounted(() => {
                         <td class="px-6 py-4">
                             <div class="flex justify-center">
                                 <button @click="toggleStatus(reason)"
-                                    class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold transition-all"
+                                    class="cursor-pointer inline-flex items-center px-3 py-1 rounded-full text-xs font-bold transition-all"
                                     :class="reason.is_active ? 'bg-emerald-50 text-emerald-600 ring-1 ring-emerald-200' : 'bg-rose-50 text-rose-600 ring-1 ring-rose-200'">
                                     <div class="w-1.5 h-1.5 rounded-full mr-2"
                                         :class="reason.is_active ? 'bg-emerald-500' : 'bg-rose-500'"></div>
@@ -90,12 +90,12 @@ onMounted(() => {
                         <td class="px-6 py-4 text-right">
                             <div class="flex justify-end gap-2">
                                 <button @click="openEditModal(reason)"
-                                    class="p-2 text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition-all shadow-sm group-hover:shadow-md"
+                                    class="cursor-pointer p-2 text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-xl transition-all shadow-sm group-hover:shadow-md active:scale-95"
                                     title="Editar">
                                     <Pencil class="w-4 h-4" />
                                 </button>
                                 <button @click="deleteReason(reason)"
-                                    class="p-2 text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-lg transition-all shadow-sm group-hover:shadow-md"
+                                    class="cursor-pointer p-2 text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-xl transition-all shadow-sm group-hover:shadow-md active:scale-95"
                                     title="Eliminar">
                                     <Trash2 class="w-4 h-4" />
                                 </button>

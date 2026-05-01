@@ -49,7 +49,7 @@ const handleSubmit = () => {
                     <p class="text-purple-100 text-sm mt-1">{{ modalMessage }}</p>
                 </div>
                 <button @click="handleClose"
-                    class="bg-white/10 rounded-md p-2 inline-flex items-center justify-center text-white hover:text-white hover:bg-white/20 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white/50 transition-colors">
+                    class="cursor-pointer bg-white/10 rounded-xl p-2 inline-flex items-center justify-center text-white hover:bg-white/20 transition-all active:scale-95">
                     <X class="h-6 w-6" stroke-width="2" />
                 </button>
             </div>
@@ -58,7 +58,7 @@ const handleSubmit = () => {
                 <div>
                     <label class="block text-sm font-bold text-slate-700 mb-2">Nombre del Motivo</label>
                     <input v-model="form.nombre" type="text"
-                        class="w-full px-4 py-3 rounded-xl border-slate-200 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all font-medium text-slate-600 outline-none"
+                        class="w-full px-4 py-3 border-2 rounded-xl border-slate-200 focus:border-purple-500 focus:ring-4 focus:ring-purple-500/20 transition-all font-medium text-slate-600 outline-none"
                         placeholder="Ej. Trámites de Títulos"
                         :class="{ 'border-rose-400 bg-rose-50': form.errors.nombre }" />
                     <p v-if="form.errors.nombre" class="mt-1.5 text-xs text-rose-500 font-bold flex items-center gap-1">
@@ -69,7 +69,7 @@ const handleSubmit = () => {
                 <div>
                     <label class="block text-sm font-bold text-slate-700 mb-2">Descripción (Opcional)</label>
                     <textarea v-model="form.descripcion" rows="3"
-                        class="w-full px-4 py-3 rounded-xl border-slate-200 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all font-medium text-slate-600 resize-none outline-none"
+                        class="w-full px-4 py-3 border-2 rounded-xl border-slate-200 focus:border-purple-500 focus:ring-4 focus:ring-purple-500/20 transition-all font-medium text-slate-600 resize-none outline-none"
                         placeholder="Agregue una breve descripción sobre este motivo..."></textarea>
                 </div>
 
@@ -80,7 +80,7 @@ const handleSubmit = () => {
                         <span class="text-xs text-slate-500">{{ statusMessage }}</span>
                     </div>
                     <button type="button" @click="form.is_active = !form.is_active"
-                        class="relative inline-flex h-7 w-12 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none"
+                        class="cursor-pointer relative inline-flex h-7 w-12 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none"
                         :class="form.is_active ? 'bg-emerald-500' : 'bg-slate-300'">
                         <span
                             class="pointer-events-none inline-block h-6 w-6 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out"
@@ -90,11 +90,11 @@ const handleSubmit = () => {
 
                 <div class="flex gap-3 pt-4 border-t border-slate-100">
                     <button type="button" @click="handleClose"
-                        class="flex-1 px-4 py-3 border-2 border-slate-200 text-sm font-bold rounded-xl text-slate-600 bg-white hover:bg-slate-50 transition-all active:scale-95">
+                        class="cursor-pointer flex-1 px-4 py-3 border-2 border-slate-200 text-sm font-bold rounded-xl text-slate-600 bg-white hover:bg-slate-50 transition-all active:scale-95">
                         Cancelar
                     </button>
                     <button type="submit" :disabled="form.processing"
-                        class="flex-1 px-4 py-3 bg-gradient-to-r from-purple-600 to-fuchsia-600 text-white text-sm font-bold rounded-xl hover:from-purple-700 hover:to-fuchsia-700 transition-all shadow-lg shadow-purple-200 disabled:opacity-50 active:scale-95 flex items-center justify-center gap-2">
+                        class="cursor-pointer flex-1 px-4 py-3 bg-gradient-to-r from-purple-600 to-fuchsia-600 text-white text-sm font-bold rounded-xl hover:from-purple-700 hover:to-fuchsia-700 transition-all shadow-lg shadow-purple-200 disabled:opacity-50 active:scale-95 flex items-center justify-center gap-2">
                         <Loader2 v-if="form.processing" class="w-5 h-5 animate-spin" />
                         <span>{{ editingReason ? 'Actualizar' : 'Guardar Motivo' }}</span>
                     </button>

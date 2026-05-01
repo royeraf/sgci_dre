@@ -25,7 +25,7 @@ onMounted(() => {
 const statusClasses = computed(() => {
     if (statusType.value === 'success') return 'border-2 border-green-400 bg-green-50';
     if (statusType.value === 'error') return 'border-2 border-red-400 bg-red-50';
-    return 'border border-slate-300 bg-white';
+    return 'border-2 border-slate-200 bg-white';
 });
 
 const statusMessageClasses = computed(() => {
@@ -126,14 +126,14 @@ defineExpose({
             <div class="relative">
                 <input ref="scannerInput" type="text" v-model="dni" @input="onlyNumbers" @keyup.enter="searchVisit"
                     inputmode="numeric" pattern="[0-9]*" maxlength="8" placeholder="Escanee o escriba el DNI..."
-                    class="w-full px-3 py-2 pl-10 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all text-sm outline-none"
+                    class="w-full px-3 py-2 pl-10 rounded-xl focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all text-sm outline-none"
                     :class="statusClasses" :disabled="isSearching" />
                 <div class="absolute left-3 top-1/2 -translate-y-1/2">
                     <Loader2 v-if="isSearching" class="w-4 h-4 text-emerald-600 animate-spin" />
                     <Hash v-else class="w-4 h-4 text-slate-400" />
                 </div>
                 <button v-if="dni && !isSearching" @click="clearSearch" type="button"
-                    class="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+                    class="cursor-pointer absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
                     <X class="w-4 h-4" />
                 </button>
             </div>

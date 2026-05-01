@@ -23,7 +23,7 @@ defineEmits<{
                     <input type="text" :value="filters.search"
                         @input="$emit('update:filters', { ...filters, search: ($event.target as HTMLInputElement).value })"
                         placeholder="Buscar por nombre, DNI o motivo..."
-                        class="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 text-sm" />
+                        class="w-full pl-10 pr-4 py-2.5 border-2 border-slate-200 rounded-xl focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 transition-all duration-200 text-sm outline-none" />
                 </div>
             </div>
 
@@ -32,7 +32,7 @@ defineEmits<{
                 <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Estado</label>
                 <select :value="filters.estado"
                     @change="$emit('update:filters', { ...filters, estado: ($event.target as HTMLSelectElement).value })"
-                    class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 text-sm bg-white">
+                    class="w-full px-4 py-2.5 border-2 border-slate-200 rounded-xl focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 transition-all duration-200 text-sm outline-none bg-white">
                     <option value="">Todos</option>
                     <option value="pendiente">Pendiente salida</option>
                     <option value="completado">Completado</option>
@@ -44,7 +44,7 @@ defineEmits<{
                 <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Fecha</label>
                 <input type="date" :value="filters.fecha"
                     @input="$emit('update:filters', { ...filters, fecha: ($event.target as HTMLInputElement).value })"
-                    class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 text-sm" />
+                    class="w-full px-4 py-2.5 border-2 border-slate-200 rounded-xl focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 transition-all duration-200 text-sm outline-none" />
             </div>
         </div>
 
@@ -55,7 +55,7 @@ defineEmits<{
             </p>
             <div class="flex gap-2">
                 <button @click="$emit('clear')"
-                    class="text-sm font-semibold text-slate-500 hover:text-purple-600 transition-colors duration-200 flex items-center gap-1">
+                    class="cursor-pointer text-sm font-semibold text-slate-500 hover:text-purple-600 transition-colors duration-200 flex items-center gap-1">
                     <X class="w-4 h-4" />
                     Limpiar filtros
                 </button>

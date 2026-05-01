@@ -148,12 +148,12 @@ watch(activeTab, (newTab) => {
                 </div>
                 <div class="flex gap-3">
                     <Link href="/dashboard"
-                        class="inline-flex items-center px-4 py-2.5 border border-slate-200 text-sm font-bold rounded-xl text-slate-600 bg-white hover:bg-slate-50 transition-all shadow-sm">
+                        class="cursor-pointer inline-flex items-center px-4 py-2.5 border border-slate-200 text-sm font-bold rounded-xl text-slate-600 bg-white hover:bg-slate-50 transition-all shadow-sm">
                         <ArrowLeft class="w-4 h-4 mr-2" />
                         Volver
                     </Link>
                     <button @click="openCreateModal"
-                        class="inline-flex items-center px-6 py-3 border border-transparent text-sm font-bold rounded-xl shadow-lg shadow-purple-600/20 text-white bg-gradient-to-r from-purple-600 to-fuchsia-600 hover:from-purple-700 hover:to-fuchsia-700 focus:outline-none focus:ring-4 focus:ring-purple-300 transition-all duration-300 transform hover:scale-105 active:scale-95">
+                        class="cursor-pointer inline-flex items-center px-6 py-3 border border-transparent text-sm font-bold rounded-xl shadow-lg shadow-purple-600/20 text-white bg-gradient-to-r from-purple-600 to-fuchsia-600 hover:from-purple-700 hover:to-fuchsia-700 focus:outline-none focus:ring-4 focus:ring-purple-300 transition-all duration-300 transform hover:scale-105 active:scale-95">
                         <Plus class="w-5 h-5 mr-2" />
                         Nueva Visita
                     </button>
@@ -167,7 +167,7 @@ watch(activeTab, (newTab) => {
                         activeTab === 'list'
                             ? 'border-purple-600 text-purple-600'
                             : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300',
-                        'whitespace-nowrap py-4 px-1 border-b-2 font-bold text-sm flex items-center gap-2 transition-all duration-200'
+                        'cursor-pointer whitespace-nowrap py-4 px-1 border-b-2 font-bold text-sm flex items-center gap-2 transition-all duration-200'
                     ]">
                         <ClipboardList class="w-5 h-5" />
                         Listado de Visitas
@@ -176,7 +176,7 @@ watch(activeTab, (newTab) => {
                         activeTab === 'reports'
                             ? 'border-fuchsia-600 text-fuchsia-600'
                             : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300',
-                        'whitespace-nowrap py-4 px-1 border-b-2 font-bold text-sm flex items-center gap-2 transition-all duration-200'
+                        'cursor-pointer whitespace-nowrap py-4 px-1 border-b-2 font-bold text-sm flex items-center gap-2 transition-all duration-200'
                     ]">
                         <FileText class="w-5 h-5" />
                         Reportes
@@ -185,7 +185,7 @@ watch(activeTab, (newTab) => {
                         activeTab === 'reasons'
                             ? 'border-indigo-600 text-indigo-600'
                             : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300',
-                        'whitespace-nowrap py-4 px-1 border-b-2 font-bold text-sm flex items-center gap-2 transition-all duration-200'
+                        'cursor-pointer whitespace-nowrap py-4 px-1 border-b-2 font-bold text-sm flex items-center gap-2 transition-all duration-200'
                     ]">
                         <Settings class="w-5 h-5" />
                         Motivos

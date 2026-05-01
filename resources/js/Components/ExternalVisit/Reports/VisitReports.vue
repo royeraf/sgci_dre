@@ -156,7 +156,7 @@ const generateReport = () => {
                         <div class="relative">
                             <Tag class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                             <select v-model="reportType"
-                                class="w-full pl-12 pr-4 py-3.5 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-purple-500/10 focus:border-purple-500 transition-all duration-300 bg-slate-50 font-semibold text-slate-700 appearance-none outline-none">
+                                class="w-full pl-12 pr-4 py-3.5 border-2 border-slate-200 rounded-2xl focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 transition-all duration-300 bg-slate-50 font-semibold text-slate-700 appearance-none outline-none">
                                 <option value="daily">Reporte Diario</option>
                                 <option value="weekly">Reporte Semanal</option>
                                 <option value="monthly">Reporte Mensual</option>
@@ -178,11 +178,11 @@ const generateReport = () => {
 
                             <!-- Daily Input -->
                             <input v-if="reportType === 'daily'" type="date" v-model="selectedDate"
-                                class="w-full pl-12 pr-4 py-3.5 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-purple-500/10 focus:border-purple-500 transition-all duration-300 bg-slate-50 font-semibold text-slate-700 outline-none" />
+                                class="w-full pl-12 pr-4 py-3.5 border-2 border-slate-200 rounded-2xl focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 transition-all duration-300 bg-slate-50 font-semibold text-slate-700 outline-none" />
 
                             <!-- Weekly Input -->
                             <select v-else-if="reportType === 'weekly'" v-model="selectedWeek"
-                                class="w-full pl-12 pr-4 py-3.5 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-purple-500/10 focus:border-purple-500 transition-all duration-300 bg-slate-50 font-semibold text-slate-700 appearance-none outline-none">
+                                class="w-full pl-12 pr-4 py-3.5 border-2 border-slate-200 rounded-2xl focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 transition-all duration-300 bg-slate-50 font-semibold text-slate-700 appearance-none outline-none">
                                 <option value="" disabled>Seleccione una semana...</option>
                                 <option v-for="week in availableWeeks" :key="week.value" :value="week.value">
                                     {{ week.label }}
@@ -191,7 +191,7 @@ const generateReport = () => {
 
                             <!-- Monthly Input -->
                             <input v-else-if="reportType === 'monthly'" type="month" v-model="selectedMonth"
-                                class="w-full pl-12 pr-4 py-3.5 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-purple-500/10 focus:border-purple-500 transition-all duration-300 bg-slate-50 font-semibold text-slate-700 outline-none" />
+                                class="w-full pl-12 pr-4 py-3.5 border-2 border-slate-200 rounded-2xl focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 transition-all duration-300 bg-slate-50 font-semibold text-slate-700 outline-none" />
 
                             <!-- Custom Input - Placeholder -->
                             <div v-else-if="reportType === 'custom'"
@@ -217,7 +217,7 @@ const generateReport = () => {
                         <div class="relative">
                             <Calendar class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                             <input type="date" v-model="customStartDate"
-                                class="w-full pl-12 pr-4 py-3.5 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-purple-500/10 focus:border-purple-500 transition-all duration-300 bg-slate-50 font-semibold text-slate-700 outline-none" />
+                                class="w-full pl-12 pr-4 py-3.5 border-2 border-slate-200 rounded-2xl focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 transition-all duration-300 bg-slate-50 font-semibold text-slate-700 outline-none" />
                         </div>
                     </div>
 
@@ -229,7 +229,7 @@ const generateReport = () => {
                         <div class="relative">
                             <Calendar class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                             <input type="date" v-model="customEndDate" :min="customStartDate"
-                                class="w-full pl-12 pr-4 py-3.5 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-purple-500/10 focus:border-purple-500 transition-all duration-300 bg-slate-50 font-semibold text-slate-700 outline-none" />
+                                class="w-full pl-12 pr-4 py-3.5 border-2 border-slate-200 rounded-2xl focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 transition-all duration-300 bg-slate-50 font-semibold text-slate-700 outline-none" />
                         </div>
                     </div>
                 </div>
@@ -262,7 +262,7 @@ const generateReport = () => {
                 <!-- Button to Download -->
                 <div class="flex justify-center flex-col items-center gap-3">
                     <button @click="generateReport" :disabled="isGenerating"
-                        class="inline-flex items-center justify-center px-8 py-3.5 bg-gradient-to-r from-purple-600 to-fuchsia-600 text-white font-black rounded-2xl shadow-xl shadow-purple-200 hover:shadow-purple-300 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed transform hover:-translate-y-0.5 active:translate-y-0">
+                        class="cursor-pointer inline-flex items-center justify-center px-8 py-3.5 bg-gradient-to-r from-purple-600 to-fuchsia-600 text-white font-black rounded-xl shadow-lg shadow-purple-500/20 hover:shadow-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed hover:-translate-y-0.5 active:scale-95">
                         <Loader2 v-if="isGenerating" class="animate-spin w-5 h-5 mr-3" />
                         <Download v-else class="w-5 h-5 mr-3" />
                         {{ isGenerating ? 'Generando PDF...' : 'Descargar Reporte PDF' }}

@@ -56,7 +56,7 @@ const formatDate = (dateString?: string) => {
                                 </div>
                             </div>
                             <button @click="emit('close')"
-                                class="bg-white/10 hover:bg-white/25 text-white rounded-xl p-2 transition-colors duration-150">
+                                class="cursor-pointer bg-white/10 hover:bg-white/25 text-white rounded-xl p-2 transition-colors duration-150">
                                 <X class="w-5 h-5" />
                             </button>
                         </div>
@@ -163,12 +163,12 @@ const formatDate = (dateString?: string) => {
                         <!-- Footer -->
                         <div class="px-6 pb-5 flex justify-end gap-3">
                             <a :href="`/visitors/${visit.id}/ticket`" target="_blank"
-                                class="flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-50 text-blue-700 hover:bg-blue-100 text-sm font-semibold transition-colors duration-150">
+                                class="cursor-pointer flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-50 text-blue-700 hover:bg-blue-100 text-sm font-semibold transition-colors duration-150">
                                 <FileText class="w-4 h-4" />
                                 Ver ticket
                             </a>
                             <button @click="emit('close')"
-                                class="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200 text-sm font-semibold transition-colors duration-150">
+                                class="cursor-pointer px-4 py-2 rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200 text-sm font-semibold transition-colors duration-150">
                                 Cerrar
                             </button>
                         </div>
