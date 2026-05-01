@@ -108,9 +108,35 @@ const safeFocusRestore = (delay = 100) => {
     }, delay);
 };
 
+// Tab indicator logic
+const tabsRef = ref<HTMLElement | null>(null);
+const indicatorStyle = ref({ left: '0px', width: '0px', backgroundColor: '' });
+
+const getIndicatorColor = (tab: string) => {
+    switch (tab) {
+        case 'list': return '#9333ea'; // purple-600
+        case 'reports': return '#c026d3'; // fuchsia-600
+        case 'reasons': return '#4f46e5'; // indigo-600
+        default: return '#9333ea';
+    }
+};
+
+const updateIndicator = () => {
+    if (!tabsRef.value) return;
+    const activeBtn = tabsRef.value.querySelector('.active-tab') as HTMLElement;
+    if (activeBtn) {
+        indicatorStyle.value = {
+            left: `${activeBtn.offsetLeft}px`,
+            width: `${activeBtn.offsetWidth}px`,
+            backgroundColor: getIndicatorColor(activeTab.value)
+        };
+    }
+};
+
 onMounted(() => {
     nextTick(() => {
         barcodeScanner.value?.focusInput();
+        updateIndicator();
     });
 
     const handleGlobalClick = (event: MouseEvent) => {
@@ -128,6 +154,7 @@ onMounted(() => {
 });
 
 watch(activeTab, (newTab) => {
+    nextTick(updateIndicator);
     if (newTab === 'list') {
         safeFocusRestore(100);
     }
@@ -161,58 +188,59 @@ watch(activeTab, (newTab) => {
             </div>
 
             <!-- Tabs Navigation -->
-            <div class="border-b border-slate-200 mb-8">
-                <nav class="-mb-px flex space-x-8">
+            <div class="border-b border-slate-200 mb-8 relative">
+                <nav ref="tabsRef" class="-mb-px flex">
                     <button v-if="canViewTab('list')" @click="activeTab = 'list'" :class="[
-                        activeTab === 'list'
-                            ? 'border-purple-600 text-purple-600'
-                            : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300',
-                        'cursor-pointer whitespace-nowrap py-4 px-1 border-b-2 font-bold text-sm flex items-center gap-2 transition-all duration-200'
+                        activeTab === 'list' ? 'text-purple-600 active-tab' : 'text-slate-500 hover:text-slate-700',
+                        'cursor-pointer whitespace-nowrap py-4 px-5 font-bold text-sm flex items-center gap-2 transition-colors duration-300'
                     ]">
                         <ClipboardList class="w-5 h-5" />
                         Listado de Visitas
                     </button>
                     <button v-if="canViewTab('reports')" @click="activeTab = 'reports'" :class="[
-                        activeTab === 'reports'
-                            ? 'border-fuchsia-600 text-fuchsia-600'
-                            : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300',
-                        'cursor-pointer whitespace-nowrap py-4 px-1 border-b-2 font-bold text-sm flex items-center gap-2 transition-all duration-200'
+                        activeTab === 'reports' ? 'text-fuchsia-600 active-tab' : 'text-slate-500 hover:text-slate-700',
+                        'cursor-pointer whitespace-nowrap py-4 px-5 font-bold text-sm flex items-center gap-2 transition-colors duration-300'
                     ]">
                         <FileText class="w-5 h-5" />
                         Reportes
                     </button>
                     <button v-if="canViewTab('reasons')" @click="activeTab = 'reasons'" :class="[
-                        activeTab === 'reasons'
-                            ? 'border-indigo-600 text-indigo-600'
-                            : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300',
-                        'cursor-pointer whitespace-nowrap py-4 px-1 border-b-2 font-bold text-sm flex items-center gap-2 transition-all duration-200'
+                        activeTab === 'reasons' ? 'text-indigo-600 active-tab' : 'text-slate-500 hover:text-slate-700',
+                        'cursor-pointer whitespace-nowrap py-4 px-5 font-bold text-sm flex items-center gap-2 transition-colors duration-300'
                     ]">
                         <Settings class="w-5 h-5" />
                         Motivos
                     </button>
                 </nav>
+                <!-- Gliding Indicator -->
+                <div class="absolute bottom-0 h-0.5 transition-all duration-300 ease-out" :style="indicatorStyle"></div>
             </div>
 
-            <!-- List Tab Content -->
-            <div v-if="activeTab === 'list'" class="space-y-6">
-                <!-- Barcode Scanner -->
-                <BarcodeScanner ref="barcodeScanner" @visitFound="handleVisitFound" />
+            <!-- Tab Content with Transition -->
+            <Transition name="fade-slide" mode="out-in">
+                <div :key="activeTab">
+                    <!-- List Tab Content -->
+                    <div v-if="activeTab === 'list'" class="space-y-6">
+                        <!-- Barcode Scanner -->
+                        <BarcodeScanner ref="barcodeScanner" @visitFound="handleVisitFound" />
 
-                <VisitFilters :filters="localFilters" @update:filters="updateFilters" @clear="clearFilters" />
+                        <VisitFilters :filters="localFilters" @update:filters="updateFilters" @clear="clearFilters" />
 
-                <VisitTable :visits="visits" @exit="openExitModal" @page-change="changePage"
-                    @update:perPage="updatePerPage" />
-            </div>
+                        <VisitTable :visits="visits" @exit="openExitModal" @page-change="changePage"
+                            @update:perPage="updatePerPage" />
+                    </div>
 
-            <!-- Reports Tab Content -->
-            <div v-if="activeTab === 'reports'">
-                <VisitReports />
-            </div>
+                    <!-- Reports Tab Content -->
+                    <div v-else-if="activeTab === 'reports'">
+                        <VisitReports />
+                    </div>
 
-            <!-- Reasons Tab Content -->
-            <div v-if="activeTab === 'reasons'">
-                <VisitReasonsManager />
-            </div>
+                    <!-- Reasons Tab Content -->
+                    <div v-else-if="activeTab === 'reasons'">
+                        <VisitReasonsManager />
+                    </div>
+                </div>
+            </Transition>
 
             <!-- Modals -->
             <CreateVisitModal v-if="showCreateModal" :directions="directions" :offices="offices" :employees="employees"
@@ -223,3 +251,20 @@ watch(activeTab, (newTab) => {
         </div>
     </div>
 </template>
+
+<style scoped>
+.fade-slide-enter-active,
+.fade-slide-leave-active {
+    transition: all 0.3s ease;
+}
+
+.fade-slide-enter-from {
+    opacity: 0;
+    transform: translateX(10px);
+}
+
+.fade-slide-leave-to {
+    opacity: 0;
+    transform: translateX(-10px);
+}
+</style>
