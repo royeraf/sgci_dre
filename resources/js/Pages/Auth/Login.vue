@@ -55,12 +55,12 @@
 
         <!-- Error Alert -->
         <div class="mb-6 min-h-[60px]">
-          <div v-if="form.errors.credentials" class="bg-red-50 border-2 border-red-200 rounded-xl p-4">
+          <div v-if="form.errors.credentials || flashError" class="bg-red-50 border-2 border-red-200 rounded-xl p-4">
             <div class="flex items-start gap-3">
               <div class="flex-shrink-0">
                 <AlertCircle class="h-5 w-5 text-red-600" />
               </div>
-              <p class="text-sm font-semibold text-red-800">{{ form.errors.credentials }}</p>
+              <p class="text-sm font-semibold text-red-800">{{ form.errors.credentials || flashError }}</p>
             </div>
           </div>
         </div>
@@ -78,16 +78,16 @@
                   <IdCard class="h-5 w-5 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
                 </div>
                 <input v-model="form.dni" type="text" id="dni" maxlength="8" inputmode="numeric"
-                  @input="form.dni = $event.target.value.replace(/[\D\s]/g, '')" :class="[
+                  @input="form.dni = $event.target.value.replace(/[\D\s]/g, ''); dniError = ''" :class="[
                     'block w-full pl-10 pr-4 py-3 border-2 rounded-xl transition-all duration-200 ease-in-out focus:outline-none focus:ring-4',
-                    form.errors.dni
+                    dniError || form.errors.dni
                       ? 'border-red-300 bg-red-50 focus:border-red-500 focus:ring-red-100'
                       : 'border-slate-200 bg-white hover:border-blue-300 focus:border-blue-500 focus:ring-blue-100'
                   ]" placeholder="DNI (8 dígitos)">
               </div>
-              <p v-if="form.errors.dni" class="mt-1 text-sm text-red-600 flex items-center gap-1">
+              <p v-if="dniError || form.errors.dni" class="mt-1 text-sm text-red-600 flex items-center gap-1">
                 <AlertCircle class="w-4 h-4" />
-                {{ form.errors.dni }}
+                {{ dniError || form.errors.dni }}
               </p>
             </div>
 
@@ -100,9 +100,10 @@
                 <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <Lock class="h-5 w-5 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
                 </div>
-                <input v-model="form.password" :type="showPassword ? 'text' : 'password'" id="password" :class="[
+                <input v-model="form.password" :type="showPassword ? 'text' : 'password'" id="password"
+                  @input="passwordError = ''" :class="[
                   'block w-full pl-10 pr-12 py-3 border-2 rounded-xl transition-all duration-200 ease-in-out focus:outline-none focus:ring-4',
-                  form.errors.password
+                  passwordError || form.errors.password
                     ? 'border-red-300 bg-red-50 focus:border-red-500 focus:ring-red-100'
                     : 'border-slate-200 bg-white hover:border-blue-300 focus:border-blue-500 focus:ring-blue-100'
                 ]" placeholder="••••••••">
@@ -113,9 +114,9 @@
                   <EyeOff v-else class="h-5 w-5" />
                 </button>
               </div>
-              <p v-if="form.errors.password" class="mt-1 text-sm text-red-600 flex items-center gap-1">
+              <p v-if="passwordError || form.errors.password" class="mt-1 text-sm text-red-600 flex items-center gap-1">
                 <AlertCircle class="w-4 h-4" />
-                {{ form.errors.password }}
+                {{ passwordError || form.errors.password }}
               </p>
             </div>
 
@@ -141,8 +142,8 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
-import { useForm } from '@inertiajs/vue3';
+import { ref, computed } from 'vue';
+import { useForm, usePage } from '@inertiajs/vue3';
 import {
   Shield,
   Zap,
@@ -156,7 +157,12 @@ import {
   Loader2
 } from 'lucide-vue-next';
 
+const page = usePage();
+const flashError = computed(() => page.props.flash?.error);
+
 const showPassword = ref(false);
+const dniError = ref('');
+const passwordError = ref('');
 
 const form = useForm({
   dni: '',
@@ -164,6 +170,21 @@ const form = useForm({
 });
 
 const handleLogin = () => {
+  dniError.value = '';
+  passwordError.value = '';
+
+  if (!form.dni) {
+    dniError.value = 'El DNI es requerido';
+  } else if (form.dni.length !== 8) {
+    dniError.value = 'El DNI debe tener 8 dígitos';
+  }
+
+  if (!form.password) {
+    passwordError.value = 'La contraseña es requerida';
+  }
+
+  if (dniError.value || passwordError.value) return;
+
   form.post('/login', {
     onFinish: () => form.reset('password'),
   });

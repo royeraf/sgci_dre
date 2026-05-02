@@ -3,6 +3,7 @@
 namespace App\Exceptions;
 
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
+use Illuminate\Session\TokenMismatchException;
 use Inertia\Inertia;
 use Throwable;
 
@@ -40,6 +41,11 @@ class Handler extends ExceptionHandler
      */
     public function render($request, Throwable $e)
     {
+        if ($e instanceof TokenMismatchException) {
+            return redirect()->route('login')
+                ->with('error', 'Tu sesión ha expirado. Por favor, ingresa nuevamente.');
+        }
+
         $response = parent::render($request, $e);
 
         if ($response->getStatusCode() === 404) {
