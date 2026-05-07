@@ -15,7 +15,8 @@ import {
     ArrowLeft,
     ClipboardList,
     FileText,
-    Settings
+    Settings,
+    ExternalLink
 } from 'lucide-vue-next';
 
 // Components
@@ -179,6 +180,11 @@ watch(activeTab, (newTab) => {
                         <ArrowLeft class="w-4 h-4 mr-2" />
                         Volver
                     </Link>
+                    <a href="/visitas/publico" target="_blank" rel="noopener"
+                        class="cursor-pointer inline-flex items-center px-4 py-2.5 border border-blue-200 text-sm font-bold rounded-xl text-blue-600 bg-blue-50 hover:bg-blue-100 transition-all shadow-sm">
+                        <ExternalLink class="w-4 h-4 mr-2" />
+                        Vista Pública
+                    </a>
                     <button @click="openCreateModal"
                         class="cursor-pointer inline-flex items-center px-6 py-3 border border-transparent text-sm font-bold rounded-xl shadow-lg shadow-purple-600/20 text-white bg-gradient-to-r from-purple-600 to-fuchsia-600 hover:from-purple-700 hover:to-fuchsia-700 focus:outline-none focus:ring-4 focus:ring-purple-300 transition-all duration-300 transform hover:scale-105 active:scale-95">
                         <Plus class="w-5 h-5 mr-2" />

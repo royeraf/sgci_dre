@@ -4,6 +4,8 @@ import type { Filters } from '@/Composables/useVisitFilters';
 
 defineProps<{
     filters: Filters;
+    searchPlaceholder?: string;
+    hideEstado?: boolean;
 }>();
 
 defineEmits<{
@@ -16,19 +18,19 @@ defineEmits<{
     <div class="bg-white shadow-lg rounded-2xl border border-slate-200 p-4 mb-6">
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <!-- Search -->
-            <div class="lg:col-span-2">
+            <div :class="hideEstado ? 'lg:col-span-3' : 'lg:col-span-2'">
                 <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Buscar</label>
                 <div class="relative">
                     <Search class="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-slate-400" />
                     <input type="text" :value="filters.search"
                         @input="$emit('update:filters', { ...filters, search: ($event.target as HTMLInputElement).value })"
-                        placeholder="Buscar por nombre, DNI o motivo..."
+                        :placeholder="searchPlaceholder ?? 'Buscar por nombre, DNI o motivo...'"
                         class="w-full pl-10 pr-4 py-2.5 border-2 border-slate-200 rounded-xl focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 transition-all duration-200 text-sm outline-none" />
                 </div>
             </div>
 
             <!-- Status Filter -->
-            <div>
+            <div v-if="!hideEstado">
                 <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Estado</label>
                 <select :value="filters.estado"
                     @change="$emit('update:filters', { ...filters, estado: ($event.target as HTMLSelectElement).value })"

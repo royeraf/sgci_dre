@@ -61,6 +61,9 @@ Route::get('/citas/portal', [AppointmentController::class, 'create'])->name('cit
 Route::post('/citas/request', [AppointmentController::class, 'store'])->name('citas.request');
 Route::get('/citas/status/{dni}', [AppointmentController::class, 'checkStatus'])->name('citas.check-status');
 
+// Public Visitors Portal
+Route::get('/visitas/publico', [ExternalVisitController::class, 'publicIndex'])->name('visitas.publico');
+
 // Protected routes
 Route::middleware('auth')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');

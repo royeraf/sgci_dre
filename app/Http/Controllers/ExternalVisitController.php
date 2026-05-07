@@ -363,6 +363,67 @@ class ExternalVisitController extends Controller
     }
 
     /**
+     * Public listing of visits (no authentication required).
+     */
+    public function publicIndex(Request $request)
+    {
+        $fecha = $request->input('fecha', '');
+
+        $query = ExternalVisit::with(['person', 'reason', 'direction', 'office', 'employee.person'])
+            ->orderBy('fecha', 'desc')
+            ->orderBy('hora_ingreso', 'desc');
+
+        if ($fecha) {
+            $query->whereDate('fecha', $fecha);
+        }
+
+        if ($request->filled('estado')) {
+            if ($request->estado === 'pendiente') {
+                $query->whereNull('hora_salida');
+            } elseif ($request->estado === 'completado') {
+                $query->whereNotNull('hora_salida');
+            }
+        }
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->whereHas('person', function ($qp) use ($search) {
+                $qp->where('nombres', 'like', "%{$search}%")
+                    ->orWhere('apellidos', 'like', "%{$search}%")
+                    ->orWhere('dni', 'like', "%{$search}%");
+            });
+        }
+
+        $perPage = (int) $request->input('per_page', 10);
+        $visits = $query->paginate($perPage)->through(function ($visit) {
+            $destino = $visit->office_nombre
+                ? ($visit->office_nombre . ($visit->direction_nombre ? " - {$visit->direction_nombre}" : ''))
+                : $visit->direction_nombre;
+
+            return [
+                'id'                   => $visit->id,
+                'fecha'                => $visit->fecha->format('Y-m-d'),
+                'dni'                  => $visit->dni,
+                'nombres'              => $visit->nombres,
+                'hora_ingreso'         => $visit->hora_ingreso ? $visit->hora_ingreso->format('H:i') : null,
+                'hora_salida'          => $visit->hora_salida ? $visit->hora_salida->format('H:i') : null,
+                'motivo'               => $visit->motivo,
+                'motivo_nombre'        => $visit->motivo_nombre,
+                'destino'              => $destino,
+                'a_quien_visita_nombre'=> $visit->a_quien_visita_nombre,
+                'is_pending'           => is_null($visit->hora_salida),
+                'registrado_por'       => null,
+                'observacion_salida'   => null,
+            ];
+        });
+
+        return Inertia::render('Visitors/Public', [
+            'visits'  => $visits,
+            'filters' => $request->only(['fecha', 'search', 'estado', 'per_page']),
+        ]);
+    }
+
+    /**
      * Display the visit reasons management page.
      */
     public function reasonsIndex()

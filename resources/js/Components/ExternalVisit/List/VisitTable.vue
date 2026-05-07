@@ -1,12 +1,13 @@
 <script setup lang="ts">
-import { shallowRef } from 'vue';
+import { shallowRef, computed } from 'vue';
 import { LogIn, LogOut, FileText, Users, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Eye, CheckCheck } from 'lucide-vue-next';
 
 import { Visit, PaginatedVisits } from '@/Types/visitor';
 import VisitDetailModal from '@/Components/ExternalVisit/List/Modals/VisitDetailModal.vue';
 
-defineProps<{
+const props = defineProps<{
     visits: PaginatedVisits;
+    readonly?: boolean;
 }>();
 
 defineEmits<{
@@ -14,6 +15,18 @@ defineEmits<{
     'page-change': [page: number];
     'update:perPage': [perPage: string | number];
 }>();
+
+const pageWindow = computed((): (number | '...')[] => {
+    const current = props.visits.current_page;
+    const last = props.visits.last_page;
+    if (last <= 7) return Array.from({ length: last }, (_, i) => i + 1);
+    const pages: (number | '...')[] = [1];
+    if (current > 3) pages.push('...');
+    for (let i = Math.max(2, current - 1); i <= Math.min(last - 1, current + 1); i++) pages.push(i);
+    if (current < last - 2) pages.push('...');
+    pages.push(last);
+    return pages;
+});
 
 const formatDate = (dateString?: string) => {
     if (!dateString) return '';
@@ -46,7 +59,7 @@ const closeDetails = () => {
                     <col class="w-24" />       <!-- Hora Salida -->
                     <col class="w-36" />       <!-- Motivo -->
                     <col class="w-36" />       <!-- Destino -->
-                    <col class="w-36" />       <!-- Acciones -->
+                    <col v-if="!readonly" class="w-36" />  <!-- Acciones -->
                 </colgroup>
                 <thead class="bg-slate-50">
                     <tr>
@@ -74,7 +87,7 @@ const closeDetails = () => {
                             class="px-3 py-3 text-left text-xs font-bold text-slate-600 uppercase tracking-wider">
                             Destino
                         </th>
-                        <th scope="col"
+                        <th v-if="!readonly" scope="col"
                             class="px-3 py-3 text-left text-xs font-bold text-slate-600 uppercase tracking-wider">
                             Acciones
                         </th>
@@ -88,7 +101,7 @@ const closeDetails = () => {
                         </td>
                         <td class="px-3 py-3">
                             <div class="flex items-center gap-2 min-w-0">
-                                <div
+                                <div v-if="!readonly"
                                     class="h-8 w-8 shrink-0 rounded-full bg-gradient-to-br from-purple-500 to-fuchsia-600 flex items-center justify-center text-xs font-bold text-white shadow-md">
                                     {{ visit.nombres?.charAt(0) || '?' }}
                                 </div>
@@ -122,7 +135,7 @@ const closeDetails = () => {
                                 {{ visit.a_quien_visita_nombre }}
                             </div>
                         </td>
-                        <td class="px-3 py-3 whitespace-nowrap text-xs font-medium">
+                        <td v-if="!readonly" class="px-3 py-3 whitespace-nowrap text-xs font-medium">
                             <div class="flex flex-col gap-1.5 items-start">
                                 <button v-if="visit.is_pending" @click="$emit('exit', visit)"
                                     class="cursor-pointer text-indigo-600 hover:text-indigo-900 bg-indigo-50 hover:bg-indigo-100 px-2 py-1 rounded-xl font-bold transition-all flex items-center gap-1 whitespace-nowrap">
@@ -147,7 +160,7 @@ const closeDetails = () => {
                         </td>
                     </tr>
                     <tr v-if="visits.data.length === 0">
-                        <td colspan="7" class="px-6 py-16 text-center">
+                        <td :colspan="readonly ? 6 : 7" class="px-6 py-16 text-center">
                             <div class="flex flex-col items-center">
                                 <div class="bg-slate-100 rounded-full p-4 mb-4">
                                     <Users class="h-12 w-12 text-slate-400" />
@@ -175,23 +188,40 @@ const closeDetails = () => {
                     </select>
                     <span>por página</span>
                 </div>
-                <div class="text-sm text-slate-600">
-                    Página {{ visits.current_page }} de {{ visits.last_page }}
-                </div>
-                <div class="flex items-center gap-1">
+                <div class="flex items-center gap-1 flex-wrap justify-center">
+                    <!-- Primera página -->
                     <button @click="$emit('page-change', 1)" :disabled="visits.current_page === 1"
                         class="cursor-pointer p-2 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed transition-all">
                         <ChevronsLeft class="w-4 h-4" />
                     </button>
+                    <!-- Anterior -->
                     <button @click="$emit('page-change', visits.current_page - 1)" :disabled="visits.current_page === 1"
                         class="cursor-pointer p-2 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed transition-all">
                         <ChevronLeft class="w-4 h-4" />
                     </button>
+
+                    <!-- Números de página -->
+                    <template v-for="item in pageWindow" :key="item">
+                        <span v-if="item === '...'" class="px-1 text-slate-400 select-none">…</span>
+                        <button v-else
+                            @click="$emit('page-change', item as number)"
+                            :class="[
+                                'cursor-pointer min-w-[36px] h-9 px-2 rounded-xl border text-sm font-semibold transition-all',
+                                item === visits.current_page
+                                    ? 'bg-purple-600 border-purple-600 text-white shadow-sm'
+                                    : 'border-slate-200 text-slate-600 hover:bg-slate-100'
+                            ]">
+                            {{ item }}
+                        </button>
+                    </template>
+
+                    <!-- Siguiente -->
                     <button @click="$emit('page-change', visits.current_page + 1)"
                         :disabled="visits.current_page === visits.last_page"
                         class="cursor-pointer p-2 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed transition-all">
                         <ChevronRight class="w-4 h-4" />
                     </button>
+                    <!-- Última página -->
                     <button @click="$emit('page-change', visits.last_page)"
                         :disabled="visits.current_page === visits.last_page"
                         class="cursor-pointer p-2 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed transition-all">
