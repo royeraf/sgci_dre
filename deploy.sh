@@ -79,16 +79,20 @@ do_vps_deploy() {
     git pull origin main || { print_error "git pull falló. Revisa conflictos."; exit 1; }
     print_ok "Código actualizado"
 
-    # ── Install + build (npm preferido en VPS ploop/OpenVZ) ──
+    # ── Install + build ──
     print_step "Instalando dependencias y compilando assets"
-    if command -v npm &>/dev/null; then
+    if command -v pnpm &>/dev/null; then
+        pnpm install --frozen-lockfile 2>/dev/null || pnpm install
+        print_ok "Dependencias instaladas (pnpm)"
+        pnpm run build
+    elif command -v npm &>/dev/null; then
         npm install --prefer-offline 2>/dev/null || npm install
         print_ok "Dependencias instaladas (npm)"
         npm run build
     else
         BUN_BIN="${HOME}/.bun/bin/bun"
         [ ! -f "$BUN_BIN" ] && BUN_BIN="$(command -v bun 2>/dev/null || echo '')"
-        [ -z "$BUN_BIN" ] && { print_error "Ni npm ni bun encontrados."; exit 1; }
+        [ -z "$BUN_BIN" ] && { print_error "Ni pnpm, npm ni bun encontrados."; exit 1; }
         "$BUN_BIN" install
         print_ok "Dependencias instaladas (bun)"
         "$BUN_BIN" run build
@@ -128,8 +132,8 @@ do_vps_deploy() {
 do_build() {
     print_step "PASO 1 — Compilando assets localmente"
     cd "$LOCAL_PROJECT_DIR"
-    [ ! -d "node_modules" ] && npm install
-    npm run build && print_ok "Assets compilados en public/build/" || { print_error "Error al compilar."; exit 1; }
+    [ ! -d "node_modules" ] && pnpm install
+    pnpm run build && print_ok "Assets compilados en public/build/" || { print_error "Error al compilar."; exit 1; }
 }
 
 do_sync_code() {
@@ -187,13 +191,16 @@ do_remote_config() {
         echo "  [VPS] Laravel $(php artisan --version | awk '{print $NF}')"
 
         echo "  [VPS] Instalando dependencias y compilando assets..."
-        if command -v npm &>/dev/null; then
+        if command -v pnpm &>/dev/null; then
+            pnpm install --frozen-lockfile 2>/dev/null || pnpm install
+            pnpm run build
+        elif command -v npm &>/dev/null; then
             npm install --prefer-offline 2>/dev/null || npm install
             npm run build
         else
             BUN_BIN="${HOME}/.bun/bin/bun"
             [ ! -f "$BUN_BIN" ] && BUN_BIN="$(command -v bun 2>/dev/null || echo '')"
-            [ -z "$BUN_BIN" ] && { echo "  [VPS] ✗ Ni npm ni bun encontrados."; exit 1; }
+            [ -z "$BUN_BIN" ] && { echo "  [VPS] ✗ Ni pnpm, npm ni bun encontrados."; exit 1; }
             "$BUN_BIN" install
             "$BUN_BIN" run build
         fi
