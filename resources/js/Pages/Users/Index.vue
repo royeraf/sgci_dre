@@ -47,9 +47,32 @@
 
             <!-- Tab: Usuarios -->
             <template v-if="activeTab === 'usuarios'">
+                <!-- Sub-tabs: Todos / Activos / Inactivos -->
+                <div class="flex items-center gap-1 mb-5 bg-indigo-50 rounded-full p-1.5 w-fit">
+                    <button
+                        v-for="tab in statusTabs" :key="tab.key"
+                        @click="activeStatusTab = tab.key"
+                        :class="[
+                            activeStatusTab === tab.key
+                                ? 'bg-white text-indigo-900 shadow-md'
+                                : 'text-indigo-600 hover:text-indigo-800',
+                            'cursor-pointer px-5 py-2 rounded-full text-sm font-semibold transition-all duration-200 flex items-center gap-2'
+                        ]">
+                        {{ tab.label }}
+                        <span :class="[
+                            activeStatusTab === tab.key
+                                ? 'bg-indigo-500 text-white'
+                                : 'bg-indigo-200 text-indigo-700',
+                            'text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center transition-colors'
+                        ]">{{ tab.count }}</span>
+                    </button>
+                </div>
+
                 <!-- Filters -->
-                <UserFilters :filters="localFilters" :result-count="filteredUsers.length" :roles="roles" :areas="areas"
-                    :positions="positions" @update:filters="localFilters = $event" @clear="clearFilters" />
+                <div class="mb-6">
+                    <UserFilters :filters="localFilters" :result-count="filteredUsers.length" :roles="roles" :areas="areas"
+                        :positions="positions" @update:filters="localFilters = $event" @clear="clearFilters" />
+                </div>
 
                 <!-- Users Table -->
                 <UserTable :users="filteredUsers" :loading="isLoading" @view="viewUser" @edit="editUser"
@@ -96,6 +119,7 @@ import PasswordModal from '@/Components/Users/PasswordModal.vue';
 import RolesManager from '@/Components/Users/RolesManager.vue';
 
 const activeTab = ref('usuarios');
+const activeStatusTab = ref('todos');
 
 const isLoading = ref(false);
 const isSubmitting = ref(false);
@@ -121,8 +145,23 @@ const showPasswordModal = ref(false);
 const selectedUser = ref(null);
 const isEditing = ref(false);
 
+const isUserActive = (u) => u.is_active == 1 || u.is_active === true || u.is_active === 'true';
+
+const statusTabs = computed(() => [
+    { key: 'todos', label: 'Todos', count: users.value.length },
+    { key: 'activos', label: 'Activos', count: users.value.filter(u => isUserActive(u)).length },
+    { key: 'inactivos', label: 'Inactivos', count: users.value.filter(u => !isUserActive(u)).length },
+]);
+
 const filteredUsers = computed(() => {
     let result = [...users.value];
+
+    // Sub-tab status filter
+    if (activeStatusTab.value === 'activos') {
+        result = result.filter(u => isUserActive(u));
+    } else if (activeStatusTab.value === 'inactivos') {
+        result = result.filter(u => !isUserActive(u));
+    }
 
     // Search filter
     if (localFilters.value.search) {
@@ -161,14 +200,10 @@ const filteredUsers = computed(() => {
         }
     }
 
-    // Status filter
+    // Status filter (from UserFilters panel)
     if (localFilters.value.status) {
         const shouldBeActive = localFilters.value.status === 'active';
-        result = result.filter(u => {
-            // Manejar 1, "1", true como activo y 0, "0", false como inactivo
-            const userIsActive = u.is_active == 1 || u.is_active === true || u.is_active === 'true';
-            return userIsActive === shouldBeActive;
-        });
+        result = result.filter(u => isUserActive(u) === shouldBeActive);
     }
 
     return result;
