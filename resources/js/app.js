@@ -4,6 +4,17 @@ import { createInertiaApp, router } from '@inertiajs/vue3';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import '../css/app.css';
 
+// Force full page reload when the CSRF token expires (419 = token mismatch)
+window.axios.interceptors.response.use(
+    response => response,
+    error => {
+        if (error.response?.status === 419) {
+            window.location.reload();
+        }
+        return Promise.reject(error);
+    }
+);
+
 import Swal from 'sweetalert2';
 import 'sweetalert2/dist/sweetalert2.min.css';
 

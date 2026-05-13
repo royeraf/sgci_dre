@@ -42,6 +42,16 @@ class Handler extends ExceptionHandler
     public function render($request, Throwable $e)
     {
         if ($e instanceof TokenMismatchException) {
+            if ($request->hasHeader('X-Inertia')) {
+                // Force a full browser reload so the CSRF token is refreshed
+                if ($request->hasSession()) {
+                    $request->session()->flash('error', 'Tu sesión ha expirado. Por favor, ingresa nuevamente.');
+                }
+                return response('', 409)->withHeaders([
+                    'X-Inertia-Location' => route('login'),
+                ]);
+            }
+
             return redirect()->route('login')
                 ->with('error', 'Tu sesión ha expirado. Por favor, ingresa nuevamente.');
         }
