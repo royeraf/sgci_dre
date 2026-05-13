@@ -83,6 +83,19 @@ class Employee extends Model
         return $this->belongsTo(HRContractType::class, 'contract_type_id');
     }
 
+    public function horario(): BelongsTo
+    {
+        return $this->belongsTo(Horario::class, 'horario_id');
+    }
+
+    /**
+     * Devuelve el horario efectivo del empleado (el asignado o el general por defecto).
+     */
+    public function getHorarioEfectivoAttribute(): ?Horario
+    {
+        return $this->horario ?? Horario::getDefault();
+    }
+
     /**
      * Relación con vacaciones
      */

@@ -19,6 +19,10 @@ class MarcaAsistencia extends Model
         'salida_mediodia',
         'retorno_mediodia',
         'salida',
+        'entrada_3',
+        'salida_3',
+        'entrada_4',
+        'salida_4',
         'observaciones',
         'registrado_por',
     ];
@@ -58,8 +62,30 @@ class MarcaAsistencia extends Model
      */
     public function getTotalMarcasAttribute(): int
     {
-        return collect([$this->entrada, $this->salida_mediodia, $this->retorno_mediodia, $this->salida])
-            ->filter()
-            ->count();
+        return collect([
+            $this->entrada, $this->salida_mediodia,
+            $this->retorno_mediodia, $this->salida,
+            $this->entrada_3, $this->salida_3,
+            $this->entrada_4, $this->salida_4,
+        ])->filter()->count();
+    }
+
+    /**
+     * Devuelve los pares entrada/salida presentes en el día.
+     * Formato: [['entrada'=>'07:30','salida'=>'13:00'], ...]
+     */
+    public function getPairesAttribute(): array
+    {
+        $pares = [];
+        $pairs = [
+            [$this->entrada,   $this->salida_mediodia],
+            [$this->retorno_mediodia, $this->salida],
+            [$this->entrada_3, $this->salida_3],
+            [$this->entrada_4, $this->salida_4],
+        ];
+        foreach ($pairs as [$e, $s]) {
+            if ($e || $s) $pares[] = ['entrada' => $e, 'salida' => $s];
+        }
+        return $pares;
     }
 }

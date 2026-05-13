@@ -239,6 +239,18 @@ Route::middleware('auth')->group(function () {
         Route::get('/api/marcas', [App\Http\Controllers\AsistenciaController::class, 'getMarcas'])->name('marcas');
         Route::post('/api/marcas', [App\Http\Controllers\AsistenciaController::class, 'storeMarca'])->name('store');
         Route::delete('/api/marcas/{marca}', [App\Http\Controllers\AsistenciaController::class, 'deleteMarca'])->name('delete');
+        Route::get('/reporte/mensual', [App\Http\Controllers\AsistenciaController::class, 'reporteMensual'])->name('reporte.mensual');
+        Route::get('/reporte/anual', [App\Http\Controllers\AsistenciaController::class, 'reporteAnual'])->name('reporte.anual');
+        Route::get('/api/feriados', [App\Http\Controllers\AsistenciaController::class, 'getFeriados'])->name('feriados.index');
+        Route::post('/api/feriados', [App\Http\Controllers\AsistenciaController::class, 'storeFeriado'])->name('feriados.store');
+        Route::delete('/api/feriados/{feriado}', [App\Http\Controllers\AsistenciaController::class, 'deleteFeriado'])->name('feriados.delete');
+        // Horarios
+        Route::get('/api/horarios', [App\Http\Controllers\HorarioController::class, 'index'])->name('horarios.index');
+        Route::post('/api/horarios', [App\Http\Controllers\HorarioController::class, 'store'])->name('horarios.store');
+        Route::put('/api/horarios/{horario}', [App\Http\Controllers\HorarioController::class, 'update'])->name('horarios.update');
+        Route::delete('/api/horarios/{horario}', [App\Http\Controllers\HorarioController::class, 'destroy'])->name('horarios.destroy');
+        Route::post('/api/horarios/assign', [App\Http\Controllers\HorarioController::class, 'assignEmployee'])->name('horarios.assign');
+        Route::get('/api/horarios/{horario}/employees', [App\Http\Controllers\HorarioController::class, 'employees'])->name('horarios.employees');
     });
 
     // User Management (Admin only)
