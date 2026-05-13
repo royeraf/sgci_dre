@@ -101,10 +101,10 @@ const closeDetails = () => {
                         </td>
                         <td class="px-3 py-3">
                             <div class="flex items-center gap-2 min-w-0">
-                                <div v-if="!readonly"
+                                <!-- <div v-if="!readonly"
                                     class="h-8 w-8 shrink-0 rounded-full bg-gradient-to-br from-purple-500 to-fuchsia-600 flex items-center justify-center text-xs font-bold text-white shadow-md">
                                     {{ visit.nombres?.charAt(0) || '?' }}
-                                </div>
+                                </div> -->
                                 <div class="min-w-0">
                                     <div class="text-xs font-bold text-slate-900 truncate">{{ visit.nombres }}</div>
                                     <div class="text-xs text-slate-500 font-medium">{{ visit.dni }}</div>
@@ -146,11 +146,11 @@ const closeDetails = () => {
                                     <CheckCheck class="w-3.5 h-3.5" />
                                     Completado
                                 </span>
-                                <a :href="`/visitors/${visit.id}/ticket`" target="_blank"
+                                <!-- <a :href="`/visitors/${visit.id}/ticket`" target="_blank"
                                     class="cursor-pointer text-blue-600 hover:text-blue-900 bg-blue-50 hover:bg-blue-100 px-2 py-1 rounded-xl font-bold transition-all flex items-center gap-1 whitespace-nowrap">
                                     <FileText class="w-3.5 h-3.5" />
                                     Ticket
-                                </a>
+                                </a> -->
                                 <button @click="openDetails(visit)"
                                     class="cursor-pointer text-violet-600 hover:text-violet-900 bg-violet-50 hover:bg-violet-100 px-2 py-1 rounded-xl font-bold transition-all flex items-center gap-1 whitespace-nowrap">
                                     <Eye class="w-3.5 h-3.5" />
