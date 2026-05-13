@@ -91,17 +91,34 @@
                         </div>
                     </div>
 
+                    <!-- 2FA status indicator -->
+                    <div v-if="user.two_factor_enabled !== undefined" class="mt-6 flex items-center gap-2 text-xs font-semibold"
+                        :class="user.two_factor_enabled ? 'text-emerald-700' : 'text-slate-400'">
+                        <ShieldCheck class="w-4 h-4" />
+                        {{ user.two_factor_enabled ? '2FA activo en esta cuenta' : '2FA no configurado' }}
+                    </div>
+
                     <!-- Actions -->
-                    <div class="flex justify-end space-x-3 mt-6 pt-6 border-t border-slate-200">
-                        <button @click="$emit('close')"
-                            class="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50">
-                            Cerrar
+                    <div class="flex flex-wrap justify-between gap-3 mt-6 pt-6 border-t border-slate-200">
+                        <button v-if="user.two_factor_enabled"
+                            @click="resetTwoFactor"
+                            :disabled="resetting2fa"
+                            class="flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded-lg hover:bg-amber-100 disabled:opacity-50 disabled:cursor-not-allowed transition-all">
+                            <Loader2 v-if="resetting2fa" class="w-4 h-4 animate-spin" />
+                            <ShieldOff v-else class="w-4 h-4" />
+                            {{ resetting2fa ? 'Procesando...' : 'Desactivar 2FA' }}
                         </button>
-                        <button @click="$emit('edit', user)"
-                            class="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-indigo-600 to-purple-600 rounded-lg hover:from-indigo-700 hover:to-purple-700">
-                            <Edit class="w-4 h-4 inline mr-1" />
-                            Editar
-                        </button>
+                        <div class="flex gap-3 ml-auto">
+                            <button @click="$emit('close')"
+                                class="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50">
+                                Cerrar
+                            </button>
+                            <button @click="$emit('edit', user)"
+                                class="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-indigo-600 to-purple-600 rounded-lg hover:from-indigo-700 hover:to-purple-700">
+                                <Edit class="w-4 h-4 inline mr-1" />
+                                Editar
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -110,16 +127,47 @@
 </template>
 
 <script setup>
-import { X, User, Shield, Edit } from 'lucide-vue-next';
+import { ref } from 'vue';
+import { router } from '@inertiajs/vue3';
+import { X, User, Shield, Edit, ShieldCheck, ShieldOff, Loader2 } from 'lucide-vue-next';
 
-defineProps({
+const props = defineProps({
     user: {
         type: Object,
         required: true
     }
 });
 
-defineEmits(['close', 'edit']);
+const emit = defineEmits(['close', 'edit', '2fa-reset']);
+
+const resetting2fa = ref(false);
+
+const resetTwoFactor = async () => {
+    if (!confirm(`¿Desactivar el 2FA de ${props.user.full_name || props.user.name}? El usuario podrá ingresar sin código de verificación.`)) return;
+
+    resetting2fa.value = true;
+    try {
+        await fetch(`/admin/users/${props.user.id}/2fa`, {
+            method: 'DELETE',
+            headers: {
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content ?? '',
+                'Accept': 'application/json',
+            },
+        });
+        emit('2fa-reset', props.user.id);
+        emit('close');
+        window.Swal?.fire({
+            icon: 'success',
+            title: '2FA desactivado',
+            text: `El 2FA de ${props.user.full_name || props.user.name} ha sido desactivado. Ya puede ingresar sin código.`,
+            confirmButtonColor: '#2563eb',
+        });
+    } catch {
+        window.Swal?.fire({ icon: 'error', title: 'Error', text: 'No se pudo desactivar el 2FA.', confirmButtonColor: '#dc2626' });
+    } finally {
+        resetting2fa.value = false;
+    }
+};
 
 const getInitials = (name, apellidos) => {
     const n = name?.charAt(0) || '';

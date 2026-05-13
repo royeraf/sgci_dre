@@ -35,6 +35,9 @@ class User extends Authenticatable
         'tabs_json',
         'is_active',
         'ultimo_acceso',
+        'two_factor_secret',
+        'two_factor_confirmed_at',
+        'two_factor_recovery_codes',
     ];
 
     /**
@@ -45,6 +48,8 @@ class User extends Authenticatable
     protected $hidden = [
         'password',
         'remember_token',
+        'two_factor_secret',
+        'two_factor_recovery_codes',
     ];
 
     /**
@@ -56,10 +61,41 @@ class User extends Authenticatable
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
         'ultimo_acceso' => 'datetime',
+        'two_factor_confirmed_at' => 'datetime',
         'is_active' => 'boolean',
         'modulos_json' => 'array',
         'tabs_json'    => 'array',
     ];
+
+    public function hasTwoFactorEnabled(): bool
+    {
+        return !is_null($this->two_factor_secret) && !is_null($this->two_factor_confirmed_at);
+    }
+
+    public function getRecoveryCodes(): array
+    {
+        if (!$this->two_factor_recovery_codes) return [];
+        return json_decode($this->two_factor_recovery_codes, true) ?? [];
+    }
+
+    public function remainingRecoveryCodes(): int
+    {
+        return count($this->getRecoveryCodes());
+    }
+
+    public function useRecoveryCode(string $code): bool
+    {
+        $hashed = hash('sha256', $code);
+        $codes = $this->getRecoveryCodes();
+        $index = array_search($hashed, $codes);
+
+        if ($index === false) return false;
+
+        array_splice($codes, $index, 1);
+        $this->forceFill(['two_factor_recovery_codes' => json_encode(array_values($codes))])->save();
+
+        return true;
+    }
 
     /**
      * Get the custom role for this user.

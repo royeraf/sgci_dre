@@ -12,17 +12,11 @@ use Inertia\Inertia;
 
 class AuthController extends Controller
 {
-    /**
-     * Show the login page.
-     */
     public function showLogin()
     {
         return Inertia::render('Auth/Login');
     }
 
-    /**
-     * Handle login request.
-     */
     public function login(Request $request)
     {
         $request->validate([
@@ -35,7 +29,6 @@ class AuthController extends Controller
             'password.required' => 'La contraseña es obligatoria.',
         ]);
 
-        // Find user by DNI
         $user = User::where('dni', $request->dni)->first();
 
         if (!$user || !Hash::check($request->password, $user->password)) {
@@ -50,13 +43,22 @@ class AuthController extends Controller
             ]);
         }
 
-        // Login the user
-        Auth::login($user, $request->boolean('remember'));
+        // If 2FA is enabled, redirect to verification step
+        if ($user->hasTwoFactorEnabled()) {
+            $request->session()->put('2fa:user_id', $user->id);
+            $request->session()->put('2fa:remember', $request->boolean('remember'));
+            return redirect()->route('2fa.verify.show');
+        }
 
-        // Update last access
+        return $this->completeLogin($request, $user, $request->boolean('remember'));
+    }
+
+    public function completeLogin(Request $request, User $user, bool $remember = false)
+    {
+        Auth::login($user, $remember);
+
         $user->update(['ultimo_acceso' => now()]);
 
-        // Log the action
         AuditLog::log(
             $user->id,
             'Login',
@@ -64,34 +66,19 @@ class AuthController extends Controller
         );
 
         $request->session()->regenerate();
-        
-        // Redirect based on role
-        if ($user->rol_id === 'ROL008') {
-            return redirect()->intended('/bienestar');
-        }
 
-        if ($user->rol_id === 'ROL009') {
-            return redirect()->intended('/hr');
-        }
-
-        if ($user->rol_id === 'ROL010') {
-            return redirect()->intended('/citas');
-        }
-
-        if ($user->rol_id === 'ROL011') {
-            return redirect()->intended('/papeletas');
-        }
+        if ($user->rol_id === 'ROL008') return redirect()->intended('/bienestar');
+        if ($user->rol_id === 'ROL009') return redirect()->intended('/hr');
+        if ($user->rol_id === 'ROL010') return redirect()->intended('/citas');
+        if ($user->rol_id === 'ROL011') return redirect()->intended('/papeletas');
 
         return redirect()->intended('/dashboard');
     }
 
-    /**
-     * Handle logout request.
-     */
     public function logout(Request $request)
     {
         $user = Auth::user();
-        
+
         if ($user) {
             AuditLog::log(
                 $user->id,

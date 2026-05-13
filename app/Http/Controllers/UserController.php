@@ -29,7 +29,7 @@ class UserController extends Controller
     public function getUsers()
     {
         $users = User::with(['customRole', 'person', 'employee.position', 'employee.direction'])
-            ->select('id', 'person_id', 'username', 'dni', 'name', 'apellidos', 'email', 'titulo', 'cargo', 'area', 'telefono', 'rol_id', 'modulos_json', 'tabs_json', 'is_active', 'ultimo_acceso', 'created_at')
+            ->select('id', 'person_id', 'username', 'dni', 'name', 'apellidos', 'email', 'titulo', 'cargo', 'area', 'telefono', 'rol_id', 'modulos_json', 'tabs_json', 'is_active', 'ultimo_acceso', 'created_at', 'two_factor_confirmed_at')
             ->orderByRaw('COALESCE(name, (SELECT nombres FROM people WHERE people.id = users.person_id)) ASC')
             ->get()
             ->map(function ($user) {
@@ -50,9 +50,10 @@ class UserController extends Controller
                     'rol_nombre'  => $user->customRole?->nombre,
                     'modulos_json' => $user->modulos_json,
                     'tabs_json'   => $user->tabs_json,
-                    'is_active'   => $user->is_active,
-                    'ultimo_acceso' => $user->ultimo_acceso?->format('Y-m-d H:i:s'),
-                    'created_at'  => $user->created_at->format('Y-m-d'),
+                    'is_active'           => $user->is_active,
+                    'two_factor_enabled'  => $user->hasTwoFactorEnabled(),
+                    'ultimo_acceso'       => $user->ultimo_acceso?->format('Y-m-d H:i:s'),
+                    'created_at'          => $user->created_at->format('Y-m-d'),
                     'person'      => $p ? [
                         'nombres'   => $p->nombres,
                         'apellidos' => $p->apellidos,

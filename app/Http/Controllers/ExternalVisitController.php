@@ -400,10 +400,16 @@ class ExternalVisitController extends Controller
                 ? ($visit->office_nombre . ($visit->direction_nombre ? " - {$visit->direction_nombre}" : ''))
                 : $visit->direction_nombre;
 
+            // Enmascarar DNI: mostrar solo los últimos 3 dígitos (*****234)
+            $rawDni = $visit->dni ?? '';
+            $maskedDni = strlen($rawDni) > 3
+                ? str_repeat('*', strlen($rawDni) - 3) . substr($rawDni, -3)
+                : $rawDni;
+
             return [
                 'id'                   => $visit->id,
                 'fecha'                => $visit->fecha->format('Y-m-d'),
-                'dni'                  => $visit->dni,
+                'dni'                  => $maskedDni,
                 'nombres'              => $visit->nombres,
                 'hora_ingreso'         => $visit->hora_ingreso ? $visit->hora_ingreso->format('H:i') : null,
                 'hora_salida'          => $visit->hora_salida ? $visit->hora_salida->format('H:i') : null,

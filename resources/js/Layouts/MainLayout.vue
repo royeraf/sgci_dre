@@ -460,7 +460,7 @@ import UserProfileModal from '@/Components/Profile/UserProfileModal.vue';
 
 const UserGroup = Users;
 
-const isCollapsed = ref(false);
+const isCollapsed = ref(localStorage.getItem('sidebar-collapsed') === 'true');
 const mobileMenuOpen = ref(false);
 const showProfileModal = ref(false);
 const page = usePage();
@@ -506,6 +506,7 @@ watch(() => page.props.flash?.error, (error) => {
 
 const toggleSidebar = () => {
     isCollapsed.value = !isCollapsed.value;
+    localStorage.setItem('sidebar-collapsed', isCollapsed.value);
 };
 
 const logout = () => {

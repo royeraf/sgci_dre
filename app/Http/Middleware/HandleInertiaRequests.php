@@ -50,15 +50,21 @@ class HandleInertiaRequests extends Middleware
                         'rol_id'       => $user->rol_id,
                         'modulos_json' => $user->modulos_json,
                         'tabs_json'    => $user->tabs_json,
-                        'customRole'   => $user->customRole,
+                        'customRole'              => $user->customRole,
+                        'two_factor_enabled'        => $user->hasTwoFactorEnabled(),
+                        'two_factor_configured'     => !is_null($user->two_factor_secret),
+                        'two_factor_recovery_count' => $user->remainingRecoveryCodes(),
                     ];
                 })() : null,
             ],
             'flash' => [
-                'message' => fn () => $request->session()->get('message'),
-                'success' => fn () => $request->session()->get('success'),
-                'error' => fn () => $request->session()->get('error'),
+                'message'      => fn () => $request->session()->get('message'),
+                'success'      => fn () => $request->session()->get('success'),
+                'error'        => fn () => $request->session()->get('error'),
                 'new_visit_id' => fn () => $request->session()->get('new_visit_id'),
+                '2fa_secret'         => fn () => $request->session()->get('2fa_secret'),
+                '2fa_qr'             => fn () => $request->session()->get('2fa_qr'),
+                'recovery_codes'     => fn () => $request->session()->get('recovery_codes'),
             ],
         ];
     }

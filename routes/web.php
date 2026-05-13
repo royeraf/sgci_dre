@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\TwoFactorController;
 use App\Http\Controllers\OccurrenceController;
 use App\Http\Controllers\EntryExitController;
 use App\Http\Controllers\ExternalVisitController;
@@ -37,6 +38,21 @@ Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
     Route::post('/login', [AuthController::class, 'login']);
 });
+
+// 2FA verification (between login steps — no auth middleware needed)
+Route::get('/2fa/verify', [TwoFactorController::class, 'showVerify'])->name('2fa.verify.show');
+Route::post('/2fa/verify', [TwoFactorController::class, 'verify'])->name('2fa.verify');
+
+// 2FA management (requires auth)
+Route::middleware('auth')->prefix('2fa')->name('2fa.')->group(function () {
+    Route::post('/setup', [TwoFactorController::class, 'setup'])->name('setup');
+    Route::post('/confirm', [TwoFactorController::class, 'confirm'])->name('confirm');
+    Route::post('/disable', [TwoFactorController::class, 'disable'])->name('disable');
+    Route::post('/recovery-codes/regenerate', [TwoFactorController::class, 'regenerateCodes'])->name('recovery-codes.regenerate');
+});
+
+// Admin: reset 2FA de cualquier usuario
+Route::middleware('auth')->delete('/admin/users/{user}/2fa', [TwoFactorController::class, 'adminReset'])->name('admin.users.2fa.reset');
 
 // Portal de Empleados (Papeletas)
 Route::prefix('portal')->group(function () {
