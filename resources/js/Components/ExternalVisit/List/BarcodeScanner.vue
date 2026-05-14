@@ -110,7 +110,7 @@ defineExpose({
 </script>
 
 <template>
-    <div class="bg-emerald-50 rounded-lg border border-emerald-200 p-4">
+    <div class="bg-emerald-50 rounded-lg border border-emerald-200 p-4 max-w-lg mx-auto">
         <div class="flex items-center gap-3">
             <div class="bg-emerald-500 p-2 rounded-lg">
                 <ScanBarcode class="w-5 h-5 text-white" />
