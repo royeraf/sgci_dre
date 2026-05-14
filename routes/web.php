@@ -68,6 +68,12 @@ Route::get('/visitas/publico', [ExternalVisitController::class, 'publicIndex'])-
 Route::middleware('auth')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
+    // Hora del servidor (usada por modales para evitar depender del reloj del cliente)
+    Route::get('/api/server-time', fn() => response()->json([
+        'time' => now()->format('H:i'),
+        'datetime' => now()->toDateTimeString(),
+    ]))->name('server.time');
+
     Route::get('/dashboard', [App\Http\Controllers\DashboardController::class, 'index'])->name('dashboard');
 
     // Profile routes

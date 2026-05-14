@@ -42,15 +42,29 @@ const emit = defineEmits<{
 const isSubmitting = ref(false);
 const nombreAutocompletado = ref(false);
 const dniInputRef = ref<HTMLInputElement | null>(null);
-const currentTime = ref(new Date().toTimeString().slice(0, 5));
+const currentTime = ref('');
+const loadingTime = ref(true);
 
-// Update time every 30 seconds
-let timeInterval: any;
-onMounted(() => {
-    timeInterval = setInterval(() => {
+const fetchServerTime = async () => {
+    try {
+        const res = await fetch('/api/server-time');
+        const data = await res.json();
+        currentTime.value = data.time;
+        setFieldValue('hora_ingreso', data.time);
+    } catch {
+        // Fallback al reloj del cliente si el servidor no responde
         currentTime.value = new Date().toTimeString().slice(0, 5);
         setFieldValue('hora_ingreso', currentTime.value);
-    }, 30000);
+    } finally {
+        loadingTime.value = false;
+    }
+};
+
+// Update time every 30 seconds using server time
+let timeInterval: any;
+onMounted(() => {
+    fetchServerTime();
+    timeInterval = setInterval(fetchServerTime, 30000);
 });
 
 onUnmounted(() => {
@@ -638,7 +652,13 @@ onUnmounted(() => {
                             <div class="relative">
                                 <input type="time" :value="horaIngreso" disabled
                                     class="w-full px-4 py-2.5 bg-slate-50 border-2 border-slate-200 rounded-xl text-slate-500 font-bold outline-none cursor-not-allowed" />
-                                <div class="absolute inset-0 z-10" title="La hora se asigna automáticamente"></div>
+                                <div class="absolute inset-0 z-10 flex items-center justify-end pr-3"
+                                    title="Hora obtenida del servidor">
+                                    <span v-if="loadingTime"
+                                        class="text-xs text-slate-400 animate-pulse">cargando...</span>
+                                    <span v-else
+                                        class="text-xs text-emerald-600 font-semibold">servidor ✓</span>
+                                </div>
                             </div>
                             <p v-if="formErrors.hora_ingreso" class="mt-1 text-sm text-red-600">{{
                                 formErrors.hora_ingreso }}</p>
