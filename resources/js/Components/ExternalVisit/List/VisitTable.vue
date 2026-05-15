@@ -33,6 +33,52 @@ const formatDate = (dateString?: string) => {
     return dateString.split('-').reverse().join('/');
 };
 
+/**
+ * Formats a full name for public display.
+ *
+ * Convention (Peruvian naming: nombres + apellido_paterno + apellido_materno):
+ *   - 1 word  : shown fully in Title Case
+ *   - 2 words : both shown fully (nombre + apellido paterno)
+ *   - 3+ words: last word = apellido materno (initial only)
+ *               second-to-last = apellido paterno (full)
+ *               remaining words = nombres: first one full, rest abbreviated
+ *
+ * Examples:
+ *   "JULIO"                              → "Julio"
+ *   "JULIO NARCISO"                      → "Julio Narciso"
+ *   "JULIO NARCISO MAMANI"               → "Julio Narciso M."
+ *   "JULIO FLORES NARCISO MAMANI"        → "Julio F. Narciso M."
+ *   "JULIO CESAR FLORES NARCISO MAMANI"  → "Julio C. F. Narciso M."
+ */
+const toTitleCase = (word: string) =>
+    word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+
+const formatName = (fullName?: string): string => {
+    if (!fullName) return '';
+    const words = fullName.trim().split(/\s+/);
+
+    // 1 word: just title-case it
+    if (words.length === 1) return toTitleCase(words[0]);
+
+    // 2 words: nombre + apellido paterno — both full
+    if (words.length === 2) return words.map(toTitleCase).join(' ');
+
+    // 3+ words: split into nombres / apellido paterno / apellido materno
+    const apellidoMaterno = words[words.length - 1];
+    const apellidoPaterno = words[words.length - 2];
+    const nombres = words.slice(0, words.length - 2);
+
+    const formattedNombres = nombres.map((w, i) =>
+        i === 0 ? toTitleCase(w) : w.charAt(0).toUpperCase() + '.'
+    );
+
+    return [
+        ...formattedNombres,
+        toTitleCase(apellidoPaterno),                    // primer apellido: completo
+        apellidoMaterno.charAt(0).toUpperCase() + '.',   // segundo apellido: solo inicial
+    ].join(' ');
+};
+
 // Detail modal state — shallowRef: entire object is replaced on open/close
 const showDetailModal = shallowRef(false);
 const selectedVisit = shallowRef<Visit | null>(null);
@@ -106,7 +152,9 @@ const closeDetails = () => {
                                     {{ visit.nombres?.charAt(0) || '?' }}
                                 </div> -->
                                 <div class="min-w-0">
-                                    <div class="text-xs font-bold text-slate-900 truncate">{{ visit.nombres }}</div>
+                                    <div class="text-xs font-bold text-slate-900 truncate">
+                                        {{ readonly ? formatName(visit.nombres) : visit.nombres }}
+                                    </div>
                                     <div class="text-xs text-slate-500 font-medium">{{ visit.dni }}</div>
                                 </div>
                             </div>
