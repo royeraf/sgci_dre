@@ -17,7 +17,9 @@ import {
     FileText,
     Settings,
     Globe,
-    ExternalLink
+    ExternalLink,
+    SlidersHorizontal,
+    ChevronDown
 } from 'lucide-vue-next';
 
 // Components
@@ -47,6 +49,11 @@ const props = defineProps<{
 // State
 const showCreateModal = ref(false);
 const showExitModal = ref(false);
+const FILTERS_STORAGE_KEY = 'visits_filters_open';
+const filtersVisible = ref<boolean>(
+    localStorage.getItem(FILTERS_STORAGE_KEY) === 'true'
+);
+watch(filtersVisible, (val) => localStorage.setItem(FILTERS_STORAGE_KEY, String(val)));
 const selectedVisit = ref<Visit | null>(null);
 const { canViewTab, firstAllowedTab } = useTabPermission('visitas', ['list', 'reports', 'reasons']);
 const activeTab = ref<'list' | 'reports' | 'reasons'>(firstAllowedTab.value as 'list' | 'reports' | 'reasons');
@@ -232,7 +239,29 @@ watch(activeTab, (newTab) => {
                         <!-- Barcode Scanner -->
                         <BarcodeScanner ref="barcodeScanner" @visitFound="handleVisitFound" />
 
-                        <VisitFilters :filters="localFilters" @update:filters="updateFilters" @clear="clearFilters" />
+                        <!-- Filters toggle + collapsible panel (single unit to avoid gap when collapsed) -->
+                        <div>
+                            <button
+                                @click="filtersVisible = !filtersVisible"
+                                class="cursor-pointer inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-slate-200 bg-white text-sm font-bold text-slate-600 hover:bg-purple-50 hover:border-purple-300 hover:text-purple-700 shadow-sm transition-all duration-200"
+                            >
+                                <SlidersHorizontal class="w-4 h-4" />
+                                Filtros
+                                <ChevronDown
+                                    class="w-4 h-4 transition-transform duration-300"
+                                    :class="{ 'rotate-180': filtersVisible }"
+                                />
+                            </button>
+
+                            <div
+                                class="filters-collapse"
+                                :class="{ 'filters-collapse--open': filtersVisible }"
+                            >
+                                <div class="pt-3">
+                                    <VisitFilters :filters="localFilters" @update:filters="updateFilters" @clear="clearFilters" />
+                                </div>
+                            </div>
+                        </div>
 
                         <VisitTable :visits="visits" @exit="openExitModal" @page-change="changePage"
                             @update:perPage="updatePerPage" />
@@ -274,5 +303,18 @@ watch(activeTab, (newTab) => {
 .fade-slide-leave-to {
     opacity: 0;
     transform: translateX(-10px);
+}
+
+/* Filters collapse animation */
+.filters-collapse {
+    overflow: hidden;
+    max-height: 0;
+    opacity: 0;
+    transition: max-height 0.35s ease, opacity 0.3s ease;
+}
+
+.filters-collapse--open {
+    max-height: 500px;
+    opacity: 1;
 }
 </style>
