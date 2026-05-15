@@ -96,7 +96,7 @@
         </div>
 
         <!-- Pagination -->
-        <div v-if="totalPages > 1" class="bg-slate-50 px-6 py-4 border-t border-slate-200">
+        <div v-if="totalPages > 1" class="bg-slate-50 px-4 py-4 border-t border-slate-200">
             <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
                 <div class="flex items-center gap-2 text-sm text-slate-600">
                     <span>Mostrar</span>
@@ -109,37 +109,50 @@
                         <option :value="25">25</option>
                         <option :value="50">50</option>
                     </select>
-                    <span>por pagina</span>
+                    <span>por página</span>
                 </div>
-                <div class="text-sm text-slate-600">
-                    Pagina {{ currentPage }} de {{ totalPages }}
-                </div>
-                <div class="flex items-center gap-1">
+                <div class="flex items-center gap-1 flex-wrap justify-center">
                     <button
                         @click="$emit('update:currentPage', 1)"
                         :disabled="currentPage === 1"
-                        class="cursor-pointer p-2 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                        class="cursor-pointer p-2 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                     >
                         <ChevronsLeft class="w-4 h-4" />
                     </button>
                     <button
                         @click="$emit('update:currentPage', currentPage - 1)"
                         :disabled="currentPage === 1"
-                        class="cursor-pointer p-2 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                        class="cursor-pointer p-2 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                     >
                         <ChevronLeft class="w-4 h-4" />
                     </button>
+
+                    <!-- Números de página -->
+                    <template v-for="item in pageWindow" :key="item">
+                        <span v-if="item === '...'" class="px-1 text-slate-400 select-none">…</span>
+                        <button v-else
+                            @click="$emit('update:currentPage', item)"
+                            :class="[
+                                'cursor-pointer min-w-[36px] h-9 px-2 rounded-xl border text-sm font-semibold transition-all',
+                                item === currentPage
+                                    ? 'bg-blue-600 border-blue-600 text-white shadow-sm'
+                                    : 'border-slate-200 text-slate-600 hover:bg-slate-100'
+                            ]">
+                            {{ item }}
+                        </button>
+                    </template>
+
                     <button
                         @click="$emit('update:currentPage', currentPage + 1)"
                         :disabled="currentPage === totalPages"
-                        class="cursor-pointer p-2 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                        class="cursor-pointer p-2 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                     >
                         <ChevronRight class="w-4 h-4" />
                     </button>
                     <button
                         @click="$emit('update:currentPage', totalPages)"
                         :disabled="currentPage === totalPages"
-                        class="cursor-pointer p-2 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                        class="cursor-pointer p-2 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                     >
                         <ChevronsRight class="w-4 h-4" />
                     </button>
@@ -186,6 +199,18 @@ const paginatedOccurrences = computed(() => {
 
 const totalPages = computed(() => {
     return Math.ceil(props.occurrences.length / props.perPage) || 1;
+});
+
+const pageWindow = computed(() => {
+    const current = props.currentPage;
+    const last = totalPages.value;
+    if (last <= 7) return Array.from({ length: last }, (_, i) => i + 1);
+    const pages = [1];
+    if (current > 3) pages.push('...');
+    for (let i = Math.max(2, current - 1); i <= Math.min(last - 1, current + 1); i++) pages.push(i);
+    if (current < last - 2) pages.push('...');
+    if (!pages.includes(last)) pages.push(last);
+    return pages;
 });
 
 const formatDate = (fecha) => {
