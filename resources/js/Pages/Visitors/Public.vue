@@ -16,7 +16,9 @@
                 @update:filters="updateFilters" @clear="clearFilters" />
 
             <!-- Table -->
-            <VisitTable :visits="visits" :readonly="true" @page-change="changePage" @update:perPage="updatePerPage" />
+            <div class="bg-white shadow-lg rounded-2xl border border-slate-200 overflow-hidden">
+                <VisitTable :visits="visits" :readonly="true" @page-change="changePage" @update:perPage="updatePerPage" />
+            </div>
 
             <!-- Footer -->
             <p class="text-center text-xs text-slate-400 mt-6 font-medium">

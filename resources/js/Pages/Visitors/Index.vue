@@ -194,11 +194,6 @@ watch(activeTab, (newTab) => {
                         Vista Pública
                         <ExternalLink class="w-4 h-4 ml-2" />
                     </a>
-                    <button @click="openCreateModal"
-                        class="cursor-pointer inline-flex items-center px-6 py-3 border border-transparent text-sm font-bold rounded-xl shadow-lg shadow-purple-600/20 text-white bg-gradient-to-r from-purple-600 to-fuchsia-600 hover:from-purple-700 hover:to-fuchsia-700 focus:outline-none focus:ring-4 focus:ring-purple-300 transition-all duration-300 transform hover:scale-105 active:scale-95">
-                        <Plus class="w-5 h-5 mr-2" />
-                        Nueva Visita
-                    </button>
                 </div>
             </div>
 
@@ -235,36 +230,52 @@ watch(activeTab, (newTab) => {
             <Transition name="fade-slide" mode="out-in">
                 <div :key="activeTab">
                     <!-- List Tab Content -->
-                    <div v-if="activeTab === 'list'" class="space-y-6">
-                        <!-- Barcode Scanner -->
-                        <BarcodeScanner ref="barcodeScanner" @visitFound="handleVisitFound" />
+                    <div v-if="activeTab === 'list'">
+                        <!-- Unified Card Container -->
+                        <div class="bg-white shadow-xl rounded-2xl border border-slate-200 overflow-hidden">
+                            
+                            <!-- Top row: Barcode Scanner + Actions -->
+                            <div class="p-4 sm:p-5 border-b border-slate-100 flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4 bg-white">
+                                <!-- Scanner with controlled width -->
+                                <div class="w-full sm:max-w-md xl:max-w-lg">
+                                    <BarcodeScanner ref="barcodeScanner" @visitFound="handleVisitFound" />
+                                </div>
+                                
+                                <!-- Right-aligned action buttons -->
+                                <div class="flex items-center justify-end gap-3 shrink-0">
+                                    <button
+                                        @click="filtersVisible = !filtersVisible"
+                                        class="cursor-pointer inline-flex justify-center items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-sm font-bold text-slate-600 hover:bg-slate-50 transition-all duration-200 shadow-sm"
+                                    >
+                                        <SlidersHorizontal class="w-4 h-4" />
+                                        Filtros
+                                        <ChevronDown
+                                            class="w-4 h-4 transition-transform duration-300"
+                                            :class="{ 'rotate-180': filtersVisible }"
+                                        />
+                                    </button>
 
-                        <!-- Filters toggle + collapsible panel (single unit to avoid gap when collapsed) -->
-                        <div>
-                            <button
-                                @click="filtersVisible = !filtersVisible"
-                                class="cursor-pointer inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-slate-200 bg-white text-sm font-bold text-slate-600 hover:bg-purple-50 hover:border-purple-300 hover:text-purple-700 shadow-sm transition-all duration-200"
-                            >
-                                <SlidersHorizontal class="w-4 h-4" />
-                                Filtros
-                                <ChevronDown
-                                    class="w-4 h-4 transition-transform duration-300"
-                                    :class="{ 'rotate-180': filtersVisible }"
-                                />
-                            </button>
+                                    <button @click="openCreateModal"
+                                        class="cursor-pointer inline-flex items-center justify-center px-5 py-2.5 border border-transparent text-sm font-bold rounded-xl shadow-sm shadow-purple-600/20 text-white bg-purple-600 hover:bg-purple-700 transition-all duration-200">
+                                        <Plus class="w-4 h-4 mr-1.5" />
+                                        Nueva Visita
+                                    </button>
+                                </div>
+                            </div>
 
+                            <!-- Filters toggle + collapsible panel -->
                             <div
-                                class="filters-collapse"
+                                class="filters-collapse bg-slate-50 border-b border-slate-100"
                                 :class="{ 'filters-collapse--open': filtersVisible }"
                             >
-                                <div class="pt-3">
+                                <div class="p-4 sm:p-5">
                                     <VisitFilters :filters="localFilters" @update:filters="updateFilters" @clear="clearFilters" />
                                 </div>
                             </div>
-                        </div>
 
-                        <VisitTable :visits="visits" @exit="openExitModal" @page-change="changePage"
-                            @update:perPage="updatePerPage" />
+                            <!-- Table -->
+                            <VisitTable :visits="visits" @exit="openExitModal" @page-change="changePage" @update:perPage="updatePerPage" />
+                        </div>
                     </div>
 
                     <!-- Reports Tab Content -->

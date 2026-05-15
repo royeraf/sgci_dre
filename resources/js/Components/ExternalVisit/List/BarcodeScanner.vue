@@ -110,40 +110,39 @@ defineExpose({
 </script>
 
 <template>
-    <div class="bg-emerald-50 rounded-lg border border-emerald-200 p-4 max-w-lg mx-auto">
-        <div class="flex items-center gap-3">
+    <div class="bg-emerald-50 rounded-xl border border-emerald-200 p-3 w-full flex flex-col sm:flex-row sm:items-center gap-3">
+        <!-- Icon and Text -->
+        <div class="flex items-center gap-3 shrink-0">
             <div class="bg-emerald-500 p-2 rounded-lg">
                 <ScanBarcode class="w-5 h-5 text-white" />
             </div>
-            <div class="flex-1">
-                <h3 class="text-sm font-bold text-slate-800">Escáner de Códigos de Barras</h3>
-                <p class="text-xs text-slate-600">Escanee el DNI para registrar la salida</p>
+            <div class="hidden sm:block">
+                <h3 class="text-sm font-bold text-slate-800 leading-tight">Escáner de Salida</h3>
+                <p class="text-[11px] text-slate-600 uppercase tracking-wider font-semibold mt-0.5">DNI del Visitante</p>
             </div>
         </div>
 
-        <div class="mt-3 space-y-2">
-            <!-- Scanner Input -->
-            <div class="relative">
-                <input ref="scannerInput" type="text" v-model="dni" @input="onlyNumbers" @keyup.enter="searchVisit"
-                    inputmode="numeric" pattern="[0-9]*" maxlength="8" placeholder="Escanee o escriba el DNI..."
-                    class="w-full px-3 py-2 pl-10 rounded-xl focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all text-sm outline-none"
-                    :class="statusClasses" :disabled="isSearching" />
-                <div class="absolute left-3 top-1/2 -translate-y-1/2">
-                    <Loader2 v-if="isSearching" class="w-4 h-4 text-emerald-600 animate-spin" />
-                    <Hash v-else class="w-4 h-4 text-slate-400" />
-                </div>
-                <button v-if="dni && !isSearching" @click="clearSearch" type="button"
-                    class="cursor-pointer absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
-                    <X class="w-4 h-4" />
-                </button>
+        <!-- Scanner Input -->
+        <div class="flex-1 relative min-w-0">
+            <input ref="scannerInput" type="text" v-model="dni" @input="onlyNumbers" @keyup.enter="searchVisit"
+                inputmode="numeric" pattern="[0-9]*" maxlength="8" placeholder="Escriba o escanee el DNI..."
+                class="w-full px-3 py-2 pl-10 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all text-sm outline-none bg-white"
+                :class="statusClasses" :disabled="isSearching" />
+            <div class="absolute left-3 top-1/2 -translate-y-1/2">
+                <Loader2 v-if="isSearching" class="w-4 h-4 text-emerald-600 animate-spin" />
+                <Hash v-else class="w-4 h-4 text-slate-400" />
             </div>
+            <button v-if="dni && !isSearching" @click="clearSearch" type="button"
+                class="cursor-pointer absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1">
+                <X class="w-4 h-4" />
+            </button>
+        </div>
 
-            <!-- Status Messages -->
-            <div v-if="statusMessage" class="flex items-center gap-2 p-2 rounded-lg text-xs"
-                :class="statusMessageClasses">
-                <component :is="statusIcon" class="w-4 h-4 shrink-0" />
-                <span class="font-medium">{{ statusMessage }}</span>
-            </div>
+        <!-- Status Messages -->
+        <div v-if="statusMessage" class="flex items-center gap-2 px-3 py-2 rounded-lg text-xs shrink-0"
+            :class="statusMessageClasses">
+            <component :is="statusIcon" class="w-4 h-4 shrink-0" />
+            <span class="font-medium whitespace-nowrap">{{ statusMessage }}</span>
         </div>
     </div>
 </template>
