@@ -128,21 +128,15 @@ const generateReport = () => {
 </script>
 
 <template>
-    <div class="bg-white shadow-xl rounded-2xl border border-slate-200 overflow-hidden">
+    <div class="bg-white shadow-lg rounded-2xl border border-slate-200 overflow-hidden">
         <!-- Reports Header -->
-        <div class="bg-gradient-to-r from-purple-600 to-fuchsia-600 px-6 py-8 text-white">
-            <div class="flex items-center gap-4 mb-2">
-                <div class="bg-white/20 p-3 rounded-2xl backdrop-blur-sm">
-                    <FileText class="w-8 h-8 text-white" />
-                </div>
-                <div>
-                    <h2 class="text-2xl font-black tracking-tight">Reportes de Visitas</h2>
-                    <p class="text-purple-100 font-medium opacity-90">
-                        Resumen y descarga de reportes de visitas externas
-                    </p>
-                </div>
+        <div class="px-4 py-3 border-b border-slate-200 bg-slate-50 flex justify-between items-center">
+            <div>
+                <h2 class="text-base font-bold text-slate-800">Reportes de Visitas</h2>
+                <p class="text-xs text-slate-500 font-medium">Resumen y descarga de reportes de visitas externas</p>
             </div>
         </div>
+
 
         <div class="p-6 lg:p-10">
             <!-- Controls Grid -->

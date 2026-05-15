@@ -30,12 +30,11 @@ onMounted(() => {
 </script>
 
 <template>
-    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-        <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+    <div class="bg-white shadow-lg rounded-2xl border border-slate-200 overflow-hidden">
+        <div class="px-4 py-3 border-b border-slate-200 bg-slate-50 flex justify-between items-center">
             <div>
-                <h2 class="text-xl font-bold text-slate-800">Gestionar Motivos de Visita</h2>
-                <p class="text-sm text-slate-500 font-medium">Define los motivos predeterminados para el registro de
-                    visitas</p>
+                <h2 class="text-base font-bold text-slate-800">Gestionar Motivos de Visita</h2>
+                <p class="text-xs text-slate-500 font-medium">Define los motivos predeterminados para el registro de visitas</p>
             </div>
             <button @click="openCreateModal"
                 class="cursor-pointer inline-flex items-center px-4 py-2 bg-gradient-to-r from-purple-600 to-fuchsia-600 text-white text-sm font-bold rounded-xl hover:from-purple-700 hover:to-fuchsia-700 transition-all shadow-lg shadow-purple-200 active:scale-95">
@@ -59,17 +58,17 @@ onMounted(() => {
                     facilitar el registro de visitas.</p>
             </div>
 
-            <table v-else class="w-full text-left border-collapse">
-                <thead>
-                    <tr class="bg-slate-50 text-slate-500 text-xs font-bold uppercase tracking-wider">
-                        <th class="px-6 py-4">Nombre</th>
-                        <th class="px-6 py-4">Descripción</th>
-                        <th class="px-6 py-4 text-center">Estado</th>
-                        <th class="px-6 py-4 text-right">Acciones</th>
+            <table v-else class="w-full divide-y divide-slate-200">
+                <thead class="bg-slate-50">
+                    <tr>
+                        <th class="px-4 py-3 text-left text-xs font-bold text-slate-600 uppercase tracking-wider">Nombre</th>
+                        <th class="px-4 py-3 text-left text-xs font-bold text-slate-600 uppercase tracking-wider">Descripción</th>
+                        <th class="px-4 py-3 text-center text-xs font-bold text-slate-600 uppercase tracking-wider">Estado</th>
+                        <th class="px-4 py-3 text-right text-xs font-bold text-slate-600 uppercase tracking-wider">Acciones</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-slate-100">
-                    <tr v-for="reason in reasons" :key="reason.id" class="hover:bg-slate-50/50 transition-colors group">
+                <tbody class="bg-white divide-y divide-slate-100">
+                    <tr v-for="reason in reasons" :key="reason.id" class="hover:bg-purple-50 transition-colors duration-200 group">
                         <td class="px-6 py-4">
                             <span class="font-bold text-slate-700">{{ reason.nombre }}</span>
                         </td>
