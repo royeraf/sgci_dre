@@ -11,7 +11,7 @@
                         :value="filters.search"
                         @input="$emit('update:filters', { ...filters, search: $event.target.value })"
                         placeholder="Buscar por descripcion o responsable..."
-                        class="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-sm"
+                        class="cursor-pointer w-full pl-10 pr-4 py-2.5 border-2 border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200 text-sm outline-none"
                     />
                 </div>
             </div>
@@ -22,7 +22,7 @@
                 <select
                     :value="filters.tipo"
                     @change="$emit('update:filters', { ...filters, tipo: $event.target.value })"
-                    class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-sm bg-white"
+                    class="cursor-pointer w-full px-4 py-2.5 border-2 border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200 text-sm bg-white outline-none"
                 >
                     <option value="">Todos</option>
                     <option value="Incidente">Incidente</option>
@@ -41,7 +41,7 @@
                     type="date"
                     :value="filters.fechaDesde"
                     @input="$emit('update:filters', { ...filters, fechaDesde: $event.target.value })"
-                    class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-sm"
+                    class="cursor-pointer w-full px-4 py-2.5 border-2 border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200 text-sm outline-none"
                 />
             </div>
 
@@ -52,7 +52,7 @@
                     type="date"
                     :value="filters.fechaHasta"
                     @input="$emit('update:filters', { ...filters, fechaHasta: $event.target.value })"
-                    class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-sm"
+                    class="cursor-pointer w-full px-4 py-2.5 border-2 border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200 text-sm outline-none"
                 />
             </div>
         </div>
@@ -65,7 +65,7 @@
             </p>
             <button
                 @click="$emit('clear')"
-                class="text-sm font-semibold text-slate-500 hover:text-blue-600 transition-colors duration-200 flex items-center gap-1"
+                class="cursor-pointer outline-none text-sm font-semibold text-slate-500 hover:text-blue-600 transition-colors duration-200 flex items-center gap-1"
             >
                 <X class="w-4 h-4" />
                 Limpiar filtros

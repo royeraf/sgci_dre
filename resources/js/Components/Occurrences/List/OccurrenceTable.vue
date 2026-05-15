@@ -68,11 +68,11 @@
                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                             <div class="flex justify-end gap-2">
                                 <button @click="$emit('view', occurrence)" title="Ver detalles"
-                                    class="p-2 text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-all shadow-sm">
+                                    class="cursor-pointer p-2 text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-xl transition-all shadow-sm">
                                     <Eye class="w-4 h-4" />
                                 </button>
                                 <button @click="$emit('edit', occurrence)" title="Editar"
-                                    class="p-2 text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition-all shadow-sm">
+                                    class="cursor-pointer p-2 text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-xl transition-all shadow-sm">
                                     <Pencil class="w-4 h-4" />
                                 </button>
                             </div>
@@ -103,7 +103,7 @@
                     <select
                         :value="perPage"
                         @change="$emit('update:perPage', Number($event.target.value))"
-                        class="border border-slate-200 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 bg-white"
+                        class="cursor-pointer outline-none border-2 border-slate-200 rounded-xl px-3 py-1.5 text-sm focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 bg-white"
                     >
                         <option :value="10">10</option>
                         <option :value="25">25</option>
@@ -118,28 +118,28 @@
                     <button
                         @click="$emit('update:currentPage', 1)"
                         :disabled="currentPage === 1"
-                        class="p-2 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                        class="cursor-pointer p-2 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         <ChevronsLeft class="w-4 h-4" />
                     </button>
                     <button
                         @click="$emit('update:currentPage', currentPage - 1)"
                         :disabled="currentPage === 1"
-                        class="p-2 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                        class="cursor-pointer p-2 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         <ChevronLeft class="w-4 h-4" />
                     </button>
                     <button
                         @click="$emit('update:currentPage', currentPage + 1)"
                         :disabled="currentPage === totalPages"
-                        class="p-2 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                        class="cursor-pointer p-2 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         <ChevronRight class="w-4 h-4" />
                     </button>
                     <button
                         @click="$emit('update:currentPage', totalPages)"
                         :disabled="currentPage === totalPages"
-                        class="p-2 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                        class="cursor-pointer p-2 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         <ChevronsRight class="w-4 h-4" />
                     </button>

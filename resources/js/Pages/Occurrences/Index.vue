@@ -14,7 +14,7 @@
                 <div class="flex gap-3">
                     <Link
                         href="/dashboard"
-                        class="inline-flex items-center px-4 py-2.5 border border-slate-200 text-sm font-bold rounded-xl text-slate-600 bg-white hover:bg-slate-50 transition-all shadow-sm"
+                        class="cursor-pointer inline-flex items-center px-4 py-2.5 border border-slate-200 text-sm font-bold rounded-xl text-slate-600 bg-white hover:bg-slate-50 transition-all shadow-sm"
                     >
                         <ArrowLeft class="w-4 h-4 mr-2" />
                         Volver
@@ -23,15 +23,15 @@
             </div>
 
             <!-- Tabs Navigation -->
-            <div class="border-b border-slate-200 mb-8">
-                <nav class="-mb-px flex space-x-8">
+            <div class="border-b border-slate-200 mb-8 relative">
+                <nav ref="tabsRef" class="-mb-px flex">
                     <button v-if="canViewTab('list')"
                         @click="activeTab = 'list'"
                         :class="[
                             activeTab === 'list'
-                                ? 'border-blue-600 text-blue-600'
-                                : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300',
-                            'whitespace-nowrap py-4 px-1 border-b-2 font-bold text-sm flex items-center gap-2 transition-all duration-200'
+                                ? 'text-blue-600 active-tab'
+                                : 'text-slate-500 hover:text-slate-700',
+                            'cursor-pointer whitespace-nowrap py-4 px-5 font-bold text-sm flex items-center gap-2 transition-colors duration-300'
                         ]"
                     >
                         <ClipboardList class="w-5 h-5" />
@@ -41,16 +41,22 @@
                         @click="activeTab = 'reports'"
                         :class="[
                             activeTab === 'reports'
-                                ? 'border-indigo-600 text-indigo-600'
-                                : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300',
-                            'whitespace-nowrap py-4 px-1 border-b-2 font-bold text-sm flex items-center gap-2 transition-all duration-200'
+                                ? 'text-indigo-600 active-tab'
+                                : 'text-slate-500 hover:text-slate-700',
+                            'cursor-pointer whitespace-nowrap py-4 px-5 font-bold text-sm flex items-center gap-2 transition-colors duration-300'
                         ]"
                     >
                         <FileText class="w-5 h-5" />
                         Reportes Semanales
                     </button>
                 </nav>
+                <!-- Gliding Indicator -->
+                <div class="absolute bottom-0 h-0.5 transition-all duration-300 ease-out" :style="indicatorStyle"></div>
             </div>
+
+            <!-- Tab Content with Transition -->
+            <Transition name="fade-slide" mode="out-in">
+                <div :key="activeTab">
 
             <!-- List Tab Content -->
             <div v-if="activeTab === 'list'">
@@ -80,7 +86,7 @@
                             </button>
 
                             <button @click="showRegisterModal = true"
-                                class="cursor-pointer w-full sm:w-auto inline-flex items-center justify-center px-5 py-2.5 border border-transparent text-sm font-bold rounded-xl shadow-sm shadow-blue-600/20 text-white bg-blue-600 hover:bg-blue-700 transition-all duration-200">
+                                class="cursor-pointer w-full sm:w-auto inline-flex items-center justify-center px-5 py-2.5 border border-transparent text-sm font-bold rounded-xl shadow-lg shadow-blue-500/30 text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-4 focus:ring-blue-500/20 transition-all duration-300 active:scale-95">
                                 <Plus class="w-4 h-4 mr-1.5" />
                                 Nueva Ocurrencia
                             </button>
@@ -113,10 +119,12 @@
                 </div>
             </div>
 
-            <!-- Reports Tab Content -->
-            <div v-if="activeTab === 'reports'">
-                <WeeklyReports :occurrences="occurrences" />
-            </div>
+                    <!-- Reports Tab Content -->
+                    <div v-else-if="activeTab === 'reports'">
+                        <WeeklyReports :occurrences="occurrences" />
+                    </div>
+                </div>
+            </Transition>
 
             <!-- Register Modal -->
             <OccurrenceModal
@@ -150,7 +158,7 @@ export default {
 </script>
 
 <script setup>
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, onMounted, nextTick } from 'vue';
 import { Link } from '@inertiajs/vue3';
 import { useTabPermission } from '@/composables/useTabPermission';
 import {
@@ -203,6 +211,38 @@ const localFilters = ref({
     tipo: props.filters?.tipo || '',
     fechaDesde: props.filters?.fecha_desde || '',
     fechaHasta: props.filters?.fecha_hasta || ''
+});
+
+// Tab indicator logic
+const tabsRef = ref(null);
+const indicatorStyle = ref({ left: '0px', width: '0px', backgroundColor: '' });
+
+const getIndicatorColor = (tab) => {
+    switch (tab) {
+        case 'list': return '#2563eb'; // blue-600
+        case 'reports': return '#4f46e5'; // indigo-600
+        default: return '#2563eb';
+    }
+};
+
+const updateIndicator = () => {
+    if (!tabsRef.value) return;
+    const activeBtn = tabsRef.value.querySelector('.active-tab');
+    if (activeBtn) {
+        indicatorStyle.value = {
+            left: `${activeBtn.offsetLeft}px`,
+            width: `${activeBtn.offsetWidth}px`,
+            backgroundColor: getIndicatorColor(activeTab.value)
+        };
+    }
+};
+
+onMounted(() => {
+    nextTick(updateIndicator);
+});
+
+watch(activeTab, () => {
+    nextTick(updateIndicator);
 });
 
 // Pagination
@@ -263,6 +303,21 @@ const openEditModal = (occurrence) => {
 </script>
 
 <style scoped>
+.fade-slide-enter-active,
+.fade-slide-leave-active {
+    transition: all 0.3s ease;
+}
+
+.fade-slide-enter-from {
+    opacity: 0;
+    transform: translateX(10px);
+}
+
+.fade-slide-leave-to {
+    opacity: 0;
+    transform: translateX(-10px);
+}
+
 /* Filters collapse animation */
 .filters-collapse {
     overflow: hidden;
