@@ -19,14 +19,6 @@
                         <ArrowLeft class="w-4 h-4 mr-2" />
                         Volver
                     </Link>
-                    <button
-                        v-if="activeTab === 'list'"
-                        @click="showRegisterModal = true"
-                        class="inline-flex items-center px-6 py-3 border border-transparent text-sm font-bold rounded-xl shadow-lg shadow-blue-600/20 text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-4 focus:ring-blue-300 transition-all duration-300 transform hover:scale-105 active:scale-95"
-                    >
-                        <Plus class="w-5 h-5 mr-2" />
-                        Nueva Ocurrencia
-                    </button>
                 </div>
             </div>
 
@@ -61,23 +53,64 @@
             </div>
 
             <!-- List Tab Content -->
-            <div v-if="activeTab === 'list'" class="space-y-6">
-                <!-- Filters -->
-                <OccurrenceFilters
-                    :filters="localFilters"
-                    :result-count="filteredOccurrences.length"
-                    @update:filters="localFilters = $event"
-                    @clear="clearFilters"
-                />
+            <div v-if="activeTab === 'list'">
+                <!-- Unified Card Container -->
+                <div class="bg-white shadow-xl rounded-2xl border border-slate-200 overflow-hidden">
+                    
+                    <!-- Table Title -->
+                    <div class="px-4 sm:px-5 py-4 border-b border-slate-200 bg-slate-50">
+                        <h2 class="text-base font-bold text-slate-800">Listado de Ocurrencias</h2>
+                        <p class="text-xs text-slate-500 font-medium mt-0.5">Registro general de incidentes en el sistema</p>
+                    </div>
 
-                <!-- Table -->
-                <OccurrenceTable
-                    :occurrences="filteredOccurrences"
-                    v-model:current-page="currentPage"
-                    v-model:per-page="perPage"
-                    @view="openDetailModal"
-                    @edit="openEditModal"
-                />
+                    <!-- Top row: Actions -->
+                    <div class="p-4 sm:p-5 border-b border-slate-100 flex flex-col lg:flex-row items-stretch lg:items-center justify-end gap-4 bg-white">
+                        <!-- Right-aligned action buttons -->
+                        <div class="flex items-center justify-end gap-3 w-full lg:w-auto">
+                            <button
+                                @click="filtersVisible = !filtersVisible"
+                                class="cursor-pointer w-full sm:w-auto inline-flex justify-center items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-sm font-bold text-slate-600 hover:bg-slate-50 transition-all duration-200 shadow-sm"
+                            >
+                                <SlidersHorizontal class="w-4 h-4" />
+                                Filtros
+                                <ChevronDown
+                                    class="w-4 h-4 transition-transform duration-300"
+                                    :class="{ 'rotate-180': filtersVisible }"
+                                />
+                            </button>
+
+                            <button @click="showRegisterModal = true"
+                                class="cursor-pointer w-full sm:w-auto inline-flex items-center justify-center px-5 py-2.5 border border-transparent text-sm font-bold rounded-xl shadow-sm shadow-blue-600/20 text-white bg-blue-600 hover:bg-blue-700 transition-all duration-200">
+                                <Plus class="w-4 h-4 mr-1.5" />
+                                Nueva Ocurrencia
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Filters toggle + collapsible panel -->
+                    <div
+                        class="filters-collapse bg-slate-50 border-b border-slate-100"
+                        :class="{ 'filters-collapse--open': filtersVisible }"
+                    >
+                        <div class="p-4 sm:p-5">
+                            <OccurrenceFilters
+                                :filters="localFilters"
+                                :result-count="filteredOccurrences.length"
+                                @update:filters="localFilters = $event"
+                                @clear="clearFilters"
+                            />
+                        </div>
+                    </div>
+
+                    <!-- Table -->
+                    <OccurrenceTable
+                        :occurrences="filteredOccurrences"
+                        v-model:current-page="currentPage"
+                        v-model:per-page="perPage"
+                        @view="openDetailModal"
+                        @edit="openEditModal"
+                    />
+                </div>
             </div>
 
             <!-- Reports Tab Content -->
@@ -124,7 +157,9 @@ import {
     Plus,
     ArrowLeft,
     FileText,
-    ClipboardList
+    ClipboardList,
+    SlidersHorizontal,
+    ChevronDown
 } from 'lucide-vue-next';
 
 // Components - List
@@ -155,6 +190,12 @@ const showDetailModal = ref(false);
 const showEditModal = ref(false);
 const selectedOccurrence = ref(null);
 const editingOccurrence = ref(null);
+
+const FILTERS_STORAGE_KEY = 'occurrences_filters_open';
+const filtersVisible = ref(
+    localStorage.getItem(FILTERS_STORAGE_KEY) === 'true'
+);
+watch(filtersVisible, (val) => localStorage.setItem(FILTERS_STORAGE_KEY, String(val)));
 
 // Local filters (for client-side filtering)
 const localFilters = ref({
@@ -220,3 +261,18 @@ const openEditModal = (occurrence) => {
     showEditModal.value = true;
 };
 </script>
+
+<style scoped>
+/* Filters collapse animation */
+.filters-collapse {
+    overflow: hidden;
+    max-height: 0;
+    opacity: 0;
+    transition: max-height 0.35s ease, opacity 0.3s ease;
+}
+
+.filters-collapse--open {
+    max-height: 500px;
+    opacity: 1;
+}
+</style>

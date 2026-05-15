@@ -1,51 +1,33 @@
 <template>
     <div class="bg-white shadow-xl rounded-2xl border border-slate-200 overflow-hidden">
         <!-- Reports Header -->
-        <div class="bg-gradient-to-r from-indigo-600 to-purple-600 px-6 py-8 text-white">
-            <div class="flex items-center gap-4 mb-2">
-                <div class="bg-white/20 p-3 rounded-2xl backdrop-blur-sm">
-                    <FileText class="w-8 h-8 text-white" />
-                </div>
-                <div>
-                    <h2 class="text-2xl font-black tracking-tight">Reportes Semanales</h2>
-                    <p class="text-indigo-100 font-medium opacity-90">
-                        Resumen ejecutivo y descarga de reportes oficiales
-                    </p>
-                </div>
+        <div class="px-4 sm:px-5 py-4 border-b border-slate-200 bg-slate-50 flex justify-between items-center">
+            <div>
+                <h2 class="text-base font-bold text-slate-800">Reportes Semanales</h2>
+                <p class="text-xs text-slate-500 font-medium mt-0.5">Resumen ejecutivo y descarga de reportes oficiales</p>
             </div>
         </div>
 
         <div class="p-6 lg:p-10">
             <!-- Week Selector -->
-            <div class="max-w-3xl mx-auto mb-12">
+            <div class="max-w-md mx-auto mb-12">
                 <label class="block text-sm font-bold text-slate-700 mb-3 uppercase tracking-wider">
                     Seleccionar Periodo Semanal
                 </label>
-                <div class="flex flex-col sm:flex-row gap-4 items-stretch">
-                    <div class="flex-1 relative">
-                        <Calendar class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-                        <select
-                            v-model="selectedWeek"
-                            class="w-full pl-12 pr-4 py-3.5 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all duration-300 bg-slate-50 font-semibold text-slate-700 appearance-none"
-                        >
-                            <option value="" disabled>Seleccione una semana...</option>
-                            <option v-for="week in availableWeeks" :key="week.value" :value="week.value">
-                                {{ week.label }}
-                            </option>
-                        </select>
-                        <div class="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
-                            <ChevronDown class="w-5 h-5" />
-                        </div>
-                    </div>
-                    <button
-                        @click="generateWeeklyReport"
-                        :disabled="!selectedWeek || isGeneratingReport"
-                        class="inline-flex items-center justify-center px-8 py-3.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-black rounded-2xl shadow-xl shadow-indigo-200 hover:shadow-indigo-300 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed transform hover:-translate-y-0.5 active:translate-y-0"
+                <div class="relative">
+                    <Calendar class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                    <select
+                        v-model="selectedWeek"
+                        class="w-full pl-12 pr-4 py-3.5 border-2 border-slate-200 rounded-2xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-300 bg-slate-50 font-semibold text-slate-700 appearance-none outline-none"
                     >
-                        <Loader2 v-if="isGeneratingReport" class="animate-spin w-5 h-5 mr-3" />
-                        <Download v-else class="w-5 h-5 mr-3" />
-                        {{ isGeneratingReport ? 'Generando PDF...' : 'Generar Reporte' }}
-                    </button>
+                        <option value="" disabled>Seleccione una semana...</option>
+                        <option v-for="week in availableWeeks" :key="week.value" :value="week.value">
+                            {{ week.label }}
+                        </option>
+                    </select>
+                    <div class="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                        <ChevronDown class="w-5 h-5" />
+                    </div>
                 </div>
             </div>
 
@@ -167,6 +149,19 @@
                             </tbody>
                         </table>
                     </div>
+                </div>
+
+                <!-- Button to Download -->
+                <div class="flex justify-center flex-col items-center gap-3 mt-10">
+                    <button @click="generateWeeklyReport" :disabled="isGeneratingReport"
+                        class="cursor-pointer inline-flex items-center justify-center px-8 py-3.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-black rounded-xl shadow-lg shadow-blue-500/20 hover:shadow-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed hover:-translate-y-0.5 active:scale-95">
+                        <Loader2 v-if="isGeneratingReport" class="animate-spin w-5 h-5 mr-3" />
+                        <Download v-else class="w-5 h-5 mr-3" />
+                        {{ isGeneratingReport ? 'Generando PDF...' : 'Descargar Reporte PDF' }}
+                    </button>
+                    <p class="text-xs text-slate-500 font-medium opacity-80">
+                        Periodo: {{ weeklyReportData.startDate }} al {{ weeklyReportData.endDate }}
+                    </p>
                 </div>
             </div>
 

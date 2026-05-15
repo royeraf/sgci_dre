@@ -1,5 +1,5 @@
 <template>
-    <div class="bg-white shadow-lg rounded-2xl border border-slate-200 p-4">
+    <div class="w-full">
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
             <!-- Search -->
             <div class="lg:col-span-2">
