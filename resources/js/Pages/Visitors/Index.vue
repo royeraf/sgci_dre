@@ -234,6 +234,12 @@ watch(activeTab, (newTab) => {
                         <!-- Unified Card Container -->
                         <div class="bg-white shadow-xl rounded-2xl border border-slate-200 overflow-hidden">
                             
+                            <!-- Table Title -->
+                            <div class="px-4 sm:px-5 py-4 border-b border-slate-200 bg-slate-50">
+                                <h2 class="text-base font-bold text-slate-800">Visitas Registradas</h2>
+                                <p class="text-xs text-slate-500 font-medium mt-0.5">Lista completa de las visitas en el sistema</p>
+                            </div>
+
                             <!-- Top row: Barcode Scanner + Actions -->
                             <div class="p-4 sm:p-5 border-b border-slate-100 flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4 bg-white">
                                 <!-- Scanner with controlled width -->
