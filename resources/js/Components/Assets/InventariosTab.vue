@@ -58,40 +58,42 @@
             </div>
 
             <!-- Filtros items -->
-            <div class="bg-white shadow-lg rounded-2xl border border-slate-200 p-4">
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <div class="lg:col-span-2">
-                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Buscar bien</label>
-                        <div class="relative">
+            <BaseTableCard title="Verificaciones" description="Bienes registrados en este inventario">
+                <template #icon><ClipboardList class="w-5 h-5 text-purple-600" /></template>
+                <template #actions>
+                    <button v-if="selectedInventario.estado !== 'CERRADO'"
+                        @click="openItemModal(null)"
+                        class="inline-flex items-center px-5 py-2.5 border border-transparent text-sm font-bold rounded-xl shadow-lg text-white bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 focus:outline-none focus:ring-4 focus:ring-purple-300 transition-all">
+                        <Plus class="w-4 h-4 mr-2" />
+                        Agregar verificación
+                    </button>
+                </template>
+
+                <!-- Filters -->
+                <div class="bg-slate-50 border-b border-slate-100 p-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <div class="lg:col-span-2 relative">
                             <Search class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                            <input v-model="itemSearch" type="text"
-                                placeholder="Código patrimonial, denominación..."
-                                class="w-full pl-9 pr-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-sm transition-all" />
+                            <input v-model="itemSearch" type="text" placeholder="Código patrimonial, denominación..."
+                                class="w-full pl-9 pr-4 py-2.5 border-2 border-slate-200 rounded-xl focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 text-sm outline-none transition-all" />
                         </div>
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Estado</label>
                         <select v-model="itemFilterEstado"
-                            class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-purple-500 text-sm bg-white transition-all">
-                            <option value="">Todos</option>
+                            class="cursor-pointer w-full px-3 py-2.5 border-2 border-slate-200 rounded-xl focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 text-sm bg-white outline-none transition-all">
+                            <option value="">Todos los estados</option>
                             <option v-for="st in states" :key="st.id" :value="st.id">{{ st.nombre }}</option>
                         </select>
                     </div>
+                    <div class="flex items-center justify-between mt-3 pt-3 border-t border-slate-200">
+                        <span class="text-sm text-slate-500"><span class="font-semibold text-slate-700">{{ itemTotal }}</span> bienes verificados</span>
+                        <button @click="clearItemFilters" class="text-sm font-semibold text-slate-500 hover:text-purple-600 transition-colors flex items-center gap-1">
+                            <X class="w-4 h-4" /> Limpiar
+                        </button>
+                    </div>
                 </div>
-                <div class="flex items-center justify-between mt-4 pt-4 border-t border-slate-100">
-                    <p class="text-sm text-slate-500">
-                        <span class="font-semibold text-slate-700">{{ itemTotal }}</span> bienes verificados
-                    </p>
-                    <button @click="clearItemFilters"
-                        class="text-sm font-semibold text-slate-500 hover:text-purple-600 transition-colors flex items-center gap-1">
-                        <X class="w-4 h-4" /> Limpiar
-                    </button>
-                </div>
-            </div>
 
             <!-- Tabla items -->
-            <div class="bg-white shadow-xl rounded-2xl border border-slate-200 overflow-hidden">
-                <div v-if="itemsLoading" class="p-12 text-center">
+            <!-- Loading -->
+            <div v-if="itemsLoading" class="p-12 text-center">
                     <Loader2 class="w-8 h-8 mx-auto text-slate-400 animate-spin" />
                     <p class="text-sm text-slate-400 mt-2">Cargando verificaciones...</p>
                 </div>
@@ -190,40 +192,16 @@
                 </div>
 
                 <!-- Pagination items -->
-                <div v-if="items.length > 0" class="bg-slate-50 px-6 py-4 border-t border-slate-200">
-                    <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
-                        <div class="flex items-center gap-2 text-sm text-slate-600">
-                            <span>Mostrar</span>
-                            <select v-model="itemPerPage"
-                                class="border border-slate-200 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-purple-500 bg-white">
-                                <option :value="10">10</option>
-                                <option :value="25">25</option>
-                                <option :value="50">50</option>
-                            </select>
-                            <span>por página</span>
-                        </div>
-                        <div class="text-sm text-slate-600">Página {{ itemCurrentPage }} de {{ itemLastPage }}</div>
-                        <div class="flex items-center gap-1">
-                            <button @click="fetchItems(1)" :disabled="itemCurrentPage === 1"
-                                class="p-2 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed">
-                                <ChevronsLeft class="w-4 h-4" />
-                            </button>
-                            <button @click="fetchItems(itemCurrentPage - 1)" :disabled="itemCurrentPage === 1"
-                                class="p-2 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed">
-                                <ChevronLeft class="w-4 h-4" />
-                            </button>
-                            <button @click="fetchItems(itemCurrentPage + 1)" :disabled="itemCurrentPage === itemLastPage"
-                                class="p-2 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed">
-                                <ChevronRight class="w-4 h-4" />
-                            </button>
-                            <button @click="fetchItems(itemLastPage)" :disabled="itemCurrentPage === itemLastPage"
-                                class="p-2 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed">
-                                <ChevronsRight class="w-4 h-4" />
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
+                <ClientPagination
+                    v-if="items.length > 0"
+                    :total-items="itemTotal"
+                    :current-page="itemCurrentPage"
+                    :per-page="itemPerPage"
+                    :per-page-options="[10, 25, 50]"
+                    @update:current-page="fetchItems($event)"
+                    @update:per-page="itemPerPage = $event"
+                />
+            </BaseTableCard>
         </template>
 
         <!-- ===== VISTA LISTA ===== -->
@@ -275,55 +253,43 @@
                 </div>
             </div>
 
-            <!-- Filtros + Nuevo -->
-            <div class="bg-white shadow-lg rounded-2xl border border-slate-200 p-4">
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-                    <div>
-                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Año</label>
+            <!-- Filtros + Tabla inventarios -->
+            <BaseTableCard title="Inventarios" description="Control de inventarios físicos de bienes">
+                <template #icon><ClipboardList class="w-5 h-5 text-purple-600" /></template>
+                <template #actions>
+                    <slot name="actions" />
+                </template>
+
+                <!-- Panel filtros -->
+                <div class="bg-slate-50 border-b border-slate-100 p-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                         <select v-model="filterAnio"
-                            class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-purple-500 text-sm bg-white transition-all">
+                            class="cursor-pointer w-full px-3 py-2.5 border-2 border-slate-200 rounded-xl focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 text-sm bg-white outline-none transition-all">
                             <option value="">Todos los años</option>
                             <option v-for="y in availableYears" :key="y" :value="y">{{ y }}</option>
                         </select>
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Tipo</label>
                         <select v-model="filterTipo"
-                            class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-purple-500 text-sm bg-white transition-all">
-                            <option value="">Todos</option>
+                            class="cursor-pointer w-full px-3 py-2.5 border-2 border-slate-200 rounded-xl focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 text-sm bg-white outline-none transition-all">
+                            <option value="">Todos los tipos</option>
                             <option value="ANUAL">Anual</option>
                             <option value="ROTACION">Rotación de Personal</option>
                             <option value="EXTRAORDINARIO">Extraordinario</option>
                         </select>
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Estado</label>
                         <select v-model="filterEstado"
-                            class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-purple-500 text-sm bg-white transition-all">
-                            <option value="">Todos</option>
+                            class="cursor-pointer w-full px-3 py-2.5 border-2 border-slate-200 rounded-xl focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 text-sm bg-white outline-none transition-all">
+                            <option value="">Todos los estados</option>
                             <option value="PENDIENTE">Pendiente</option>
                             <option value="EN_PROCESO">En Proceso</option>
                             <option value="CERRADO">Cerrado</option>
                         </select>
-                    </div>
-                    <div class="flex items-end justify-end">
-                        <!-- El botón Nuevo Inventario se movió a Index.vue -->
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm text-slate-500"><span class="font-semibold text-slate-700">{{ total }}</span> inventarios</span>
+                            <button @click="clearFilters" class="text-sm font-semibold text-slate-500 hover:text-purple-600 transition-colors flex items-center gap-1">
+                                <X class="w-4 h-4" /> Limpiar
+                            </button>
+                        </div>
                     </div>
                 </div>
-
-                <div class="flex items-center justify-between mt-4 pt-4 border-t border-slate-100">
-                    <p class="text-sm text-slate-500">
-                        <span class="font-semibold text-slate-700">{{ total }}</span> inventarios encontrados
-                    </p>
-                    <button @click="clearFilters"
-                        class="text-sm font-semibold text-slate-500 hover:text-purple-600 transition-colors flex items-center gap-1">
-                        <X class="w-4 h-4" /> Limpiar filtros
-                    </button>
-                </div>
-            </div>
-
-            <!-- Tabla inventarios -->
-            <div class="bg-white shadow-xl rounded-2xl border border-slate-200 overflow-hidden">
                 <div v-if="loading" class="p-12 text-center">
                     <Loader2 class="w-8 h-8 mx-auto text-slate-400 animate-spin" />
                     <p class="text-sm text-slate-400 mt-2">Cargando inventarios...</p>
@@ -436,40 +402,16 @@
                 </div>
 
                 <!-- Pagination -->
-                <div v-if="inventarios.length > 0" class="bg-slate-50 px-6 py-4 border-t border-slate-200">
-                    <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
-                        <div class="flex items-center gap-2 text-sm text-slate-600">
-                            <span>Mostrar</span>
-                            <select v-model="perPage"
-                                class="border border-slate-200 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-purple-500 bg-white">
-                                <option :value="10">10</option>
-                                <option :value="25">25</option>
-                                <option :value="50">50</option>
-                            </select>
-                            <span>por página</span>
-                        </div>
-                        <div class="text-sm text-slate-600">Página {{ currentPage }} de {{ lastPage }}</div>
-                        <div class="flex items-center gap-1">
-                            <button @click="fetchInventarios(1)" :disabled="currentPage === 1"
-                                class="p-2 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed">
-                                <ChevronsLeft class="w-4 h-4" />
-                            </button>
-                            <button @click="fetchInventarios(currentPage - 1)" :disabled="currentPage === 1"
-                                class="p-2 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed">
-                                <ChevronLeft class="w-4 h-4" />
-                            </button>
-                            <button @click="fetchInventarios(currentPage + 1)" :disabled="currentPage === lastPage"
-                                class="p-2 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed">
-                                <ChevronRight class="w-4 h-4" />
-                            </button>
-                            <button @click="fetchInventarios(lastPage)" :disabled="currentPage === lastPage"
-                                class="p-2 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed">
-                                <ChevronsRight class="w-4 h-4" />
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
+                <ClientPagination
+                    v-if="inventarios.length > 0"
+                    :total-items="total"
+                    :current-page="currentPage"
+                    :per-page="perPage"
+                    :per-page-options="[10, 25, 50]"
+                    @update:current-page="fetchInventarios($event)"
+                    @update:per-page="perPage = $event"
+                />
+            </BaseTableCard>
         </template>
 
         <!-- ===== MODAL INVENTARIO (crear/editar) ===== -->
@@ -707,9 +649,10 @@ import { ref, watch, onMounted, computed } from 'vue';
 import {
     ClipboardList, Clock, CheckCircle, Loader2, Plus, X,
     Pencil, Trash2, Play, RotateCcw, Eye, ArrowLeft, ArrowRight,
-    Search, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight,
-    CalendarDays, UserMinus, Zap,
+    Search, CalendarDays, UserMinus, Zap,
 } from 'lucide-vue-next';
+import BaseTableCard from '@/Components/Common/BaseTableCard.vue';
+import ClientPagination from '@/Components/Common/ClientPagination.vue';
 import axios from 'axios';
 import Swal from 'sweetalert2';
 

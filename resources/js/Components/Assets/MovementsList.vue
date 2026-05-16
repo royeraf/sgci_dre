@@ -93,73 +93,50 @@
             </div>
         </div>
 
-        <!-- Filters -->
-        <div class="bg-white shadow-lg rounded-2xl border border-slate-200 p-4">
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
-                <!-- Search -->
-                <div class="lg:col-span-2">
-                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Buscar</label>
-                    <div class="relative">
-                        <Search class="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-slate-400" />
-                        <input v-model="search" type="text" placeholder="Código, denominación, responsable..."
-                            class="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-sm" />
+        <!-- BaseTableCard con filtros colapsables -->
+        <BaseTableCard title="Movimientos" description="Registro de traslados y asignaciones de bienes">
+            <template #icon>
+                <ArrowRightLeft class="w-5 h-5 text-blue-600" />
+            </template>
+            <template #actions>
+                <slot name="actions" />
+            </template>
+
+            <!-- Panel colapsable -->
+            <div class="filters-collapse bg-slate-50 border-b border-slate-100" :class="{ 'filters-collapse--open': filtersVisible }">
+                <div class="p-4 sm:p-5">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
+                        <div class="lg:col-span-2 relative">
+                            <Search class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                            <input v-model="search" type="text" placeholder="Código, denominación, responsable..."
+                                class="w-full pl-9 pr-4 py-2.5 border-2 border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-sm outline-none" />
+                        </div>
+                        <select v-model="filterTipo" class="cursor-pointer w-full px-3 py-2.5 border-2 border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-sm bg-white outline-none">
+                            <option value="">Todos los tipos</option>
+                            <option value="ASIGNACION">Asignación</option>
+                            <option value="DEVOLUCION">Devolución</option>
+                            <option value="TRASLADO">Traslado</option>
+                            <option value="BAJA">Baja</option>
+                        </select>
+                        <select v-model="filterEstadoId" class="cursor-pointer w-full px-3 py-2.5 border-2 border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-sm bg-white outline-none">
+                            <option value="">Todos los estados</option>
+                            <option v-for="st in states" :key="st.id" :value="st.id">{{ st.nombre }}</option>
+                        </select>
+                        <input v-model="filterFechaDesde" type="date" placeholder="Desde"
+                            class="w-full px-3 py-2.5 border-2 border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-sm outline-none" />
+                        <input v-model="filterFechaHasta" type="date" placeholder="Hasta"
+                            class="w-full px-3 py-2.5 border-2 border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-sm outline-none" />
+                    </div>
+                    <div class="flex items-center justify-between mt-3 pt-3 border-t border-slate-200">
+                        <span class="text-sm text-slate-500"><span class="font-semibold text-slate-700">{{ total }}</span> movimientos</span>
+                        <button @click="clearFilters" class="text-sm font-semibold text-slate-500 hover:text-blue-600 transition-colors flex items-center gap-1">
+                            <X class="w-4 h-4" /> Limpiar
+                        </button>
                     </div>
                 </div>
-
-                <!-- Tipo Filter -->
-                <div>
-                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Tipo</label>
-                    <select v-model="filterTipo"
-                        class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-sm bg-white">
-                        <option value="">Todos</option>
-                        <option value="ASIGNACION">Asignación</option>
-                        <option value="DEVOLUCION">Devolución</option>
-                        <option value="TRASLADO">Traslado</option>
-                        <option value="BAJA">Baja</option>
-                    </select>
-                </div>
-
-                <!-- Estado Filter -->
-                <div>
-                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Estado</label>
-                    <select v-model="filterEstadoId"
-                        class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-sm bg-white">
-                        <option value="">Todos</option>
-                        <option v-for="st in states" :key="st.id" :value="st.id">{{ st.nombre }}</option>
-                    </select>
-                </div>
-
-                <!-- Fecha Desde -->
-                <div>
-                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Desde</label>
-                    <input v-model="filterFechaDesde" type="date"
-                        class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-sm" />
-                </div>
-
-                <!-- Fecha Hasta -->
-                <div>
-                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Hasta</label>
-                    <input v-model="filterFechaHasta" type="date"
-                        class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-sm" />
-                </div>
             </div>
 
-            <!-- Filter Actions -->
-            <div class="flex items-center justify-between mt-4 pt-4 border-t border-slate-100">
-                <p class="text-sm text-slate-500">
-                    <span class="font-semibold text-slate-700">{{ total }}</span>
-                    movimientos encontrados
-                </p>
-                <button @click="clearFilters"
-                    class="text-sm font-semibold text-slate-500 hover:text-blue-600 transition-colors duration-200 flex items-center gap-1">
-                    <X class="w-4 h-4" />
-                    Limpiar filtros
-                </button>
-            </div>
-        </div>
-
-        <!-- Table -->
-        <div class="bg-white shadow-xl rounded-2xl border border-slate-200 overflow-hidden">
+            <!-- Loading / Empty / Table -->
             <!-- Loading -->
             <div v-if="loading" class="p-12 text-center">
                 <Loader2 class="w-8 h-8 mx-auto text-slate-400 animate-spin" />
@@ -329,45 +306,17 @@
             </div>
 
             <!-- Pagination -->
-            <div class="bg-slate-50 px-6 py-4 border-t border-slate-200">
-                <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
-                    <div class="flex items-center gap-2 text-sm text-slate-600">
-                        <span>Mostrar</span>
-                        <select v-model="perPage"
-                            class="border border-slate-200 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 bg-white">
-                            <option :value="10">10</option>
-                            <option :value="15">15</option>
-                            <option :value="25">25</option>
-                            <option :value="50">50</option>
-                        </select>
-                        <span>por página</span>
-                    </div>
-                    <div class="text-sm text-slate-600">
-                        Página {{ currentPage }} de {{ lastPage }}
-                    </div>
-                    <div class="flex items-center gap-1">
-                        <button @click="fetchMovements(1)" :disabled="currentPage === 1"
-                            class="p-2 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
-                            <ChevronsLeft class="w-4 h-4" />
-                        </button>
-                        <button @click="fetchMovements(currentPage - 1)" :disabled="currentPage === 1"
-                            class="p-2 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
-                            <ChevronLeft class="w-4 h-4" />
-                        </button>
-                        <button @click="fetchMovements(currentPage + 1)" :disabled="currentPage === lastPage"
-                            class="p-2 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
-                            <ChevronRight class="w-4 h-4" />
-                        </button>
-                        <button @click="fetchMovements(lastPage)" :disabled="currentPage === lastPage"
-                            class="p-2 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
-                            <ChevronsRight class="w-4 h-4" />
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
+            <ClientPagination
+                :total-items="total"
+                :current-page="currentPage"
+                :per-page="perPage"
+                :per-page-options="[10, 15, 25, 50]"
+                @update:current-page="fetchMovements($event)"
+                @update:per-page="perPage = $event"
+            />
+        </BaseTableCard>
 
-        <!-- Movement Modal (Individual + Masiva) -->
+        <!-- Movement Modal -->
         <MovementModal
             v-if="showMovementModal"
             :states="states"
@@ -393,11 +342,9 @@ import {
     X,
     Plus,
     Loader2,
-    ChevronLeft,
-    ChevronRight,
-    ChevronsLeft,
-    ChevronsRight,
 } from 'lucide-vue-next';
+import BaseTableCard from '@/Components/Common/BaseTableCard.vue';
+import ClientPagination from '@/Components/Common/ClientPagination.vue';
 import axios from 'axios';
 import Swal from 'sweetalert2';
 import MovementModal from '@/Components/Assets/MovementModal.vue';
@@ -407,6 +354,7 @@ const props = defineProps({
     offices:       { type: Array, default: () => [] },
     employees:     { type: Array, default: () => [] },
     movementTypes: { type: Array, default: () => [] },
+    filtersVisible: { type: Boolean, default: true },
 });
 
 // ===== STATS =====
@@ -571,3 +519,16 @@ const setSearch = (code) => {
 
 defineExpose({ openModal, setSearch });
 </script>
+
+<style scoped>
+.filters-collapse {
+    overflow: hidden;
+    max-height: 0;
+    opacity: 0;
+    transition: max-height 0.35s ease, opacity 0.3s ease;
+}
+.filters-collapse--open {
+    max-height: 400px;
+    opacity: 1;
+}
+</style>

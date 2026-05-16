@@ -177,63 +177,54 @@
             </div>
         </div>
 
-        <!-- Filters -->
-        <div class="bg-white shadow-lg rounded-2xl border border-slate-200 p-4">
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div class="lg:col-span-2">
-                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Buscar</label>
-                    <div class="relative">
-                        <Search class="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-slate-400" />
-                        <input v-model="search" type="text"
-                            placeholder="Buscar por c&oacute;digo, denominaci&oacute;n, responsable..."
-                            class="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-sm" />
-                    </div>
-                </div>
+        <!-- Table with Filters -->
+        <BaseTableCard
+            title="Registros de Patrimonio SIGA"
+            description="Datos importados desde el sistema SIGA"
+            search-placeholder="Buscar por código, denominación, responsable..."
+            :search-value="search"
+            @update:search-value="search = $event"
+        >
+            <template #icon>
+                <Database class="w-5 h-5 text-indigo-600" />
+            </template>
 
-                <div>
-                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Estado</label>
-                    <select v-model="filterEstado"
-                        class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-sm bg-white">
-                        <option value="">Todos</option>
-                        <option value="BUENO">BUENO</option>
-                        <option value="REGULAR">REGULAR</option>
-                        <option value="MALO">MALO</option>
-                        <option value="CHATARRA">CHATARRA</option>
-                        <option value="NUEVO">NUEVO</option>
-                    </select>
-                </div>
+            <template #filters>
+                <select v-model="filterEstado"
+                    class="cursor-pointer border-2 border-slate-200 rounded-xl px-3 py-2 text-sm focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 bg-white outline-none transition-all">
+                    <option value="">Todos los estados</option>
+                    <option value="BUENO">BUENO</option>
+                    <option value="REGULAR">REGULAR</option>
+                    <option value="MALO">MALO</option>
+                    <option value="CHATARRA">CHATARRA</option>
+                    <option value="NUEVO">NUEVO</option>
+                </select>
+                <select v-model="filterSincronizado"
+                    class="cursor-pointer border-2 border-slate-200 rounded-xl px-3 py-2 text-sm focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 bg-white outline-none transition-all">
+                    <option value="">Sync: Todos</option>
+                    <option value="true">Sincronizado</option>
+                    <option value="false">No sincronizado</option>
+                </select>
+            </template>
 
-                <div>
-                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Sincronizado</label>
-                    <select v-model="filterSincronizado"
-                        class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-sm bg-white">
-                        <option value="">Todos</option>
-                        <option value="true">Sincronizado</option>
-                        <option value="false">No sincronizado</option>
-                    </select>
-                </div>
-            </div>
-
-            <div class="flex items-center justify-between mt-4 pt-4 border-t border-slate-100">
-                <p class="text-sm text-slate-500">
-                    <span class="font-semibold text-slate-700">{{ total }}</span>
-                    resultados encontrados
-                </p>
+            <template #actions>
+                <span class="text-sm text-slate-500">
+                    <span class="font-semibold text-slate-700">{{ total }}</span> resultados
+                </span>
                 <button @click="clearFilters"
-                    class="text-sm font-semibold text-slate-500 hover:text-blue-600 transition-colors duration-200 flex items-center gap-1">
+                    class="text-sm font-semibold text-slate-500 hover:text-indigo-600 transition-colors duration-200 flex items-center gap-1">
                     <X class="w-4 h-4" />
-                    Limpiar filtros
+                    Limpiar
                 </button>
-            </div>
-        </div>
+            </template>
 
-        <!-- Table -->
-        <div class="bg-white shadow-xl rounded-2xl border border-slate-200 overflow-hidden">
+            <!-- Loading -->
             <div v-if="loading" class="p-12 text-center">
                 <Loader2 class="w-8 h-8 mx-auto text-slate-400 animate-spin" />
                 <p class="text-sm text-slate-400 mt-2">Cargando registros...</p>
             </div>
 
+            <!-- Empty -->
             <template v-else-if="records.length === 0">
                 <div class="px-6 py-16 text-center">
                     <div class="flex flex-col items-center">
@@ -246,12 +237,13 @@
                 </div>
             </template>
 
+            <!-- Table -->
             <div v-else class="overflow-x-auto">
                 <table class="min-w-full divide-y divide-slate-200">
                     <thead class="bg-slate-50">
                         <tr>
-                            <th class="px-4 py-4 text-left text-xs font-bold text-slate-600 uppercase tracking-wider">C&oacute;digo</th>
-                            <th class="px-4 py-4 text-left text-xs font-bold text-slate-600 uppercase tracking-wider">Denominaci&oacute;n</th>
+                            <th class="px-4 py-4 text-left text-xs font-bold text-slate-600 uppercase tracking-wider">Código</th>
+                            <th class="px-4 py-4 text-left text-xs font-bold text-slate-600 uppercase tracking-wider">Denominación</th>
                             <th class="px-4 py-4 text-left text-xs font-bold text-slate-600 uppercase tracking-wider hidden md:table-cell">Marca</th>
                             <th class="px-4 py-4 text-left text-xs font-bold text-slate-600 uppercase tracking-wider hidden lg:table-cell">Serie</th>
                             <th class="px-4 py-4 text-center text-xs font-bold text-slate-600 uppercase tracking-wider hidden md:table-cell">Estado</th>
@@ -291,13 +283,9 @@
                             </td>
                             <td class="px-4 py-4 whitespace-nowrap text-center hidden md:table-cell">
                                 <span v-if="record.sincronizado"
-                                    class="px-2 py-1 text-xs font-bold rounded-full bg-green-100 text-green-700">
-                                    Si
-                                </span>
+                                    class="px-2 py-1 text-xs font-bold rounded-full bg-green-100 text-green-700">Sí</span>
                                 <span v-else
-                                    class="px-2 py-1 text-xs font-bold rounded-full bg-slate-100 text-slate-500">
-                                    No
-                                </span>
+                                    class="px-2 py-1 text-xs font-bold rounded-full bg-slate-100 text-slate-500">No</span>
                             </td>
                         </tr>
                     </tbody>
@@ -305,42 +293,15 @@
             </div>
 
             <!-- Pagination -->
-            <div v-if="records.length > 0" class="bg-slate-50 px-6 py-4 border-t border-slate-200">
-                <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
-                    <div class="flex items-center gap-2 text-sm text-slate-600">
-                        <span>Mostrar</span>
-                        <select v-model="perPage"
-                            class="border border-slate-200 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 bg-white">
-                            <option :value="10">10</option>
-                            <option :value="25">25</option>
-                            <option :value="50">50</option>
-                        </select>
-                        <span>por p&aacute;gina</span>
-                    </div>
-                    <div class="text-sm text-slate-600">
-                        P&aacute;gina {{ currentPage }} de {{ lastPage }}
-                    </div>
-                    <div class="flex items-center gap-1">
-                        <button @click="fetchRecords(1)" :disabled="currentPage === 1"
-                            class="p-2 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed">
-                            <ChevronsLeft class="w-4 h-4" />
-                        </button>
-                        <button @click="fetchRecords(currentPage - 1)" :disabled="currentPage === 1"
-                            class="p-2 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed">
-                            <ChevronLeft class="w-4 h-4" />
-                        </button>
-                        <button @click="fetchRecords(currentPage + 1)" :disabled="currentPage === lastPage"
-                            class="p-2 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed">
-                            <ChevronRight class="w-4 h-4" />
-                        </button>
-                        <button @click="fetchRecords(lastPage)" :disabled="currentPage === lastPage"
-                            class="p-2 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed">
-                            <ChevronsRight class="w-4 h-4" />
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
+            <ClientPagination
+                :total-items="total"
+                :current-page="currentPage"
+                :per-page="perPage"
+                :per-page-options="[10, 25, 50, 100]"
+                @update:current-page="fetchRecords($event)"
+                @update:per-page="perPage = $event"
+            />
+        </BaseTableCard>
     </div>
 </template>
 
@@ -352,19 +313,16 @@ import {
     AlertTriangle,
     Layers,
     Upload,
-    Search,
     X,
     Loader2,
     History,
-    ChevronLeft,
-    ChevronRight,
-    ChevronsLeft,
-    ChevronsRight,
     RefreshCw,
     ChevronDown,
     ChevronUp,
     Zap,
 } from 'lucide-vue-next';
+import BaseTableCard from '@/Components/Common/BaseTableCard.vue';
+import ClientPagination from '@/Components/Common/ClientPagination.vue';
 import axios from 'axios';
 import Swal from 'sweetalert2';
 
