@@ -25,8 +25,8 @@
                         </label>
                         <input v-model="nombre" v-bind="nombreProps" type="text" placeholder="Ej. UNIDAD DE TESORERÍA"
                             @input="nombre = $event.target.value.toUpperCase()"
-                            class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-sky-500 transition-colors"
-                            :class="formErrors.nombre ? 'border-red-400' : 'border-slate-200'" />
+                            class="w-full px-4 py-2.5 border-2 rounded-xl text-slate-900 placeholder:text-slate-400 focus:ring-4 focus:ring-sky-500/20 focus:border-sky-500 transition-all duration-200 outline-none"
+                            :class="formErrors.nombre ? 'border-red-400 focus:border-red-500 focus:ring-red-500/20 bg-red-50' : 'border-slate-200 bg-white'" />
                         <p v-if="formErrors.nombre" class="mt-1 text-sm text-red-600">{{ formErrors.nombre }}</p>
                     </div>
 
@@ -36,8 +36,8 @@
                             <label class="block text-sm font-bold text-slate-700 mb-2">Código Interno</label>
                             <input v-model="codigo" v-bind="codigoProps" type="text" placeholder="Ej. TES-01"
                                 @input="codigo = $event.target.value.toUpperCase()"
-                                class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-sky-500 transition-colors"
-                                :class="formErrors.codigo ? 'border-red-400 bg-red-50' : 'border-slate-200'" />
+                                class="w-full px-4 py-2.5 border-2 rounded-xl text-slate-900 placeholder:text-slate-400 focus:ring-4 focus:ring-sky-500/20 focus:border-sky-500 transition-all duration-200 outline-none"
+                                :class="formErrors.codigo ? 'border-red-400 focus:border-red-500 focus:ring-red-500/20 bg-red-50' : 'border-slate-200 bg-white'" />
                             <p v-if="formErrors.codigo" class="mt-1 text-sm text-red-600">{{ formErrors.codigo }}</p>
                         </div>
                         <!-- Teléfono -->
@@ -45,8 +45,8 @@
                             <label class="block text-sm font-bold text-slate-700 mb-2">Teléfono / Anexo</label>
                             <input v-model="telefono_interno" v-bind="telefonoProps" type="text"
                                 placeholder="Ej. Anexo 205"
-                                class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-sky-500 transition-colors"
-                                :class="formErrors.telefono_interno ? 'border-red-400 bg-red-50' : 'border-slate-200'" />
+                                class="w-full px-4 py-2.5 border-2 rounded-xl text-slate-900 placeholder:text-slate-400 focus:ring-4 focus:ring-sky-500/20 focus:border-sky-500 transition-all duration-200 outline-none"
+                                :class="formErrors.telefono_interno ? 'border-red-400 focus:border-red-500 focus:ring-red-500/20 bg-red-50' : 'border-slate-200 bg-white'" />
                             <p v-if="formErrors.telefono_interno" class="mt-1 text-sm text-red-600">{{
                                 formErrors.telefono_interno }}</p>
                         </div>
@@ -59,8 +59,8 @@
                             <MapPin class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                             <input v-model="ubicacion" v-bind="ubicacionProps" type="text"
                                 placeholder="Ej. 2do Piso, Pabellón Administrativo"
-                                class="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-sky-500 transition-colors"
-                                :class="formErrors.ubicacion ? 'border-red-400 bg-red-50' : 'border-slate-200'" />
+                                class="w-full pl-10 pr-4 py-2.5 border-2 rounded-xl text-slate-900 placeholder:text-slate-400 focus:ring-4 focus:ring-sky-500/20 focus:border-sky-500 transition-all duration-200 outline-none"
+                                :class="formErrors.ubicacion ? 'border-red-400 focus:border-red-500 focus:ring-red-500/20 bg-red-50' : 'border-slate-200 bg-white'" />
                         </div>
                         <p v-if="formErrors.ubicacion" class="mt-1 text-sm text-red-600">{{ formErrors.ubicacion }}</p>
                     </div>

@@ -27,8 +27,8 @@
                                 <input v-model="nombre" v-bind="nombreProps" type="text"
                                     placeholder="Ej. DIRECCIÓN REGIONAL DE EDUCACIÓN"
                                     @input="nombre = $event.target.value.toUpperCase()"
-                                    class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-blue-500 transition-colors"
-                                    :class="formErrors.nombre ? 'border-red-400 bg-red-50' : 'border-slate-200'" />
+                                    class="w-full px-4 py-2.5 border-2 rounded-xl text-slate-900 placeholder:text-slate-400 focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200 outline-none"
+                                    :class="formErrors.nombre ? 'border-red-400 focus:border-red-500 focus:ring-red-500/20 bg-red-50' : 'border-slate-200 bg-white'" />
                                 <p v-if="formErrors.nombre" class="mt-1 text-sm text-red-600">{{ formErrors.nombre }}
                                 </p>
                             </div>
@@ -36,8 +36,8 @@
                                 <label class="block text-sm font-bold text-slate-700 mb-2">Abreviación</label>
                                 <input v-model="abreviacion" v-bind="abreviacionProps" type="text" placeholder="Ej. DRE"
                                     @input="abreviacion = $event.target.value.toUpperCase()"
-                                    class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 transition-colors"
-                                    :class="formErrors.abreviacion ? 'border-red-400 bg-red-50' : 'border-slate-200'" />
+                                    class="w-full px-4 py-2.5 border-2 rounded-xl text-slate-900 placeholder:text-slate-400 focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200 outline-none"
+                                    :class="formErrors.abreviacion ? 'border-red-400 focus:border-red-500 focus:ring-red-500/20 bg-red-50' : 'border-slate-200 bg-white'" />
                                 <p v-if="formErrors.abreviacion" class="mt-1 text-sm text-red-600">{{
                                     formErrors.abreviacion }}</p>
                             </div>
@@ -48,8 +48,8 @@
                                 <label class="block text-sm font-bold text-slate-700 mb-2">Código Interno</label>
                                 <input v-model="codigo" v-bind="codigoProps" type="text" placeholder="Ej. DIR-01"
                                     @input="codigo = $event.target.value.toUpperCase()"
-                                    class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 transition-colors"
-                                    :class="formErrors.codigo ? 'border-red-400 bg-red-50' : 'border-slate-200'" />
+                                    class="w-full px-4 py-2.5 border-2 rounded-xl text-slate-900 placeholder:text-slate-400 focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200 outline-none"
+                                    :class="formErrors.codigo ? 'border-red-400 focus:border-red-500 focus:ring-red-500/20 bg-red-50' : 'border-slate-200 bg-white'" />
                                 <p v-if="formErrors.codigo" class="mt-1 text-sm text-red-600">{{ formErrors.codigo }}
                                 </p>
                             </div>
@@ -57,8 +57,8 @@
                                 <label class="block text-sm font-bold text-slate-700 mb-2">Teléfono / Anexo</label>
                                 <input v-model="telefono_interno" v-bind="telefonoInternoProps" type="text"
                                     placeholder="Ej. Anexo 100"
-                                    class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 transition-colors"
-                                    :class="formErrors.telefono_interno ? 'border-red-400 bg-red-50' : 'border-slate-200'" />
+                                    class="w-full px-4 py-2.5 border-2 rounded-xl text-slate-900 placeholder:text-slate-400 focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200 outline-none"
+                                    :class="formErrors.telefono_interno ? 'border-red-400 focus:border-red-500 focus:ring-red-500/20 bg-red-50' : 'border-slate-200 bg-white'" />
                                 <p v-if="formErrors.telefono_interno" class="mt-1 text-sm text-red-600">{{
                                     formErrors.telefono_interno }}</p>
                             </div>
@@ -70,8 +70,8 @@
                                 <MapPin class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                                 <input v-model="ubicacion" v-bind="ubicacionProps" type="text"
                                     placeholder="Ej. 1er Piso, Sede Central"
-                                    class="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 transition-colors"
-                                    :class="formErrors.ubicacion ? 'border-red-400 bg-red-50' : 'border-slate-200'" />
+                                    class="w-full pl-10 pr-4 py-2.5 border-2 rounded-xl text-slate-900 placeholder:text-slate-400 focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200 outline-none"
+                                    :class="formErrors.ubicacion ? 'border-red-400 focus:border-red-500 focus:ring-red-500/20 bg-red-50' : 'border-slate-200 bg-white'" />
                             </div>
                             <p v-if="formErrors.ubicacion" class="mt-1 text-sm text-red-600">{{ formErrors.ubicacion }}
                             </p>
@@ -81,8 +81,8 @@
                             <label class="block text-sm font-bold text-slate-700 mb-2">Descripción</label>
                             <textarea v-model="descripcion" v-bind="descripcionProps" rows="2"
                                 placeholder="Breve descripción de la dirección..."
-                                class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 resize-none"
-                                :class="formErrors.descripcion ? 'border-red-400 bg-red-50' : 'border-slate-200'"></textarea>
+                                class="w-full px-4 py-3 border-2 rounded-xl text-slate-900 placeholder:text-slate-400 focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200 outline-none resize-none"
+                                :class="formErrors.descripcion ? 'border-red-400 focus:border-red-500 focus:ring-red-500/20 bg-red-50' : 'border-slate-200 bg-white'"></textarea>
                             <p v-if="formErrors.descripcion" class="mt-1 text-sm text-red-600">{{ formErrors.descripcion
                                 }}</p>
                         </div>
@@ -98,7 +98,7 @@
                                     <Search
                                         class="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
                                     <input v-model="officeQuery" type="text" placeholder="Filtrar oficinas..."
-                                        class="w-full pl-8 pr-3 py-1.5 text-xs border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500 bg-white" />
+                                        class="w-full pl-8 pr-3 py-1.5 text-xs border-2 border-slate-200 rounded-lg outline-none text-slate-900 placeholder:text-slate-400 focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 bg-white transition-all duration-200" />
                                 </div>
                             </div>
 

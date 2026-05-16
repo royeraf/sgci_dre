@@ -1,5 +1,5 @@
 <template>
-    <div class="bg-white shadow-lg rounded-2xl border border-slate-200 p-4 mb-6">
+    <div class="flex flex-col gap-4">
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <!-- Search -->
             <div class="lg:col-span-1">
@@ -9,7 +9,7 @@
                     <input type="text" :value="filters.search"
                         @input="$emit('update:filters', { ...filters, search: $event.target.value })"
                         placeholder="Buscar por nombre, DNI o cargo..."
-                        class="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all duration-200 text-sm" />
+                        class="w-full pl-10 pr-4 py-2.5 border-2 border-slate-200 rounded-xl bg-white text-slate-900 placeholder:text-slate-400 focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all duration-200 text-sm outline-none cursor-pointer" />
                 </div>
             </div>
 
@@ -18,7 +18,7 @@
                 <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Dirección</label>
                 <select :value="filters.direction"
                     @change="$emit('update:filters', { ...filters, direction: $event.target.value })"
-                    class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all duration-200 text-sm bg-white">
+                    class="w-full px-4 py-2.5 border-2 border-slate-200 rounded-xl bg-white text-slate-900 focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all duration-200 text-sm outline-none cursor-pointer">
                     <option value="">Todas las direcciones</option>
                     <option v-for="direction in directions" :key="direction.id" :value="direction.nombre">
                         {{ direction.nombre }}
@@ -31,7 +31,7 @@
                 <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Cargo</label>
                 <select :value="filters.position"
                     @change="$emit('update:filters', { ...filters, position: $event.target.value })"
-                    class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all duration-200 text-sm bg-white">
+                    class="w-full px-4 py-2.5 border-2 border-slate-200 rounded-xl bg-white text-slate-900 focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all duration-200 text-sm outline-none cursor-pointer">
                     <option value="">Todos los cargos</option>
                     <option v-for="pos in positions" :key="pos.id" :value="pos.nombre">
                         {{ pos.nombre }}
@@ -45,7 +45,7 @@
                     Contrato</label>
                 <select :value="filters.contractType"
                     @change="$emit('update:filters', { ...filters, contractType: $event.target.value })"
-                    class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all duration-200 text-sm bg-white">
+                    class="w-full px-4 py-2.5 border-2 border-slate-200 rounded-xl bg-white text-slate-900 focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all duration-200 text-sm outline-none cursor-pointer">
                     <option value="">Todos los tipos</option>
                     <option v-for="type in contractTypes" :key="type.id" :value="type.id">
                         {{ type.nombre }}

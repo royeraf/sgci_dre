@@ -22,8 +22,8 @@
                         <label class="block text-sm font-bold text-slate-700 mb-2">Empleado <span
                                 class="text-red-500">*</span></label>
                         <select v-model="empleadoId"
-                            class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-orange-500 bg-white"
-                            :class="formErrors.empleado_id ? 'border-red-400' : 'border-slate-200'">
+                            class="w-full px-4 py-2.5 border-2 rounded-xl text-slate-900 focus:ring-4 focus:ring-orange-500/20 focus:border-orange-500 bg-white transition-all duration-200 outline-none cursor-pointer"
+                            :class="formErrors.empleado_id ? 'border-red-400 focus:border-red-500 focus:ring-red-500/20 bg-red-50' : 'border-slate-200'">
                             <option value="">Seleccione al empleado...</option>
                             <option v-for="emp in employees" :key="emp.id" :value="emp.id">{{ emp.dni }} - {{
                                 emp.nombres }} {{ emp.apellidos }}</option>
@@ -37,8 +37,8 @@
                             <label class="block text-sm font-bold text-slate-700 mb-2">Fecha Inicio <span
                                     class="text-red-500">*</span></label>
                             <input v-model="fechaInicio" type="date"
-                                class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-orange-500"
-                                :class="formErrors.fecha_inicio ? 'border-red-400' : 'border-slate-200'" />
+                                class="w-full px-4 py-2.5 border-2 rounded-xl text-slate-900 focus:ring-4 focus:ring-orange-500/20 focus:border-orange-500 transition-all duration-200 outline-none bg-white cursor-pointer"
+                                :class="formErrors.fecha_inicio ? 'border-red-400 focus:border-red-500 focus:ring-red-500/20 bg-red-50' : 'border-slate-200'" />
                             <p v-if="formErrors.fecha_inicio" class="mt-1 text-sm text-red-600">{{
                                 formErrors.fecha_inicio }}</p>
                         </div>
@@ -46,8 +46,8 @@
                             <label class="block text-sm font-bold text-slate-700 mb-2">Fecha Fin <span
                                     class="text-red-500">*</span></label>
                             <input v-model="fechaFin" type="date"
-                                class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-orange-500"
-                                :class="formErrors.fecha_fin ? 'border-red-400' : 'border-slate-200'" />
+                                class="w-full px-4 py-2.5 border-2 rounded-xl text-slate-900 focus:ring-4 focus:ring-orange-500/20 focus:border-orange-500 transition-all duration-200 outline-none bg-white cursor-pointer"
+                                :class="formErrors.fecha_fin ? 'border-red-400 focus:border-red-500 focus:ring-red-500/20 bg-red-50' : 'border-slate-200'" />
                             <p v-if="formErrors.fecha_fin" class="mt-1 text-sm text-red-600">{{ formErrors.fecha_fin }}
                             </p>
                         </div>
@@ -56,7 +56,7 @@
                     <div>
                         <label class="block text-sm font-bold text-slate-700 mb-2">Observaciones</label>
                         <textarea v-model="observaciones" rows="3" placeholder="Detalles adicionales..."
-                            class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-orange-500 resize-none"></textarea>
+                            class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl bg-white text-slate-900 placeholder:text-slate-400 focus:ring-4 focus:ring-orange-500/20 focus:border-orange-500 transition-all duration-200 outline-none resize-none"></textarea>
                     </div>
 
                     <div class="flex justify-end gap-3 pt-4 border-t border-slate-200 font-bold">

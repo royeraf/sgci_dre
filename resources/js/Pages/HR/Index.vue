@@ -11,149 +11,239 @@
                     <p class="mt-2 text-slate-600">Gestión integral del personal DRE Huánuco</p>
                 </div>
                 <div class="flex flex-wrap gap-2">
-                    <button v-if="activeTab === 'personal'" @click="createNewEmployee"
-                        class="inline-flex items-center px-5 py-2.5 text-sm font-bold rounded-xl shadow-lg text-white bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 transition-all">
-                        <UserPlus class="w-5 h-5 mr-2" />
-                        Nuevo Empleado
-                    </button>
-                    <button v-if="activeTab === 'directions'" @click="createNewDirection"
-                        class="inline-flex items-center px-5 py-2.5 text-sm font-bold rounded-xl shadow-lg text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 transition-all">
-                        <Plus class="w-5 h-5 mr-2" />
-                        Nueva Dirección
-                    </button>
-                    <button v-if="activeTab === 'directions'" @click="createNewOffice"
-                        class="inline-flex items-center px-5 py-2.5 text-sm font-bold rounded-xl shadow-lg text-white bg-gradient-to-r from-sky-600 to-cyan-600 hover:from-sky-700 hover:to-cyan-700 transition-all">
-                        <Plus class="w-5 h-5 mr-2" />
-                        Nueva Oficina
-                    </button>
-                    <button v-if="activeTab === 'cargos'" @click="createNewPosition"
-                        class="inline-flex items-center px-5 py-2.5 text-sm font-bold rounded-xl shadow-lg text-white bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 transition-all">
-                        <Plus class="w-5 h-5 mr-2" />
-                        Nuevo Cargo
-                    </button>
-                    <button v-if="activeTab === 'vacaciones'" @click="showVacationModal = true"
-                        class="inline-flex items-center px-5 py-2.5 text-sm font-bold rounded-xl shadow-lg text-white bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 transition-all">
-                        <CalendarPlus class="w-5 h-5 mr-2" />
-                        Registrar Vacaciones
-                    </button>
-                    <button v-if="activeTab === 'tipos_contrato'" @click="createNewContractType"
-                        class="inline-flex items-center px-5 py-2.5 text-sm font-bold rounded-xl shadow-lg text-white bg-gradient-to-r from-gray-600 to-gray-800 hover:from-gray-700 hover:to-gray-900 transition-all">
-                        <Plus class="w-5 h-5 mr-2" />
-                        Nuevo Tipo
-                    </button>
                 </div>
             </div>
 
             <!-- Summary Cards -->
             <SummaryCards :summary="summary" />
 
-            <!-- Tabs -->
-            <div class="border-b border-gray-200 mb-6">
-                <nav class="-mb-px flex space-x-8 overflow-x-auto pb-1 scrollbar-hide">
+            <!-- Tabs Navigation -->
+            <div class="border-b border-slate-200 mb-8 relative">
+                <nav ref="tabsRef" class="-mb-px flex">
                     <button v-if="canViewTab('personal')" @click="activeTab = 'personal'"
-                        :class="[activeTab === 'personal' ? 'border-emerald-500 text-emerald-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300', 'whitespace-nowrap py-4 px-1 border-b-2 font-bold text-sm flex items-center gap-2 transition-colors']">
+                        :class="[activeTab === 'personal' ? 'text-emerald-600 active-tab' : 'text-slate-500 hover:text-slate-700', 'cursor-pointer whitespace-nowrap py-4 px-5 font-bold text-sm flex items-center gap-2 transition-colors duration-300']">
                         <Users class="w-5 h-5" />
                         Personal
                     </button>
                     <button v-if="canViewTab('vacaciones')" @click="activeTab = 'vacaciones'"
-                        :class="[activeTab === 'vacaciones' ? 'border-orange-500 text-orange-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300', 'whitespace-nowrap py-4 px-1 border-b-2 font-bold text-sm flex items-center gap-2 transition-colors']">
+                        :class="[activeTab === 'vacaciones' ? 'text-orange-600 active-tab' : 'text-slate-500 hover:text-slate-700', 'cursor-pointer whitespace-nowrap py-4 px-5 font-bold text-sm flex items-center gap-2 transition-colors duration-300']">
                         <Calendar class="w-5 h-5" />
                         Vacaciones
                     </button>
                     <button v-if="canViewTab('directions')" @click="activeTab = 'directions'"
-                        :class="[activeTab === 'directions' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300', 'whitespace-nowrap py-4 px-1 border-b-2 font-bold text-sm flex items-center gap-2 transition-colors']">
+                        :class="[activeTab === 'directions' ? 'text-blue-600 active-tab' : 'text-slate-500 hover:text-slate-700', 'cursor-pointer whitespace-nowrap py-4 px-5 font-bold text-sm flex items-center gap-2 transition-colors duration-300']">
                         <Building2 class="w-5 h-5" />
                         Direcciones / Oficinas
                     </button>
                     <button v-if="canViewTab('cargos')" @click="activeTab = 'cargos'"
-                        :class="[activeTab === 'cargos' ? 'border-purple-500 text-purple-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300', 'whitespace-nowrap py-4 px-1 border-b-2 font-bold text-sm flex items-center gap-2 transition-colors']">
+                        :class="[activeTab === 'cargos' ? 'text-purple-600 active-tab' : 'text-slate-500 hover:text-slate-700', 'cursor-pointer whitespace-nowrap py-4 px-5 font-bold text-sm flex items-center gap-2 transition-colors duration-300']">
                         <Briefcase class="w-5 h-5" />
                         Cargos / Puestos
                     </button>
                     <button v-if="canViewTab('tipos_contrato')" @click="activeTab = 'tipos_contrato'"
-                        :class="[activeTab === 'tipos_contrato' ? 'border-gray-500 text-gray-800' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300', 'whitespace-nowrap py-4 px-1 border-b-2 font-bold text-sm flex items-center gap-2 transition-colors']">
+                        :class="[activeTab === 'tipos_contrato' ? 'text-slate-800 active-tab' : 'text-slate-500 hover:text-slate-700', 'cursor-pointer whitespace-nowrap py-4 px-5 font-bold text-sm flex items-center gap-2 transition-colors duration-300']">
                         <FileText class="w-5 h-5" />
                         Tipos de Contrato
                     </button>
                 </nav>
+                <!-- Gliding Indicator -->
+                <div class="absolute bottom-0 h-0.5 transition-all duration-300 ease-out" :style="indicatorStyle"></div>
             </div>
 
             <!-- Personal Tab -->
             <div v-if="activeTab === 'personal'">
-                <EmployeeFilters :filters="localFilters" :result-count="filteredEmployees.length"
-                    :directions="directions" :positions="positions" :contract-types="contractTypes"
-                    @update:filters="localFilters = $event" @clear="clearFilters" />
+                <div class="bg-white shadow-xl rounded-2xl border border-slate-200 overflow-hidden">
+                    <!-- Table Title -->
+                    <div class="px-4 sm:px-5 py-4 border-b border-slate-200 bg-slate-50">
+                        <h2 class="text-base font-bold text-slate-800">Listado de Personal</h2>
+                        <p class="text-xs text-slate-500 font-medium mt-0.5">Lista completa de empleados registrados en el sistema</p>
+                    </div>
 
-                <EmployeeTable :employees="filteredEmployees" :loading="isLoading" v-model:currentPage="currentPage"
-                    v-model:perPage="perPage" @view="viewEmployee" @edit="editEmployee" />
+                    <!-- Top row: Actions -->
+                    <div class="p-4 sm:p-5 border-b border-slate-100 flex flex-col lg:flex-row items-stretch lg:items-center justify-end gap-4 bg-white">
+                        <div class="flex items-center justify-end gap-3 shrink-0">
+                            <button
+                                @click="filtersVisible = !filtersVisible"
+                                class="cursor-pointer inline-flex justify-center items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-sm font-bold text-slate-600 hover:bg-slate-50 transition-all duration-200 shadow-sm"
+                            >
+                                <SlidersHorizontal class="w-4 h-4" />
+                                Filtros
+                                <ChevronDown
+                                    class="w-4 h-4 transition-transform duration-300"
+                                    :class="{ 'rotate-180': filtersVisible }"
+                                />
+                            </button>
+
+                            <button @click="createNewEmployee"
+                                class="cursor-pointer inline-flex items-center px-5 py-2.5 text-sm font-bold rounded-xl shadow-lg shadow-emerald-500/30 text-white bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 transition-all duration-300 hover:-translate-y-0.5">
+                                <UserPlus class="w-4 h-4 mr-2" />
+                                Nuevo Empleado
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Filters toggle + collapsible panel -->
+                    <div
+                        class="filters-collapse bg-slate-50 border-b border-slate-100"
+                        :class="{ 'filters-collapse--open': filtersVisible }"
+                    >
+                        <div class="p-4 sm:p-5">
+                            <EmployeeFilters :filters="localFilters" :result-count="filteredEmployees.length"
+                                :directions="directions" :positions="positions" :contract-types="contractTypes"
+                                @update:filters="localFilters = $event" @clear="clearFilters" />
+                        </div>
+                    </div>
+
+                    <EmployeeTable :employees="filteredEmployees" :loading="isLoading" v-model:currentPage="currentPage"
+                        v-model:perPage="perPage" @view="viewEmployee" @edit="editEmployee" />
+                </div>
             </div>
 
             <!-- Vacaciones Tab -->
-            <div v-if="activeTab === 'vacaciones'" class="space-y-6">
-                <VacationTable :vacations="vacations" @viewDetail="viewVacationDetail" @edit="editVacation"
-                    @delete="handleDeleteVacation" />
+            <div v-if="activeTab === 'vacaciones'">
+                <div class="bg-white shadow-xl rounded-2xl border border-slate-200 overflow-hidden">
+                    <div class="px-4 sm:px-5 py-4 border-b border-slate-200 bg-slate-50">
+                        <h2 class="text-base font-bold text-slate-800">Listado de Vacaciones</h2>
+                        <p class="text-xs text-slate-500 font-medium mt-0.5">Control y registro de vacaciones del personal</p>
+                    </div>
+
+                    <div class="p-4 sm:p-5 border-b border-slate-100 flex flex-col lg:flex-row items-stretch lg:items-center justify-end gap-4 bg-white">
+                        <div class="flex items-center justify-end gap-3 shrink-0">
+                            <button @click="showVacationModal = true"
+                                class="cursor-pointer inline-flex items-center px-5 py-2.5 text-sm font-bold rounded-xl shadow-lg shadow-orange-500/30 text-white bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 transition-all duration-300 hover:-translate-y-0.5">
+                                <CalendarPlus class="w-4 h-4 mr-2" />
+                                Registrar Vacaciones
+                            </button>
+                        </div>
+                    </div>
+
+                    <VacationTable :vacations="vacations" @viewDetail="viewVacationDetail" @edit="editVacation"
+                        @delete="handleDeleteVacation" />
+                </div>
             </div>
 
             <!-- Direcciones Tab -->
-            <div v-if="activeTab === 'directions'" class="space-y-6">
-                <!-- Search and Stats -->
-                <div
-                    class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div class="relative flex-1 max-w-md">
-                        <Search class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-                        <input v-model="directionSearch" type="text" placeholder="Buscar dirección u oficina..."
-                            class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border-transparent focus:bg-white focus:ring-2 focus:ring-blue-500 rounded-xl text-sm transition-all outline-none" />
-                    </div>
-                    <div class="flex items-center gap-6 px-2">
-                        <div class="text-center">
-                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Direcciones</p>
-                            <p class="text-xl font-black text-blue-600">{{ directions.length }}</p>
+            <div v-if="activeTab === 'directions'">
+                <div class="bg-white shadow-xl rounded-2xl border border-slate-200 overflow-hidden">
+                    <!-- Table Title & Sub-tabs -->
+                    <div class="p-5 sm:p-6 border-b border-slate-200 bg-slate-50 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                        <div>
+                            <h2 class="text-lg font-bold text-slate-800">Direcciones y Oficinas</h2>
+                            <p class="text-sm text-slate-500 font-medium mt-1">Gestión estructural y áreas principales de la DRE</p>
                         </div>
-                        <div class="w-px h-8 bg-slate-200"></div>
-                        <div class="text-center">
-                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Oficinas</p>
-                            <p class="text-xl font-black text-indigo-600">{{ offices.length }}</p>
+                        
+                        <!-- Sub-tabs: Direcciones / Oficinas -->
+                        <div class="flex items-center gap-1 bg-blue-50 rounded-full p-1.5 w-fit shrink-0">
+                            <button
+                                v-for="tab in directionTabs" :key="tab.key"
+                                @click="activeDirectionTab = tab.key"
+                                :class="[
+                                    activeDirectionTab === tab.key
+                                        ? 'bg-white text-blue-900 shadow-md'
+                                        : 'text-blue-600 hover:text-blue-800',
+                                    'cursor-pointer px-4 py-2 rounded-full text-xs font-semibold transition-all duration-200 flex items-center gap-2 outline-none'
+                                ]">
+                                {{ tab.label }}
+                                <span :class="[
+                                    activeDirectionTab === tab.key
+                                        ? 'bg-blue-500 text-white'
+                                        : 'bg-blue-200 text-blue-700',
+                                    'text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center transition-colors'
+                                ]">{{ tab.count }}</span>
+                            </button>
                         </div>
                     </div>
-                </div>
 
-                <!-- Direcciones Section -->
-                <div v-if="filteredDirectionsManagement.length > 0">
-                    <div class="flex items-center gap-2 mb-4 px-1">
-                        <Building2 class="w-5 h-5 text-blue-600" />
-                        <h3 class="text-lg font-bold text-slate-800 tracking-tight">Direcciones y Áreas Principales</h3>
+                    <!-- Search and Actions Row -->
+                    <div class="p-4 sm:p-5 border-b border-slate-100 flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4 bg-white">
+                        <div class="relative flex-1 max-w-md">
+                            <Search class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                            <input v-model="directionSearch" type="text" placeholder="Buscar dirección u oficina..."
+                                class="w-full pl-10 pr-4 py-2.5 border-2 border-slate-200 rounded-xl bg-white text-slate-900 placeholder:text-slate-400 focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200 text-sm outline-none cursor-pointer" />
+                        </div>
+                        <div class="flex items-center justify-end gap-3 shrink-0">
+                            <button v-if="activeDirectionTab === 'direcciones'" @click="createNewDirection"
+                                class="cursor-pointer inline-flex items-center px-4 py-2.5 text-sm font-bold rounded-xl shadow-lg shadow-blue-500/30 text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 hover:-translate-y-0.5">
+                                <Plus class="w-4 h-4 mr-2" />
+                                Nueva Dirección
+                            </button>
+                            <button v-if="activeDirectionTab === 'oficinas'" @click="createNewOffice"
+                                class="cursor-pointer inline-flex items-center px-4 py-2.5 text-sm font-bold rounded-xl shadow-lg shadow-sky-500/30 text-white bg-gradient-to-r from-sky-600 to-cyan-600 hover:from-sky-700 hover:to-cyan-700 transition-all duration-300 hover:-translate-y-0.5">
+                                <Plus class="w-4 h-4 mr-2" />
+                                Nueva Oficina
+                            </button>
+                        </div>
                     </div>
-                    <DirectionTable :directions="filteredDirectionsManagement" @edit="editDirection"
-                        @delete="handleDeleteDirection" @viewOffices="viewDirectionOffices" />
-                </div>
 
-                <!-- Oficinas Section -->
-                <div v-if="filteredOfficesManagement.length > 0">
-                    <div class="flex items-center gap-2 mb-4 pt-4 px-1 border-t border-slate-100">
-                        <Building2 class="w-5 h-5 text-indigo-600" />
-                        <h3 class="text-lg font-bold text-slate-800 tracking-tight">Oficinas y Unidades Orgánicas</h3>
-                    </div>
-                    <OfficeTable :offices="filteredOfficesManagement" @edit="editOffice" @delete="handleDeleteOffice" />
-                </div>
-
-                <!-- Empty State -->
-                <div v-if="filteredDirectionsManagement.length === 0 && filteredOfficesManagement.length === 0"
-                    class="py-20 text-center bg-white rounded-2xl border border-dashed border-slate-300">
-                    <Search class="w-12 h-12 text-slate-300 mx-auto mb-4" />
-                    <p class="text-slate-500 font-medium">No se encontraron resultados para "{{ directionSearch }}"</p>
-                    <button @click="directionSearch = ''"
-                        class="mt-4 text-sm font-bold text-blue-600 hover:underline">Limpiar búsqueda</button>
+                    <!-- Render Table based on active tab -->
+                    <Transition name="fade-slide" mode="out-in">
+                        <div :key="activeDirectionTab">
+                            <div v-if="activeDirectionTab === 'direcciones'">
+                                <DirectionTable v-if="filteredDirectionsManagement.length > 0" :directions="filteredDirectionsManagement" @edit="editDirection"
+                                    @delete="handleDeleteDirection" @viewOffices="viewDirectionOffices" />
+                                <div v-else class="py-20 text-center bg-white">
+                                    <Search class="w-12 h-12 text-slate-300 mx-auto mb-4" />
+                                    <p class="text-slate-500 font-medium">No se encontraron resultados para "{{ directionSearch }}"</p>
+                                    <button @click="directionSearch = ''"
+                                        class="mt-4 text-sm font-bold text-blue-600 hover:underline">Limpiar búsqueda</button>
+                                </div>
+                            </div>
+                            <div v-if="activeDirectionTab === 'oficinas'">
+                                <OfficeTable v-if="filteredOfficesManagement.length > 0" :offices="filteredOfficesManagement" @edit="editOffice" @delete="handleDeleteOffice" />
+                                <div v-else class="py-20 text-center bg-white">
+                                    <Search class="w-12 h-12 text-slate-300 mx-auto mb-4" />
+                                    <p class="text-slate-500 font-medium">No se encontraron resultados para "{{ directionSearch }}"</p>
+                                    <button @click="directionSearch = ''"
+                                        class="mt-4 text-sm font-bold text-blue-600 hover:underline">Limpiar búsqueda</button>
+                                </div>
+                            </div>
+                        </div>
+                    </Transition>
                 </div>
             </div>
 
             <!-- Cargos Tab -->
-            <div v-if="activeTab === 'cargos'" class="space-y-6">
-                <PositionTable :positions="positions" @edit="editPosition" @delete="handleDeletePosition" />
+            <div v-if="activeTab === 'cargos'">
+                <div class="bg-white shadow-xl rounded-2xl border border-slate-200 overflow-hidden">
+                    <div class="px-4 sm:px-5 py-4 border-b border-slate-200 bg-slate-50">
+                        <h2 class="text-base font-bold text-slate-800">Listado de Cargos</h2>
+                        <p class="text-xs text-slate-500 font-medium mt-0.5">Gestión de puestos y funciones laborales</p>
+                    </div>
+
+                    <div class="p-4 sm:p-5 border-b border-slate-100 flex flex-col lg:flex-row items-stretch lg:items-center justify-end gap-4 bg-white">
+                        <div class="flex items-center justify-end gap-3 shrink-0">
+                            <button @click="createNewPosition"
+                                class="cursor-pointer inline-flex items-center px-5 py-2.5 text-sm font-bold rounded-xl shadow-lg shadow-purple-500/30 text-white bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 transition-all duration-300 hover:-translate-y-0.5">
+                                <Plus class="w-4 h-4 mr-2" />
+                                Nuevo Cargo
+                            </button>
+                        </div>
+                    </div>
+
+                    <PositionTable :positions="positions" @edit="editPosition" @delete="handleDeletePosition" />
+                </div>
             </div>
 
             <!-- Tipos de Contrato Tab -->
-            <div v-if="activeTab === 'tipos_contrato'" class="space-y-6">
-                <ContractTypeTable :types="contractTypes" @edit="editContractType" @delete="handleDeleteContractType" />
+            <div v-if="activeTab === 'tipos_contrato'">
+                <div class="bg-white shadow-xl rounded-2xl border border-slate-200 overflow-hidden">
+                    <div class="px-4 sm:px-5 py-4 border-b border-slate-200 bg-slate-50">
+                        <h2 class="text-base font-bold text-slate-800">Tipos de Contrato</h2>
+                        <p class="text-xs text-slate-500 font-medium mt-0.5">Clasificación de regímenes laborales (CAS, Nombrado, etc.)</p>
+                    </div>
+
+                    <div class="p-4 sm:p-5 border-b border-slate-100 flex flex-col lg:flex-row items-stretch lg:items-center justify-end gap-4 bg-white">
+                        <div class="flex items-center justify-end gap-3 shrink-0">
+                            <button @click="createNewContractType"
+                                class="cursor-pointer inline-flex items-center px-5 py-2.5 text-sm font-bold rounded-xl shadow-lg shadow-gray-500/30 text-white bg-gradient-to-r from-gray-600 to-gray-800 hover:from-gray-700 hover:to-gray-900 transition-all duration-300 hover:-translate-y-0.5">
+                                <Plus class="w-4 h-4 mr-2" />
+                                Nuevo Tipo
+                            </button>
+                        </div>
+                    </div>
+
+                    <ContractTypeTable :types="contractTypes" @edit="editContractType" @delete="handleDeleteContractType" />
+                </div>
             </div>
 
             <!-- Modals -->
@@ -210,11 +300,11 @@ export default {
 </script>
 
 <script setup>
-import { ref, onMounted, computed, watch } from 'vue';
+import { ref, onMounted, computed, watch, nextTick } from 'vue';
 import { useTabPermission } from '@/composables/useTabPermission';
 import axios from 'axios';
 import {
-    Users, UserPlus, Calendar, Plus, Building2, CalendarPlus, Briefcase, FileText, Search
+    Users, UserPlus, Calendar, Plus, Building2, CalendarPlus, Briefcase, FileText, Search, SlidersHorizontal, ChevronDown
 } from 'lucide-vue-next';
 
 // Components
@@ -238,6 +328,7 @@ import DirectionOfficesModal from '@/Components/HR/Directions/DirectionOfficesMo
 
 const { canViewTab, firstAllowedTab } = useTabPermission('recursos_humanos', ['personal', 'vacaciones', 'directions', 'cargos', 'tipos_contrato']);
 const activeTab = ref(firstAllowedTab.value);
+const activeDirectionTab = ref('direcciones');
 const isLoading = ref(false);
 const isSubmitting = ref(false);
 
@@ -252,6 +343,12 @@ const localFilters = ref({
 const currentPage = ref(1);
 const perPage = ref(10);
 
+const FILTERS_STORAGE_KEY = 'hr_filters_open';
+const filtersVisible = ref(
+    localStorage.getItem(FILTERS_STORAGE_KEY) === 'true'
+);
+watch(filtersVisible, (val) => localStorage.setItem(FILTERS_STORAGE_KEY, String(val)));
+
 watch(localFilters, () => {
     currentPage.value = 1;
 }, { deep: true });
@@ -263,6 +360,11 @@ const offices = ref([]);
 const positions = ref([]);
 const contractTypes = ref([]);
 const summary = ref({});
+
+const directionTabs = computed(() => [
+    { key: 'direcciones', label: 'Direcciones', count: directions.value.length },
+    { key: 'oficinas', label: 'Oficinas', count: offices.value.length }
+]);
 
 const showEmployeeModal = ref(false);
 const showVacationModal = ref(false);
@@ -721,5 +823,52 @@ const closeViewEmployeeModal = () => {
 
 onMounted(() => {
     fetchData();
+    nextTick(updateIndicator);
 });
+
+watch(activeTab, () => {
+    nextTick(updateIndicator);
+});
+
+// Tab indicator logic
+const tabsRef = ref(null);
+const indicatorStyle = ref({ left: '0px', width: '0px', backgroundColor: '' });
+
+const getIndicatorColor = (tab) => {
+    switch (tab) {
+        case 'personal': return '#10b981'; // emerald-500
+        case 'vacaciones': return '#f97316'; // orange-500
+        case 'directions': return '#3b82f6'; // blue-500
+        case 'cargos': return '#a855f7'; // purple-500
+        case 'tipos_contrato': return '#1e293b'; // slate-800
+        default: return '#10b981';
+    }
+};
+
+const updateIndicator = () => {
+    if (!tabsRef.value) return;
+    const activeBtn = tabsRef.value.querySelector('.active-tab');
+    if (activeBtn) {
+        indicatorStyle.value = {
+            left: `${activeBtn.offsetLeft}px`,
+            width: `${activeBtn.offsetWidth}px`,
+            backgroundColor: getIndicatorColor(activeTab.value)
+        };
+    }
+};
 </script>
+
+<style scoped>
+/* Filters collapse animation */
+.filters-collapse {
+    overflow: hidden;
+    max-height: 0;
+    opacity: 0;
+    transition: max-height 0.35s ease, opacity 0.3s ease;
+}
+
+.filters-collapse--open {
+    max-height: 500px;
+    opacity: 1;
+}
+</style>

@@ -44,9 +44,9 @@
                                     <input v-model="dni" v-bind="dniProps" type="text" maxlength="8"
                                         placeholder="Escanee o digite el DNI" @keypress.enter.prevent="consultarDni"
                                         @input="handleDniInput" :disabled="!isDniEditable"
-                                        class="w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 disabled:bg-slate-50 disabled:text-slate-500 transition-all text-lg font-mono tracking-wider outline-none"
+                                        class="w-full px-4 py-3 border-2 rounded-xl focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 disabled:bg-slate-50 disabled:text-slate-500 text-slate-900 placeholder:text-slate-400 transition-all duration-200 text-lg font-mono tracking-wider outline-none"
                                         :class="[
-                                            formErrors.dni ? 'border-red-400 bg-red-50' : 'border-emerald-200 bg-white',
+                                            formErrors.dni ? 'border-red-400 focus:border-red-500 focus:ring-red-500/20 bg-red-50' : 'border-emerald-200 bg-white',
                                             isConsultando ? 'opacity-50' : ''
                                         ]" />
                                     <div v-if="isConsultando" class="absolute right-3 top-1/2 -translate-y-1/2">
@@ -88,8 +88,8 @@
                                 Tipo de Contrato <span class="text-red-500">*</span>
                             </label>
                             <select v-model="contractTypeId" v-bind="contractTypeIdProps"
-                                class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white transition-colors"
-                                :class="formErrors.contract_type_id ? 'border-red-400' : 'border-slate-200'">
+                                class="w-full px-4 py-2.5 border-2 rounded-xl text-slate-900 focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 bg-white transition-all duration-200 outline-none cursor-pointer"
+                                :class="formErrors.contract_type_id ? 'border-red-400 focus:border-red-500 focus:ring-red-500/20 bg-red-50' : 'border-slate-200'">
                                 <option value="">Seleccione tipo...</option>
                                 <option v-for="type in contractTypes" :key="type.id" :value="type.id">
                                     {{ type.nombre }}
@@ -104,7 +104,7 @@
                         <div>
                             <label class="block text-sm font-bold text-slate-700 mb-2">Título Profesional</label>
                             <select v-model="titulo" v-bind="tituloProps"
-                                class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white outline-none">
+                                class="w-full px-4 py-2.5 border-2 border-slate-200 rounded-xl text-slate-900 focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 bg-white transition-all duration-200 outline-none cursor-pointer">
                                 <option value="">Sin título</option>
                                 <option value="Lic.">Lic.</option>
                                 <option value="Ing.">Ing.</option>
@@ -126,8 +126,8 @@
                             <input v-model="nombres" v-bind="nombresProps" type="text" placeholder="Ingrese nombres"
                                 @input="nombres = $event.target.value.toUpperCase()"
                                 :disabled="nombreAutocompletado && !camposEditables"
-                                class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors disabled:bg-slate-50 disabled:text-slate-600"
-                                :class="formErrors.nombres ? 'border-red-400' : 'border-slate-200'" />
+                                class="w-full px-4 py-2.5 border-2 rounded-xl text-slate-900 placeholder:text-slate-400 focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all duration-200 outline-none disabled:bg-slate-50 disabled:text-slate-500"
+                                :class="formErrors.nombres ? 'border-red-400 focus:border-red-500 focus:ring-red-500/20 bg-red-50' : 'border-slate-200 bg-white'" />
                             <p v-if="formErrors.nombres" class="mt-1 text-sm text-red-600">{{ formErrors.nombres }}</p>
                         </div>
 
@@ -139,8 +139,8 @@
                             <input v-model="apellidos" v-bind="apellidosProps" type="text"
                                 placeholder="Ingrese apellidos" @input="apellidos = $event.target.value.toUpperCase()"
                                 :disabled="nombreAutocompletado && !camposEditables"
-                                class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors disabled:bg-slate-50 disabled:text-slate-600"
-                                :class="formErrors.apellidos ? 'border-red-400' : 'border-slate-200'" />
+                                class="w-full px-4 py-2.5 border-2 rounded-xl text-slate-900 placeholder:text-slate-400 focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all duration-200 outline-none disabled:bg-slate-50 disabled:text-slate-500"
+                                :class="formErrors.apellidos ? 'border-red-400 focus:border-red-500 focus:ring-red-500/20 bg-red-50' : 'border-slate-200 bg-white'" />
                             <p v-if="formErrors.apellidos" class="mt-1 text-sm text-red-600">{{ formErrors.apellidos }}
                             </p>
                         </div>
@@ -149,14 +149,14 @@
                         <div>
                             <label class="block text-sm font-bold text-slate-700 mb-2">Fecha Nacimiento</label>
                             <input v-model="fechaNacimiento" v-bind="fechaNacimientoProps" type="date"
-                                class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500" />
+                                class="w-full px-4 py-2.5 border-2 border-slate-200 rounded-xl text-slate-900 focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all duration-200 outline-none bg-white cursor-pointer" />
                         </div>
 
                         <!-- Género -->
                         <div>
                             <label class="block text-sm font-bold text-slate-700 mb-2">Género</label>
                             <select v-model="genero" v-bind="generoProps"
-                                class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white">
+                                class="w-full px-4 py-2.5 border-2 border-slate-200 rounded-xl text-slate-900 focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 bg-white transition-all duration-200 outline-none cursor-pointer">
                                 <option value="">Seleccionar...</option>
                                 <option value="Masculino">Masculino</option>
                                 <option value="Femenino">Femenino</option>
@@ -169,8 +169,8 @@
                                 Cargo / Puesto <span class="text-red-500">*</span>
                             </label>
                             <select v-model="cargo" v-bind="cargoProps"
-                                class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white transition-colors"
-                                :class="formErrors.cargo ? 'border-red-400' : 'border-slate-200'">
+                                class="w-full px-4 py-2.5 border-2 rounded-xl text-slate-900 focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 bg-white transition-all duration-200 outline-none cursor-pointer"
+                                :class="formErrors.cargo ? 'border-red-400 focus:border-red-500 focus:ring-red-500/20 bg-red-50' : 'border-slate-200'">
                                 <option value="">Seleccione cargo...</option>
                                 <option v-for="pos in positions" :key="pos.id" :value="pos.nombre">
                                     {{ pos.nombre }}
@@ -194,7 +194,7 @@
                             <div v-else class="relative">
                                 <input type="text" v-model="directionQuery" @focus="showDirectionDropdown = true"
                                     placeholder="Buscar dirección..."
-                                    class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none pr-10" />
+                                    class="w-full px-4 py-2.5 border-2 border-slate-200 rounded-xl bg-white text-slate-900 placeholder:text-slate-400 focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all duration-200 outline-none pr-10" />
                                 <ChevronDown class="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                                 <div v-if="showDirectionDropdown && filteredDirections.length > 0"
                                     class="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl max-h-48 overflow-y-auto">
@@ -224,7 +224,7 @@
                             <div v-else class="relative">
                                 <input type="text" v-model="officeQuery" @focus="showOfficeDropdown = true"
                                     placeholder="Buscar oficina..."
-                                    class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none pr-10" />
+                                    class="w-full px-4 py-2.5 border-2 border-slate-200 rounded-xl bg-white text-slate-900 placeholder:text-slate-400 focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all duration-200 outline-none pr-10" />
                                 <ChevronDown class="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                                 <div v-if="showOfficeDropdown && filteredOffices.length > 0"
                                     class="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl max-h-48 overflow-y-auto">
@@ -244,7 +244,7 @@
                         <div>
                             <label class="block text-sm font-bold text-slate-700 mb-2">Teléfono</label>
                             <input v-model="telefono" v-bind="telefonoProps" type="text" placeholder="999 999 999"
-                                class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500" />
+                                class="w-full px-4 py-2.5 border-2 border-slate-200 rounded-xl bg-white text-slate-900 placeholder:text-slate-400 focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all duration-200 outline-none" />
                         </div>
 
                         <!-- Correo -->
@@ -252,8 +252,8 @@
                             <label class="block text-sm font-bold text-slate-700 mb-2">Correo Institucional</label>
                             <input v-model="correo" v-bind="correoProps" type="email"
                                 placeholder="usuario@drehco.gob.pe"
-                                class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                                :class="formErrors.correo ? 'border-red-400' : 'border-slate-200'" />
+                                class="w-full px-4 py-2.5 border-2 rounded-xl text-slate-900 placeholder:text-slate-400 focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all duration-200 outline-none"
+                                :class="formErrors.correo ? 'border-red-400 focus:border-red-500 focus:ring-red-500/20 bg-red-50' : 'border-slate-200 bg-white'" />
                             <p v-if="formErrors.correo" class="mt-1 text-sm text-red-600">{{ formErrors.correo }}</p>
                         </div>
 
@@ -261,14 +261,14 @@
                         <div>
                             <label class="block text-sm font-bold text-slate-700 mb-2">Fecha de Ingreso</label>
                             <input v-model="fechaIngreso" v-bind="fechaIngresoProps" type="date"
-                                class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500" />
+                                class="w-full px-4 py-2.5 border-2 border-slate-200 rounded-xl text-slate-900 focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all duration-200 outline-none bg-white cursor-pointer" />
                         </div>
 
                         <!-- Estado (Solo edición) -->
                         <div v-if="isEditing">
                             <label class="block text-sm font-bold text-slate-700 mb-2">Estado del Personal</label>
                             <select v-model="estado" v-bind="estadoProps"
-                                class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white">
+                                class="w-full px-4 py-2.5 border-2 border-slate-200 rounded-xl text-slate-900 focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 bg-white transition-all duration-200 outline-none cursor-pointer">
                                 <option value="ACTIVO">Activo</option>
                                 <option value="INACTIVO">Inactivo</option>
                                 <option value="LICENCIA">Licencia</option>
@@ -281,7 +281,7 @@
                     <div>
                         <label class="block text-sm font-bold text-slate-700 mb-2">Dirección de Domicilio</label>
                         <input v-model="direccion" v-bind="direccionProps" type="text" placeholder="Jr. / Av. ..."
-                            class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500" />
+                            class="w-full px-4 py-2.5 border-2 border-slate-200 rounded-xl bg-white text-slate-900 placeholder:text-slate-400 focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all duration-200 outline-none" />
                     </div>
 
                     <!-- Observaciones -->
@@ -289,7 +289,7 @@
                         <label class="block text-sm font-bold text-slate-700 mb-2">Observaciones</label>
                         <textarea v-model="observaciones" v-bind="observacionesProps" rows="3"
                             placeholder="Información adicional relevante..."
-                            class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 resize-none"></textarea>
+                            class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl bg-white text-slate-900 placeholder:text-slate-400 focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all duration-200 outline-none resize-none"></textarea>
                     </div>
 
                     <!-- Actions -->
