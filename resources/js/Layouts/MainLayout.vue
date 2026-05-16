@@ -20,7 +20,7 @@
                         <img src="/images/logo.png" alt="DRE Huánuco"
                             class="h-10 w-10 object-contain brightness-0 invert" />
                     </div>
-                    <div class="flex flex-col transition-opacity duration-200" v-if="!isCollapsed">
+                    <div class="flex flex-col transition-all duration-300 overflow-hidden" :class="isCollapsed ? 'opacity-0 max-w-0' : 'opacity-100 max-w-[200px]'">
                         <span
                             class="bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent font-extrabold whitespace-nowrap uppercase">SGCI-DREH</span>
                         <span
@@ -33,231 +33,230 @@
             <!-- Navigation - Scrollable area -->
             <div
                 class="flex-1 overflow-y-auto py-6 scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent">
-                <div class="px-4 mb-4 transition-opacity duration-200" v-if="!isCollapsed">
-                    <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest px-3">Menú Principal</p>
+                <div class="px-4 mb-4 transition-all duration-300 overflow-hidden" :class="isCollapsed ? 'opacity-0 max-h-0 mb-0' : 'opacity-100 max-h-[50px]'">
+                    <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest px-3 whitespace-nowrap">Menú Principal</p>
                 </div>
                 <nav class="space-y-1.5" :class="isCollapsed ? 'px-2' : 'px-4'">
                     <!-- Dashboard Link -->
                     <Link v-if="hasModulePermission('dashboard', 'ver')" href="/dashboard"
-                        class="group flex items-center text-sm font-semibold rounded-xl transition-all duration-200 ease-in-out relative"
+                        class="group flex items-center text-sm font-semibold rounded-xl transition-all duration-300 ease-in-out relative"
                         :class="[
                             $page.component === 'Dashboard' ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/30 ring-1 ring-blue-400/50' : 'text-slate-300 hover:bg-slate-800/80 hover:text-white',
-                            isCollapsed ? 'justify-center py-3 px-0' : 'px-4 py-3.5'
+                            isCollapsed ? 'px-[14px] py-3' : 'px-4 py-3.5'
                         ]" :title="isCollapsed ? 'Dashboard' : ''">
-                        <div class="rounded-lg transition-colors duration-200 ease-in-out flex-shrink-0" :class="[
+                        <div class="rounded-lg transition-all duration-300 ease-in-out flex-shrink-0" :class="[
                             $page.component === 'Dashboard' ? 'bg-white/20' : 'bg-slate-700/80 group-hover:bg-slate-600',
-                            isCollapsed ? 'p-2' : 'mr-4 p-2'
+                            isCollapsed ? 'p-2 mr-0' : 'mr-4 p-2'
                         ]">
                             <LayoutDashboard class="h-5 w-5"
                                 :class="$page.component === 'Dashboard' ? 'text-white' : 'text-slate-400 group-hover:text-white'" />
                         </div>
-                        <span v-if="!isCollapsed"
-                            class="whitespace-nowrap transition-opacity duration-200">Dashboard</span>
+                        <span class="whitespace-nowrap transition-all duration-300 overflow-hidden" :class="isCollapsed ? 'opacity-0 max-w-0' : 'opacity-100 max-w-[200px]'">Dashboard</span>
                     </Link>
 
                     <!-- Occurrences Link -->
                     <Link v-if="hasModulePermission('ocurrencias', 'ver')" href="/occurrences"
-                        class="group flex items-center text-sm font-semibold rounded-xl transition-all duration-200 ease-in-out relative"
+                        class="group flex items-center text-sm font-semibold rounded-xl transition-all duration-300 ease-in-out relative"
                         :class="[
                             $page.component.startsWith('Occurrences/') ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/30 ring-1 ring-blue-400/50' : 'text-slate-300 hover:bg-slate-800/80 hover:text-white',
-                            isCollapsed ? 'justify-center py-3 px-0' : 'px-4 py-3.5'
+                            isCollapsed ? 'px-[14px] py-3' : 'px-4 py-3.5'
                         ]" :title="isCollapsed ? 'Cuaderno de Ocurrencias' : ''">
-                        <div class="rounded-lg transition-colors duration-200 ease-in-out flex-shrink-0" :class="[
+                        <div class="rounded-lg transition-all duration-300 ease-in-out flex-shrink-0" :class="[
                             $page.component.startsWith('Occurrences/') ? 'bg-white/20' : 'bg-slate-700/80 group-hover:bg-slate-600',
-                            isCollapsed ? 'p-2' : 'mr-4 p-2'
+                            isCollapsed ? 'p-2 mr-0' : 'mr-4 p-2'
                         ]">
                             <ClipboardList class="h-5 w-5"
                                 :class="$page.component.startsWith('Occurrences/') ? 'text-white' : 'text-slate-400 group-hover:text-white'" />
                         </div>
-                        <span v-if="!isCollapsed" class="whitespace-nowrap transition-opacity duration-200">Cuaderno de Ocurrencias</span>
+                        <span class="whitespace-nowrap transition-all duration-300 overflow-hidden" :class="isCollapsed ? 'opacity-0 max-w-0' : 'opacity-100 max-w-[200px]'">Cuaderno de Ocurrencias</span>
                     </Link>
 
                     <!-- Entry/Exit Link -->
                     <Link v-if="hasModulePermission('control_personal', 'ver')" href="/entry-exits"
-                        class="group flex items-center text-sm font-semibold rounded-xl transition-all duration-200 ease-in-out relative"
+                        class="group flex items-center text-sm font-semibold rounded-xl transition-all duration-300 ease-in-out relative"
                         :class="[
                             $page.component.startsWith('EntryExits/') ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-lg shadow-emerald-500/30 ring-1 ring-emerald-400/50' : 'text-slate-300 hover:bg-slate-800/80 hover:text-white',
-                            isCollapsed ? 'justify-center py-3 px-0' : 'px-4 py-3.5'
+                            isCollapsed ? 'px-[14px] py-3' : 'px-4 py-3.5'
                         ]" :title="isCollapsed ? 'Control de Personal' : ''">
-                        <div class="rounded-lg transition-colors duration-200 ease-in-out flex-shrink-0" :class="[
+                        <div class="rounded-lg transition-all duration-300 ease-in-out flex-shrink-0" :class="[
                             $page.component.startsWith('EntryExits/') ? 'bg-white/20' : 'bg-slate-700/80 group-hover:bg-slate-600',
-                            isCollapsed ? 'p-2' : 'mr-4 p-2'
+                            isCollapsed ? 'p-2 mr-0' : 'mr-4 p-2'
                         ]">
                             <UserCheck class="h-5 w-5"
                                 :class="$page.component.startsWith('EntryExits/') ? 'text-white' : 'text-slate-400 group-hover:text-white'" />
                         </div>
-                        <span v-if="!isCollapsed" class="whitespace-nowrap transition-opacity duration-200">Control de
+                        <span class="whitespace-nowrap transition-all duration-300 overflow-hidden" :class="isCollapsed ? 'opacity-0 max-w-0' : 'opacity-100 max-w-[200px]'">Control de
                             Personal</span>
                     </Link>
 
                     <!-- Visitas Externas -->
                     <Link v-if="hasModulePermission('visitas', 'ver')" href="/visitors"
-                        class="group flex items-center text-sm font-semibold rounded-xl transition-all duration-200 ease-in-out relative"
+                        class="group flex items-center text-sm font-semibold rounded-xl transition-all duration-300 ease-in-out relative"
                         :class="[
                             $page.component.startsWith('Visitors/') ? 'bg-gradient-to-r from-purple-600 to-fuchsia-600 text-white shadow-lg shadow-purple-500/30 ring-1 ring-purple-400/50' : 'text-slate-300 hover:bg-slate-800/80 hover:text-white',
-                            isCollapsed ? 'justify-center py-3 px-0' : 'px-4 py-3.5'
+                            isCollapsed ? 'px-[14px] py-3' : 'px-4 py-3.5'
                         ]" :title="isCollapsed ? 'Visitas Externas' : ''">
-                        <div class="rounded-lg transition-colors duration-200 ease-in-out flex-shrink-0" :class="[
+                        <div class="rounded-lg transition-all duration-300 ease-in-out flex-shrink-0" :class="[
                             $page.component.startsWith('Visitors/') ? 'bg-white/20' : 'bg-slate-700/80 group-hover:bg-slate-600',
-                            isCollapsed ? 'p-2' : 'mr-4 p-2'
+                            isCollapsed ? 'p-2 mr-0' : 'mr-4 p-2'
                         ]">
                             <Users class="h-5 w-5"
                                 :class="$page.component.startsWith('Visitors/') ? 'text-white' : 'text-slate-400 group-hover:text-white'" />
                         </div>
-                        <span v-if="!isCollapsed" class="whitespace-nowrap transition-opacity duration-200">Visitas
+                        <span class="whitespace-nowrap transition-all duration-300 overflow-hidden" :class="isCollapsed ? 'opacity-0 max-w-0' : 'opacity-100 max-w-[200px]'">Visitas
                             Externas</span>
                     </Link>
 
                     <!-- Control Vehicular -->
                     <Link v-if="hasModulePermission('vehiculos', 'ver')" href="/vehicles"
-                        class="group flex items-center text-sm font-semibold rounded-xl transition-all duration-200 ease-in-out relative"
+                        class="group flex items-center text-sm font-semibold rounded-xl transition-all duration-300 ease-in-out relative"
                         :class="[
                             $page.component.startsWith('Vehicles/') ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-lg shadow-cyan-500/30 ring-1 ring-cyan-400/50' : 'text-slate-300 hover:bg-slate-800/80 hover:text-white',
-                            isCollapsed ? 'justify-center py-3 px-0' : 'px-4 py-3.5'
+                            isCollapsed ? 'px-[14px] py-3' : 'px-4 py-3.5'
                         ]" :title="isCollapsed ? 'Control Vehicular' : ''">
-                        <div class="rounded-lg transition-colors duration-200 ease-in-out flex-shrink-0" :class="[
+                        <div class="rounded-lg transition-all duration-300 ease-in-out flex-shrink-0" :class="[
                             $page.component.startsWith('Vehicles/') ? 'bg-white/20' : 'bg-slate-700/80 group-hover:bg-slate-600',
-                            isCollapsed ? 'p-2' : 'mr-4 p-2'
+                            isCollapsed ? 'p-2 mr-0' : 'mr-4 p-2'
                         ]">
                             <Car class="h-5 w-5"
                                 :class="$page.component.startsWith('Vehicles/') ? 'text-white' : 'text-slate-400 group-hover:text-white'" />
                         </div>
-                        <span v-if="!isCollapsed" class="whitespace-nowrap transition-opacity duration-200">Control
+                        <span class="whitespace-nowrap transition-all duration-300 overflow-hidden" :class="isCollapsed ? 'opacity-0 max-w-0' : 'opacity-100 max-w-[200px]'">Control
                             Vehicular</span>
                     </Link>
 
                     <!-- Patrimonio -->
                     <Link v-if="hasModulePermission('patrimonio', 'ver')" href="/assets"
-                        class="group flex items-center text-sm font-semibold rounded-xl transition-all duration-200 ease-in-out relative"
+                        class="group flex items-center text-sm font-semibold rounded-xl transition-all duration-300 ease-in-out relative"
                         :class="[
                             $page.component.startsWith('Assets/') ? 'bg-gradient-to-r from-slate-700 to-gray-700 text-white shadow-lg shadow-slate-500/30 ring-1 ring-slate-400/50' : 'text-slate-300 hover:bg-slate-800/80 hover:text-white',
-                            isCollapsed ? 'justify-center py-3 px-0' : 'px-4 py-3.5'
+                            isCollapsed ? 'px-[14px] py-3' : 'px-4 py-3.5'
                         ]" :title="isCollapsed ? 'Patrimonio' : ''">
-                        <div class="rounded-lg transition-colors duration-200 ease-in-out flex-shrink-0" :class="[
+                        <div class="rounded-lg transition-all duration-300 ease-in-out flex-shrink-0" :class="[
                             $page.component.startsWith('Assets/') ? 'bg-white/20' : 'bg-slate-700/80 group-hover:bg-slate-600',
-                            isCollapsed ? 'p-2' : 'mr-4 p-2'
+                            isCollapsed ? 'p-2 mr-0' : 'mr-4 p-2'
                         ]">
                             <Box class="h-5 w-5"
                                 :class="$page.component.startsWith('Assets/') ? 'text-white' : 'text-slate-400 group-hover:text-white'" />
                         </div>
-                        <span v-if="!isCollapsed" class="whitespace-nowrap transition-opacity duration-200">Patrimonio
+                        <span class="whitespace-nowrap transition-all duration-300 overflow-hidden" :class="isCollapsed ? 'opacity-0 max-w-0' : 'opacity-100 max-w-[200px]'">Patrimonio
                             (Bienes)</span>
                     </Link>
 
                     <!-- Gestión de Citas -->
                     <Link v-if="hasModulePermission('secretaria', 'ver')" href="/citas"
-                        class="group flex items-center text-sm font-semibold rounded-xl transition-all duration-200 ease-in-out relative"
+                        class="group flex items-center text-sm font-semibold rounded-xl transition-all duration-300 ease-in-out relative"
                         :class="[
                             $page.component.startsWith('Appointments/') ? 'bg-gradient-to-r from-pink-600 to-rose-600 text-white shadow-lg shadow-pink-500/30 ring-1 ring-pink-400/50' : 'text-slate-300 hover:bg-slate-800/80 hover:text-white',
-                            isCollapsed ? 'justify-center py-3 px-0' : 'px-4 py-3.5'
+                            isCollapsed ? 'px-[14px] py-3' : 'px-4 py-3.5'
                         ]" :title="isCollapsed ? 'Gestión de Citas' : ''">
-                        <div class="rounded-lg transition-colors duration-200 ease-in-out flex-shrink-0" :class="[
+                        <div class="rounded-lg transition-all duration-300 ease-in-out flex-shrink-0" :class="[
                             $page.component.startsWith('Appointments/') ? 'bg-white/20' : 'bg-slate-700/80 group-hover:bg-slate-600',
-                            isCollapsed ? 'p-2' : 'mr-4 p-2'
+                            isCollapsed ? 'p-2 mr-0' : 'mr-4 p-2'
                         ]">
                             <Calendar class="h-5 w-5"
                                 :class="$page.component.startsWith('Appointments/') ? 'text-white' : 'text-slate-400 group-hover:text-white'" />
                         </div>
-                        <span v-if="!isCollapsed" class="whitespace-nowrap transition-opacity duration-200">Gestión de
+                        <span class="whitespace-nowrap transition-all duration-300 overflow-hidden" :class="isCollapsed ? 'opacity-0 max-w-0' : 'opacity-100 max-w-[200px]'">Gestión de
                             Citas</span>
                     </Link>
 
                     <!-- Bienestar Social - Licencias -->
                     <Link v-if="hasModulePermission('bienestar', 'ver')" href="/bienestar"
-                        class="group flex items-center text-sm font-semibold rounded-xl transition-all duration-200 ease-in-out relative"
+                        class="group flex items-center text-sm font-semibold rounded-xl transition-all duration-300 ease-in-out relative"
                         :class="[
                             $page.component.startsWith('Bienestar/') ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-lg shadow-purple-500/30 ring-1 ring-purple-400/50' : 'text-slate-300 hover:bg-slate-800/80 hover:text-white',
-                            isCollapsed ? 'justify-center py-3 px-0' : 'px-4 py-3.5'
+                            isCollapsed ? 'px-[14px] py-3' : 'px-4 py-3.5'
                         ]" :title="isCollapsed ? 'Bienestar Social' : ''">
-                        <div class="rounded-lg transition-colors duration-200 ease-in-out flex-shrink-0" :class="[
+                        <div class="rounded-lg transition-all duration-300 ease-in-out flex-shrink-0" :class="[
                             $page.component.startsWith('Bienestar/') ? 'bg-white/20' : 'bg-slate-700/80 group-hover:bg-slate-600',
-                            isCollapsed ? 'p-2' : 'mr-4 p-2'
+                            isCollapsed ? 'p-2 mr-0' : 'mr-4 p-2'
                         ]">
                             <Heart class="h-5 w-5"
                                 :class="$page.component.startsWith('Bienestar/') ? 'text-white' : 'text-slate-400 group-hover:text-white'" />
                         </div>
-                        <span v-if="!isCollapsed" class="whitespace-nowrap transition-opacity duration-200">Bienestar
+                        <span class="whitespace-nowrap transition-all duration-300 overflow-hidden" :class="isCollapsed ? 'opacity-0 max-w-0' : 'opacity-100 max-w-[200px]'">Bienestar
                             Social</span>
                     </Link>
 
                     <!-- Papeletas de Salida -->
                     <Link v-if="hasModulePermission('papeletas', 'ver')" href="/papeletas"
-                        class="group flex items-center text-sm font-semibold rounded-xl transition-all duration-200 ease-in-out relative"
+                        class="group flex items-center text-sm font-semibold rounded-xl transition-all duration-300 ease-in-out relative"
                         :class="[
                             $page.component.startsWith('Papeletas/') ? 'bg-gradient-to-r from-amber-600 to-orange-600 text-white shadow-lg shadow-amber-500/30 ring-1 ring-amber-400/50' : 'text-slate-300 hover:bg-slate-800/80 hover:text-white',
-                            isCollapsed ? 'justify-center py-3 px-0' : 'px-4 py-3.5'
+                            isCollapsed ? 'px-[14px] py-3' : 'px-4 py-3.5'
                         ]" :title="isCollapsed ? 'Papeletas de Salida' : ''">
-                        <div class="rounded-lg transition-colors duration-200 ease-in-out flex-shrink-0" :class="[
+                        <div class="rounded-lg transition-all duration-300 ease-in-out flex-shrink-0" :class="[
                             $page.component.startsWith('Papeletas/') ? 'bg-white/20' : 'bg-slate-700/80 group-hover:bg-slate-600',
-                            isCollapsed ? 'p-2' : 'mr-4 p-2'
+                            isCollapsed ? 'p-2 mr-0' : 'mr-4 p-2'
                         ]">
                             <FileText class="h-5 w-5"
                                 :class="$page.component.startsWith('Papeletas/') ? 'text-white' : 'text-slate-400 group-hover:text-white'" />
                         </div>
-                        <span v-if="!isCollapsed" class="whitespace-nowrap transition-opacity duration-200">Papeletas de
+                        <span class="whitespace-nowrap transition-all duration-300 overflow-hidden" :class="isCollapsed ? 'opacity-0 max-w-0' : 'opacity-100 max-w-[200px]'">Papeletas de
                             Salida</span>
                     </Link>
 
                     <!-- Marcas de Asistencia -->
                     <Link v-if="hasModulePermission('asistencia', 'ver')" href="/asistencia"
-                        class="group flex items-center text-sm font-semibold rounded-xl transition-all duration-200 ease-in-out relative"
+                        class="group flex items-center text-sm font-semibold rounded-xl transition-all duration-300 ease-in-out relative"
                         :class="[
                             $page.component.startsWith('Asistencia/') ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-lg shadow-cyan-500/30 ring-1 ring-cyan-400/50' : 'text-slate-300 hover:bg-slate-800/80 hover:text-white',
-                            isCollapsed ? 'justify-center py-3 px-0' : 'px-4 py-3.5'
+                            isCollapsed ? 'px-[14px] py-3' : 'px-4 py-3.5'
                         ]" :title="isCollapsed ? 'Marcas de Asistencia' : ''">
-                        <div class="rounded-lg transition-colors duration-200 ease-in-out flex-shrink-0" :class="[
+                        <div class="rounded-lg transition-all duration-300 ease-in-out flex-shrink-0" :class="[
                             $page.component.startsWith('Asistencia/') ? 'bg-white/20' : 'bg-slate-700/80 group-hover:bg-slate-600',
-                            isCollapsed ? 'p-2' : 'mr-4 p-2'
+                            isCollapsed ? 'p-2 mr-0' : 'mr-4 p-2'
                         ]">
                             <Fingerprint class="h-5 w-5"
                                 :class="$page.component.startsWith('Asistencia/') ? 'text-white' : 'text-slate-400 group-hover:text-white'" />
                         </div>
-                        <span v-if="!isCollapsed" class="whitespace-nowrap transition-opacity duration-200">Marcas de
+                        <span class="whitespace-nowrap transition-all duration-300 overflow-hidden" :class="isCollapsed ? 'opacity-0 max-w-0' : 'opacity-100 max-w-[200px]'">Marcas de
                             Asistencia</span>
                     </Link>
 
                     <!-- Recursos Humanos -->
                     <Link v-if="hasModulePermission('recursos_humanos', 'ver')" href="/hr"
-                        class="group flex items-center text-sm font-semibold rounded-xl transition-all duration-200 ease-in-out relative"
+                        class="group flex items-center text-sm font-semibold rounded-xl transition-all duration-300 ease-in-out relative"
                         :class="[
                             $page.component.startsWith('HR/') ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-lg shadow-emerald-500/30 ring-1 ring-emerald-400/50' : 'text-slate-300 hover:bg-slate-800/80 hover:text-white',
-                            isCollapsed ? 'justify-center py-3 px-0' : 'px-4 py-3.5'
+                            isCollapsed ? 'px-[14px] py-3' : 'px-4 py-3.5'
                         ]" :title="isCollapsed ? 'Recursos Humanos' : ''">
-                        <div class="rounded-lg transition-colors duration-200 ease-in-out flex-shrink-0" :class="[
+                        <div class="rounded-lg transition-all duration-300 ease-in-out flex-shrink-0" :class="[
                             $page.component.startsWith('HR/') ? 'bg-white/20' : 'bg-slate-700/80 group-hover:bg-slate-600',
-                            isCollapsed ? 'p-2' : 'mr-4 p-2'
+                            isCollapsed ? 'p-2 mr-0' : 'mr-4 p-2'
                         ]">
                             <UserGroup class="h-5 w-5"
                                 :class="$page.component.startsWith('HR/') ? 'text-white' : 'text-slate-400 group-hover:text-white'" />
                         </div>
-                        <span v-if="!isCollapsed" class="whitespace-nowrap transition-opacity duration-200">Recursos
+                        <span class="whitespace-nowrap transition-all duration-300 overflow-hidden" :class="isCollapsed ? 'opacity-0 max-w-0' : 'opacity-100 max-w-[200px]'">Recursos
                             Humanos</span>
                     </Link>
 
                     <!-- Divider for Admin Section -->
-                    <div v-if="isAdmin()" class="my-4 transition-opacity duration-200"
+                    <div v-if="isAdmin()" class="my-4 transition-all duration-300"
                         :class="isCollapsed ? 'px-0' : 'px-3'">
                         <div class="border-t border-slate-700/50"></div>
-                        <p v-if="!isCollapsed"
-                            class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-4 px-3">
+                        <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-4 px-3 whitespace-nowrap transition-all duration-300 overflow-hidden"
+                           :class="isCollapsed ? 'opacity-0 max-h-0 mt-0 mb-0' : 'opacity-100 max-h-[50px]'">
                             Administración</p>
                     </div>
 
                     <!-- User Management (Admin only) -->
                     <Link v-if="isAdmin()" href="/users"
-                        class="group flex items-center text-sm font-semibold rounded-xl transition-all duration-200 ease-in-out relative"
+                        class="group flex items-center text-sm font-semibold rounded-xl transition-all duration-300 ease-in-out relative"
                         :class="[
                             $page.component.startsWith('Users/') ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg shadow-indigo-500/30 ring-1 ring-indigo-400/50' : 'text-slate-300 hover:bg-slate-800/80 hover:text-white',
-                            isCollapsed ? 'justify-center py-3 px-0' : 'px-4 py-3.5'
+                            isCollapsed ? 'px-[14px] py-3' : 'px-4 py-3.5'
                         ]" :title="isCollapsed ? 'Gestión de Usuarios' : ''">
-                        <div class="rounded-lg transition-colors duration-200 ease-in-out flex-shrink-0" :class="[
+                        <div class="rounded-lg transition-all duration-300 ease-in-out flex-shrink-0" :class="[
                             $page.component.startsWith('Users/') ? 'bg-white/20' : 'bg-slate-700/80 group-hover:bg-slate-600',
-                            isCollapsed ? 'p-2' : 'mr-4 p-2'
+                            isCollapsed ? 'p-2 mr-0' : 'mr-4 p-2'
                         ]">
                             <Shield class="h-5 w-5"
                                 :class="$page.component.startsWith('Users/') ? 'text-white' : 'text-slate-400 group-hover:text-white'" />
                         </div>
-                        <span v-if="!isCollapsed" class="whitespace-nowrap transition-opacity duration-200">Gestión de
+                        <span class="whitespace-nowrap transition-all duration-300 overflow-hidden" :class="isCollapsed ? 'opacity-0 max-w-0' : 'opacity-100 max-w-[200px]'">Gestión de
                             Usuarios</span>
                     </Link>
                 </nav>
@@ -274,7 +273,7 @@
                             {{ $page.props.auth?.user?.name?.charAt(0) || 'U' }}
                         </div>
                     </div>
-                    <div class="flex-1 min-w-0 transition-opacity duration-200" v-if="!isCollapsed">
+                    <div class="flex-1 min-w-0 transition-all duration-300 overflow-hidden" :class="isCollapsed ? 'opacity-0 max-w-0' : 'opacity-100 max-w-[200px]'">
                         <p class="text-sm font-bold text-white truncate">{{ $page.props.auth?.user?.name || 'Usuario' }}
                         </p>
                         <p class="text-xs text-slate-400 flex items-center gap-1">
