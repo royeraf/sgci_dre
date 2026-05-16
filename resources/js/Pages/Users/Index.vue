@@ -46,13 +46,11 @@
                     <!-- Tab: Usuarios -->
                     <template v-if="activeTab === 'usuarios'">
                         <!-- Unified Card Container -->
-                        <div class="bg-white shadow-md rounded-2xl border border-slate-200 overflow-hidden">
-                            <!-- Table Title & Sub-tabs -->
-                            <div class="p-5 sm:p-6 border-b border-slate-200 bg-slate-50 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                                <div>
-                                    <h2 class="text-lg font-bold text-slate-800">Listado de Usuarios</h2>
-                                    <p class="text-sm text-slate-500 font-medium mt-1">Gestión y control de cuentas de acceso</p>
-                                </div>
+                        <BaseTableCard
+                            title="Listado de Usuarios"
+                            description="Gestión y control de cuentas de acceso"
+                        >
+                            <template #subtabs>
                                 <!-- Sub-tabs: Todos / Activos / Inactivos -->
                                 <div class="flex items-center gap-1 bg-indigo-50 rounded-full p-1.5 w-fit shrink-0">
                                     <button
@@ -73,30 +71,27 @@
                                         ]">{{ tab.count }}</span>
                                     </button>
                                 </div>
-                            </div>
+                            </template>
 
-                            <!-- Top row: Actions -->
-                            <div class="p-4 sm:p-5 border-b border-slate-100 flex flex-col lg:flex-row items-stretch lg:items-center justify-end gap-4 bg-white">
-                                <div class="flex items-center justify-end gap-3 shrink-0">
-                                    <button
-                                        @click="filtersVisible = !filtersVisible"
-                                        class="cursor-pointer inline-flex justify-center items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-sm font-bold text-slate-600 hover:bg-slate-50 transition-all duration-200 shadow-sm"
-                                    >
-                                        <SlidersHorizontal class="w-4 h-4" />
-                                        Filtros
-                                        <ChevronDown
-                                            class="w-4 h-4 transition-transform duration-300"
-                                            :class="{ 'rotate-180': filtersVisible }"
-                                        />
-                                    </button>
+                            <template #actions>
+                                <button
+                                    @click="filtersVisible = !filtersVisible"
+                                    class="cursor-pointer inline-flex justify-center items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-sm font-bold text-slate-600 hover:bg-slate-50 transition-all duration-200 shadow-sm"
+                                >
+                                    <SlidersHorizontal class="w-4 h-4" />
+                                    Filtros
+                                    <ChevronDown
+                                        class="w-4 h-4 transition-transform duration-300"
+                                        :class="{ 'rotate-180': filtersVisible }"
+                                    />
+                                </button>
 
-                                    <button @click="createNewUser"
-                                        class="cursor-pointer outline-none active:scale-95 inline-flex items-center px-5 py-2.5 text-sm font-bold rounded-xl shadow-lg shadow-indigo-500/30 text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 transition-all duration-300 hover:-translate-y-0.5">
-                                        <UserPlus class="w-4 h-4 mr-2" />
-                                        Nuevo Usuario
-                                    </button>
-                                </div>
-                            </div>
+                                <button @click="createNewUser"
+                                    class="cursor-pointer outline-none active:scale-95 inline-flex items-center px-5 py-2.5 text-sm font-bold rounded-xl shadow-lg shadow-indigo-500/30 text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 transition-all duration-300 hover:-translate-y-0.5">
+                                    <UserPlus class="w-4 h-4 mr-2" />
+                                    Nuevo Usuario
+                                </button>
+                            </template>
 
                             <!-- Filters toggle + collapsible panel -->
                             <div
@@ -112,7 +107,7 @@
                             <!-- Users Table -->
                             <UserTable :users="filteredUsers" :loading="isLoading" @view="viewUser" @edit="editUser"
                                 @toggle-status="toggleUserStatus" @reset-password="resetUserPassword" @delete="handleDeleteUser" />
-                        </div>
+                        </BaseTableCard>
                     </template>
 
                     <!-- Tab: Roles -->
@@ -138,6 +133,7 @@
 
 <script>
 import MainLayout from '@/Layouts/MainLayout.vue';
+import BaseTableCard from '@/Components/Common/BaseTableCard.vue';
 
 export default {
     layout: MainLayout

@@ -61,37 +61,29 @@
             <!-- List Tab Content -->
             <div v-if="activeTab === 'list'">
                 <!-- Unified Card Container -->
-                <div class="bg-white shadow-xl rounded-2xl border border-slate-200 overflow-hidden">
-                    
-                    <!-- Table Title -->
-                    <div class="px-4 sm:px-5 py-4 border-b border-slate-200 bg-slate-50">
-                        <h2 class="text-base font-bold text-slate-800">Listado de Ocurrencias</h2>
-                        <p class="text-xs text-slate-500 font-medium mt-0.5">Registro general de incidentes en el sistema</p>
-                    </div>
+                <BaseTableCard
+                    title="Listado de Ocurrencias"
+                    description="Registro general de incidentes en el sistema"
+                >
+                    <template #actions>
+                        <button
+                            @click="filtersVisible = !filtersVisible"
+                            class="cursor-pointer w-full sm:w-auto inline-flex justify-center items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-sm font-bold text-slate-600 hover:bg-slate-50 transition-all duration-200 shadow-sm"
+                        >
+                            <SlidersHorizontal class="w-4 h-4" />
+                            Filtros
+                            <ChevronDown
+                                class="w-4 h-4 transition-transform duration-300"
+                                :class="{ 'rotate-180': filtersVisible }"
+                            />
+                        </button>
 
-                    <!-- Top row: Actions -->
-                    <div class="p-4 sm:p-5 border-b border-slate-100 flex flex-col lg:flex-row items-stretch lg:items-center justify-end gap-4 bg-white">
-                        <!-- Right-aligned action buttons -->
-                        <div class="flex items-center justify-end gap-3 w-full lg:w-auto">
-                            <button
-                                @click="filtersVisible = !filtersVisible"
-                                class="cursor-pointer w-full sm:w-auto inline-flex justify-center items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-sm font-bold text-slate-600 hover:bg-slate-50 transition-all duration-200 shadow-sm"
-                            >
-                                <SlidersHorizontal class="w-4 h-4" />
-                                Filtros
-                                <ChevronDown
-                                    class="w-4 h-4 transition-transform duration-300"
-                                    :class="{ 'rotate-180': filtersVisible }"
-                                />
-                            </button>
-
-                            <button @click="showRegisterModal = true"
-                                class="cursor-pointer w-full sm:w-auto inline-flex items-center justify-center px-5 py-2.5 border border-transparent text-sm font-bold rounded-xl shadow-lg shadow-blue-500/30 text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-4 focus:ring-blue-500/20 transition-all duration-300 active:scale-95">
-                                <Plus class="w-4 h-4 mr-1.5" />
-                                Nueva Ocurrencia
-                            </button>
-                        </div>
-                    </div>
+                        <button @click="showRegisterModal = true"
+                            class="cursor-pointer w-full sm:w-auto inline-flex items-center justify-center px-5 py-2.5 border border-transparent text-sm font-bold rounded-xl shadow-lg shadow-blue-500/30 text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-4 focus:ring-blue-500/20 transition-all duration-300 active:scale-95">
+                            <Plus class="w-4 h-4 mr-1.5" />
+                            Nueva Ocurrencia
+                        </button>
+                    </template>
 
                     <!-- Filters toggle + collapsible panel -->
                     <div
@@ -116,7 +108,7 @@
                         @view="openDetailModal"
                         @edit="openEditModal"
                     />
-                </div>
+                </BaseTableCard>
             </div>
 
                     <!-- Reports Tab Content -->
@@ -160,6 +152,7 @@ export default {
 <script setup>
 import { ref, computed, watch, onMounted, nextTick } from 'vue';
 import { Link } from '@inertiajs/vue3';
+import BaseTableCard from '@/Components/Common/BaseTableCard.vue';
 import { useTabPermission } from '@/composables/useTabPermission';
 import {
     Plus,

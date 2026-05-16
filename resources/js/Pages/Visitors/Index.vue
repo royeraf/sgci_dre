@@ -9,6 +9,7 @@ export default {
 <script setup lang="ts">
 import { ref, onMounted, nextTick, watch } from 'vue';
 import { Link } from '@inertiajs/vue3';
+import BaseTableCard from '@/Components/Common/BaseTableCard.vue';
 import { useTabPermission } from '@/composables/useTabPermission';
 import {
     Plus,
@@ -232,42 +233,36 @@ watch(activeTab, (newTab) => {
                     <!-- List Tab Content -->
                     <div v-if="activeTab === 'list'">
                         <!-- Unified Card Container -->
-                        <div class="bg-white shadow-xl rounded-2xl border border-slate-200 overflow-hidden">
-                            
-                            <!-- Table Title -->
-                            <div class="px-4 sm:px-5 py-4 border-b border-slate-200 bg-slate-50">
-                                <h2 class="text-base font-bold text-slate-800">Visitas Registradas</h2>
-                                <p class="text-xs text-slate-500 font-medium mt-0.5">Lista completa de las visitas en el sistema</p>
-                            </div>
-
-                            <!-- Top row: Barcode Scanner + Actions -->
-                            <div class="p-4 sm:p-5 border-b border-slate-100 flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4 bg-white">
-                                <!-- Scanner with controlled width -->
-                                <div class="w-full sm:max-w-md xl:max-w-lg">
+                        <BaseTableCard
+                            title="Visitas Registradas"
+                            description="Lista completa de las visitas en el sistema"
+                        >
+                            <template #filters>
+                                <!-- Scanner with expanded width -->
+                                <div class="flex-1 w-full lg:max-w-2xl xl:max-w-4xl">
                                     <BarcodeScanner ref="barcodeScanner" @visitFound="handleVisitFound" />
                                 </div>
-                                
-                                <!-- Right-aligned action buttons -->
-                                <div class="flex items-center justify-end gap-3 shrink-0">
-                                    <button
-                                        @click="filtersVisible = !filtersVisible"
-                                        class="cursor-pointer inline-flex justify-center items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-sm font-bold text-slate-600 hover:bg-slate-50 transition-all duration-200 shadow-sm"
-                                    >
-                                        <SlidersHorizontal class="w-4 h-4" />
-                                        Filtros
-                                        <ChevronDown
-                                            class="w-4 h-4 transition-transform duration-300"
-                                            :class="{ 'rotate-180': filtersVisible }"
-                                        />
-                                    </button>
+                            </template>
 
-                                    <button @click="openCreateModal"
-                                        class="cursor-pointer inline-flex items-center justify-center px-5 py-2.5 border border-transparent text-sm font-bold rounded-xl shadow-sm shadow-purple-600/20 text-white bg-purple-600 hover:bg-purple-700 transition-all duration-200">
-                                        <Plus class="w-4 h-4 mr-1.5" />
-                                        Nueva Visita
-                                    </button>
-                                </div>
-                            </div>
+                            <template #actions>
+                                <button
+                                    @click="filtersVisible = !filtersVisible"
+                                    class="cursor-pointer inline-flex justify-center items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-sm font-bold text-slate-600 hover:bg-slate-50 transition-all duration-200 shadow-sm"
+                                >
+                                    <SlidersHorizontal class="w-4 h-4" />
+                                    Filtros
+                                    <ChevronDown
+                                        class="w-4 h-4 transition-transform duration-300"
+                                        :class="{ 'rotate-180': filtersVisible }"
+                                    />
+                                </button>
+
+                                <button @click="openCreateModal"
+                                    class="cursor-pointer inline-flex items-center justify-center px-5 py-2.5 border border-transparent text-sm font-bold rounded-xl shadow-sm shadow-purple-600/20 text-white bg-purple-600 hover:bg-purple-700 transition-all duration-200">
+                                    <Plus class="w-4 h-4 mr-1.5" />
+                                    Nueva Visita
+                                </button>
+                            </template>
 
                             <!-- Filters toggle + collapsible panel -->
                             <div
@@ -281,7 +276,7 @@ watch(activeTab, (newTab) => {
 
                             <!-- Table -->
                             <VisitTable :visits="visits" @exit="openExitModal" @page-change="changePage" @update:perPage="updatePerPage" />
-                        </div>
+                        </BaseTableCard>
                     </div>
 
                     <!-- Reports Tab Content -->

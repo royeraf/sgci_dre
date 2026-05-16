@@ -52,35 +52,29 @@
 
             <!-- Personal Tab -->
             <div v-if="activeTab === 'personal'">
-                <div class="bg-white shadow-xl rounded-2xl border border-slate-200 overflow-hidden">
-                    <!-- Table Title -->
-                    <div class="px-4 sm:px-5 py-4 border-b border-slate-200 bg-slate-50">
-                        <h2 class="text-base font-bold text-slate-800">Listado de Personal</h2>
-                        <p class="text-xs text-slate-500 font-medium mt-0.5">Lista completa de empleados registrados en el sistema</p>
-                    </div>
+                <BaseTableCard
+                    title="Listado de Personal"
+                    description="Lista completa de empleados registrados en el sistema"
+                >
+                    <template #actions>
+                        <button
+                            @click="filtersVisible = !filtersVisible"
+                            class="cursor-pointer inline-flex justify-center items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-sm font-bold text-slate-600 hover:bg-slate-50 transition-all duration-200 shadow-sm"
+                        >
+                            <SlidersHorizontal class="w-4 h-4" />
+                            Filtros
+                            <ChevronDown
+                                class="w-4 h-4 transition-transform duration-300"
+                                :class="{ 'rotate-180': filtersVisible }"
+                            />
+                        </button>
 
-                    <!-- Top row: Actions -->
-                    <div class="p-4 sm:p-5 border-b border-slate-100 flex flex-col lg:flex-row items-stretch lg:items-center justify-end gap-4 bg-white">
-                        <div class="flex items-center justify-end gap-3 shrink-0">
-                            <button
-                                @click="filtersVisible = !filtersVisible"
-                                class="cursor-pointer inline-flex justify-center items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-sm font-bold text-slate-600 hover:bg-slate-50 transition-all duration-200 shadow-sm"
-                            >
-                                <SlidersHorizontal class="w-4 h-4" />
-                                Filtros
-                                <ChevronDown
-                                    class="w-4 h-4 transition-transform duration-300"
-                                    :class="{ 'rotate-180': filtersVisible }"
-                                />
-                            </button>
-
-                            <button @click="createNewEmployee"
-                                class="cursor-pointer inline-flex items-center px-5 py-2.5 text-sm font-bold rounded-xl shadow-lg shadow-emerald-500/30 text-white bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 transition-all duration-300 hover:-translate-y-0.5">
-                                <UserPlus class="w-4 h-4 mr-2" />
-                                Nuevo Empleado
-                            </button>
-                        </div>
-                    </div>
+                        <button @click="createNewEmployee"
+                            class="cursor-pointer inline-flex items-center px-5 py-2.5 text-sm font-bold rounded-xl shadow-lg shadow-emerald-500/30 text-white bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 transition-all duration-300 hover:-translate-y-0.5">
+                            <UserPlus class="w-4 h-4 mr-2" />
+                            Nuevo Empleado
+                        </button>
+                    </template>
 
                     <!-- Filters toggle + collapsible panel -->
                     <div
@@ -96,43 +90,38 @@
 
                     <EmployeeTable :employees="filteredEmployees" :loading="isLoading" v-model:currentPage="currentPage"
                         v-model:perPage="perPage" @view="viewEmployee" @edit="editEmployee" />
-                </div>
+                </BaseTableCard>
             </div>
 
             <!-- Vacaciones Tab -->
             <div v-if="activeTab === 'vacaciones'">
-                <div class="bg-white shadow-xl rounded-2xl border border-slate-200 overflow-hidden">
-                    <div class="px-4 sm:px-5 py-4 border-b border-slate-200 bg-slate-50">
-                        <h2 class="text-base font-bold text-slate-800">Listado de Vacaciones</h2>
-                        <p class="text-xs text-slate-500 font-medium mt-0.5">Control y registro de vacaciones del personal</p>
-                    </div>
-
-                    <div class="p-4 sm:p-5 border-b border-slate-100 flex flex-col lg:flex-row items-stretch lg:items-center justify-end gap-4 bg-white">
-                        <div class="flex items-center justify-end gap-3 shrink-0">
-                            <button @click="showVacationModal = true"
-                                class="cursor-pointer inline-flex items-center px-5 py-2.5 text-sm font-bold rounded-xl shadow-lg shadow-orange-500/30 text-white bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 transition-all duration-300 hover:-translate-y-0.5">
-                                <CalendarPlus class="w-4 h-4 mr-2" />
-                                Registrar Vacaciones
-                            </button>
-                        </div>
-                    </div>
+                <BaseTableCard
+                    title="Listado de Vacaciones"
+                    description="Control y registro de vacaciones del personal"
+                >
+                    <template #actions>
+                        <button @click="showVacationModal = true"
+                            class="cursor-pointer inline-flex items-center px-5 py-2.5 text-sm font-bold rounded-xl shadow-lg shadow-orange-500/30 text-white bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 transition-all duration-300 hover:-translate-y-0.5">
+                            <CalendarPlus class="w-4 h-4 mr-2" />
+                            Registrar Vacaciones
+                        </button>
+                    </template>
 
                     <VacationTable :vacations="vacations" @viewDetail="viewVacationDetail" @edit="editVacation"
                         @delete="handleDeleteVacation" />
-                </div>
+                </BaseTableCard>
             </div>
 
             <!-- Direcciones Tab -->
             <div v-if="activeTab === 'directions'">
-                <div class="bg-white shadow-xl rounded-2xl border border-slate-200 overflow-hidden">
-                    <!-- Table Title & Sub-tabs -->
-                    <div class="p-5 sm:p-6 border-b border-slate-200 bg-slate-50 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                        <div>
-                            <h2 class="text-lg font-bold text-slate-800">Direcciones y Oficinas</h2>
-                            <p class="text-sm text-slate-500 font-medium mt-1">Gestión estructural y áreas principales de la DRE</p>
-                        </div>
-                        
-                        <!-- Sub-tabs: Direcciones / Oficinas -->
+                <BaseTableCard
+                    title="Direcciones y Oficinas"
+                    description="Gestión estructural y áreas principales de la DRE"
+                    searchPlaceholder="Buscar dirección u oficina..."
+                    :searchValue="directionSearch"
+                    @update:searchValue="directionSearch = $event"
+                >
+                    <template #subtabs>
                         <div class="flex items-center gap-1 bg-blue-50 rounded-full p-1.5 w-fit shrink-0">
                             <button
                                 v-for="tab in directionTabs" :key="tab.key"
@@ -152,28 +141,20 @@
                                 ]">{{ tab.count }}</span>
                             </button>
                         </div>
-                    </div>
+                    </template>
 
-                    <!-- Search and Actions Row -->
-                    <div class="p-4 sm:p-5 border-b border-slate-100 flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4 bg-white">
-                        <div class="relative flex-1 max-w-md">
-                            <Search class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-                            <input v-model="directionSearch" type="text" placeholder="Buscar dirección u oficina..."
-                                class="w-full pl-10 pr-4 py-2.5 border-2 border-slate-200 rounded-xl bg-white text-slate-900 placeholder:text-slate-400 focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200 text-sm outline-none cursor-pointer" />
-                        </div>
-                        <div class="flex items-center justify-end gap-3 shrink-0">
-                            <button v-if="activeDirectionTab === 'direcciones'" @click="createNewDirection"
-                                class="cursor-pointer inline-flex items-center px-4 py-2.5 text-sm font-bold rounded-xl shadow-lg shadow-blue-500/30 text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 hover:-translate-y-0.5">
-                                <Plus class="w-4 h-4 mr-2" />
-                                Nueva Dirección
-                            </button>
-                            <button v-if="activeDirectionTab === 'oficinas'" @click="createNewOffice"
-                                class="cursor-pointer inline-flex items-center px-4 py-2.5 text-sm font-bold rounded-xl shadow-lg shadow-sky-500/30 text-white bg-gradient-to-r from-sky-600 to-cyan-600 hover:from-sky-700 hover:to-cyan-700 transition-all duration-300 hover:-translate-y-0.5">
-                                <Plus class="w-4 h-4 mr-2" />
-                                Nueva Oficina
-                            </button>
-                        </div>
-                    </div>
+                    <template #actions>
+                        <button v-if="activeDirectionTab === 'direcciones'" @click="createNewDirection"
+                            class="cursor-pointer inline-flex items-center px-4 py-2.5 text-sm font-bold rounded-xl shadow-lg shadow-blue-500/30 text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 hover:-translate-y-0.5">
+                            <Plus class="w-4 h-4 mr-2" />
+                            Nueva Dirección
+                        </button>
+                        <button v-if="activeDirectionTab === 'oficinas'" @click="createNewOffice"
+                            class="cursor-pointer inline-flex items-center px-4 py-2.5 text-sm font-bold rounded-xl shadow-lg shadow-sky-500/30 text-white bg-gradient-to-r from-sky-600 to-cyan-600 hover:from-sky-700 hover:to-cyan-700 transition-all duration-300 hover:-translate-y-0.5">
+                            <Plus class="w-4 h-4 mr-2" />
+                            Nueva Oficina
+                        </button>
+                    </template>
 
                     <!-- Render Table based on active tab -->
                     <Transition name="fade-slide" mode="out-in">
@@ -199,51 +180,43 @@
                             </div>
                         </div>
                     </Transition>
-                </div>
+                </BaseTableCard>
             </div>
 
             <!-- Cargos Tab -->
             <div v-if="activeTab === 'cargos'">
-                <div class="bg-white shadow-xl rounded-2xl border border-slate-200 overflow-hidden">
-                    <div class="px-4 sm:px-5 py-4 border-b border-slate-200 bg-slate-50">
-                        <h2 class="text-base font-bold text-slate-800">Listado de Cargos</h2>
-                        <p class="text-xs text-slate-500 font-medium mt-0.5">Gestión de puestos y funciones laborales</p>
-                    </div>
-
-                    <div class="p-4 sm:p-5 border-b border-slate-100 flex flex-col lg:flex-row items-stretch lg:items-center justify-end gap-4 bg-white">
-                        <div class="flex items-center justify-end gap-3 shrink-0">
-                            <button @click="createNewPosition"
-                                class="cursor-pointer inline-flex items-center px-5 py-2.5 text-sm font-bold rounded-xl shadow-lg shadow-purple-500/30 text-white bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 transition-all duration-300 hover:-translate-y-0.5">
-                                <Plus class="w-4 h-4 mr-2" />
-                                Nuevo Cargo
-                            </button>
-                        </div>
-                    </div>
+                <BaseTableCard
+                    title="Listado de Cargos"
+                    description="Gestión de puestos y funciones laborales"
+                >
+                    <template #actions>
+                        <button @click="createNewPosition"
+                            class="cursor-pointer inline-flex items-center px-5 py-2.5 text-sm font-bold rounded-xl shadow-lg shadow-purple-500/30 text-white bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 transition-all duration-300 hover:-translate-y-0.5">
+                            <Plus class="w-4 h-4 mr-2" />
+                            Nuevo Cargo
+                        </button>
+                    </template>
 
                     <PositionTable :positions="positions" @edit="editPosition" @delete="handleDeletePosition" />
-                </div>
+                </BaseTableCard>
             </div>
 
             <!-- Tipos de Contrato Tab -->
             <div v-if="activeTab === 'tipos_contrato'">
-                <div class="bg-white shadow-xl rounded-2xl border border-slate-200 overflow-hidden">
-                    <div class="px-4 sm:px-5 py-4 border-b border-slate-200 bg-slate-50">
-                        <h2 class="text-base font-bold text-slate-800">Tipos de Contrato</h2>
-                        <p class="text-xs text-slate-500 font-medium mt-0.5">Clasificación de regímenes laborales (CAS, Nombrado, etc.)</p>
-                    </div>
-
-                    <div class="p-4 sm:p-5 border-b border-slate-100 flex flex-col lg:flex-row items-stretch lg:items-center justify-end gap-4 bg-white">
-                        <div class="flex items-center justify-end gap-3 shrink-0">
-                            <button @click="createNewContractType"
-                                class="cursor-pointer inline-flex items-center px-5 py-2.5 text-sm font-bold rounded-xl shadow-lg shadow-gray-500/30 text-white bg-gradient-to-r from-gray-600 to-gray-800 hover:from-gray-700 hover:to-gray-900 transition-all duration-300 hover:-translate-y-0.5">
-                                <Plus class="w-4 h-4 mr-2" />
-                                Nuevo Tipo
-                            </button>
-                        </div>
-                    </div>
+                <BaseTableCard
+                    title="Tipos de Contrato"
+                    description="Clasificación de regímenes laborales (CAS, Nombrado, etc.)"
+                >
+                    <template #actions>
+                        <button @click="createNewContractType"
+                            class="cursor-pointer inline-flex items-center px-5 py-2.5 text-sm font-bold rounded-xl shadow-lg shadow-gray-500/30 text-white bg-gradient-to-r from-gray-600 to-gray-800 hover:from-gray-700 hover:to-gray-900 transition-all duration-300 hover:-translate-y-0.5">
+                            <Plus class="w-4 h-4 mr-2" />
+                            Nuevo Tipo
+                        </button>
+                    </template>
 
                     <ContractTypeTable :types="contractTypes" @edit="editContractType" @delete="handleDeleteContractType" />
-                </div>
+                </BaseTableCard>
             </div>
 
             <!-- Modals -->
@@ -308,6 +281,7 @@ import {
 } from 'lucide-vue-next';
 
 // Components
+import BaseTableCard from '@/Components/Common/BaseTableCard.vue';
 import SummaryCards from '@/Components/HR/SummaryCards.vue';
 import EmployeeTable from '@/Components/HR/Employees/EmployeeTable.vue';
 import EmployeeModal from '@/Components/HR/Employees/EmployeeModal.vue';

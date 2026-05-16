@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { shallowRef, computed } from 'vue';
-import { LogIn, LogOut, FileText, Users, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Eye, CheckCheck } from 'lucide-vue-next';
+import { shallowRef } from 'vue';
+import { LogIn, LogOut, FileText, Users, Eye, CheckCheck } from 'lucide-vue-next';
 
 import { Visit, PaginatedVisits } from '@/Types/visitor';
 import VisitDetailModal from '@/Components/ExternalVisit/List/Modals/VisitDetailModal.vue';
+import ClientPagination from '@/Components/Common/ClientPagination.vue';
 
 const props = defineProps<{
     visits: PaginatedVisits;
@@ -16,17 +17,7 @@ defineEmits<{
     'update:perPage': [perPage: string | number];
 }>();
 
-const pageWindow = computed((): (number | '...')[] => {
-    const current = props.visits.current_page;
-    const last = props.visits.last_page;
-    if (last <= 7) return Array.from({ length: last }, (_, i) => i + 1);
-    const pages: (number | '...')[] = [1];
-    if (current > 3) pages.push('...');
-    for (let i = Math.max(2, current - 1); i <= Math.min(last - 1, current + 1); i++) pages.push(i);
-    if (current < last - 2) pages.push('...');
-    pages.push(last);
-    return pages;
-});
+
 
 const formatDate = (dateString?: string) => {
     if (!dateString) return '';
@@ -223,61 +214,14 @@ const closeDetails = () => {
         </div>
 
         <!-- Pagination -->
-        <div v-if="visits.last_page > 1" class="bg-slate-50 px-4 py-4 border-t border-slate-200">
-            <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
-                <div class="flex items-center gap-2 text-sm text-slate-600">
-                    <span>Mostrar</span>
-                    <select :value="visits.per_page"
-                        @change="$emit('update:perPage', ($event.target as HTMLSelectElement).value)"
-                        class="cursor-pointer border-2 border-slate-200 rounded-xl px-3 py-1.5 text-sm focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 bg-white outline-none transition-all">
-                        <option :value="10">10</option>
-                        <option :value="25">25</option>
-                        <option :value="50">50</option>
-                    </select>
-                    <span>por página</span>
-                </div>
-                <div class="flex items-center gap-1 flex-wrap justify-center">
-                    <!-- Primera página -->
-                    <button @click="$emit('page-change', 1)" :disabled="visits.current_page === 1"
-                        class="cursor-pointer p-2 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed transition-all">
-                        <ChevronsLeft class="w-4 h-4" />
-                    </button>
-                    <!-- Anterior -->
-                    <button @click="$emit('page-change', visits.current_page - 1)" :disabled="visits.current_page === 1"
-                        class="cursor-pointer p-2 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed transition-all">
-                        <ChevronLeft class="w-4 h-4" />
-                    </button>
-
-                    <!-- Números de página -->
-                    <template v-for="item in pageWindow" :key="item">
-                        <span v-if="item === '...'" class="px-1 text-slate-400 select-none">…</span>
-                        <button v-else
-                            @click="$emit('page-change', item as number)"
-                            :class="[
-                                'cursor-pointer min-w-[36px] h-9 px-2 rounded-xl border text-sm font-semibold transition-all',
-                                item === visits.current_page
-                                    ? 'bg-purple-600 border-purple-600 text-white shadow-sm'
-                                    : 'border-slate-200 text-slate-600 hover:bg-slate-100'
-                            ]">
-                            {{ item }}
-                        </button>
-                    </template>
-
-                    <!-- Siguiente -->
-                    <button @click="$emit('page-change', visits.current_page + 1)"
-                        :disabled="visits.current_page === visits.last_page"
-                        class="cursor-pointer p-2 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed transition-all">
-                        <ChevronRight class="w-4 h-4" />
-                    </button>
-                    <!-- Última página -->
-                    <button @click="$emit('page-change', visits.last_page)"
-                        :disabled="visits.current_page === visits.last_page"
-                        class="cursor-pointer p-2 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed transition-all">
-                        <ChevronsRight class="w-4 h-4" />
-                    </button>
-                </div>
-            </div>
-        </div>
+        <ClientPagination 
+            v-if="visits.last_page > 1"
+            :total-items="visits.total" 
+            :current-page="visits.current_page" 
+            :per-page="visits.per_page"
+            @update:current-page="$emit('page-change', $event)"
+            @update:per-page="$emit('update:perPage', $event)"
+        />
     </div>
 
     <!-- Modal Ver Detalles -->
