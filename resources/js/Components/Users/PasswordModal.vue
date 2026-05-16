@@ -35,7 +35,7 @@
                                 Nueva Contraseña <span class="text-red-500">*</span>
                             </label>
                             <input type="password" v-model="form.password" required minlength="8"
-                                class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                                class="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none focus:ring-4 focus:ring-amber-500/20 focus:border-amber-500 transition-all cursor-pointer"
                                 placeholder="Mínimo 8 caracteres" />
                             <p class="mt-1 text-xs text-slate-500">La contraseña debe tener al menos 8 caracteres</p>
                         </div>
@@ -46,7 +46,7 @@
                                 Confirmar Contraseña <span class="text-red-500">*</span>
                             </label>
                             <input type="password" v-model="form.password_confirmation" required minlength="8"
-                                class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                                class="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none focus:ring-4 focus:ring-amber-500/20 focus:border-amber-500 transition-all cursor-pointer"
                                 placeholder="Repetir contraseña" />
                         </div>
                     </div>

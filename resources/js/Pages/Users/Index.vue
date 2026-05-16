@@ -9,78 +9,118 @@
                     </h1>
                     <p class="mt-2 text-slate-600">Administración de usuarios del sistema y sus roles</p>
                 </div>
-                <div class="flex flex-wrap gap-2">
-                    <button v-if="activeTab === 'usuarios'" @click="createNewUser"
-                        class="inline-flex items-center px-5 py-2.5 text-sm font-bold rounded-xl shadow-lg text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 transition-all">
-                        <UserPlus class="w-5 h-5 mr-2" />
-                        Nuevo Usuario
-                    </button>
-                </div>
             </div>
 
             <!-- Summary Cards -->
             <SummaryCards :summary="summary" />
 
             <!-- Tabs Navigation -->
-            <div class="border-b border-slate-200 mb-8">
-                <nav class="-mb-px flex space-x-8">
+            <div class="border-b border-slate-200 mb-8 relative">
+                <nav ref="tabsRef" class="-mb-px flex">
                     <button @click="activeTab = 'usuarios'" :class="[
                         activeTab === 'usuarios'
-                            ? 'border-indigo-600 text-indigo-600'
-                            : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300',
-                        'whitespace-nowrap py-4 px-1 border-b-2 font-bold text-sm flex items-center gap-2 transition-all duration-200'
+                            ? 'text-indigo-600 active-tab'
+                            : 'text-slate-500 hover:text-slate-700',
+                        'cursor-pointer whitespace-nowrap py-4 px-5 font-bold text-sm flex items-center gap-2 transition-colors duration-300'
                     ]">
                         <Users class="w-5 h-5" />
                         Usuarios
                     </button>
                     <button @click="activeTab = 'roles'" :class="[
                         activeTab === 'roles'
-                            ? 'border-purple-600 text-purple-600'
-                            : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300',
-                        'whitespace-nowrap py-4 px-1 border-b-2 font-bold text-sm flex items-center gap-2 transition-all duration-200'
+                            ? 'text-purple-600 active-tab'
+                            : 'text-slate-500 hover:text-slate-700',
+                        'cursor-pointer whitespace-nowrap py-4 px-5 font-bold text-sm flex items-center gap-2 transition-colors duration-300'
                     ]">
                         <Shield class="w-5 h-5" />
                         Roles
                     </button>
                 </nav>
+                <!-- Gliding Indicator -->
+                <div class="absolute bottom-0 h-0.5 transition-all duration-300 ease-out" :style="indicatorStyle"></div>
             </div>
 
-            <!-- Tab: Usuarios -->
-            <template v-if="activeTab === 'usuarios'">
-                <!-- Sub-tabs: Todos / Activos / Inactivos -->
-                <div class="flex items-center gap-1 mb-5 bg-indigo-50 rounded-full p-1.5 w-fit">
-                    <button
-                        v-for="tab in statusTabs" :key="tab.key"
-                        @click="activeStatusTab = tab.key"
-                        :class="[
-                            activeStatusTab === tab.key
-                                ? 'bg-white text-indigo-900 shadow-md'
-                                : 'text-indigo-600 hover:text-indigo-800',
-                            'cursor-pointer px-5 py-2 rounded-full text-sm font-semibold transition-all duration-200 flex items-center gap-2'
-                        ]">
-                        {{ tab.label }}
-                        <span :class="[
-                            activeStatusTab === tab.key
-                                ? 'bg-indigo-500 text-white'
-                                : 'bg-indigo-200 text-indigo-700',
-                            'text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center transition-colors'
-                        ]">{{ tab.count }}</span>
-                    </button>
+            <!-- Tab Content -->
+            <Transition name="fade-slide" mode="out-in">
+                <div :key="activeTab">
+                    <!-- Tab: Usuarios -->
+                    <template v-if="activeTab === 'usuarios'">
+                        <!-- Unified Card Container -->
+                        <div class="bg-white shadow-md rounded-2xl border border-slate-200 overflow-hidden">
+                            <!-- Table Title & Sub-tabs -->
+                            <div class="p-5 sm:p-6 border-b border-slate-200 bg-slate-50 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                                <div>
+                                    <h2 class="text-lg font-bold text-slate-800">Listado de Usuarios</h2>
+                                    <p class="text-sm text-slate-500 font-medium mt-1">Gestión y control de cuentas de acceso</p>
+                                </div>
+                                <!-- Sub-tabs: Todos / Activos / Inactivos -->
+                                <div class="flex items-center gap-1 bg-indigo-50 rounded-full p-1.5 w-fit shrink-0">
+                                    <button
+                                        v-for="tab in statusTabs" :key="tab.key"
+                                        @click="activeStatusTab = tab.key"
+                                        :class="[
+                                            activeStatusTab === tab.key
+                                                ? 'bg-white text-indigo-900 shadow-md'
+                                                : 'text-indigo-600 hover:text-indigo-800',
+                                            'cursor-pointer px-4 py-2 rounded-full text-xs font-semibold transition-all duration-200 flex items-center gap-2 outline-none'
+                                        ]">
+                                        {{ tab.label }}
+                                        <span :class="[
+                                            activeStatusTab === tab.key
+                                                ? 'bg-indigo-500 text-white'
+                                                : 'bg-indigo-200 text-indigo-700',
+                                            'text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center transition-colors'
+                                        ]">{{ tab.count }}</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Top row: Actions -->
+                            <div class="p-4 sm:p-5 border-b border-slate-100 flex flex-col lg:flex-row items-stretch lg:items-center justify-end gap-4 bg-white">
+                                <div class="flex items-center justify-end gap-3 shrink-0">
+                                    <button
+                                        @click="filtersVisible = !filtersVisible"
+                                        class="cursor-pointer inline-flex justify-center items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-sm font-bold text-slate-600 hover:bg-slate-50 transition-all duration-200 shadow-sm"
+                                    >
+                                        <SlidersHorizontal class="w-4 h-4" />
+                                        Filtros
+                                        <ChevronDown
+                                            class="w-4 h-4 transition-transform duration-300"
+                                            :class="{ 'rotate-180': filtersVisible }"
+                                        />
+                                    </button>
+
+                                    <button @click="createNewUser"
+                                        class="cursor-pointer outline-none active:scale-95 inline-flex items-center px-5 py-2.5 text-sm font-bold rounded-xl shadow-lg shadow-indigo-500/30 text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 transition-all duration-300 hover:-translate-y-0.5">
+                                        <UserPlus class="w-4 h-4 mr-2" />
+                                        Nuevo Usuario
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Filters toggle + collapsible panel -->
+                            <div
+                                class="filters-collapse bg-slate-50 border-b border-slate-100"
+                                :class="{ 'filters-collapse--open': filtersVisible }"
+                            >
+                                <div class="p-4 sm:p-5">
+                                    <UserFilters :filters="localFilters" :result-count="filteredUsers.length" :roles="roles" :areas="areas"
+                                        :positions="positions" @update:filters="localFilters = $event" @clear="clearFilters" />
+                                </div>
+                            </div>
+
+                            <!-- Users Table -->
+                            <UserTable :users="filteredUsers" :loading="isLoading" @view="viewUser" @edit="editUser"
+                                @toggle-status="toggleUserStatus" @reset-password="resetUserPassword" @delete="handleDeleteUser" />
+                        </div>
+                    </template>
+
+                    <!-- Tab: Roles -->
+                    <template v-if="activeTab === 'roles'">
+                        <RolesManager />
+                    </template>
                 </div>
-
-                <!-- Filters -->
-                <div class="mb-6">
-                    <UserFilters :filters="localFilters" :result-count="filteredUsers.length" :roles="roles" :areas="areas"
-                        :positions="positions" @update:filters="localFilters = $event" @clear="clearFilters" />
-                </div>
-
-                <!-- Users Table -->
-                <UserTable :users="filteredUsers" :loading="isLoading" @view="viewUser" @edit="editUser"
-                    @toggle-status="toggleUserStatus" @reset-password="resetUserPassword" @delete="handleDeleteUser" />
-            </template>
-
-            <!-- Tab: Roles -->
-            <RolesManager v-if="activeTab === 'roles'" />
+            </Transition>
 
             <!-- Modals -->
             <UserModal v-if="showUserModal" :user="selectedUser" :is-editing="isEditing" :submitting="isSubmitting"
@@ -105,9 +145,9 @@ export default {
 </script>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, computed, nextTick, watch } from 'vue';
 import axios from 'axios';
-import { UserPlus, Users, Shield } from 'lucide-vue-next';
+import { UserPlus, Users, Shield, SlidersHorizontal, ChevronDown } from 'lucide-vue-next';
 
 // Components
 import SummaryCards from '@/Components/Users/SummaryCards.vue';
@@ -130,6 +170,12 @@ const localFilters = ref({
     position: '',
     status: ''
 });
+
+const FILTERS_STORAGE_KEY = 'users_filters_open';
+const filtersVisible = ref(
+    localStorage.getItem(FILTERS_STORAGE_KEY) === 'true'
+);
+watch(filtersVisible, (val) => localStorage.setItem(FILTERS_STORAGE_KEY, String(val)));
 
 const users = ref([]);
 const roles = ref([]);
@@ -413,5 +459,64 @@ const handleDeleteUser = (id) => {
 
 onMounted(() => {
     fetchData();
+    nextTick(updateIndicator);
 });
+
+watch(activeTab, () => {
+    nextTick(updateIndicator);
+});
+
+// Tab indicator logic
+const tabsRef = ref(null);
+const indicatorStyle = ref({ left: '0px', width: '0px', backgroundColor: '' });
+
+const getIndicatorColor = (tab) => {
+    switch (tab) {
+        case 'usuarios': return '#4f46e5'; // indigo-600
+        case 'roles': return '#9333ea'; // purple-600
+        default: return '#4f46e5';
+    }
+};
+
+const updateIndicator = () => {
+    if (!tabsRef.value) return;
+    const activeBtn = tabsRef.value.querySelector('.active-tab');
+    if (activeBtn) {
+        indicatorStyle.value = {
+            left: `${activeBtn.offsetLeft}px`,
+            width: `${activeBtn.offsetWidth}px`,
+            backgroundColor: getIndicatorColor(activeTab.value)
+        };
+    }
+};
 </script>
+
+<style scoped>
+.fade-slide-enter-active,
+.fade-slide-leave-active {
+    transition: all 0.3s ease;
+}
+
+.fade-slide-enter-from {
+    opacity: 0;
+    transform: translateX(10px);
+}
+
+.fade-slide-leave-to {
+    opacity: 0;
+    transform: translateX(-10px);
+}
+
+/* Filters collapse animation */
+.filters-collapse {
+    overflow: hidden;
+    max-height: 0;
+    opacity: 0;
+    transition: max-height 0.35s ease, opacity 0.3s ease;
+}
+
+.filters-collapse--open {
+    max-height: 500px;
+    opacity: 1;
+}
+</style>

@@ -46,7 +46,7 @@ const handleSubmit = () => { emit('submit'); };
                 <div>
                     <label class="block text-sm font-bold text-slate-700 mb-2">Nombre del Rol <span class="text-red-500">*</span></label>
                     <input v-model="form.nombre" type="text"
-                        class="w-full px-4 py-3 rounded-xl border focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-medium text-slate-600 outline-none"
+                        class="w-full px-4 py-3 rounded-xl border focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-medium text-slate-600 outline-none cursor-pointer"
                         :class="form.errors.nombre ? 'border-rose-400 bg-rose-50' : 'border-slate-200'"
                         placeholder="Ej. Supervisor de Seguridad" />
                     <p v-if="form.errors.nombre" class="mt-1.5 text-xs text-rose-500 font-bold flex items-center gap-1">
@@ -58,7 +58,7 @@ const handleSubmit = () => { emit('submit'); };
                 <div>
                     <label class="block text-sm font-bold text-slate-700 mb-2">Descripción <span class="text-slate-400 font-normal">(Opcional)</span></label>
                     <textarea v-model="form.descripcion" rows="3"
-                        class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all font-medium text-slate-600 resize-none outline-none"
+                        class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/20 transition-all font-medium text-slate-600 resize-none outline-none cursor-pointer"
                         placeholder="Describa brevemente las responsabilidades de este rol..."></textarea>
                 </div>
 

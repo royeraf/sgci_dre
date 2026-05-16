@@ -35,7 +35,7 @@
                                 class="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-indigo-400" />
                             <input type="text" v-model="employeeSearch" placeholder="Buscar por nombre o DNI..."
                                 @focus="showEmployeeDropdown = true" @blur="closeDropdown"
-                                class="w-full pl-9 pr-4 py-2.5 border border-indigo-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors bg-white text-indigo-900 placeholder-indigo-300" />
+                                class="w-full pl-9 pr-4 py-2.5 border border-indigo-200 rounded-xl outline-none focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 transition-colors cursor-pointer bg-white text-indigo-900 placeholder-indigo-300" />
 
                             <div v-if="showEmployeeDropdown && filteredEmployees.length > 0"
                                 class="absolute z-50 w-full mt-1 bg-white rounded-xl shadow-lg border border-indigo-100 max-h-60 overflow-auto">
@@ -103,7 +103,7 @@
                             </label>
                             <input type="text" v-model="dni" v-bind="dniProps" maxlength="8" placeholder="12345678"
                                 @input="dni = $event.target.value.replace(/\D/g, '')"
-                                class="w-full px-4 py-2.5 border rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                                class="w-full px-4 py-2.5 border-2 rounded-xl bg-white text-slate-900 placeholder:text-slate-400 outline-none focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all cursor-pointer"
                                 :class="formErrors.dni ? 'border-red-400' : 'border-slate-200'" />
                             <p v-if="formErrors.dni" class="mt-1 text-sm text-red-600">{{ formErrors.dni }}</p>
                         </div>
@@ -114,7 +114,7 @@
                                 Título Profesional
                             </label>
                             <select v-model="titulo" v-bind="tituloProps"
-                                class="w-full px-4 py-2.5 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors bg-white">
+                                class="w-full px-4 py-2.5 border-2 border-slate-200 rounded-xl bg-white text-slate-900 outline-none focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all cursor-pointer">
                                 <option value="">Sin título</option>
                                 <option value="Lic.">Lic.</option>
                                 <option value="Ing.">Ing.</option>
@@ -135,7 +135,7 @@
                             </label>
                             <input type="text" v-model="name" v-bind="nameProps" placeholder="JUAN"
                                 @input="name = $event.target.value.toUpperCase()"
-                                class="w-full px-4 py-2.5 border rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                                class="w-full px-4 py-2.5 border-2 rounded-xl bg-white text-slate-900 placeholder:text-slate-400 outline-none focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all cursor-pointer"
                                 :class="formErrors.name ? 'border-red-400' : 'border-slate-200'" />
                             <p v-if="formErrors.name" class="mt-1 text-sm text-red-600">{{ formErrors.name }}</p>
                         </div>
@@ -147,7 +147,7 @@
                             </label>
                             <input type="text" v-model="apellidos" v-bind="apellidosProps" placeholder="PÉREZ GARCÍA"
                                 @input="apellidos = $event.target.value.toUpperCase()"
-                                class="w-full px-4 py-2.5 border rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                                class="w-full px-4 py-2.5 border-2 rounded-xl bg-white text-slate-900 placeholder:text-slate-400 outline-none focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all cursor-pointer"
                                 :class="formErrors.apellidos ? 'border-red-400' : 'border-slate-200'" />
                             <p v-if="formErrors.apellidos" class="mt-1 text-sm text-red-600">{{ formErrors.apellidos }}
                             </p>
@@ -159,7 +159,7 @@
                                 Email
                             </label>
                             <input type="email" v-model="email" v-bind="emailProps" placeholder="usuario@ejemplo.com"
-                                class="w-full px-4 py-2.5 border rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                                class="w-full px-4 py-2.5 border-2 rounded-xl bg-white text-slate-900 placeholder:text-slate-400 outline-none focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all cursor-pointer"
                                 :class="formErrors.email ? 'border-red-400' : 'border-slate-200'" />
                             <p v-if="formErrors.email" class="mt-1 text-sm text-red-600">{{ formErrors.email }}</p>
                         </div>
@@ -171,7 +171,7 @@
                             </label>
                             <input type="text" v-model="telefono" v-bind="telefonoProps" placeholder="999888777" maxlength="9"
                                 @input="telefono = $event.target.value.replace(/\D/g, '')"
-                                class="w-full px-4 py-2.5 border rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                                class="w-full px-4 py-2.5 border-2 rounded-xl bg-white text-slate-900 placeholder:text-slate-400 outline-none focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all cursor-pointer"
                                 :class="formErrors.telefono ? 'border-red-400' : 'border-slate-200'" />
                             <p v-if="formErrors.telefono" class="mt-1 text-sm text-red-600">{{ formErrors.telefono }}
                             </p>
@@ -183,7 +183,7 @@
                                 Cargo
                             </label>
                             <select v-model="cargo" v-bind="cargoProps"
-                                class="w-full px-4 py-2.5 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors">
+                                class="w-full px-4 py-2.5 border-2 border-slate-200 rounded-xl bg-white text-slate-900 outline-none focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all cursor-pointer">
                                 <option value="">Seleccionar cargo...</option>
                                 <option v-for="position in positions" :key="position.id" :value="position.nombre">
                                     {{ position.nombre }}
@@ -197,7 +197,7 @@
                                 Área
                             </label>
                             <select v-model="area" v-bind="areaProps"
-                                class="w-full px-4 py-2.5 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors">
+                                class="w-full px-4 py-2.5 border-2 border-slate-200 rounded-xl bg-white text-slate-900 outline-none focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all cursor-pointer">
                                 <option value="">Seleccionar área...</option>
                                 <option v-for="a in areas" :key="a.id" :value="a.nombre">
                                     {{ a.nombre }}
@@ -211,7 +211,7 @@
                                 Rol <span class="text-red-500">*</span>
                             </label>
                             <select v-model="rolId" v-bind="rolIdProps" @change="applyRolePreset"
-                                class="w-full px-4 py-2.5 border rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                                class="w-full px-4 py-2.5 border-2 rounded-xl bg-white text-slate-900 placeholder:text-slate-400 outline-none focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all cursor-pointer"
                                 :class="formErrors.rol_id ? 'border-red-400' : 'border-slate-200'">
                                 <option value="">Seleccionar rol...</option>
                                 <option v-for="role in roles" :key="role.rol_id" :value="role.rol_id">
@@ -228,7 +228,7 @@
                             </label>
                             <div class="flex items-center h-10">
                                 <input type="checkbox" v-model="isActive" v-bind="isActiveProps" id="is_active"
-                                    class="w-4 h-4 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500" />
+                                    class="w-4 h-4 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500/20 cursor-pointer" />
                                 <label for="is_active" class="ml-2 text-sm text-slate-700">
                                     Usuario activo
                                 </label>
@@ -266,7 +266,7 @@
                                     :class="selectedModules.includes(mod.key) ? 'bg-indigo-50 text-indigo-800' : 'bg-slate-50 text-slate-600 hover:bg-slate-100'">
                                     <input type="checkbox" :checked="selectedModules.includes(mod.key)"
                                         @change="toggleModule(mod.key)"
-                                        class="w-4 h-4 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500 flex-shrink-0" />
+                                        class="w-4 h-4 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500/20 flex-shrink-0 cursor-pointer" />
                                     <component :is="mod.icon" class="w-4 h-4 flex-shrink-0"
                                         :class="selectedModules.includes(mod.key) ? 'text-indigo-500' : 'text-slate-400'" />
                                     <span class="text-xs font-semibold leading-tight flex-1">{{ mod.label }}</span>
@@ -294,7 +294,7 @@
                                                 : 'bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100'">
                                             <input type="checkbox" :checked="isTabSelected(mod.key, tab.key)"
                                                 @change="toggleTab(mod.key, tab.key)"
-                                                class="w-3 h-3 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500" />
+                                                class="w-3 h-3 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500/20 cursor-pointer" />
                                             {{ tab.label }}
                                         </label>
                                     </div>
@@ -321,7 +321,7 @@
                                 <div class="relative">
                                     <input :type="showPassword ? 'text' : 'password'" v-model="password" v-bind="passwordProps"
                                         placeholder="Mínimo 8 caracteres"
-                                        class="w-full px-4 py-2.5 pr-12 border rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                                        class="w-full px-4 py-2.5 pr-12 border-2 rounded-xl bg-white text-slate-900 placeholder:text-slate-400 outline-none focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all cursor-pointer"
                                         :class="formErrors.password ? 'border-red-400' : 'border-slate-200'" />
                                     <button type="button" @click="showPassword = !showPassword"
                                         class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
@@ -341,7 +341,7 @@
                                 <div class="relative">
                                     <input :type="showPasswordConfirmation ? 'text' : 'password'"
                                         v-model="passwordConfirmation" v-bind="passwordConfirmationProps" placeholder="Repetir contraseña"
-                                        class="w-full px-4 py-2.5 pr-12 border rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                                        class="w-full px-4 py-2.5 pr-12 border-2 rounded-xl bg-white text-slate-900 placeholder:text-slate-400 outline-none focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all cursor-pointer"
                                         :class="formErrors.password_confirmation ? 'border-red-400' : 'border-slate-200'" />
                                     <button type="button" @click="showPasswordConfirmation = !showPasswordConfirmation"
                                         class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"

@@ -25,12 +25,12 @@ onMounted(() => {
 </script>
 
 <template>
-    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+    <div class="bg-white shadow-md rounded-2xl border border-slate-200 overflow-hidden">
         <!-- Header -->
-        <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+        <div class="p-5 sm:p-6 border-b border-slate-200 bg-slate-50 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
-                <h2 class="text-xl font-bold text-slate-800">Gestionar Roles</h2>
-                <p class="text-sm text-slate-500 font-medium">Define los roles y niveles de acceso del sistema</p>
+                <h2 class="text-lg font-bold text-slate-800">Gestionar Roles</h2>
+                <p class="text-sm text-slate-500 font-medium mt-1">Define los roles y niveles de acceso del sistema</p>
             </div>
             <button @click="openCreateModal"
                 class="inline-flex items-center px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-sm font-bold rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all shadow-md shadow-indigo-200">
