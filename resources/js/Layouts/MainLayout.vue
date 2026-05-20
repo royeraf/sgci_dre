@@ -42,7 +42,7 @@
                         class="group flex items-center text-sm font-semibold rounded-xl transition-all duration-300 ease-in-out relative"
                         :class="[
                             $page.component === 'Dashboard' ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/30 ring-1 ring-blue-400/50' : 'text-slate-300 hover:bg-slate-800/80 hover:text-white',
-                            isCollapsed ? 'px-[14px] py-3' : 'px-4 py-3.5'
+                            isCollapsed ? 'justify-center py-3' : 'px-4 py-3.5'
                         ]" :title="isCollapsed ? 'Dashboard' : ''">
                         <div class="rounded-lg transition-all duration-300 ease-in-out flex-shrink-0" :class="[
                             $page.component === 'Dashboard' ? 'bg-white/20' : 'bg-slate-700/80 group-hover:bg-slate-600',
@@ -59,7 +59,7 @@
                         class="group flex items-center text-sm font-semibold rounded-xl transition-all duration-300 ease-in-out relative"
                         :class="[
                             $page.component.startsWith('Occurrences/') ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/30 ring-1 ring-blue-400/50' : 'text-slate-300 hover:bg-slate-800/80 hover:text-white',
-                            isCollapsed ? 'px-[14px] py-3' : 'px-4 py-3.5'
+                            isCollapsed ? 'justify-center py-3' : 'px-4 py-3.5'
                         ]" :title="isCollapsed ? 'Cuaderno de Ocurrencias' : ''">
                         <div class="rounded-lg transition-all duration-300 ease-in-out flex-shrink-0" :class="[
                             $page.component.startsWith('Occurrences/') ? 'bg-white/20' : 'bg-slate-700/80 group-hover:bg-slate-600',
@@ -76,7 +76,7 @@
                         class="group flex items-center text-sm font-semibold rounded-xl transition-all duration-300 ease-in-out relative"
                         :class="[
                             $page.component.startsWith('EntryExits/') ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-lg shadow-emerald-500/30 ring-1 ring-emerald-400/50' : 'text-slate-300 hover:bg-slate-800/80 hover:text-white',
-                            isCollapsed ? 'px-[14px] py-3' : 'px-4 py-3.5'
+                            isCollapsed ? 'justify-center py-3' : 'px-4 py-3.5'
                         ]" :title="isCollapsed ? 'Control de Personal' : ''">
                         <div class="rounded-lg transition-all duration-300 ease-in-out flex-shrink-0" :class="[
                             $page.component.startsWith('EntryExits/') ? 'bg-white/20' : 'bg-slate-700/80 group-hover:bg-slate-600',
@@ -94,7 +94,7 @@
                         class="group flex items-center text-sm font-semibold rounded-xl transition-all duration-300 ease-in-out relative"
                         :class="[
                             $page.component.startsWith('Visitors/') ? 'bg-gradient-to-r from-purple-600 to-fuchsia-600 text-white shadow-lg shadow-purple-500/30 ring-1 ring-purple-400/50' : 'text-slate-300 hover:bg-slate-800/80 hover:text-white',
-                            isCollapsed ? 'px-[14px] py-3' : 'px-4 py-3.5'
+                            isCollapsed ? 'justify-center py-3' : 'px-4 py-3.5'
                         ]" :title="isCollapsed ? 'Visitas Externas' : ''">
                         <div class="rounded-lg transition-all duration-300 ease-in-out flex-shrink-0" :class="[
                             $page.component.startsWith('Visitors/') ? 'bg-white/20' : 'bg-slate-700/80 group-hover:bg-slate-600',
@@ -112,7 +112,7 @@
                         class="group flex items-center text-sm font-semibold rounded-xl transition-all duration-300 ease-in-out relative"
                         :class="[
                             $page.component.startsWith('Vehicles/') ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-lg shadow-cyan-500/30 ring-1 ring-cyan-400/50' : 'text-slate-300 hover:bg-slate-800/80 hover:text-white',
-                            isCollapsed ? 'px-[14px] py-3' : 'px-4 py-3.5'
+                            isCollapsed ? 'justify-center py-3' : 'px-4 py-3.5'
                         ]" :title="isCollapsed ? 'Control Vehicular' : ''">
                         <div class="rounded-lg transition-all duration-300 ease-in-out flex-shrink-0" :class="[
                             $page.component.startsWith('Vehicles/') ? 'bg-white/20' : 'bg-slate-700/80 group-hover:bg-slate-600',
@@ -130,7 +130,7 @@
                         class="group flex items-center text-sm font-semibold rounded-xl transition-all duration-300 ease-in-out relative"
                         :class="[
                             $page.component.startsWith('Assets/') ? 'bg-gradient-to-r from-slate-700 to-gray-700 text-white shadow-lg shadow-slate-500/30 ring-1 ring-slate-400/50' : 'text-slate-300 hover:bg-slate-800/80 hover:text-white',
-                            isCollapsed ? 'px-[14px] py-3' : 'px-4 py-3.5'
+                            isCollapsed ? 'justify-center py-3' : 'px-4 py-3.5'
                         ]" :title="isCollapsed ? 'Patrimonio' : ''">
                         <div class="rounded-lg transition-all duration-300 ease-in-out flex-shrink-0" :class="[
                             $page.component.startsWith('Assets/') ? 'bg-white/20' : 'bg-slate-700/80 group-hover:bg-slate-600',
@@ -148,7 +148,7 @@
                         class="group flex items-center text-sm font-semibold rounded-xl transition-all duration-300 ease-in-out relative"
                         :class="[
                             $page.component.startsWith('Appointments/') ? 'bg-gradient-to-r from-pink-600 to-rose-600 text-white shadow-lg shadow-pink-500/30 ring-1 ring-pink-400/50' : 'text-slate-300 hover:bg-slate-800/80 hover:text-white',
-                            isCollapsed ? 'px-[14px] py-3' : 'px-4 py-3.5'
+                            isCollapsed ? 'justify-center py-3' : 'px-4 py-3.5'
                         ]" :title="isCollapsed ? 'Gestión de Citas' : ''">
                         <div class="rounded-lg transition-all duration-300 ease-in-out flex-shrink-0" :class="[
                             $page.component.startsWith('Appointments/') ? 'bg-white/20' : 'bg-slate-700/80 group-hover:bg-slate-600',
@@ -166,7 +166,7 @@
                         class="group flex items-center text-sm font-semibold rounded-xl transition-all duration-300 ease-in-out relative"
                         :class="[
                             $page.component.startsWith('Bienestar/') ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-lg shadow-purple-500/30 ring-1 ring-purple-400/50' : 'text-slate-300 hover:bg-slate-800/80 hover:text-white',
-                            isCollapsed ? 'px-[14px] py-3' : 'px-4 py-3.5'
+                            isCollapsed ? 'justify-center py-3' : 'px-4 py-3.5'
                         ]" :title="isCollapsed ? 'Bienestar Social' : ''">
                         <div class="rounded-lg transition-all duration-300 ease-in-out flex-shrink-0" :class="[
                             $page.component.startsWith('Bienestar/') ? 'bg-white/20' : 'bg-slate-700/80 group-hover:bg-slate-600',
@@ -184,7 +184,7 @@
                         class="group flex items-center text-sm font-semibold rounded-xl transition-all duration-300 ease-in-out relative"
                         :class="[
                             $page.component.startsWith('Papeletas/') ? 'bg-gradient-to-r from-amber-600 to-orange-600 text-white shadow-lg shadow-amber-500/30 ring-1 ring-amber-400/50' : 'text-slate-300 hover:bg-slate-800/80 hover:text-white',
-                            isCollapsed ? 'px-[14px] py-3' : 'px-4 py-3.5'
+                            isCollapsed ? 'justify-center py-3' : 'px-4 py-3.5'
                         ]" :title="isCollapsed ? 'Papeletas de Salida' : ''">
                         <div class="rounded-lg transition-all duration-300 ease-in-out flex-shrink-0" :class="[
                             $page.component.startsWith('Papeletas/') ? 'bg-white/20' : 'bg-slate-700/80 group-hover:bg-slate-600',
@@ -202,7 +202,7 @@
                         class="group flex items-center text-sm font-semibold rounded-xl transition-all duration-300 ease-in-out relative"
                         :class="[
                             $page.component.startsWith('Asistencia/') ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-lg shadow-cyan-500/30 ring-1 ring-cyan-400/50' : 'text-slate-300 hover:bg-slate-800/80 hover:text-white',
-                            isCollapsed ? 'px-[14px] py-3' : 'px-4 py-3.5'
+                            isCollapsed ? 'justify-center py-3' : 'px-4 py-3.5'
                         ]" :title="isCollapsed ? 'Marcas de Asistencia' : ''">
                         <div class="rounded-lg transition-all duration-300 ease-in-out flex-shrink-0" :class="[
                             $page.component.startsWith('Asistencia/') ? 'bg-white/20' : 'bg-slate-700/80 group-hover:bg-slate-600',
@@ -220,7 +220,7 @@
                         class="group flex items-center text-sm font-semibold rounded-xl transition-all duration-300 ease-in-out relative"
                         :class="[
                             $page.component.startsWith('HR/') ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-lg shadow-emerald-500/30 ring-1 ring-emerald-400/50' : 'text-slate-300 hover:bg-slate-800/80 hover:text-white',
-                            isCollapsed ? 'px-[14px] py-3' : 'px-4 py-3.5'
+                            isCollapsed ? 'justify-center py-3' : 'px-4 py-3.5'
                         ]" :title="isCollapsed ? 'Recursos Humanos' : ''">
                         <div class="rounded-lg transition-all duration-300 ease-in-out flex-shrink-0" :class="[
                             $page.component.startsWith('HR/') ? 'bg-white/20' : 'bg-slate-700/80 group-hover:bg-slate-600',
@@ -247,7 +247,7 @@
                         class="group flex items-center text-sm font-semibold rounded-xl transition-all duration-300 ease-in-out relative"
                         :class="[
                             $page.component.startsWith('Users/') ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg shadow-indigo-500/30 ring-1 ring-indigo-400/50' : 'text-slate-300 hover:bg-slate-800/80 hover:text-white',
-                            isCollapsed ? 'px-[14px] py-3' : 'px-4 py-3.5'
+                            isCollapsed ? 'justify-center py-3' : 'px-4 py-3.5'
                         ]" :title="isCollapsed ? 'Gestión de Usuarios' : ''">
                         <div class="rounded-lg transition-all duration-300 ease-in-out flex-shrink-0" :class="[
                             $page.component.startsWith('Users/') ? 'bg-white/20' : 'bg-slate-700/80 group-hover:bg-slate-600',
