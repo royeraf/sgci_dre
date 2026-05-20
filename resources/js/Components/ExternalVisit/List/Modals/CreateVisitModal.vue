@@ -316,26 +316,33 @@ const onSubmit = validateEntryForm(async (values) => {
     else payload.direction_id = null as any;
 
     router.post('/visitors', payload as any, {
-        onSuccess: (page: any) => {
+        onSuccess: (/* page: any */) => {
             resetForm();
             selectedEmployeeData.value = null;
             selectedReasonData.value = null;
             emit('close');
-            const newVisitId = page.props.flash?.new_visit_id;
-            if (newVisitId) {
-                Swal.fire({
-                    title: 'Visita Registrada',
-                    text: '¿Desea imprimir el ticket?',
-                    icon: 'success',
-                    showCancelButton: true,
-                    confirmButtonText: 'Sí, Imprimir',
-                    cancelButtonText: 'No',
-                    confirmButtonColor: '#9333ea',
-                    cancelButtonColor: '#64748b',
-                }).then((r) => {
-                    if (r.isConfirmed) window.open(`/visitors/${newVisitId}/ticket`, '_blank');
-                });
-            }
+            Swal.fire({
+                title: 'Visita Registrada',
+                icon: 'success',
+                timer: 2000,
+                showConfirmButton: false,
+            });
+            // Ticket printing — habilitar cuando se disponga de ticketero
+            // const newVisitId = page.props.flash?.new_visit_id;
+            // if (newVisitId) {
+            //     Swal.fire({
+            //         title: 'Visita Registrada',
+            //         text: '¿Desea imprimir el ticket?',
+            //         icon: 'success',
+            //         showCancelButton: true,
+            //         confirmButtonText: 'Sí, Imprimir',
+            //         cancelButtonText: 'No',
+            //         confirmButtonColor: '#9333ea',
+            //         cancelButtonColor: '#64748b',
+            //     }).then((r) => {
+            //         if (r.isConfirmed) window.open(`/visitors/${newVisitId}/ticket`, '_blank');
+            //     });
+            // }
         },
         onFinish: () => isSubmitting.value = false
     });

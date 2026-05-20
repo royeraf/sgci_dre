@@ -4,7 +4,7 @@ import { useForm } from 'vee-validate';
 import { toTypedSchema } from '@vee-validate/yup';
 import * as yup from 'yup';
 import { router } from '@inertiajs/vue3';
-import { LogOut, X, Loader2, ScanBarcode, CheckCircle2 } from 'lucide-vue-next';
+import { LogOut, X, Loader2, ScanBarcode, CheckCircle2, AlertCircle } from 'lucide-vue-next';
 import Swal from 'sweetalert2';
 
 import { Visit } from '@/Types/visitor';
@@ -19,9 +19,24 @@ const emit = defineEmits<{
 }>();
 
 const isSubmitting = shallowRef(false);
-const currentTime = shallowRef(new Date().toTimeString().slice(0, 5));
+const currentTime = shallowRef('');
+const loadingTime = shallowRef(true);
 const verifyDni = shallowRef('');
 const verifyDniInput = useTemplateRef<HTMLInputElement>('verifyDniInput');
+
+const fetchServerTime = async () => {
+    try {
+        const res = await fetch('/api/server-time');
+        const data = await res.json();
+        currentTime.value = data.time;
+        setFieldValue('hora_salida', data.time);
+    } catch {
+        currentTime.value = new Date().toTimeString().slice(0, 5);
+        setFieldValue('hora_salida', currentTime.value);
+    } finally {
+        loadingTime.value = false;
+    }
+};
 
 // DNI Verification
 const isDniVerified = computed(() => {
@@ -39,7 +54,7 @@ const schema = toTypedSchema(
 const { errors, defineField, handleSubmit: validateForm, setFieldValue } = useForm({
     validationSchema: schema,
     initialValues: {
-        hora_salida: currentTime.value,
+        hora_salida: '',
         observacion_salida: '',
     }
 });
@@ -48,10 +63,9 @@ const [horaSalida] = defineField('hora_salida');
 const [observacionSalida] = defineField('observacion_salida');
 
 // Auto-submit if verified via enter or scanner
-const checkDniAndSubmit = () => {
+const checkDniAndSubmit = async () => {
     if (isDniVerified.value) {
-        const now = new Date().toTimeString().slice(0, 5);
-        if (horaSalida) horaSalida.value = now;
+        await fetchServerTime();
         handleFormSubmit();
     }
 };
@@ -96,11 +110,9 @@ const handleSubmit = () => {
 let timeInterval: ReturnType<typeof setInterval>;
 
 onMounted(() => {
-    // Update exit time every 30 seconds
-    timeInterval = setInterval(() => {
-        currentTime.value = new Date().toTimeString().slice(0, 5);
-        setFieldValue('hora_salida', currentTime.value);
-    }, 30000);
+    fetchServerTime();
+    // Update exit time every 30 seconds using server time
+    timeInterval = setInterval(fetchServerTime, 30000);
 
     // Focus DNI input on open
     nextTick(() => {
@@ -141,29 +153,31 @@ onUnmounted(() => {
                 <!-- Form -->
                 <form @submit.prevent="handleSubmit" class="p-6 space-y-6">
                     <!-- Scanner Section -->
-                    <div class="bg-indigo-50 border-l-4 border-indigo-500 p-4">
-                        <div class="flex">
-                            <div class="flex-shrink-0">
-                                <ScanBarcode class="h-5 w-5 text-indigo-500" />
-                            </div>
-                            <div class="ml-3 w-full">
-                                <p class="text-sm text-indigo-700 font-bold mb-2">
-                                    Escanee el DNI para confirmar
-                                </p>
-                                <input ref="verifyDniInput" type="text" v-model="verifyDni"
-                                    placeholder="Escanee o escriba DNI..." maxlength="8"
-                                    @keyup.enter.prevent="checkDniAndSubmit"
-                                    class="block w-full rounded-xl border-2 border-indigo-300 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-300/20 px-4 py-2.5 bg-white outline-none text-sm" />
-
-                                <p v-if="verifyDni && !isDniVerified" class="text-xs text-red-600 mt-1 font-bold">
-                                    No coincide ({{ visit.dni }})
-                                </p>
-                                <p v-if="isDniVerified"
-                                    class="text-xs text-green-600 mt-1 font-bold flex items-center gap-1">
-                                    <CheckCircle2 class="w-3 h-3" /> Identidad Verificada
-                                </p>
-                            </div>
+                    <div class="bg-gradient-to-br from-purple-50 to-fuchsia-50 rounded-xl p-3 border border-purple-100">
+                        <div class="flex items-center gap-2 mb-2">
+                            <ScanBarcode class="w-4 h-4 text-purple-600" />
+                            <span class="text-sm font-semibold text-purple-900">Consulta de DNI con Lector</span>
                         </div>
+                        <div class="flex gap-2">
+                            <input ref="verifyDniInput" type="text" v-model="verifyDni"
+                                placeholder="Escanee o escriba DNI..." maxlength="8"
+                                @keyup.enter.prevent="checkDniAndSubmit"
+                                class="flex-1 w-full px-3 py-2 border-2 rounded-xl focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 transition-all text-sm outline-none bg-white"
+                                :class="verifyDni && !isDniVerified ? 'border-red-400 bg-red-50' : 'border-purple-200'" />
+                            <button type="button" @click="checkDniAndSubmit"
+                                :disabled="!isDniVerified || isSubmitting"
+                                class="cursor-pointer px-4 py-2 bg-gradient-to-r from-purple-600 to-fuchsia-600 text-white text-sm font-bold rounded-xl hover:from-purple-700 hover:to-fuchsia-700 transition-all shadow-md shadow-purple-500/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5 active:scale-95">
+                                <Loader2 v-if="isSubmitting" class="w-4 h-4 animate-spin" />
+                                <LogOut v-else class="w-4 h-4" />
+                                <span class="hidden sm:inline">Confirmar</span>
+                            </button>
+                        </div>
+                        <p v-if="verifyDni && !isDniVerified" class="text-xs text-red-600 mt-1 font-bold flex items-center gap-1">
+                            <AlertCircle class="w-3 h-3" /> DNI no coincide
+                        </p>
+                        <p v-if="isDniVerified" class="text-xs text-green-600 mt-1 font-bold flex items-center gap-1">
+                            <CheckCircle2 class="w-3 h-3" /> Identidad Verificada
+                        </p>
                     </div>
 
                     <!-- Visit Info -->
@@ -196,7 +210,13 @@ onUnmounted(() => {
                         <div class="relative">
                             <input type="time" :value="horaSalida" disabled
                                 class="w-full px-4 py-2.5 bg-slate-50 border-2 border-slate-200 rounded-xl text-slate-500 font-bold outline-none cursor-not-allowed" />
-                            <div class="absolute inset-0 z-10" title="La hora se asigna automáticamente"></div>
+                            <div class="absolute inset-0 z-10 flex items-center justify-end pr-3"
+                                title="Hora obtenida del servidor">
+                                <span v-if="loadingTime"
+                                    class="text-xs text-slate-400 animate-pulse">cargando...</span>
+                                <span v-else
+                                    class="text-xs text-emerald-600 font-semibold">servidor ✓</span>
+                            </div>
                         </div>
                         <p v-if="errors.hora_salida" class="mt-1 text-sm text-red-600">{{ errors.hora_salida }}</p>
                     </div>
