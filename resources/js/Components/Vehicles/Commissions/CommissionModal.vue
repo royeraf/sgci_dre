@@ -75,17 +75,6 @@
                             <p v-if="formErrors.solicitante_employee_id" class="mt-1 text-sm text-red-600">{{ formErrors.solicitante_employee_id }}</p>
                         </div>
 
-                        <!-- Dependencia -->
-                        <div class="md:col-span-2">
-                            <label class="block text-sm font-bold text-slate-700 mb-2">Dependencia</label>
-                            <input type="text" v-model="dependencia" v-bind="dependenciaProps"
-                                class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                                :class="formErrors.dependencia ? 'border-red-400' : 'border-slate-200'"
-                                placeholder="Ej: Dirección Regional de Educación">
-                            <p v-if="formErrors.dependencia" class="mt-1 text-sm text-red-600">{{ formErrors.dependencia
-                                }}</p>
-                        </div>
-
                         <!-- Lugar -->
                         <div class="md:col-span-2">
                             <label class="block text-sm font-bold text-slate-700 mb-2">
@@ -265,7 +254,6 @@ const commissionSchema = toTypedSchema(
     yup.object({
         solicitante_employee_id: yup.string()
             .required('Debe seleccionar el servidor o funcionario que solicita'),
-        dependencia: yup.string().nullable(),
         lugar: yup.string()
             .required('El lugar de destino es obligatorio')
             .min(3, 'El lugar debe tener al menos 3 caracteres'),
@@ -292,7 +280,6 @@ const { errors: formErrors, defineField, handleSubmit: validateForm, resetForm, 
     validationSchema: commissionSchema,
     initialValues: {
         solicitante_employee_id: '',
-        dependencia: '',
         lugar: '',
         referencia: '',
         dia: currentDate,
@@ -312,7 +299,6 @@ const { errors: formErrors, defineField, handleSubmit: validateForm, resetForm, 
 });
 
 const [solicitanteEmployeeId] = defineField('solicitante_employee_id');
-const [dependencia, dependenciaProps] = defineField('dependencia');
 const [lugar, lugarProps] = defineField('lugar');
 const [referencia, referenciaProps] = defineField('referencia');
 const [dia, diaProps] = defineField('dia');
@@ -366,7 +352,6 @@ onMounted(() => {
         }
         setValues({
             solicitante_employee_id: props.commission.solicitante_employee_id || '',
-            dependencia: props.commission.dependencia || '',
             lugar: props.commission.lugar || '',
             referencia: props.commission.referencia || '',
             dia: props.commission.dia || currentDate,

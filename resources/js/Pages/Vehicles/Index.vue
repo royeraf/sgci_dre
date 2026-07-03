@@ -86,7 +86,7 @@
                         <Search class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                         <input type="text" v-model="searchCommission"
                             class="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                            placeholder="Buscar por solicitante, dependencia, chofer o placa...">
+                            placeholder="Buscar por solicitante, chofer o placa...">
                     </div>
                 </div>
 
@@ -395,7 +395,6 @@ const filteredCommissions = computed(() => {
     if (!searchCommission.value) return commissions.value;
     const q = searchCommission.value.toLowerCase();
     return commissions.value.filter(c =>
-        c.dependencia?.toLowerCase().includes(q) ||
         c.solicitante?.toLowerCase().includes(q) ||
         c.chofer?.toLowerCase().includes(q) ||
         c.placa?.toLowerCase().includes(q)

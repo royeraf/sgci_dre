@@ -153,7 +153,6 @@ class VehicleController extends Controller
                     'id' => $commission->id,
                     'numero' => $commission->numero,
                     'anio' => $commission->anio,
-                    'dependencia' => $commission->dependencia,
                     'solicitante_employee_id' => $commission->solicitante_employee_id,
                     'solicitante' => $commission->solicitante_nombre,
                     'dia' => $commission->dia->format('Y-m-d'),
@@ -189,7 +188,6 @@ class VehicleController extends Controller
     public function storeCommission(Request $request)
     {
         $validated = $request->validate([
-            'dependencia' => 'nullable|string|max:255',
             'solicitante_employee_id' => 'required|uuid|exists:employees,id',
             'dia' => 'required|date',
             'hora' => 'required',
@@ -222,7 +220,6 @@ class VehicleController extends Controller
         $commission = VehicleCommission::findOrFail($id);
 
         $validated = $request->validate([
-            'dependencia' => 'nullable|string|max:255',
             'solicitante_employee_id' => 'sometimes|uuid|exists:employees,id',
             'dia' => 'sometimes|date',
             'hora' => 'sometimes',

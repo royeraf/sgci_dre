@@ -12,7 +12,6 @@ class VehicleCommission extends Model
     protected $fillable = [
         'numero',
         'anio',
-        'dependencia',
         'solicitante_employee_id',
         'dia',
         'hora',
