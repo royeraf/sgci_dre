@@ -141,11 +141,12 @@ Route::middleware('auth')->group(function () {
         Route::put('/inventory/{id}', [VehicleController::class, 'updateVehicle'])->name('inventory.update');
         Route::delete('/inventory/{id}', [VehicleController::class, 'deleteVehicle'])->name('inventory.delete');
         
-        // Commissions
+        // Commissions (Autorización Salida de Vehículos)
         Route::get('/commissions', [VehicleController::class, 'getCommissions'])->name('commissions.list');
         Route::post('/commissions', [VehicleController::class, 'storeCommission'])->name('commissions.store');
         Route::put('/commissions/{id}', [VehicleController::class, 'updateCommission'])->name('commissions.update');
-        
+        Route::get('/commissions/{id}/pdf', [VehicleController::class, 'commissionPdf'])->name('commissions.pdf');
+
         // Maintenance
         Route::get('/maintenance', [VehicleController::class, 'getMaintenances'])->name('maintenance.list');
         Route::post('/maintenance', [VehicleController::class, 'storeMaintenance'])->name('maintenance.store');

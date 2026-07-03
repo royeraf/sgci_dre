@@ -9,7 +9,7 @@
                         Control Vehicular y Gestión
                     </h1>
                     <p class="mt-1 text-slate-500 font-medium">
-                        Registro y seguimiento de comisiones, inventario, gastos, actas y servicios
+                        Registro y seguimiento de autorizaciones de salida, inventario, gastos, actas y servicios
                     </p>
                 </div>
                 <div class="flex gap-3">
@@ -22,7 +22,7 @@
                     <button v-if="activeTab === 'commissions'" @click="openCommissionModal()"
                         class="inline-flex items-center px-6 py-3 border border-transparent text-sm font-bold rounded-xl shadow-lg shadow-blue-600/20 text-white bg-gradient-to-r from-blue-600 to-sky-500 hover:from-blue-700 hover:to-sky-600 focus:outline-none focus:ring-4 focus:ring-blue-300 transition-all duration-300 transform hover:scale-105 active:scale-95">
                         <Plus class="w-5 h-5 mr-2" />
-                        Nueva Comisión
+                        Nueva Autorización de Salida
                     </button>
                     <button v-if="activeTab === 'inventory'" @click="openVehicleModal()"
                         class="inline-flex items-center px-6 py-3 border border-transparent text-sm font-bold rounded-xl shadow-lg shadow-indigo-600/20 text-white bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 focus:outline-none focus:ring-4 focus:ring-indigo-300 transition-all duration-300 transform hover:scale-105 active:scale-95">
@@ -53,7 +53,7 @@
                     <button v-if="canViewTab('commissions')" @click="activeTab = 'commissions'"
                         :class="[activeTab === 'commissions' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300', 'whitespace-nowrap py-4 px-1 border-b-2 font-bold text-sm flex items-center gap-2 transition-all duration-200']">
                         <MapPin class="w-5 h-5" />
-                        Comisiones
+                        Autorización Salida de Vehículos
                     </button>
                     <button v-if="canViewTab('inventory')" @click="activeTab = 'inventory'"
                         :class="[activeTab === 'inventory' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300', 'whitespace-nowrap py-4 px-1 border-b-2 font-bold text-sm flex items-center gap-2 transition-all duration-200']">
@@ -86,7 +86,7 @@
                         <Search class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                         <input type="text" v-model="searchCommission"
                             class="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                            placeholder="Buscar por dependencia, chofer o placa...">
+                            placeholder="Buscar por solicitante, dependencia, chofer o placa...">
                     </div>
                 </div>
 
@@ -96,18 +96,20 @@
                         <div
                             class="animate-spin h-12 w-12 border-4 border-blue-600 border-t-transparent rounded-full mx-auto mb-4">
                         </div>
-                        <p class="text-lg font-medium text-slate-600">Cargando comisiones...</p>
+                        <p class="text-lg font-medium text-slate-600">Cargando autorizaciones...</p>
                     </div>
                     <div v-else-if="filteredCommissions.length === 0" class="text-center py-20">
                         <MapPin class="w-16 h-16 mx-auto text-slate-300 mb-4" />
-                        <p class="text-slate-500 font-medium">No hay comisiones registradas</p>
-                        <p class="text-slate-400 text-sm mt-1">Haz clic en "Nueva Comisión" para agregar una</p>
+                        <p class="text-slate-500 font-medium">No hay autorizaciones de salida registradas</p>
+                        <p class="text-slate-400 text-sm mt-1">Haz clic en "Nueva Autorización de Salida" para agregar una</p>
                     </div>
                     <ul v-else class="divide-y divide-slate-100">
                         <li v-for="commission in filteredCommissions" :key="commission.id"
                             class="hover:bg-slate-50 transition-colors duration-200 px-6 py-4">
                             <div class="flex items-center justify-between">
-                                <span class="text-sm font-bold text-blue-600">{{ commission.dependencia }}</span>
+                                <span class="text-sm font-bold text-blue-600">
+                                    Nº {{ String(commission.numero).padStart(3, '0') }}-{{ commission.anio }} · {{ commission.solicitante }}
+                                </span>
                                 <span class="px-3 py-1 text-xs font-bold rounded-full"
                                     :class="getStatusClass(commission.estado)">{{ commission.estado }}</span>
                             </div>
@@ -121,6 +123,8 @@
                                 </div>
                                 <div class="flex items-center gap-4 text-sm">
                                     <span class="text-slate-400">{{ commission.dia }} {{ commission.hora }}</span>
+                                    <button @click="printCommission(commission)"
+                                        class="text-slate-500 hover:text-slate-700 font-bold transition-colors">PDF</button>
                                     <button @click="openCommissionModal(commission)"
                                         class="text-blue-600 hover:text-blue-800 font-bold transition-colors">Gestionar</button>
                                 </div>
@@ -390,6 +394,7 @@ const filteredCommissions = computed(() => {
     const q = searchCommission.value.toLowerCase();
     return commissions.value.filter(c =>
         c.dependencia?.toLowerCase().includes(q) ||
+        c.solicitante?.toLowerCase().includes(q) ||
         c.chofer?.toLowerCase().includes(q) ||
         c.placa?.toLowerCase().includes(q)
     );
@@ -460,6 +465,10 @@ const openVehicleModal = (vehicle = null) => {
 const openCommissionModal = (commission = null) => {
     selectedCommission.value = commission;
     showCommissionModal.value = true;
+};
+
+const printCommission = (commission) => {
+    window.open(`/vehicles/commissions/${commission.id}/pdf`, '_blank');
 };
 
 const openMaintenanceModal = () => { showMaintenanceModal.value = true; };

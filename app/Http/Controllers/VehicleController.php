@@ -10,6 +10,7 @@ use App\Models\VehicleServiceRequirement;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Carbon\Carbon;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class VehicleController extends Controller
 {
@@ -129,18 +130,29 @@ class VehicleController extends Controller
             ->map(function ($commission) {
                 return [
                     'id' => $commission->id,
+                    'numero' => $commission->numero,
+                    'anio' => $commission->anio,
                     'dependencia' => $commission->dependencia,
+                    'solicitante' => $commission->solicitante,
                     'dia' => $commission->dia->format('Y-m-d'),
                     'hora' => $commission->hora,
                     'lugar' => $commission->lugar,
+                    'referencia' => $commission->referencia,
                     'motivo' => $commission->motivo,
                     'usuarios' => $commission->usuarios,
                     'vehicle_id' => $commission->vehicle_id,
                     'placa' => $commission->vehicle?->placa ?? 'N/A',
                     'marca' => $commission->vehicle?->marca ?? '',
+                    'modelo' => $commission->vehicle?->modelo ?? '',
                     'chofer' => $commission->chofer,
+                    'funcionario_autoriza' => $commission->funcionario_autoriza,
                     'hora_salida' => $commission->hora_salida,
                     'hora_regreso' => $commission->hora_regreso,
+                    'km_salida' => $commission->km_salida,
+                    'km_retorno' => $commission->km_retorno,
+                    'total_km_recorrido' => $commission->total_km_recorrido,
+                    'combustible' => $commission->combustible,
+                    'pnro' => $commission->pnro,
                     'estado' => $commission->estado,
                     'created_at' => $commission->created_at->format('Y-m-d H:i:s'),
                 ];
@@ -150,49 +162,61 @@ class VehicleController extends Controller
     }
 
     /**
-     * Create a new commission
+     * Create a new commission (Autorización Salida de Vehículos)
      */
     public function storeCommission(Request $request)
     {
         $validated = $request->validate([
-            'dependencia' => 'required|string|max:255',
+            'dependencia' => 'nullable|string|max:255',
+            'solicitante' => 'required|string|max:255',
             'dia' => 'required|date',
             'hora' => 'required',
             'lugar' => 'required|string|max:255',
+            'referencia' => 'nullable|string|max:255',
             'motivo' => 'nullable|string',
             'usuarios' => 'nullable|string',
             'vehicle_id' => 'nullable|uuid|exists:vehicles,id',
             'chofer' => 'required|string|max:255',
+            'funcionario_autoriza' => 'nullable|string|max:255',
         ]);
 
         $validated['estado'] = 'PENDIENTE';
+        $validated['anio'] = (int) date('Y', strtotime($validated['dia']));
+        $validated['numero'] = VehicleCommission::nextNumero($validated['anio']);
 
         $commission = VehicleCommission::create($validated);
 
         return response()->json([
-            'message' => 'Comisión registrada correctamente',
+            'message' => 'Autorización de salida registrada correctamente',
             'commission' => $commission
         ], 201);
     }
 
     /**
-     * Update a commission
+     * Update a commission (Autorización Salida de Vehículos)
      */
     public function updateCommission(Request $request, string $id)
     {
         $commission = VehicleCommission::findOrFail($id);
 
         $validated = $request->validate([
-            'dependencia' => 'sometimes|string|max:255',
+            'dependencia' => 'nullable|string|max:255',
+            'solicitante' => 'sometimes|string|max:255',
             'dia' => 'sometimes|date',
             'hora' => 'sometimes',
             'lugar' => 'sometimes|string|max:255',
+            'referencia' => 'nullable|string|max:255',
             'motivo' => 'nullable|string',
             'usuarios' => 'nullable|string',
             'vehicle_id' => 'nullable|uuid|exists:vehicles,id',
             'chofer' => 'sometimes|string|max:255',
+            'funcionario_autoriza' => 'nullable|string|max:255',
             'hora_salida' => 'nullable',
             'hora_regreso' => 'nullable',
+            'km_salida' => 'nullable|string|max:20',
+            'km_retorno' => 'nullable|string|max:20',
+            'combustible' => 'nullable|string|max:100',
+            'pnro' => 'nullable|string|max:100',
             'estado' => 'nullable|string|max:50',
         ]);
 
@@ -206,9 +230,23 @@ class VehicleController extends Controller
         $commission->update($validated);
 
         return response()->json([
-            'message' => 'Comisión actualizada correctamente',
+            'message' => 'Autorización de salida actualizada correctamente',
             'commission' => $commission
         ]);
+    }
+
+    /**
+     * Generate the printable PDF for an Autorización Salida de Vehículos
+     */
+    public function commissionPdf(string $id)
+    {
+        $commission = VehicleCommission::with('vehicle')->findOrFail($id);
+
+        $pdf = Pdf::loadView('pdf.vehicle_exit_authorization', [
+            'commission' => $commission,
+        ]);
+
+        return $pdf->stream("autorizacion_salida_{$commission->numero}_{$commission->anio}.pdf");
     }
 
     // ========================================

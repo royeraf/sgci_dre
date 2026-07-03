@@ -496,7 +496,7 @@ const MODULE_TABS = {
     ocurrencias:      [{ key: 'list', label: 'Lista' }, { key: 'reports', label: 'Reportes' }],
     control_personal: [{ key: 'list', label: 'Lista' }, { key: 'reports', label: 'Reportes' }, { key: 'reasons', label: 'Motivos' }],
     visitas:          [{ key: 'list', label: 'Lista' }, { key: 'reports', label: 'Reportes' }, { key: 'reasons', label: 'Motivos' }],
-    vehiculos:        [{ key: 'commissions', label: 'Comisiones' }, { key: 'inventory', label: 'Inventario' }, { key: 'maintenance', label: 'Mantenimiento' }, { key: 'handover', label: 'Acta de Entrega' }, { key: 'service', label: 'Servicios' }],
+    vehiculos:        [{ key: 'commissions', label: 'Autorización Salida de Vehículos' }, { key: 'inventory', label: 'Inventario' }, { key: 'maintenance', label: 'Mantenimiento' }, { key: 'handover', label: 'Acta de Entrega' }, { key: 'service', label: 'Servicios' }],
     patrimonio:       [{ key: 'mis_bienes', label: 'Mis Bienes' }, { key: 'list', label: 'Bienes' }, { key: 'movements', label: 'Movimientos' }, { key: 'barcodes', label: 'Cód. de Barra' }, { key: 'reports', label: 'Reportes' }, { key: 'patrimonio', label: 'Patrimonio SIGA' }, { key: 'inventarios', label: 'Inventarios' }],
     secretaria:       [{ key: 'pending', label: 'Pendientes' }, { key: 'completed', label: 'Completadas' }],
     bienestar:        [{ key: 'licenses', label: 'Licencias' }, { key: 'balances', label: 'Saldos' }],
