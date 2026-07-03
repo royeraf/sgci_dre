@@ -13,7 +13,7 @@ class VehicleCommission extends Model
         'numero',
         'anio',
         'dependencia',
-        'solicitante',
+        'solicitante_employee_id',
         'dia',
         'hora',
         'lugar',
@@ -39,6 +39,16 @@ class VehicleCommission extends Model
     public function vehicle()
     {
         return $this->belongsTo(Vehicle::class);
+    }
+
+    public function solicitanteEmployee()
+    {
+        return $this->belongsTo(Employee::class, 'solicitante_employee_id');
+    }
+
+    public function getSolicitanteNombreAttribute(): ?string
+    {
+        return $this->solicitanteEmployee?->person?->nombre_full;
     }
 
     /**

@@ -31,16 +31,48 @@
                 <form @submit.prevent="handleSubmit" class="p-6 space-y-6">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
                         <!-- Servidor o funcionario que solicita -->
-                        <div class="md:col-span-2">
+                        <div class="md:col-span-2 relative" ref="employeeDropdownRef">
                             <label class="block text-sm font-bold text-slate-700 mb-2">
                                 Servidor o Funcionario que Solicita <span class="text-red-500">*</span>
                             </label>
-                            <input type="text" v-model="solicitante" v-bind="solicitanteProps"
-                                class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                                :class="formErrors.solicitante ? 'border-red-400' : 'border-slate-200'"
-                                placeholder="Nombre del servidor o funcionario">
-                            <p v-if="formErrors.solicitante" class="mt-1 text-sm text-red-600">{{ formErrors.solicitante
-                                }}</p>
+
+                            <!-- Empleado seleccionado (chip) -->
+                            <div v-if="selectedEmployeeData"
+                                class="flex items-center gap-2 px-4 py-2.5 border border-blue-300 bg-blue-50 rounded-xl">
+                                <svg class="w-4 h-4 text-blue-600 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                                </svg>
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-sm font-semibold text-blue-900 truncate">{{ selectedEmployeeData.nombre_completo }}</p>
+                                    <p v-if="selectedEmployeeData.cargo" class="text-xs text-blue-500 truncate">{{ selectedEmployeeData.cargo }}</p>
+                                </div>
+                                <button type="button" @click="clearEmployee"
+                                    class="flex-shrink-0 p-0.5 rounded-full hover:bg-blue-200 transition-colors text-blue-500 hover:text-blue-700">
+                                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
+                            </div>
+
+                            <!-- Buscador -->
+                            <div v-else class="relative">
+                                <input type="text" v-model="employeeSearchQuery" @focus="showEmployeeDropdown = true"
+                                    placeholder="Buscar por nombre o DNI..."
+                                    class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                                    :class="formErrors.solicitante_employee_id ? 'border-red-400' : 'border-slate-200'">
+                                <div v-if="showEmployeeDropdown && filteredEmployees.length > 0"
+                                    class="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl max-h-60 overflow-y-auto">
+                                    <button type="button" v-for="emp in filteredEmployees" :key="emp.id"
+                                        @click="selectEmployee(emp)"
+                                        class="w-full text-left px-4 py-2.5 hover:bg-blue-50 transition-colors flex items-center gap-3 border-b border-slate-50 last:border-0">
+                                        <div class="flex-1 min-w-0">
+                                            <p class="font-semibold text-slate-700 text-sm truncate">{{ emp.nombre_completo }}</p>
+                                            <p class="text-xs text-slate-400 truncate">{{ emp.cargo || 'Sin cargo' }} · DNI: {{ emp.dni }}</p>
+                                        </div>
+                                    </button>
+                                </div>
+                            </div>
+                            <p v-if="formErrors.solicitante_employee_id" class="mt-1 text-sm text-red-600">{{ formErrors.solicitante_employee_id }}</p>
                         </div>
 
                         <!-- Dependencia -->
@@ -211,13 +243,14 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useForm } from 'vee-validate';
 import { toTypedSchema } from '@vee-validate/yup';
 import * as yup from 'yup';
 import axios from 'axios';
+import { useEmployeeSearch } from '@/Composables/useEmployeeSearch';
 
-const props = defineProps({ commission: Object, vehicles: Array });
+const props = defineProps({ commission: Object, vehicles: Array, employees: { type: Array, default: () => [] } });
 const emit = defineEmits(['close', 'saved']);
 
 const isEditing = computed(() => !!props.commission?.id);
@@ -230,9 +263,8 @@ const currentTime = new Date().toTimeString().slice(0, 5);
 // Validation Schema
 const commissionSchema = toTypedSchema(
     yup.object({
-        solicitante: yup.string()
-            .required('El servidor o funcionario que solicita es obligatorio')
-            .min(3, 'El nombre debe tener al menos 3 caracteres'),
+        solicitante_employee_id: yup.string()
+            .required('Debe seleccionar el servidor o funcionario que solicita'),
         dependencia: yup.string().nullable(),
         lugar: yup.string()
             .required('El lugar de destino es obligatorio')
@@ -259,7 +291,7 @@ const commissionSchema = toTypedSchema(
 const { errors: formErrors, defineField, handleSubmit: validateForm, resetForm, setValues } = useForm({
     validationSchema: commissionSchema,
     initialValues: {
-        solicitante: '',
+        solicitante_employee_id: '',
         dependencia: '',
         lugar: '',
         referencia: '',
@@ -279,7 +311,7 @@ const { errors: formErrors, defineField, handleSubmit: validateForm, resetForm, 
     }
 });
 
-const [solicitante, solicitanteProps] = defineField('solicitante');
+const [solicitanteEmployeeId] = defineField('solicitante_employee_id');
 const [dependencia, dependenciaProps] = defineField('dependencia');
 const [lugar, lugarProps] = defineField('lugar');
 const [referencia, referenciaProps] = defineField('referencia');
@@ -297,11 +329,43 @@ const [kmRetorno, kmRetornoProps] = defineField('km_retorno');
 const [combustible, combustibleProps] = defineField('combustible');
 const [pnro, pnroProps] = defineField('pnro');
 
+// Employee picker (Servidor o Funcionario que Solicita)
+const employeeDropdownRef = ref(null);
+const { searchQuery: employeeSearchQuery, showDropdown: showEmployeeDropdown, filteredEmployees } = useEmployeeSearch(props.employees);
+const selectedEmployeeData = ref(null);
+
+const selectEmployee = (emp) => {
+    selectedEmployeeData.value = emp;
+    solicitanteEmployeeId.value = String(emp.id);
+    employeeSearchQuery.value = '';
+    showEmployeeDropdown.value = false;
+};
+
+const clearEmployee = () => {
+    selectedEmployeeData.value = null;
+    solicitanteEmployeeId.value = '';
+    employeeSearchQuery.value = '';
+    showEmployeeDropdown.value = false;
+};
+
+const handleClickOutsideEmployee = (event) => {
+    if (employeeDropdownRef.value && !employeeDropdownRef.value.contains(event.target)) {
+        showEmployeeDropdown.value = false;
+    }
+};
+
+onMounted(() => document.addEventListener('click', handleClickOutsideEmployee));
+onUnmounted(() => document.removeEventListener('click', handleClickOutsideEmployee));
+
 // Load existing commission data if editing
 onMounted(() => {
     if (props.commission) {
+        if (props.commission.solicitante_employee_id) {
+            const emp = props.employees.find(e => String(e.id) === String(props.commission.solicitante_employee_id));
+            if (emp) selectedEmployeeData.value = emp;
+        }
         setValues({
-            solicitante: props.commission.solicitante || '',
+            solicitante_employee_id: props.commission.solicitante_employee_id || '',
             dependencia: props.commission.dependencia || '',
             lugar: props.commission.lugar || '',
             referencia: props.commission.referencia || '',

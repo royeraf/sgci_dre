@@ -7,6 +7,7 @@ use App\Models\VehicleCommission;
 use App\Models\VehicleMaintenance;
 use App\Models\VehicleHandover;
 use App\Models\VehicleServiceRequirement;
+use App\Models\Employee;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Carbon\Carbon;
@@ -19,7 +20,27 @@ class VehicleController extends Controller
      */
     public function index()
     {
-        return Inertia::render('Vehicles/Index');
+        return Inertia::render('Vehicles/Index', [
+            'employees' => Employee::with(['person', 'position'])
+                ->where('estado', 'ACTIVO')
+                ->whereHas('person', function ($q) {
+                    $q->whereNotNull('nombres')
+                        ->whereNotNull('apellidos')
+                        ->where('nombres', '!=', '')
+                        ->where('apellidos', '!=', '');
+                })
+                ->get()
+                ->map(function ($emp) {
+                    return [
+                        'id' => $emp->id,
+                        'nombre_completo' => $emp->person->nombre_full,
+                        'dni' => $emp->dni,
+                        'cargo' => $emp->position?->nombre,
+                    ];
+                })
+                ->sortBy('nombre_completo')
+                ->values(),
+        ]);
     }
 
     // ========================================
@@ -123,7 +144,7 @@ class VehicleController extends Controller
      */
     public function getCommissions()
     {
-        $commissions = VehicleCommission::with('vehicle')
+        $commissions = VehicleCommission::with(['vehicle', 'solicitanteEmployee.person'])
             ->orderBy('dia', 'desc')
             ->orderBy('hora', 'desc')
             ->get()
@@ -133,7 +154,8 @@ class VehicleController extends Controller
                     'numero' => $commission->numero,
                     'anio' => $commission->anio,
                     'dependencia' => $commission->dependencia,
-                    'solicitante' => $commission->solicitante,
+                    'solicitante_employee_id' => $commission->solicitante_employee_id,
+                    'solicitante' => $commission->solicitante_nombre,
                     'dia' => $commission->dia->format('Y-m-d'),
                     'hora' => $commission->hora,
                     'lugar' => $commission->lugar,
@@ -168,7 +190,7 @@ class VehicleController extends Controller
     {
         $validated = $request->validate([
             'dependencia' => 'nullable|string|max:255',
-            'solicitante' => 'required|string|max:255',
+            'solicitante_employee_id' => 'required|uuid|exists:employees,id',
             'dia' => 'required|date',
             'hora' => 'required',
             'lugar' => 'required|string|max:255',
@@ -201,7 +223,7 @@ class VehicleController extends Controller
 
         $validated = $request->validate([
             'dependencia' => 'nullable|string|max:255',
-            'solicitante' => 'sometimes|string|max:255',
+            'solicitante_employee_id' => 'sometimes|uuid|exists:employees,id',
             'dia' => 'sometimes|date',
             'hora' => 'sometimes',
             'lugar' => 'sometimes|string|max:255',
@@ -240,7 +262,7 @@ class VehicleController extends Controller
      */
     public function commissionPdf(string $id)
     {
-        $commission = VehicleCommission::with('vehicle')->findOrFail($id);
+        $commission = VehicleCommission::with(['vehicle', 'solicitanteEmployee.person'])->findOrFail($id);
 
         $pdf = Pdf::loadView('pdf.vehicle_exit_authorization', [
             'commission' => $commission,

@@ -331,7 +331,7 @@
             <VehicleModal v-if="showVehicleModal" :vehicle="selectedVehicle" :vehicles="inventory"
                 @close="showVehicleModal = false" @saved="onVehicleSaved" />
             <CommissionModal v-if="showCommissionModal" :commission="selectedCommission" :vehicles="inventory"
-                @close="showCommissionModal = false" @saved="onCommissionSaved" />
+                :employees="props.employees" @close="showCommissionModal = false" @saved="onCommissionSaved" />
             <MaintenanceModal v-if="showMaintenanceModal" :vehicles="inventory" @close="showMaintenanceModal = false"
                 @saved="onMaintenanceSaved" />
             <HandoverModal v-if="showHandoverModal" @close="showHandoverModal = false" @saved="onHandoverSaved" />
@@ -356,6 +356,8 @@ import MaintenanceModal from '@/Components/Vehicles/Maintenance/MaintenanceModal
 import HandoverModal from '@/Components/Vehicles/Handovers/HandoverModal.vue';
 import ServiceReqModal from '@/Components/Vehicles/ServiceRequirements/ServiceReqModal.vue';
 import axios from 'axios';
+
+const props = defineProps({ employees: { type: Array, default: () => [] } });
 
 const { canViewTab, firstAllowedTab } = useTabPermission('vehiculos', ['commissions', 'inventory', 'maintenance', 'handover', 'service']);
 const activeTab = ref(firstAllowedTab.value);

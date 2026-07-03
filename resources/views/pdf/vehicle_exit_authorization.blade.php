@@ -127,7 +127,7 @@
         <tr>
             <td colspan="2">
                 <span class="field-label">Servidor o funcionario que solicita:</span>
-                <span class="field-value" style="width: 70%; display: block;">{{ $commission->solicitante }}</span>
+                <span class="field-value" style="width: 70%; display: block;">{{ $commission->solicitante_nombre }}</span>
             </td>
         </tr>
         <tr>
