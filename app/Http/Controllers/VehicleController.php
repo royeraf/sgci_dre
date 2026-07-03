@@ -20,26 +20,27 @@ class VehicleController extends Controller
      */
     public function index()
     {
+        $activeEmployeesQuery = fn () => Employee::with(['person', 'position'])
+            ->where('estado', 'ACTIVO')
+            ->whereHas('person', function ($q) {
+                $q->whereNotNull('nombres')
+                    ->whereNotNull('apellidos')
+                    ->where('nombres', '!=', '')
+                    ->where('apellidos', '!=', '');
+            });
+
+        $mapEmployee = fn ($emp) => [
+            'id' => $emp->id,
+            'nombre_completo' => $emp->person->nombre_full,
+            'dni' => $emp->dni,
+            'cargo' => $emp->position?->nombre,
+        ];
+
         return Inertia::render('Vehicles/Index', [
-            'employees' => Employee::with(['person', 'position'])
-                ->where('estado', 'ACTIVO')
-                ->whereHas('person', function ($q) {
-                    $q->whereNotNull('nombres')
-                        ->whereNotNull('apellidos')
-                        ->where('nombres', '!=', '')
-                        ->where('apellidos', '!=', '');
-                })
-                ->get()
-                ->map(function ($emp) {
-                    return [
-                        'id' => $emp->id,
-                        'nombre_completo' => $emp->person->nombre_full,
-                        'dni' => $emp->dni,
-                        'cargo' => $emp->position?->nombre,
-                    ];
-                })
-                ->sortBy('nombre_completo')
-                ->values(),
+            'employees' => $activeEmployeesQuery()->get()->map($mapEmployee)->sortBy('nombre_completo')->values(),
+            'drivers' => $activeEmployeesQuery()
+                ->whereHas('position', fn ($q) => $q->where('nombre', 'CHOFER II'))
+                ->get()->map($mapEmployee)->sortBy('nombre_completo')->values(),
         ]);
     }
 
@@ -144,7 +145,7 @@ class VehicleController extends Controller
      */
     public function getCommissions()
     {
-        $commissions = VehicleCommission::with(['vehicle', 'solicitanteEmployee.person'])
+        $commissions = VehicleCommission::with(['vehicle', 'solicitanteEmployee.person', 'conductorEmployee.person'])
             ->orderBy('dia', 'desc')
             ->orderBy('hora', 'desc')
             ->get()
@@ -165,7 +166,8 @@ class VehicleController extends Controller
                     'placa' => $commission->vehicle?->placa ?? 'N/A',
                     'marca' => $commission->vehicle?->marca ?? '',
                     'modelo' => $commission->vehicle?->modelo ?? '',
-                    'chofer' => $commission->chofer,
+                    'conductor_employee_id' => $commission->conductor_employee_id,
+                    'conductor' => $commission->conductor_nombre,
                     'funcionario_autoriza' => $commission->funcionario_autoriza,
                     'hora_salida' => $commission->hora_salida,
                     'hora_regreso' => $commission->hora_regreso,
@@ -196,7 +198,7 @@ class VehicleController extends Controller
             'motivo' => 'nullable|string',
             'usuarios' => 'nullable|string',
             'vehicle_id' => 'nullable|uuid|exists:vehicles,id',
-            'chofer' => 'required|string|max:255',
+            'conductor_employee_id' => 'required|uuid|exists:employees,id',
             'funcionario_autoriza' => 'nullable|string|max:255',
             'hora_salida' => 'nullable',
             'hora_regreso' => 'nullable',
@@ -241,7 +243,7 @@ class VehicleController extends Controller
             'motivo' => 'nullable|string',
             'usuarios' => 'nullable|string',
             'vehicle_id' => 'nullable|uuid|exists:vehicles,id',
-            'chofer' => 'sometimes|string|max:255',
+            'conductor_employee_id' => 'sometimes|uuid|exists:employees,id',
             'funcionario_autoriza' => 'nullable|string|max:255',
             'hora_salida' => 'nullable',
             'hora_regreso' => 'nullable',
@@ -272,7 +274,7 @@ class VehicleController extends Controller
      */
     public function commissionPdf(string $id)
     {
-        $commission = VehicleCommission::with(['vehicle', 'solicitanteEmployee.person'])->findOrFail($id);
+        $commission = VehicleCommission::with(['vehicle', 'solicitanteEmployee.person', 'conductorEmployee.person'])->findOrFail($id);
 
         $pdf = Pdf::loadView('pdf.vehicle_exit_authorization', [
             'commission' => $commission,

@@ -128,16 +128,18 @@
                             </select>
                         </div>
 
-                        <!-- Chofer -->
+                        <!-- Conductor -->
                         <div class="md:col-span-2">
                             <label class="block text-sm font-bold text-slate-700 mb-2">
-                                Chofer <span class="text-red-500">*</span>
+                                Conductor <span class="text-red-500">*</span>
                             </label>
-                            <input type="text" v-model="chofer" v-bind="choferProps"
-                                class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                                :class="formErrors.chofer ? 'border-red-400' : 'border-slate-200'"
-                                placeholder="Nombre del conductor">
-                            <p v-if="formErrors.chofer" class="mt-1 text-sm text-red-600">{{ formErrors.chofer }}</p>
+                            <select v-model="conductorEmployeeId" v-bind="conductorEmployeeIdProps"
+                                class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+                                :class="formErrors.conductor_employee_id ? 'border-red-400' : 'border-slate-200'">
+                                <option value="">Seleccionar conductor (CHOFER II)</option>
+                                <option v-for="d in drivers" :key="d.id" :value="d.id">{{ d.nombre_completo }}</option>
+                            </select>
+                            <p v-if="formErrors.conductor_employee_id" class="mt-1 text-sm text-red-600">{{ formErrors.conductor_employee_id }}</p>
                         </div>
 
                         <!-- Usuarios -->
@@ -239,7 +241,7 @@ import * as yup from 'yup';
 import axios from 'axios';
 import { useEmployeeSearch } from '@/Composables/useEmployeeSearch';
 
-const props = defineProps({ commission: Object, vehicles: Array, employees: { type: Array, default: () => [] } });
+const props = defineProps({ commission: Object, vehicles: Array, employees: { type: Array, default: () => [] }, drivers: { type: Array, default: () => [] } });
 const emit = defineEmits(['close', 'saved']);
 
 const isEditing = computed(() => !!props.commission?.id);
@@ -261,9 +263,8 @@ const commissionSchema = toTypedSchema(
         dia: yup.string().required('La fecha es obligatoria'),
         hora: yup.string().required('La hora programada es obligatoria'),
         vehicle_id: yup.string().nullable(),
-        chofer: yup.string()
-            .required('El nombre del chofer es obligatorio')
-            .min(3, 'El nombre del chofer debe tener al menos 3 caracteres'),
+        conductor_employee_id: yup.string()
+            .required('Debe seleccionar el conductor'),
         usuarios: yup.string().nullable(),
         motivo: yup.string().nullable(),
         funcionario_autoriza: yup.string().nullable(),
@@ -285,7 +286,7 @@ const { errors: formErrors, defineField, handleSubmit: validateForm, resetForm, 
         dia: currentDate,
         hora: currentTime,
         vehicle_id: '',
-        chofer: '',
+        conductor_employee_id: '',
         usuarios: '',
         motivo: '',
         funcionario_autoriza: '',
@@ -304,7 +305,7 @@ const [referencia, referenciaProps] = defineField('referencia');
 const [dia, diaProps] = defineField('dia');
 const [hora, horaProps] = defineField('hora');
 const [vehicleId, vehicleIdProps] = defineField('vehicle_id');
-const [chofer, choferProps] = defineField('chofer');
+const [conductorEmployeeId, conductorEmployeeIdProps] = defineField('conductor_employee_id');
 const [usuarios, usuariosProps] = defineField('usuarios');
 const [motivo, motivoProps] = defineField('motivo');
 const [funcionarioAutoriza, funcionarioAutorizaProps] = defineField('funcionario_autoriza');
@@ -357,7 +358,7 @@ onMounted(() => {
             dia: props.commission.dia || currentDate,
             hora: props.commission.hora || currentTime,
             vehicle_id: props.commission.vehicle_id || '',
-            chofer: props.commission.chofer || '',
+            conductor_employee_id: props.commission.conductor_employee_id || '',
             usuarios: props.commission.usuarios || '',
             motivo: props.commission.motivo || '',
             funcionario_autoriza: props.commission.funcionario_autoriza || '',

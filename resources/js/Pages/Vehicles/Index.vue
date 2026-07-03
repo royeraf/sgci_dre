@@ -86,7 +86,7 @@
                         <Search class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                         <input type="text" v-model="searchCommission"
                             class="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                            placeholder="Buscar por solicitante, chofer o placa...">
+                            placeholder="Buscar por solicitante, conductor o placa...">
                     </div>
                 </div>
 
@@ -119,7 +119,7 @@
                                         <MapPin class="w-4 h-4" />
                                         {{ commission.lugar }}
                                     </span>
-                                    <span>{{ commission.placa }} - {{ commission.chofer }}</span>
+                                    <span>{{ commission.placa }} - {{ commission.conductor }}</span>
                                 </div>
                                 <div class="flex items-center gap-4 text-sm">
                                     <span class="text-slate-400">{{ commission.dia }} {{ commission.hora }}</span>
@@ -331,7 +331,8 @@
             <VehicleModal v-if="showVehicleModal" :vehicle="selectedVehicle" :vehicles="inventory"
                 @close="showVehicleModal = false" @saved="onVehicleSaved" />
             <CommissionModal v-if="showCommissionModal" :commission="selectedCommission" :vehicles="inventory"
-                :employees="props.employees" @close="showCommissionModal = false" @saved="onCommissionSaved" />
+                :employees="props.employees" :drivers="props.drivers" @close="showCommissionModal = false"
+                @saved="onCommissionSaved" />
             <MaintenanceModal v-if="showMaintenanceModal" :vehicles="inventory" @close="showMaintenanceModal = false"
                 @saved="onMaintenanceSaved" />
             <HandoverModal v-if="showHandoverModal" @close="showHandoverModal = false" @saved="onHandoverSaved" />
@@ -357,7 +358,7 @@ import HandoverModal from '@/Components/Vehicles/Handovers/HandoverModal.vue';
 import ServiceReqModal from '@/Components/Vehicles/ServiceRequirements/ServiceReqModal.vue';
 import axios from 'axios';
 
-const props = defineProps({ employees: { type: Array, default: () => [] } });
+const props = defineProps({ employees: { type: Array, default: () => [] }, drivers: { type: Array, default: () => [] } });
 
 const { canViewTab, firstAllowedTab } = useTabPermission('vehiculos', ['commissions', 'inventory', 'maintenance', 'handover', 'service']);
 const activeTab = ref(firstAllowedTab.value);
@@ -396,7 +397,7 @@ const filteredCommissions = computed(() => {
     const q = searchCommission.value.toLowerCase();
     return commissions.value.filter(c =>
         c.solicitante?.toLowerCase().includes(q) ||
-        c.chofer?.toLowerCase().includes(q) ||
+        c.conductor?.toLowerCase().includes(q) ||
         c.placa?.toLowerCase().includes(q)
     );
 });

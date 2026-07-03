@@ -109,7 +109,7 @@
             </td>
             <td style="width: 35%;">
                 <span class="field-label">Conductor:</span>
-                <span class="field-value" style="width: 90%; display: block;">{{ $commission->chofer }}</span>
+                <span class="field-value" style="width: 90%; display: block;">{{ $commission->conductor_nombre }}</span>
             </td>
         </tr>
         <tr>

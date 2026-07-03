@@ -20,7 +20,7 @@ class VehicleCommission extends Model
         'motivo',
         'usuarios',
         'vehicle_id',
-        'chofer',
+        'conductor_employee_id',
         'funcionario_autoriza',
         'hora_salida',
         'hora_regreso',
@@ -48,6 +48,16 @@ class VehicleCommission extends Model
     public function getSolicitanteNombreAttribute(): ?string
     {
         return $this->solicitanteEmployee?->person?->nombre_full;
+    }
+
+    public function conductorEmployee()
+    {
+        return $this->belongsTo(Employee::class, 'conductor_employee_id');
+    }
+
+    public function getConductorNombreAttribute(): ?string
+    {
+        return $this->conductorEmployee?->person?->nombre_full;
     }
 
     /**
