@@ -198,9 +198,22 @@ class VehicleController extends Controller
             'vehicle_id' => 'nullable|uuid|exists:vehicles,id',
             'chofer' => 'required|string|max:255',
             'funcionario_autoriza' => 'nullable|string|max:255',
+            'hora_salida' => 'nullable',
+            'hora_regreso' => 'nullable',
+            'km_salida' => 'nullable|string|max:20',
+            'km_retorno' => 'nullable|string|max:20',
+            'combustible' => 'nullable|string|max:100',
+            'pnro' => 'nullable|string|max:100',
         ]);
 
-        $validated['estado'] = 'PENDIENTE';
+        // Auto-update estado based on times, same as en updateCommission
+        if (!empty($validated['hora_regreso'])) {
+            $validated['estado'] = 'COMPLETADA';
+        } elseif (!empty($validated['hora_salida'])) {
+            $validated['estado'] = 'EN_COMISION';
+        } else {
+            $validated['estado'] = 'PENDIENTE';
+        }
         $validated['anio'] = (int) date('Y', strtotime($validated['dia']));
         $validated['numero'] = VehicleCommission::nextNumero($validated['anio']);
 

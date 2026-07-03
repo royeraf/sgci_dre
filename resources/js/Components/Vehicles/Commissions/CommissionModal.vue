@@ -157,8 +157,8 @@
                         </div>
                     </div>
 
-                    <!-- Sección de Control (solo en edición) -->
-                    <div v-if="isEditing" class="bg-blue-50 border border-blue-200 rounded-xl p-4 space-y-4">
+                    <!-- Sección de Control (Km, combustible, horas reales) -->
+                    <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 space-y-4">
                         <h4 class="font-bold text-blue-800 flex items-center gap-2">
                             <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
