@@ -28,147 +28,170 @@
                 </div>
 
                 <!-- Form -->
-                <form @submit.prevent="handleSubmit" class="p-6 space-y-6">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-                        <!-- Servidor o funcionario que solicita -->
-                        <div class="md:col-span-2 relative" ref="employeeDropdownRef">
-                            <label class="block text-sm font-bold text-slate-700 mb-2">
-                                Servidor o Funcionario que Solicita <span class="text-red-500">*</span>
-                            </label>
+                <form @submit.prevent="handleSubmit" class="p-6 space-y-6 max-h-[80vh] overflow-y-auto">
+                    <!-- Sección 1: Datos de la Comisión -->
+                    <div class="space-y-4">
+                        <h4 class="font-bold text-slate-800 flex items-center gap-2 border-b border-slate-100 pb-2 text-sm uppercase tracking-wide">
+                            <svg class="w-5 h-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                            </svg>
+                            Datos de la Comisión
+                        </h4>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <!-- Servidor o funcionario que solicita -->
+                            <div class="md:col-span-2 relative" ref="employeeDropdownRef">
+                                <label class="block text-sm font-bold text-slate-700 mb-2">
+                                    Servidor o Funcionario que Solicita <span class="text-red-500">*</span>
+                                </label>
 
-                            <!-- Empleado seleccionado (chip) -->
-                            <div v-if="selectedEmployeeData"
-                                class="flex items-center gap-2 px-4 py-2.5 border border-blue-300 bg-blue-50 rounded-xl">
-                                <svg class="w-4 h-4 text-blue-600 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                                </svg>
-                                <div class="flex-1 min-w-0">
-                                    <p class="text-sm font-semibold text-blue-900 truncate">{{ selectedEmployeeData.nombre_completo }}</p>
-                                    <p v-if="selectedEmployeeData.cargo" class="text-xs text-blue-500 truncate">{{ selectedEmployeeData.cargo }}</p>
-                                </div>
-                                <button type="button" @click="clearEmployee"
-                                    class="flex-shrink-0 p-0.5 rounded-full hover:bg-blue-200 transition-colors text-blue-500 hover:text-blue-700">
-                                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                <!-- Empleado seleccionado (chip) -->
+                                <div v-if="selectedEmployeeData"
+                                    class="flex items-center gap-2 px-4 py-2.5 border border-blue-300 bg-blue-50 rounded-xl">
+                                    <svg class="w-4 h-4 text-blue-600 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
                                     </svg>
-                                </button>
-                            </div>
-
-                            <!-- Buscador -->
-                            <div v-else class="relative">
-                                <input type="text" v-model="employeeSearchQuery" @focus="showEmployeeDropdown = true"
-                                    placeholder="Buscar por nombre o DNI..."
-                                    class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                                    :class="formErrors.solicitante_employee_id ? 'border-red-400' : 'border-slate-200'">
-                                <div v-if="showEmployeeDropdown && filteredEmployees.length > 0"
-                                    class="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl max-h-60 overflow-y-auto">
-                                    <button type="button" v-for="emp in filteredEmployees" :key="emp.id"
-                                        @click="selectEmployee(emp)"
-                                        class="w-full text-left px-4 py-2.5 hover:bg-blue-50 transition-colors flex items-center gap-3 border-b border-slate-50 last:border-0">
-                                        <div class="flex-1 min-w-0">
-                                            <p class="font-semibold text-slate-700 text-sm truncate">{{ emp.nombre_completo }}</p>
-                                            <p class="text-xs text-slate-400 truncate">{{ emp.cargo || 'Sin cargo' }} · DNI: {{ emp.dni }}</p>
-                                        </div>
+                                    <div class="flex-1 min-w-0">
+                                        <p class="text-sm font-semibold text-blue-900 truncate">{{ selectedEmployeeData.nombre_completo }}</p>
+                                        <p v-if="selectedEmployeeData.cargo" class="text-xs text-blue-500 truncate">{{ selectedEmployeeData.cargo }}</p>
+                                    </div>
+                                    <button type="button" @click="clearEmployee"
+                                        class="flex-shrink-0 p-0.5 rounded-full hover:bg-blue-200 transition-colors text-blue-500 hover:text-blue-700">
+                                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                        </svg>
                                     </button>
                                 </div>
+
+                                <!-- Buscador -->
+                                <div v-else class="relative">
+                                    <input type="text" v-model="employeeSearchQuery" @focus="showEmployeeDropdown = true"
+                                        placeholder="Buscar por nombre o DNI..."
+                                        class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white border-slate-200"
+                                        :class="formErrors.solicitante_employee_id ? 'border-red-400' : 'border-slate-200'">
+                                    <div v-if="showEmployeeDropdown && filteredEmployees.length > 0"
+                                        class="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl max-h-60 overflow-y-auto">
+                                        <button type="button" v-for="emp in filteredEmployees" :key="emp.id"
+                                            @click="selectEmployee(emp)"
+                                            class="w-full text-left px-4 py-2.5 hover:bg-blue-50 transition-colors flex items-center gap-3 border-b border-slate-50 last:border-0">
+                                            <div class="flex-1 min-w-0">
+                                                <p class="font-semibold text-slate-700 text-sm truncate">{{ emp.nombre_completo }}</p>
+                                                <p class="text-xs text-slate-400 truncate">{{ emp.cargo || 'Sin cargo' }} · DNI: {{ emp.dni }}</p>
+                                            </div>
+                                        </button>
+                                    </div>
+                                </div>
+                                <p v-if="formErrors.solicitante_employee_id" class="mt-1 text-sm text-red-600">{{ formErrors.solicitante_employee_id }}</p>
                             </div>
-                            <p v-if="formErrors.solicitante_employee_id" class="mt-1 text-sm text-red-600">{{ formErrors.solicitante_employee_id }}</p>
-                        </div>
 
-                        <!-- Lugar -->
-                        <div class="md:col-span-2">
-                            <label class="block text-sm font-bold text-slate-700 mb-2">
-                                Lugar y Motivo de la Comisión <span class="text-red-500">*</span>
-                            </label>
-                            <input type="text" v-model="lugar" v-bind="lugarProps"
-                                class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                                :class="formErrors.lugar ? 'border-red-400' : 'border-slate-200'"
-                                placeholder="Ej: Lima - Ministerio de Educación">
-                            <p v-if="formErrors.lugar" class="mt-1 text-sm text-red-600">{{ formErrors.lugar }}</p>
-                        </div>
+                            <!-- Lugar -->
+                            <div class="col-span-1">
+                                <label class="block text-sm font-bold text-slate-700 mb-2">
+                                    Lugar de Destino <span class="text-red-500">*</span>
+                                </label>
+                                <input type="text" v-model="lugar" v-bind="lugarProps"
+                                    class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white"
+                                    :class="formErrors.lugar ? 'border-red-400' : 'border-slate-200'"
+                                    placeholder="Ej: Lima - Sede MINEDU">
+                                <p v-if="formErrors.lugar" class="mt-1 text-sm text-red-600">{{ formErrors.lugar }}</p>
+                            </div>
 
-                        <!-- Referencia -->
-                        <div class="md:col-span-2">
-                            <label class="block text-sm font-bold text-slate-700 mb-2">Referencia</label>
-                            <input type="text" v-model="referencia" v-bind="referenciaProps"
-                                class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                                placeholder="Ej: Oficio Nº 001-2026-DREH">
-                        </div>
+                            <!-- Referencia -->
+                            <div class="col-span-1">
+                                <label class="block text-sm font-bold text-slate-700 mb-2">Referencia / Documento</label>
+                                <input type="text" v-model="referencia" v-bind="referenciaProps"
+                                    class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white"
+                                    placeholder="Ej: Oficio Nº 001-2026-DREH">
+                            </div>
 
-                        <!-- Día -->
-                        <div>
-                            <label class="block text-sm font-bold text-slate-700 mb-2">
-                                Fecha <span class="text-red-500">*</span>
-                            </label>
-                            <input type="date" v-model="dia" v-bind="diaProps"
-                                class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                                :class="formErrors.dia ? 'border-red-400' : 'border-slate-200'">
-                            <p v-if="formErrors.dia" class="mt-1 text-sm text-red-600">{{ formErrors.dia }}</p>
-                        </div>
+                            <!-- Día -->
+                            <div class="col-span-1">
+                                <label class="block text-sm font-bold text-slate-700 mb-2">
+                                    Fecha Programada <span class="text-red-500">*</span>
+                                </label>
+                                <input type="date" v-model="dia" v-bind="diaProps"
+                                    class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white"
+                                    :class="formErrors.dia ? 'border-red-400' : 'border-slate-200'">
+                                <p v-if="formErrors.dia" class="mt-1 text-sm text-red-600">{{ formErrors.dia }}</p>
+                            </div>
 
-                        <!-- Hora -->
-                        <div>
-                            <label class="block text-sm font-bold text-slate-700 mb-2">
-                                Hora Programada <span class="text-red-500">*</span>
-                            </label>
-                            <input type="time" v-model="hora" v-bind="horaProps"
-                                class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                                :class="formErrors.hora ? 'border-red-400' : 'border-slate-200'">
-                            <p v-if="formErrors.hora" class="mt-1 text-sm text-red-600">{{ formErrors.hora }}</p>
-                        </div>
+                            <!-- Hora -->
+                            <div class="col-span-1">
+                                <label class="block text-sm font-bold text-slate-700 mb-2">
+                                    Hora Programada <span class="text-red-500">*</span>
+                                </label>
+                                <input type="time" v-model="hora" v-bind="horaProps"
+                                    class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white"
+                                    :class="formErrors.hora ? 'border-red-400' : 'border-slate-200'">
+                                <p v-if="formErrors.hora" class="mt-1 text-sm text-red-600">{{ formErrors.hora }}</p>
+                            </div>
 
-                        <!-- Vehículo -->
-                        <div class="md:col-span-2">
-                            <label class="block text-sm font-bold text-slate-700 mb-2">Vehículo</label>
-                            <select v-model="vehicleId" v-bind="vehicleIdProps"
-                                class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white">
-                                <option value="">Seleccionar vehículo</option>
-                                <option v-for="v in vehicles" :key="v.id" :value="v.id">{{ v.placa }} - {{ v.marca }} {{
-                                    v.modelo }}</option>
-                            </select>
-                        </div>
-
-                        <!-- Conductor -->
-                        <div class="md:col-span-2">
-                            <label class="block text-sm font-bold text-slate-700 mb-2">
-                                Conductor <span class="text-red-500">*</span>
-                            </label>
-                            <select v-model="conductorEmployeeId" v-bind="conductorEmployeeIdProps"
-                                class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
-                                :class="formErrors.conductor_employee_id ? 'border-red-400' : 'border-slate-200'">
-                                <option value="">Seleccionar conductor (CHOFER II)</option>
-                                <option v-for="d in drivers" :key="d.id" :value="d.id">{{ d.nombre_completo }}</option>
-                            </select>
-                            <p v-if="formErrors.conductor_employee_id" class="mt-1 text-sm text-red-600">{{ formErrors.conductor_employee_id }}</p>
-                        </div>
-
-                        <!-- Usuarios -->
-                        <div class="md:col-span-2">
-                            <label class="block text-sm font-bold text-slate-700 mb-2">Pasajeros</label>
-                            <input type="text" v-model="usuarios" v-bind="usuariosProps"
-                                class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                placeholder="Nombres de los pasajeros separados por coma">
-                        </div>
-
-                        <!-- Motivo -->
-                        <div class="md:col-span-2">
-                            <label class="block text-sm font-bold text-slate-700 mb-2">Motivo de la Salida</label>
-                            <textarea v-model="motivo" v-bind="motivoProps" rows="3"
-                                placeholder="Describa el motivo de la comisión..."
-                                class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"></textarea>
+                            <!-- Motivo -->
+                            <div class="md:col-span-2">
+                                <label class="block text-sm font-bold text-slate-700 mb-2">Motivo de la Salida</label>
+                                <textarea v-model="motivo" v-bind="motivoProps" rows="2"
+                                    placeholder="Describa el motivo de la comisión..."
+                                    class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none bg-white"></textarea>
+                            </div>
                         </div>
                     </div>
 
-                    <!-- Sección de Control (Km, combustible, horas reales) -->
-                    <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 space-y-4">
-                        <h4 class="font-bold text-blue-800 flex items-center gap-2">
-                            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <!-- Sección 2: Vehículo y Personal -->
+                    <div class="space-y-4 pt-2">
+                        <h4 class="font-bold text-slate-800 flex items-center gap-2 border-b border-slate-100 pb-2 text-sm uppercase tracking-wide">
+                            <svg class="w-5 h-5 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                            </svg>
+                            Vehículo y Personal Asignado
+                        </h4>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <!-- Vehículo -->
+                            <div class="col-span-1">
+                                <label class="block text-sm font-bold text-slate-700 mb-2">Vehículo</label>
+                                <select v-model="vehicleId" v-bind="vehicleIdProps"
+                                    class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white">
+                                    <option value="">Seleccionar vehículo</option>
+                                    <option v-for="v in vehicles" :key="v.id" :value="v.id">{{ v.placa }} - {{ v.marca }} {{
+                                        v.modelo }}</option>
+                                </select>
+                            </div>
+
+                            <!-- Conductor -->
+                            <div class="col-span-1">
+                                <label class="block text-sm font-bold text-slate-700 mb-2">
+                                    Conductor <span class="text-red-500">*</span>
+                                </label>
+                                <select v-model="conductorEmployeeId" v-bind="conductorEmployeeIdProps"
+                                    class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+                                    :class="formErrors.conductor_employee_id ? 'border-red-400' : 'border-slate-200'">
+                                    <option value="">Seleccionar conductor (CHOFER II)</option>
+                                    <option v-for="d in drivers" :key="d.id" :value="d.id">{{ d.nombre_completo }}</option>
+                                </select>
+                                <p v-if="formErrors.conductor_employee_id" class="mt-1 text-sm text-red-600">{{ formErrors.conductor_employee_id }}</p>
+                            </div>
+
+                            <!-- Usuarios -->
+                            <div class="md:col-span-2">
+                                <label class="block text-sm font-bold text-slate-700 mb-2">Pasajeros (Opcional)</label>
+                                <input type="text" v-model="usuarios" v-bind="usuariosProps"
+                                    class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+                                    placeholder="Nombres de los pasajeros separados por comas">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Sección 3: Control de Salida y Retorno -->
+                    <div class="bg-blue-50/50 border border-blue-100 rounded-2xl p-4 space-y-4">
+                        <h4 class="font-bold text-blue-800 flex items-center gap-2 border-b border-blue-100/50 pb-2 text-sm uppercase tracking-wide">
+                            <svg class="w-5 h-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                     d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                             </svg>
                             Control de Salida y Retorno
                         </h4>
-                        <div class="grid grid-cols-2 gap-4">
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <label class="block text-sm font-bold text-blue-700 mb-2">Hora de Salida</label>
                                 <input type="time" v-model="horaSalida" v-bind="horaSalidaProps"
@@ -182,28 +205,79 @@
                             <div>
                                 <label class="block text-sm font-bold text-blue-700 mb-2">Km de Salida</label>
                                 <input type="text" v-model="kmSalida" v-bind="kmSalidaProps"
-                                    class="w-full px-4 py-2.5 border border-blue-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white">
+                                    class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-colors"
+                                    :class="formErrors.km_salida ? 'border-red-400' : 'border-blue-200'">
+                                <p v-if="formErrors.km_salida" class="mt-1 text-sm text-red-600">{{ formErrors.km_salida }}</p>
                             </div>
                             <div>
                                 <label class="block text-sm font-bold text-blue-700 mb-2">Km de Retorno</label>
                                 <input type="text" v-model="kmRetorno" v-bind="kmRetornoProps"
-                                    class="w-full px-4 py-2.5 border border-blue-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white">
+                                    class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-colors"
+                                    :class="formErrors.km_retorno ? 'border-red-400' : 'border-blue-200'">
+                                <p v-if="formErrors.km_retorno" class="mt-1 text-sm text-red-600">{{ formErrors.km_retorno }}</p>
                             </div>
                             <div>
                                 <label class="block text-sm font-bold text-blue-700 mb-2">Combustible</label>
-                                <input type="text" v-model="combustible" v-bind="combustibleProps"
+                                <select v-model="combustible" v-bind="combustibleProps"
                                     class="w-full px-4 py-2.5 border border-blue-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white">
+                                    <option value="">Seleccionar combustible</option>
+                                    <option value="Gasolina">Gasolina</option>
+                                    <option value="Diesel">Diesel</option>
+                                    <option value="GLP">GLP</option>
+                                    <option value="GNV">GNV</option>
+                                </select>
                             </div>
                             <div>
                                 <label class="block text-sm font-bold text-blue-700 mb-2">P/Nº</label>
                                 <input type="text" v-model="pnro" v-bind="pnroProps"
                                     class="w-full px-4 py-2.5 border border-blue-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white">
                             </div>
-                            <div class="col-span-2">
+                            <div class="col-span-1 md:col-span-2 bg-blue-100/60 border border-blue-200 rounded-xl p-3.5 flex justify-between items-center mt-1">
+                                <span class="text-sm font-bold text-blue-800">Total Kilómetros Recorridos</span>
+                                <span class="text-lg font-black text-blue-900 bg-white/80 px-3 py-1 rounded-lg border border-blue-200 shadow-sm">
+                                    {{ totalKmRecorrido !== null ? `${totalKmRecorrido} km` : '—' }}
+                                </span>
+                            </div>
+                            <div class="col-span-1 md:col-span-2 relative" ref="authorizerDropdownRef">
                                 <label class="block text-sm font-bold text-blue-700 mb-2">Funcionario que Autoriza</label>
-                                <input type="text" v-model="funcionarioAutoriza" v-bind="funcionarioAutorizaProps"
-                                    class="w-full px-4 py-2.5 border border-blue-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
-                                    placeholder="Nombre del funcionario que autoriza">
+                                
+                                <!-- Autorizador seleccionado (chip) -->
+                                <div v-if="selectedAuthorizerData"
+                                    class="flex items-center gap-2 px-4 py-2.5 border border-blue-300 bg-blue-50 rounded-xl">
+                                    <svg class="w-4 h-4 text-blue-600 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                                    </svg>
+                                    <div class="flex-1 min-w-0">
+                                        <p class="text-sm font-semibold text-blue-900 truncate">{{ selectedAuthorizerData.nombre_completo }}</p>
+                                        <p v-if="selectedAuthorizerData.cargo" class="text-xs text-blue-500 truncate">{{ selectedAuthorizerData.cargo }}</p>
+                                    </div>
+                                    <button type="button" @click="clearAuthorizer"
+                                        class="flex-shrink-0 p-0.5 rounded-full hover:bg-blue-200 transition-colors text-blue-500 hover:text-blue-700">
+                                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                        </svg>
+                                    </button>
+                                </div>
+
+                                <!-- Buscador -->
+                                <div v-else class="relative">
+                                    <input type="text" v-model="authorizerSearchQuery" @focus="showAuthorizerDropdown = true"
+                                        placeholder="Buscar funcionario por nombre o DNI..."
+                                        class="w-full px-4 py-2.5 border border-blue-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-colors"
+                                        :class="formErrors.funcionario_autoriza ? 'border-red-400' : 'border-blue-200'">
+                                    <div v-if="showAuthorizerDropdown && filteredAuthorizers.length > 0"
+                                        class="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl max-h-60 overflow-y-auto">
+                                        <button type="button" v-for="emp in filteredAuthorizers" :key="emp.id"
+                                            @click="selectAuthorizer(emp)"
+                                            class="w-full text-left px-4 py-2.5 hover:bg-blue-50 transition-colors flex items-center gap-3 border-b border-slate-50 last:border-0">
+                                            <div class="flex-1 min-w-0">
+                                                <p class="font-semibold text-slate-700 text-sm truncate">{{ emp.nombre_completo }}</p>
+                                                <p class="text-xs text-slate-400 truncate">{{ emp.cargo || 'Sin cargo' }} · DNI: {{ emp.dni }}</p>
+                                            </div>
+                                        </button>
+                                    </div>
+                                </div>
+                                <p v-if="formErrors.funcionario_autoriza" class="mt-1 text-sm text-red-600">{{ formErrors.funcionario_autoriza }}</p>
                             </div>
                         </div>
                     </div>
@@ -234,7 +308,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import { useForm } from 'vee-validate';
 import { toTypedSchema } from '@vee-validate/yup';
 import * as yup from 'yup';
@@ -270,8 +344,26 @@ const commissionSchema = toTypedSchema(
         funcionario_autoriza: yup.string().nullable(),
         hora_salida: yup.string().nullable(),
         hora_regreso: yup.string().nullable(),
-        km_salida: yup.string().nullable(),
-        km_retorno: yup.string().nullable(),
+        km_salida: yup.string()
+            .nullable()
+            .test('is-numeric', 'El kilometraje de salida debe ser un número entero no negativo', value => {
+                if (!value) return true;
+                return /^\d+$/.test(value);
+            }),
+        km_retorno: yup.string()
+            .nullable()
+            .test('is-numeric', 'El kilometraje de retorno debe ser un número entero no negativo', value => {
+                if (!value) return true;
+                return /^\d+$/.test(value);
+            })
+            .test('greater-than-salida', 'El kilometraje de retorno debe ser mayor o igual al de salida', function(value) {
+                const { km_salida } = this.parent;
+                if (!value || !km_salida) return true;
+                const salidaNum = parseInt(km_salida, 10);
+                const retornoNum = parseInt(value, 10);
+                if (isNaN(salidaNum) || isNaN(retornoNum)) return true;
+                return retornoNum >= salidaNum;
+            }),
         combustible: yup.string().nullable(),
         pnro: yup.string().nullable(),
     })
@@ -316,6 +408,31 @@ const [kmRetorno, kmRetornoProps] = defineField('km_retorno');
 const [combustible, combustibleProps] = defineField('combustible');
 const [pnro, pnroProps] = defineField('pnro');
 
+const totalKmRecorrido = computed(() => {
+    const salida = parseInt(kmSalida.value, 10);
+    const retorno = parseInt(kmRetorno.value, 10);
+    if (isNaN(salida) || isNaN(retorno)) {
+        return null;
+    }
+    const diff = retorno - salida;
+    return diff >= 0 ? diff : null;
+});
+
+// Auto-fill fuel type based on selected vehicle
+watch(vehicleId, (newVehicleId) => {
+    if (newVehicleId) {
+        const vehicle = props.vehicles.find(v => String(v.id) === String(newVehicleId));
+        if (vehicle && vehicle.combustible) {
+            const fuelUpper = String(vehicle.combustible).trim().toLowerCase();
+            const options = ['Gasolina', 'Diesel', 'GLP', 'GNV'];
+            const matchedOption = options.find(opt => opt.toLowerCase() === fuelUpper);
+            if (matchedOption) {
+                combustible.value = matchedOption;
+            }
+        }
+    }
+});
+
 // Employee picker (Servidor o Funcionario que Solicita)
 const employeeDropdownRef = ref(null);
 const { searchQuery: employeeSearchQuery, showDropdown: showEmployeeDropdown, filteredEmployees } = useEmployeeSearch(props.employees);
@@ -341,8 +458,34 @@ const handleClickOutsideEmployee = (event) => {
     }
 };
 
-onMounted(() => document.addEventListener('click', handleClickOutsideEmployee));
-onUnmounted(() => document.removeEventListener('click', handleClickOutsideEmployee));
+// Employee picker (Funcionario que Autoriza)
+const authorizerDropdownRef = ref(null);
+const { searchQuery: authorizerSearchQuery, showDropdown: showAuthorizerDropdown, filteredEmployees: filteredAuthorizers } = useEmployeeSearch(props.employees);
+const selectedAuthorizerData = ref(null);
+
+const selectAuthorizer = (emp) => {
+    selectedAuthorizerData.value = emp;
+    funcionarioAutoriza.value = emp.nombre_completo;
+    authorizerSearchQuery.value = '';
+    showAuthorizerDropdown.value = false;
+};
+
+const clearAuthorizer = () => {
+    selectedAuthorizerData.value = null;
+    funcionarioAutoriza.value = '';
+    authorizerSearchQuery.value = '';
+    showAuthorizerDropdown.value = false;
+};
+
+const handleClickOutsideAll = (event) => {
+    handleClickOutsideEmployee(event);
+    if (authorizerDropdownRef.value && !authorizerDropdownRef.value.contains(event.target)) {
+        showAuthorizerDropdown.value = false;
+    }
+};
+
+onMounted(() => document.addEventListener('click', handleClickOutsideAll));
+onUnmounted(() => document.removeEventListener('click', handleClickOutsideAll));
 
 // Load existing commission data if editing
 onMounted(() => {
@@ -350,6 +493,18 @@ onMounted(() => {
         if (props.commission.solicitante_employee_id) {
             const emp = props.employees.find(e => String(e.id) === String(props.commission.solicitante_employee_id));
             if (emp) selectedEmployeeData.value = emp;
+        }
+        if (props.commission.funcionario_autoriza) {
+            const emp = props.employees.find(e => String(e.nombre_completo).toLowerCase() === String(props.commission.funcionario_autoriza).toLowerCase());
+            if (emp) {
+                selectedAuthorizerData.value = emp;
+            } else {
+                selectedAuthorizerData.value = {
+                    id: 'temp-' + Date.now(),
+                    nombre_completo: props.commission.funcionario_autoriza,
+                    cargo: ''
+                };
+            }
         }
         setValues({
             solicitante_employee_id: props.commission.solicitante_employee_id || '',

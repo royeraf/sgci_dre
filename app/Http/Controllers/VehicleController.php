@@ -202,9 +202,19 @@ class VehicleController extends Controller
             'funcionario_autoriza' => 'nullable|string|max:255',
             'hora_salida' => 'nullable',
             'hora_regreso' => 'nullable',
-            'km_salida' => 'nullable|string|max:20',
-            'km_retorno' => 'nullable|string|max:20',
-            'combustible' => 'nullable|string|max:100',
+            'km_salida' => 'nullable|integer|min:0',
+            'km_retorno' => [
+                'nullable',
+                'integer',
+                'min:0',
+                function ($attribute, $value, $fail) use ($request) {
+                    $kmSalida = $request->input('km_salida');
+                    if (is_numeric($value) && is_numeric($kmSalida) && (int)$value < (int)$kmSalida) {
+                        $fail('El kilometraje de retorno debe ser mayor o igual al de salida.');
+                    }
+                }
+            ],
+            'combustible' => 'nullable|string|in:Gasolina,Diesel,GLP,GNV',
             'pnro' => 'nullable|string|max:100',
         ]);
 
@@ -247,9 +257,19 @@ class VehicleController extends Controller
             'funcionario_autoriza' => 'nullable|string|max:255',
             'hora_salida' => 'nullable',
             'hora_regreso' => 'nullable',
-            'km_salida' => 'nullable|string|max:20',
-            'km_retorno' => 'nullable|string|max:20',
-            'combustible' => 'nullable|string|max:100',
+            'km_salida' => 'nullable|integer|min:0',
+            'km_retorno' => [
+                'nullable',
+                'integer',
+                'min:0',
+                function ($attribute, $value, $fail) use ($request, $commission) {
+                    $kmSalida = $request->has('km_salida') ? $request->input('km_salida') : $commission->km_salida;
+                    if (is_numeric($value) && is_numeric($kmSalida) && (int)$value < (int)$kmSalida) {
+                        $fail('El kilometraje de retorno debe ser mayor o igual al de salida.');
+                    }
+                }
+            ],
+            'combustible' => 'nullable|string|in:Gasolina,Diesel,GLP,GNV',
             'pnro' => 'nullable|string|max:100',
             'estado' => 'nullable|string|max:50',
         ]);
