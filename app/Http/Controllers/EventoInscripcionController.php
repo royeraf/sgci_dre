@@ -10,7 +10,7 @@ use App\Models\Person;
 use App\Services\ReniecService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Validation\Rule;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 
 class EventoInscripcionController extends Controller
@@ -73,21 +73,11 @@ class EventoInscripcionController extends Controller
             $request->merge(['celular' => preg_replace('/\D/', '', $request->input('celular'))]);
         }
 
-        $numeroDocumentoFormato = $request->input('tipo_documento') === 'DNI'
-            ? ['digits:8']
-            : ['string', 'max:20', 'regex:/^[A-Za-z0-9\-]+$/'];
-
         $validated = $request->validate([
             'nombres' => 'required|string|max:100',
             'apellidos' => 'required|string|max:100',
             'genero' => 'required|in:Masculino,Femenino',
-            'tipo_documento' => 'required|in:DNI,CE,Pasaporte',
-            'numero_documento' => [
-                'required',
-                ...$numeroDocumentoFormato,
-                Rule::unique('utilitario_inscripciones', 'numero_documento')
-                    ->where('evento_id', $evento->id),
-            ],
+            'numero_documento' => ['required', 'digits:8'],
             'correo' => 'required|email|max:150',
             'celular' => 'required|digits:9',
             'direction_id' => 'required|exists:hr_directions,id',
@@ -96,9 +86,7 @@ class EventoInscripcionController extends Controller
             'profesion' => 'required|string|max:100',
             'contract_type_id' => 'required|exists:hr_contract_types,id',
         ], [
-            'numero_documento.unique' => 'Este número de documento ya está inscrito en este evento.',
             'numero_documento.digits' => 'El DNI debe tener exactamente 8 dígitos.',
-            'numero_documento.regex' => 'El número de documento contiene caracteres no válidos.',
             'celular.digits' => 'El celular debe tener exactamente 9 dígitos.',
             'genero.required' => 'Debe seleccionar un género.',
             'direction_id.required' => 'Debe seleccionar una dirección.',
@@ -116,7 +104,29 @@ class EventoInscripcionController extends Controller
                 abort(response()->json(['message' => 'El cupo para este evento ya está lleno.'], 422));
             }
 
-            return $eventoBloqueado->inscripciones()->create($validated);
+            // Buscar o crear la persona en people (solo se sobrescriben sus datos si no es un empleado interno)
+            $person = Person::firstOrNew(['dni' => $validated['numero_documento']]);
+
+            if ($person->tipo !== 'INTERNO') {
+                $person->nombres = Str::upper($validated['nombres']);
+                $person->apellidos = Str::upper($validated['apellidos']);
+                $person->email = $validated['correo'];
+                $person->telefono = $validated['celular'];
+                $person->tipo = 'EXTERNO';
+                $person->is_active = true;
+                $person->save();
+            }
+
+            if ($eventoBloqueado->inscripciones()->where('person_id', $person->id)->exists()) {
+                abort(response()->json(['message' => 'Ya se encuentra inscrito a este evento con este número de documento.'], 422));
+            }
+
+            $datosInscripcion = collect($validated)
+                ->except(['nombres', 'apellidos', 'correo', 'celular', 'numero_documento'])
+                ->merge(['person_id' => $person->id])
+                ->toArray();
+
+            return $eventoBloqueado->inscripciones()->create($datosInscripcion);
         });
 
         return response()->json([

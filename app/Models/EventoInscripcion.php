@@ -15,13 +15,8 @@ class EventoInscripcion extends Model
 
     protected $fillable = [
         'evento_id',
-        'nombres',
-        'apellidos',
+        'person_id',
         'genero',
-        'tipo_documento',
-        'numero_documento',
-        'correo',
-        'celular',
         'institucion',
         'direction_id',
         'office_id',
@@ -30,9 +25,22 @@ class EventoInscripcion extends Model
         'contract_type_id',
     ];
 
+    protected $appends = [
+        'nombres',
+        'apellidos',
+        'correo',
+        'celular',
+        'numero_documento',
+    ];
+
     public function evento(): BelongsTo
     {
         return $this->belongsTo(Evento::class, 'evento_id');
+    }
+
+    public function person(): BelongsTo
+    {
+        return $this->belongsTo(Person::class, 'person_id');
     }
 
     public function asistencias(): HasMany
@@ -53,5 +61,30 @@ class EventoInscripcion extends Model
     public function office(): BelongsTo
     {
         return $this->belongsTo(HrOffice::class, 'office_id');
+    }
+
+    public function getNombresAttribute(): ?string
+    {
+        return $this->person?->nombres;
+    }
+
+    public function getApellidosAttribute(): ?string
+    {
+        return $this->person?->apellidos;
+    }
+
+    public function getCorreoAttribute(): ?string
+    {
+        return $this->person?->email;
+    }
+
+    public function getCelularAttribute(): ?string
+    {
+        return $this->person?->telefono;
+    }
+
+    public function getNumeroDocumentoAttribute(): ?string
+    {
+        return $this->person?->dni;
     }
 }

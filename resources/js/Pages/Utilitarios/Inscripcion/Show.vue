@@ -107,31 +107,21 @@
 
                 <form @submit.prevent="onSubmit" class="space-y-4">
                     <div class="bg-gradient-to-br from-[var(--accent-05)] to-[var(--accent-10)] rounded-xl p-4 border border-[var(--accent-15)] mb-2">
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div class="grid grid-cols-1 gap-4">
                             <div>
-                                <label class="block text-sm font-bold text-slate-700 mb-1.5">Tipo de documento</label>
-                                <select v-model="tipoDocumento" v-bind="tipoDocumentoProps"
-                                    class="w-full px-4 py-3 border-2 border-[var(--accent-30)] rounded-xl text-slate-900 focus:ring-4 focus:ring-[var(--accent-20)] focus:border-[var(--accent)] bg-white transition-all duration-200 outline-none cursor-pointer">
-                                    <option value="DNI">DNI</option>
-                                    <option value="CE">Carné de Extranjería</option>
-                                    <option value="Pasaporte">Pasaporte</option>
-                                </select>
-                            </div>
-
-                            <div>
-                                <label class="block text-sm font-bold text-slate-700 mb-1.5">N° de documento <span class="text-red-500">*</span></label>
+                                <label class="block text-sm font-bold text-slate-700 mb-1.5">DNI <span class="text-red-500">*</span></label>
                                 <div class="flex">
                                     <div class="flex-1 relative">
                                         <input v-model="numeroDocumento" v-bind="numeroDocumentoProps" type="text"
-                                            :maxlength="tipoDocumento === 'DNI' ? 8 : 20" placeholder="########"
+                                            :maxlength="8" placeholder="########"
                                             @input="handleDocumentoInput" @keypress.enter.prevent="buscarPorDni"
-                                            class="w-full px-4 py-3 border-2 text-slate-900 placeholder:text-slate-400 focus:ring-4 focus:ring-[var(--accent-20)] focus:border-[var(--accent)] bg-white transition-all duration-200 outline-none font-mono tracking-wider"
-                                            :class="[formErrors.numero_documento ? 'border-red-400' : 'border-[var(--accent-30)]', tipoDocumento === 'DNI' ? 'rounded-l-xl border-r-0' : 'rounded-xl']" />
+                                            class="w-full px-4 py-3 border-2 text-slate-900 placeholder:text-slate-400 focus:ring-4 focus:ring-[var(--accent-20)] focus:border-[var(--accent)] bg-white transition-all duration-200 outline-none font-mono tracking-wider rounded-l-xl border-r-0"
+                                            :class="formErrors.numero_documento ? 'border-red-400' : 'border-[var(--accent-30)]'" />
                                         <div v-if="isConsultandoDni" class="absolute right-3 top-1/2 -translate-y-1/2">
                                             <Loader2 class="w-4 h-4 animate-spin text-[var(--accent)]" />
                                         </div>
                                     </div>
-                                    <button v-if="tipoDocumento === 'DNI'" type="button" @click="buscarPorDni"
+                                    <button type="button" @click="buscarPorDni"
                                         :disabled="numeroDocumento?.length !== 8 || isConsultandoDni"
                                         class="px-4 py-3 bg-gradient-to-r from-[var(--accent)] to-[var(--accent-dark)] text-white rounded-r-xl hover:brightness-110 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1 flex-shrink-0"
                                         title="Buscar datos por DNI">
@@ -408,8 +398,7 @@ const inscripcionSchema = toTypedSchema(
         nombres: yup.string().required('Los nombres son obligatorios').min(2),
         apellidos: yup.string().required('Los apellidos son obligatorios').min(2),
         genero: yup.string().required('Debe seleccionar un género').oneOf(['Masculino', 'Femenino'], 'Debe seleccionar un género'),
-        tipo_documento: yup.string().required(),
-        numero_documento: yup.string().required('El número de documento es obligatorio').max(20),
+        numero_documento: yup.string().required('El DNI es obligatorio').matches(/^\d{8}$/, 'El DNI debe tener exactamente 8 dígitos'),
         correo: yup.string().required('El correo es obligatorio').email('Ingrese un correo válido'),
         celular: yup.string().required('El celular es obligatorio').matches(/^\d{9}$/, 'El celular debe tener 9 dígitos'),
         direction_id: yup.string().required('Debe seleccionar una dirección'),
@@ -426,7 +415,6 @@ const { errors: formErrors, defineField, handleSubmit: validateForm } = useForm(
         nombres: '',
         apellidos: '',
         genero: '',
-        tipo_documento: 'DNI',
         numero_documento: '',
         correo: '',
         celular: '',
@@ -441,7 +429,6 @@ const { errors: formErrors, defineField, handleSubmit: validateForm } = useForm(
 const [nombres, nombresProps] = defineField('nombres');
 const [apellidos, apellidosProps] = defineField('apellidos');
 const [genero, generoProps] = defineField('genero');
-const [tipoDocumento, tipoDocumentoProps] = defineField('tipo_documento');
 const [numeroDocumento, numeroDocumentoProps] = defineField('numero_documento');
 const [correo, correoProps] = defineField('correo');
 const [celular, celularProps] = defineField('celular');
@@ -526,7 +513,6 @@ const handleCelularInput = (event) => {
 };
 
 const handleDocumentoInput = (event) => {
-    if (tipoDocumento.value !== 'DNI') return;
     const cleanValue = event.target.value.replace(/\D/g, '');
     numeroDocumento.value = cleanValue;
     dniConsultaMessage.value = '';
@@ -541,7 +527,7 @@ const handleDocumentoInput = (event) => {
 };
 
 const buscarPorDni = async () => {
-    if (tipoDocumento.value !== 'DNI' || numeroDocumento.value?.length !== 8) return;
+    if (numeroDocumento.value?.length !== 8) return;
 
     isConsultandoDni.value = true;
     dniConsultaMessage.value = '';
