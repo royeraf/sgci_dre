@@ -68,9 +68,11 @@ Route::get('/citas/status/{dni}', [AppointmentController::class, 'checkStatus'])
 Route::get('/visitas/publico', [ExternalVisitController::class, 'publicIndex'])->name('visitas.publico');
 
 // Public Event Registration (Utilitarios)
-Route::get('/utilitarios/inscripcion/api/consultar-dni', [EventoInscripcionController::class, 'consultarDni'])->name('utilitarios.inscripcion.consultar-dni');
-Route::get('/utilitarios/inscripcion/{evento:slug}', [EventoInscripcionController::class, 'show'])->name('utilitarios.inscripcion.show');
-Route::post('/utilitarios/inscripcion/{evento:slug}', [EventoInscripcionController::class, 'store'])->name('utilitarios.inscripcion.store');
+// Rutas públicas sin autenticación por diseño: el participante externo no tiene
+// cuenta en el sistema. Se limitan con throttle para mitigar abuso/enumeración.
+Route::middleware('throttle:20,1')->get('/utilitarios/inscripcion/api/consultar-dni', [EventoInscripcionController::class, 'consultarDni'])->name('utilitarios.inscripcion.consultar-dni');
+Route::middleware('throttle:30,1')->get('/utilitarios/inscripcion/{evento:slug}', [EventoInscripcionController::class, 'show'])->name('utilitarios.inscripcion.show');
+Route::middleware('throttle:5,1')->post('/utilitarios/inscripcion/{evento:slug}', [EventoInscripcionController::class, 'store'])->name('utilitarios.inscripcion.store');
 
 // Protected routes
 Route::middleware('auth')->group(function () {

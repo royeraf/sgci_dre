@@ -17,10 +17,10 @@ class EventoInscripcionController extends Controller
     public function consultarDni(Request $request, ReniecService $reniecService)
     {
         $request->validate([
-            'dni' => 'required|string|size:8',
+            'dni' => 'required|digits:8',
         ], [
             'dni.required' => 'El DNI es obligatorio.',
-            'dni.size' => 'El DNI debe tener exactamente 8 dígitos.',
+            'dni.digits' => 'El DNI debe tener exactamente 8 dígitos.',
         ]);
 
         $localPerson = Person::findByDni($request->dni);
@@ -65,6 +65,16 @@ class EventoInscripcionController extends Controller
             return response()->json(['message' => $motivo], 422);
         }
 
+        // El celular se escribe con espacios en el formulario (placeholder "999 999 999");
+        // se normaliza antes de validar el formato para no rechazar envíos legítimos.
+        if (is_string($request->input('celular'))) {
+            $request->merge(['celular' => preg_replace('/\D/', '', $request->input('celular'))]);
+        }
+
+        $numeroDocumentoFormato = $request->input('tipo_documento') === 'DNI'
+            ? ['digits:8']
+            : ['string', 'max:20', 'regex:/^[A-Za-z0-9\-]+$/'];
+
         $validated = $request->validate([
             'nombres' => 'required|string|max:100',
             'apellidos' => 'required|string|max:100',
@@ -72,13 +82,12 @@ class EventoInscripcionController extends Controller
             'tipo_documento' => 'required|in:DNI,CE,Pasaporte',
             'numero_documento' => [
                 'required',
-                'string',
-                'max:20',
+                ...$numeroDocumentoFormato,
                 Rule::unique('utilitario_inscripciones', 'numero_documento')
                     ->where('evento_id', $evento->id),
             ],
             'correo' => 'required|email|max:150',
-            'celular' => 'required|string|max:20',
+            'celular' => 'required|digits:9',
             'institucion' => 'nullable|string|max:150',
             'direction_id' => 'required|exists:hr_directions,id',
             'cargo' => 'nullable|string|max:100',
@@ -86,6 +95,9 @@ class EventoInscripcionController extends Controller
             'contract_type_id' => 'required|exists:hr_contract_types,id',
         ], [
             'numero_documento.unique' => 'Este número de documento ya está inscrito en este evento.',
+            'numero_documento.digits' => 'El DNI debe tener exactamente 8 dígitos.',
+            'numero_documento.regex' => 'El número de documento contiene caracteres no válidos.',
+            'celular.digits' => 'El celular debe tener exactamente 9 dígitos.',
             'direction_id.required' => 'Debe seleccionar una dirección.',
             'contract_type_id.required' => 'Debe seleccionar un régimen.',
         ]);

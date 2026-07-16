@@ -170,7 +170,8 @@
 
                         <div>
                             <label class="block text-sm font-bold text-slate-700 mb-1.5">Celular <span class="text-red-500">*</span></label>
-                            <input v-model="celular" v-bind="celularProps" type="text" placeholder="999 999 999"
+                            <input v-model="celular" v-bind="celularProps" type="text" placeholder="999 999 999" maxlength="9"
+                                @input="handleCelularInput"
                                 class="w-full px-4 py-3 border-2 rounded-xl text-slate-900 placeholder:text-slate-400 focus:ring-4 focus:ring-[var(--accent-20)] focus:border-[var(--accent)] bg-white transition-all duration-200 outline-none"
                                 :class="formErrors.celular ? 'border-red-400' : 'border-slate-200'" />
                             <p v-if="formErrors.celular" class="mt-1 text-sm text-red-600">{{ formErrors.celular }}</p>
@@ -352,7 +353,7 @@ const inscripcionSchema = toTypedSchema(
         tipo_documento: yup.string().required(),
         numero_documento: yup.string().required('El número de documento es obligatorio').max(20),
         correo: yup.string().required('El correo es obligatorio').email('Ingrese un correo válido'),
-        celular: yup.string().required('El celular es obligatorio'),
+        celular: yup.string().required('El celular es obligatorio').matches(/^\d{9}$/, 'El celular debe tener 9 dígitos'),
         institucion: yup.string().transform((v) => v || null).nullable(),
         direction_id: yup.string().required('Debe seleccionar una dirección'),
         cargo: yup.string().transform((v) => v || null).nullable(),
@@ -430,6 +431,10 @@ const closeDirectionDropdown = () => {
     setTimeout(() => {
         showDirectionDropdown.value = false;
     }, 200);
+};
+
+const handleCelularInput = (event) => {
+    celular.value = event.target.value.replace(/\D/g, '');
 };
 
 const handleDocumentoInput = (event) => {
