@@ -29,6 +29,7 @@ class RoleAccessMiddleware
         'hr'          => 'recursos_humanos',
         'papeletas'   => 'papeletas',
         'asistencia'  => 'asistencia',
+        'utilitarios' => 'utilitarios',
     ];
 
     public function handle(Request $request, Closure $next, ...$roles): Response
