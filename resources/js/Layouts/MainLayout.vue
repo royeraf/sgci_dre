@@ -233,6 +233,23 @@
                             Humanos</span>
                     </Link>
 
+                    <!-- Utilitarios -->
+                    <Link v-if="hasModulePermission('utilitarios', 'ver')" href="/utilitarios"
+                        class="group flex items-center text-sm font-semibold rounded-xl transition-all duration-300 ease-in-out relative"
+                        :class="[
+                            $page.component.startsWith('Utilitarios/') ? 'bg-gradient-to-r from-amber-600 to-orange-600 text-white shadow-lg shadow-amber-500/30 ring-1 ring-amber-400/50' : 'text-slate-300 hover:bg-slate-800/80 hover:text-white',
+                            isCollapsed ? 'justify-center py-3' : 'px-4 py-3.5'
+                        ]" :title="isCollapsed ? 'Utilitarios' : ''">
+                        <div class="rounded-lg transition-all duration-300 ease-in-out flex-shrink-0" :class="[
+                            $page.component.startsWith('Utilitarios/') ? 'bg-white/20' : 'bg-slate-700/80 group-hover:bg-slate-600',
+                            isCollapsed ? 'p-2 mr-0' : 'mr-4 p-2'
+                        ]">
+                            <GraduationCap class="h-5 w-5"
+                                :class="$page.component.startsWith('Utilitarios/') ? 'text-white' : 'text-slate-400 group-hover:text-white'" />
+                        </div>
+                        <span class="whitespace-nowrap transition-all duration-300 overflow-hidden" :class="isCollapsed ? 'opacity-0 max-w-0' : 'opacity-100 max-w-[200px]'">Utilitarios</span>
+                    </Link>
+
                     <!-- Divider for Admin Section -->
                     <div v-if="isAdmin()" class="my-4 transition-all duration-300"
                         :class="isCollapsed ? 'px-0' : 'px-3'">
@@ -393,6 +410,13 @@
                             <Users class="h-5 w-5" />
                             Recursos Humanos
                         </Link>
+                        <Link v-if="hasModulePermission('utilitarios', 'ver')" href="/utilitarios"
+                            @click="mobileMenuOpen = false"
+                            class="flex items-center gap-3 px-4 py-3 rounded-xl text-base font-semibold transition-all duration-200"
+                            :class="$page.component.startsWith('Utilitarios/') ? 'bg-gradient-to-r from-amber-600 to-orange-600 text-white shadow-lg' : 'text-slate-300 hover:bg-slate-700/50 hover:text-white'">
+                            <GraduationCap class="h-5 w-5" />
+                            Utilitarios
+                        </Link>
 
                         <!-- Admin Section Divider -->
                         <div v-if="isAdmin()" class="my-3 border-t border-slate-700 pt-3">
@@ -454,6 +478,7 @@ import {
     Shield,
     Box,
     Fingerprint,
+    GraduationCap,
 } from 'lucide-vue-next';
 import UserProfileModal from '@/Components/Profile/UserProfileModal.vue';
 
@@ -541,6 +566,7 @@ const hasModulePermission = (module, action = 'ver') => {
         'patrimonio':       ['patrimonio', 'bienes'],
         'papeletas':        ['papeletas'],
         'asistencia':       ['asistencia'],
+        'utilitarios':      ['utilitarios'],
     };
 
     const dbKeys = mapping[module];

@@ -12,6 +12,9 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\PapeletaPortalController;
 use App\Http\Controllers\PapeletaAdminController;
+use App\Http\Controllers\EventoController;
+use App\Http\Controllers\EventoInscripcionController;
+use App\Http\Controllers\EventoAsistenciaController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -63,6 +66,11 @@ Route::get('/citas/status/{dni}', [AppointmentController::class, 'checkStatus'])
 
 // Public Visitors Portal
 Route::get('/visitas/publico', [ExternalVisitController::class, 'publicIndex'])->name('visitas.publico');
+
+// Public Event Registration (Utilitarios)
+Route::get('/utilitarios/inscripcion/api/consultar-dni', [EventoInscripcionController::class, 'consultarDni'])->name('utilitarios.inscripcion.consultar-dni');
+Route::get('/utilitarios/inscripcion/{evento:slug}', [EventoInscripcionController::class, 'show'])->name('utilitarios.inscripcion.show');
+Route::post('/utilitarios/inscripcion/{evento:slug}', [EventoInscripcionController::class, 'store'])->name('utilitarios.inscripcion.store');
 
 // Protected routes
 Route::middleware('auth')->group(function () {
@@ -245,6 +253,23 @@ Route::middleware('auth')->group(function () {
         Route::get('/api/marcas', [App\Http\Controllers\AsistenciaController::class, 'getMarcas'])->name('marcas');
         Route::post('/api/marcas', [App\Http\Controllers\AsistenciaController::class, 'storeMarca'])->name('store');
         Route::delete('/api/marcas/{marca}', [App\Http\Controllers\AsistenciaController::class, 'deleteMarca'])->name('delete');
+    });
+
+    // Utilitarios - Eventos (cursos, seminarios, capacitaciones) e inscripciones
+    Route::middleware('role:ROL001')->prefix('utilitarios')->name('utilitarios.')->group(function () {
+        Route::get('/', [EventoController::class, 'index'])->name('index');
+
+        // Eventos
+        Route::get('/eventos', [EventoController::class, 'getEventos'])->name('eventos.list');
+        Route::post('/eventos', [EventoController::class, 'store'])->name('eventos.store');
+        Route::put('/eventos/{evento}', [EventoController::class, 'update'])->name('eventos.update');
+        Route::delete('/eventos/{evento}', [EventoController::class, 'destroy'])->name('eventos.destroy');
+        Route::patch('/eventos/{evento}/estado', [EventoController::class, 'cambiarEstado'])->name('eventos.estado');
+
+        // Inscritos y asistencia por día
+        Route::get('/eventos/{evento}/inscritos', [EventoAsistenciaController::class, 'index'])->name('eventos.inscritos');
+        Route::post('/eventos/{evento}/inscritos/{inscripcion}/asistencia', [EventoAsistenciaController::class, 'marcar'])->name('eventos.inscritos.asistencia.marcar');
+        Route::delete('/eventos/{evento}/inscritos/{inscripcion}/asistencia', [EventoAsistenciaController::class, 'desmarcar'])->name('eventos.inscritos.asistencia.desmarcar');
     });
 
     // User Management (Admin only)
