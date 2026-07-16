@@ -48,7 +48,7 @@
                             </span>
                         </td>
                         <td class="px-6 py-4 text-right whitespace-nowrap">
-                            <button @click="$emit('copy-link', evento)" title="Copiar enlace de inscripción"
+                            <button @click="$emit('view-detalle', evento)" title="Ver detalles y enlace de inscripción"
                                 class="text-amber-600 hover:text-amber-800 p-2 rounded-lg hover:bg-amber-50 transition-colors">
                                 <Link2 class="w-5 h-5" />
                             </button>
@@ -121,7 +121,7 @@ const props = defineProps({
     }
 });
 
-defineEmits(['edit', 'delete', 'copy-link', 'view-inscritos', 'change-estado', 'update:currentPage', 'update:perPage']);
+defineEmits(['edit', 'delete', 'view-detalle', 'view-inscritos', 'change-estado', 'update:currentPage', 'update:perPage']);
 
 const paginatedEventos = computed(() => {
     const start = (props.currentPage - 1) * props.perPage;

@@ -41,11 +41,14 @@
 
                 <EventoTable :eventos="filteredEventos" :loading="isLoading" v-model:currentPage="currentPage"
                     v-model:perPage="perPage" @edit="editEvento" @delete="handleDeleteEvento"
-                    @copy-link="copiarEnlace" @view-inscritos="verInscritos" @change-estado="cambiarEstado" />
+                    @view-detalle="verDetalle" @view-inscritos="verInscritos" @change-estado="cambiarEstado" />
             </BaseTableCard>
 
             <EventoModal v-if="showEventoModal" :evento="selectedEvento" :is-editing="isEditing"
                 :submitting="isSubmitting" @close="closeEventoModal" @submit="saveEvento" />
+
+            <EventoDetalleModal v-if="showDetalleModal" :evento="detalleEvento"
+                @close="showDetalleModal = false" @copy-link="copiarEnlace" />
         </div>
     </div>
 </template>
@@ -67,6 +70,7 @@ import { Plus, SlidersHorizontal, ChevronDown } from 'lucide-vue-next';
 import BaseTableCard from '@/Components/Common/BaseTableCard.vue';
 import EventoTable from '@/Components/Utilitarios/Eventos/EventoTable.vue';
 import EventoModal from '@/Components/Utilitarios/Eventos/EventoModal.vue';
+import EventoDetalleModal from '@/Components/Utilitarios/Eventos/EventoDetalleModal.vue';
 import EventoFiltros from '@/Components/Utilitarios/Eventos/EventoFiltros.vue';
 
 const isLoading = ref(false);
@@ -122,6 +126,14 @@ const fetchEventos = async () => {
 const showEventoModal = ref(false);
 const selectedEvento = ref(null);
 const isEditing = ref(false);
+
+const showDetalleModal = ref(false);
+const detalleEvento = ref(null);
+
+const verDetalle = (evento) => {
+    detalleEvento.value = evento;
+    showDetalleModal.value = true;
+};
 
 const createNewEvento = () => {
     isEditing.value = false;
