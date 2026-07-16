@@ -24,6 +24,7 @@ class EventoInscripcion extends Model
         'celular',
         'institucion',
         'direction_id',
+        'office_id',
         'cargo',
         'profesion',
         'contract_type_id',
@@ -47,5 +48,10 @@ class EventoInscripcion extends Model
     public function direction(): BelongsTo
     {
         return $this->belongsTo(HrDirection::class, 'direction_id');
+    }
+
+    public function office(): BelongsTo
+    {
+        return $this->belongsTo(HrOffice::class, 'office_id');
     }
 }

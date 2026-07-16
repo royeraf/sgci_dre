@@ -5,11 +5,13 @@ namespace App\Http\Controllers;
 use App\Models\Evento;
 use App\Models\HRContractType;
 use App\Models\HrDirection;
+use App\Models\HrOffice;
 use App\Models\Person;
 use App\Services\ReniecService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 
 class EventoInscripcionController extends Controller
@@ -54,6 +56,7 @@ class EventoInscripcionController extends Controller
             'motivo' => $motivo,
             'regimenes' => HRContractType::where('activo', true)->orderBy('nombre')->get(['id', 'nombre']),
             'directions' => HrDirection::where('activo', true)->orderBy('nombre')->get(['id', 'nombre']),
+            'offices' => HrOffice::where('activo', true)->with('direction:id,nombre')->orderBy('nombre')->get(['id', 'direction_id', 'nombre']),
         ]);
     }
 
@@ -78,7 +81,7 @@ class EventoInscripcionController extends Controller
         $validated = $request->validate([
             'nombres' => 'required|string|max:100',
             'apellidos' => 'required|string|max:100',
-            'genero' => 'nullable|in:Masculino,Femenino',
+            'genero' => 'required|in:Masculino,Femenino',
             'tipo_documento' => 'required|in:DNI,CE,Pasaporte',
             'numero_documento' => [
                 'required',
@@ -89,7 +92,8 @@ class EventoInscripcionController extends Controller
             'correo' => 'required|email|max:150',
             'celular' => 'required|digits:9',
             'institucion' => 'nullable|string|max:150',
-            'direction_id' => 'required|exists:hr_directions,id',
+            'direction_id' => 'nullable|exists:hr_directions,id',
+            'office_id' => 'nullable|exists:hr_offices,id',
             'cargo' => 'nullable|string|max:100',
             'profesion' => 'nullable|string|max:100',
             'contract_type_id' => 'required|exists:hr_contract_types,id',
@@ -98,9 +102,19 @@ class EventoInscripcionController extends Controller
             'numero_documento.digits' => 'El DNI debe tener exactamente 8 dígitos.',
             'numero_documento.regex' => 'El número de documento contiene caracteres no válidos.',
             'celular.digits' => 'El celular debe tener exactamente 9 dígitos.',
-            'direction_id.required' => 'Debe seleccionar una dirección.',
+            'genero.required' => 'Debe seleccionar un género.',
             'contract_type_id.required' => 'Debe seleccionar un régimen.',
         ]);
+
+        if (empty($validated['direction_id']) && empty($validated['office_id'])) {
+            throw ValidationException::withMessages([
+                'direction_id' => 'Debe seleccionar una Dirección o una Oficina.',
+            ]);
+        }
+
+        if (empty($validated['direction_id']) && !empty($validated['office_id'])) {
+            $validated['direction_id'] = HrOffice::find($validated['office_id'])?->direction_id;
+        }
 
         $inscripcion = DB::transaction(function () use ($evento, $validated) {
             $eventoBloqueado = Evento::where('id', $evento->id)->lockForUpdate()->first();

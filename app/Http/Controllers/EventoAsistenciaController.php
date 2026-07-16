@@ -11,7 +11,7 @@ class EventoAsistenciaController extends Controller
 {
     public function index(string $evento)
     {
-        $evento = Evento::with(['expositores', 'inscripciones.asistencias', 'inscripciones.contractType', 'inscripciones.direction'])->findOrFail($evento);
+        $evento = Evento::with(['expositores', 'inscripciones.asistencias', 'inscripciones.contractType', 'inscripciones.direction', 'inscripciones.office'])->findOrFail($evento);
 
         return Inertia::render('Utilitarios/Inscritos', [
             'evento' => [
@@ -32,7 +32,9 @@ class EventoAsistenciaController extends Controller
                 'numero_documento' => $inscripcion->numero_documento,
                 'correo' => $inscripcion->correo,
                 'institucion' => $inscripcion->institucion,
-                'direccion' => $inscripcion->direction?->nombre,
+                'direccion' => $inscripcion->office
+                    ? ($inscripcion->office->nombre . ($inscripcion->direction?->nombre ? " - {$inscripcion->direction->nombre}" : ''))
+                    : $inscripcion->direction?->nombre,
                 'cargo' => $inscripcion->cargo,
                 'profesion' => $inscripcion->profesion,
                 'regimen' => $inscripcion->contractType?->nombre,

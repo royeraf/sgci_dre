@@ -7,7 +7,7 @@
                         <th class="px-6 py-4 text-left text-xs font-bold text-slate-600 uppercase">Participante</th>
                         <th class="px-6 py-4 text-left text-xs font-bold text-slate-600 uppercase">Documento</th>
                         <th class="px-6 py-4 text-left text-xs font-bold text-slate-600 uppercase">Género</th>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-slate-600 uppercase">Institución / Dirección</th>
+                        <th class="px-6 py-4 text-left text-xs font-bold text-slate-600 uppercase">Institución / Dirección u Oficina</th>
                         <th class="px-6 py-4 text-left text-xs font-bold text-slate-600 uppercase">Profesión / Cargo</th>
                         <th class="px-6 py-4 text-left text-xs font-bold text-slate-600 uppercase">Régimen</th>
                         <th class="px-6 py-4 text-center text-xs font-bold text-slate-600 uppercase">Asistencia</th>
