@@ -42,8 +42,15 @@
                         </span>
                         <span class="inline-flex items-center gap-1.5">
                             <component :is="modalidadIcon(evento.modalidad)" class="w-3.5 h-3.5 text-[var(--accent-light)] flex-shrink-0" />
-                            <span class="font-semibold text-white/90">{{ modalidadLabel(evento.modalidad) }}</span><template v-if="evento.lugar || evento.enlace_virtual"> · {{ evento.lugar || evento.enlace_virtual }}</template>
+                            <span class="font-semibold text-white/90">{{ modalidadLabel(evento.modalidad) }}</span><template v-if="evento.modalidad !== 'virtual' && evento.lugar"> · {{ evento.lugar }}</template>
                         </span>
+                        <a v-if="evento.modalidad !== 'presencial' && evento.enlace_virtual" :href="evento.enlace_virtual"
+                            target="_blank" rel="noopener noreferrer"
+                            class="inline-flex items-center gap-1.5 min-w-0 underline decoration-dotted hover:text-white transition-colors">
+                            <Video class="w-3.5 h-3.5 text-[var(--accent-light)] flex-shrink-0" />
+                            <span class="font-semibold text-white/90 flex-shrink-0">Enlace de reunión:</span>
+                            <span class="truncate">{{ evento.enlace_virtual }}</span>
+                        </a>
                     </div>
 
                     <div v-if="evento.expositores.length || evento.cupo_maximo || evento.horas_educativas"
@@ -199,96 +206,77 @@
                         </div>
 
                         <div>
-                            <label class="block text-sm font-bold text-slate-700 mb-1.5">Institución / Procedencia</label>
-                            <input v-model="institucion" v-bind="institucionProps" type="text" placeholder="Institución educativa o entidad"
-                                class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl text-slate-900 placeholder:text-slate-400 focus:ring-4 focus:ring-[var(--accent-20)] focus:border-[var(--accent)] bg-white transition-all duration-200 outline-none" />
-                        </div>
-
-                        <div class="sm:col-span-2">
-                            <label class="block text-sm font-bold text-slate-700 mb-1.5">Dirección u Oficina <span class="text-red-500">*</span></label>
-
-                            <div class="flex gap-2 mb-2">
-                                <label class="flex-1 flex items-center justify-center gap-2 cursor-pointer p-2 border rounded-xl transition-all"
-                                    :class="destinoTipo === 'office' ? 'border-[var(--accent)] bg-[var(--accent-05)] text-[var(--accent-dark)] shadow-sm' : 'border-slate-200 hover:bg-slate-50 text-slate-600'">
-                                    <input type="radio" value="office" v-model="destinoTipo" @change="toggleDestino('office')" class="hidden">
-                                    <span class="text-sm font-bold">Oficina</span>
-                                </label>
-                                <label class="flex-1 flex items-center justify-center gap-2 cursor-pointer p-2 border rounded-xl transition-all"
-                                    :class="destinoTipo === 'direction' ? 'border-[var(--accent)] bg-[var(--accent-05)] text-[var(--accent-dark)] shadow-sm' : 'border-slate-200 hover:bg-slate-50 text-slate-600'">
-                                    <input type="radio" value="direction" v-model="destinoTipo" @change="toggleDestino('direction')" class="hidden">
-                                    <span class="text-sm font-bold">Dirección</span>
-                                </label>
+                            <label class="block text-sm font-bold text-slate-700 mb-1.5">Dirección <span class="text-red-500">*</span></label>
+                            <div v-if="selectedDirectionData"
+                                class="flex items-center gap-2 px-4 py-3 border-2 border-[var(--accent-30)] bg-[var(--accent-05)] rounded-xl">
+                                <Check class="w-4 h-4 text-[var(--accent)] flex-shrink-0" />
+                                <p class="flex-1 text-sm font-semibold text-[var(--accent-dark)] truncate">{{ selectedDirectionData.nombre }}</p>
+                                <button type="button" @click="clearDirection" class="flex-shrink-0 p-0.5 rounded-full hover:bg-[var(--accent-15)] transition-colors text-[var(--accent)]">
+                                    <X class="w-4 h-4" />
+                                </button>
                             </div>
-
-                            <!-- Dirección -->
-                            <div v-if="destinoTipo === 'direction'">
-                                <div v-if="selectedDirectionData"
-                                    class="flex items-center gap-2 px-4 py-3 border-2 border-[var(--accent-30)] bg-[var(--accent-05)] rounded-xl">
-                                    <Check class="w-4 h-4 text-[var(--accent)] flex-shrink-0" />
-                                    <p class="flex-1 text-sm font-semibold text-[var(--accent-dark)] truncate">{{ selectedDirectionData.nombre }}</p>
-                                    <button type="button" @click="clearDirection" class="flex-shrink-0 p-0.5 rounded-full hover:bg-[var(--accent-15)] transition-colors text-[var(--accent)]">
-                                        <X class="w-4 h-4" />
+                            <div v-else class="relative">
+                                <input type="text" v-model="directionQuery" @focus="showDirectionDropdown = true"
+                                    @blur="closeDirectionDropdown" placeholder="Buscar dirección..."
+                                    class="w-full px-4 py-3 border-2 rounded-xl bg-white text-slate-900 placeholder:text-slate-400 focus:ring-4 focus:ring-[var(--accent-20)] focus:border-[var(--accent)] transition-all duration-200 outline-none pr-10"
+                                    :class="formErrors.direction_id ? 'border-red-400' : 'border-slate-200'" />
+                                <ChevronDown class="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                                <div v-if="showDirectionDropdown && filteredDirections.length > 0"
+                                    class="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl max-h-48 overflow-y-auto">
+                                    <button type="button" v-for="d in filteredDirections" :key="d.id" @click="selectDirection(d)"
+                                        class="w-full text-left px-4 py-2.5 hover:bg-[var(--accent-05)] transition-colors text-sm font-medium text-slate-700 hover:text-[var(--accent-dark)] border-b border-slate-50 last:border-0">
+                                        {{ d.nombre }}
                                     </button>
                                 </div>
-                                <div v-else class="relative">
-                                    <input type="text" v-model="directionQuery" @focus="showDirectionDropdown = true"
-                                        @blur="closeDirectionDropdown" placeholder="Buscar dirección..."
-                                        class="w-full px-4 py-3 border-2 rounded-xl bg-white text-slate-900 placeholder:text-slate-400 focus:ring-4 focus:ring-[var(--accent-20)] focus:border-[var(--accent)] transition-all duration-200 outline-none pr-10"
-                                        :class="formErrors.direction_id ? 'border-red-400' : 'border-slate-200'" />
-                                    <ChevronDown class="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                                    <div v-if="showDirectionDropdown && filteredDirections.length > 0"
-                                        class="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl max-h-48 overflow-y-auto">
-                                        <button type="button" v-for="d in filteredDirections" :key="d.id" @click="selectDirection(d)"
-                                            class="w-full text-left px-4 py-2.5 hover:bg-[var(--accent-05)] transition-colors text-sm font-medium text-slate-700 hover:text-[var(--accent-dark)] border-b border-slate-50 last:border-0">
-                                            {{ d.nombre }}
-                                        </button>
-                                    </div>
-                                </div>
-                                <p v-if="formErrors.direction_id" class="mt-1 text-sm text-red-600">{{ formErrors.direction_id }}</p>
                             </div>
-
-                            <!-- Oficina -->
-                            <div v-if="destinoTipo === 'office'">
-                                <div v-if="selectedOfficeData"
-                                    class="flex items-center gap-2 px-4 py-3 border-2 border-[var(--accent-30)] bg-[var(--accent-05)] rounded-xl">
-                                    <Check class="w-4 h-4 text-[var(--accent)] flex-shrink-0" />
-                                    <div class="flex-1 min-w-0">
-                                        <p class="text-sm font-semibold text-[var(--accent-dark)] truncate">{{ selectedOfficeData.nombre }}</p>
-                                        <p v-if="selectedOfficeData.direction?.nombre" class="text-xs text-[var(--accent)] truncate">{{ selectedOfficeData.direction.nombre }}</p>
-                                    </div>
-                                    <button type="button" @click="clearOffice" class="flex-shrink-0 p-0.5 rounded-full hover:bg-[var(--accent-15)] transition-colors text-[var(--accent)]">
-                                        <X class="w-4 h-4" />
-                                    </button>
-                                </div>
-                                <div v-else class="relative">
-                                    <input type="text" v-model="officeQuery" @focus="showOfficeDropdown = true"
-                                        @blur="closeOfficeDropdown" placeholder="Buscar oficina..."
-                                        class="w-full px-4 py-3 border-2 rounded-xl bg-white text-slate-900 placeholder:text-slate-400 focus:ring-4 focus:ring-[var(--accent-20)] focus:border-[var(--accent)] transition-all duration-200 outline-none pr-10"
-                                        :class="formErrors.office_id ? 'border-red-400' : 'border-slate-200'" />
-                                    <ChevronDown class="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                                    <div v-if="showOfficeDropdown && filteredOffices.length > 0"
-                                        class="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl max-h-48 overflow-y-auto">
-                                        <button type="button" v-for="off in filteredOffices" :key="off.id" @click="selectOffice(off)"
-                                            class="w-full text-left px-4 py-2.5 hover:bg-[var(--accent-05)] transition-colors flex flex-col group border-b border-slate-50 last:border-0">
-                                            <span class="text-sm font-bold text-slate-700 group-hover:text-[var(--accent-dark)]">{{ off.nombre }}</span>
-                                            <span class="text-[10px] text-slate-400 font-medium">{{ off.direction?.nombre || 'Sin Dirección' }}</span>
-                                        </button>
-                                    </div>
-                                </div>
-                                <p v-if="formErrors.office_id" class="mt-1 text-sm text-red-600">{{ formErrors.office_id }}</p>
-                            </div>
+                            <p v-if="formErrors.direction_id" class="mt-1 text-sm text-red-600">{{ formErrors.direction_id }}</p>
                         </div>
 
                         <div>
-                            <label class="block text-sm font-bold text-slate-700 mb-1.5">Profesión</label>
-                            <input v-model="profesion" v-bind="profesionProps" type="text" placeholder="Opcional"
-                                class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl text-slate-900 placeholder:text-slate-400 focus:ring-4 focus:ring-[var(--accent-20)] focus:border-[var(--accent)] bg-white transition-all duration-200 outline-none" />
+                            <label class="block text-sm font-bold text-slate-700 mb-1.5">Oficina <span class="text-red-500">*</span></label>
+                            <div v-if="selectedOfficeData"
+                                class="flex items-center gap-2 px-4 py-3 border-2 border-[var(--accent-30)] bg-[var(--accent-05)] rounded-xl">
+                                <Check class="w-4 h-4 text-[var(--accent)] flex-shrink-0" />
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-sm font-semibold text-[var(--accent-dark)] truncate">{{ selectedOfficeData.nombre }}</p>
+                                    <p v-if="selectedOfficeData.direction?.nombre" class="text-xs text-[var(--accent)] truncate">{{ selectedOfficeData.direction.nombre }}</p>
+                                </div>
+                                <button type="button" @click="clearOffice" class="flex-shrink-0 p-0.5 rounded-full hover:bg-[var(--accent-15)] transition-colors text-[var(--accent)]">
+                                    <X class="w-4 h-4" />
+                                </button>
+                            </div>
+                            <div v-else class="relative">
+                                <input type="text" v-model="officeQuery" @focus="showOfficeDropdown = true"
+                                    @blur="closeOfficeDropdown" placeholder="Buscar oficina..."
+                                    class="w-full px-4 py-3 border-2 rounded-xl bg-white text-slate-900 placeholder:text-slate-400 focus:ring-4 focus:ring-[var(--accent-20)] focus:border-[var(--accent)] transition-all duration-200 outline-none pr-10"
+                                    :class="formErrors.office_id ? 'border-red-400' : 'border-slate-200'" />
+                                <ChevronDown class="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                                <div v-if="showOfficeDropdown && filteredOffices.length > 0"
+                                    class="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl max-h-48 overflow-y-auto">
+                                    <button type="button" v-for="off in filteredOffices" :key="off.id" @click="selectOffice(off)"
+                                        class="w-full text-left px-4 py-2.5 hover:bg-[var(--accent-05)] transition-colors flex flex-col group border-b border-slate-50 last:border-0">
+                                        <span class="text-sm font-bold text-slate-700 group-hover:text-[var(--accent-dark)]">{{ off.nombre }}</span>
+                                        <span class="text-[10px] text-slate-400 font-medium">{{ off.direction?.nombre || 'Sin Dirección' }}</span>
+                                    </button>
+                                </div>
+                            </div>
+                            <p v-if="formErrors.office_id" class="mt-1 text-sm text-red-600">{{ formErrors.office_id }}</p>
                         </div>
 
                         <div>
-                            <label class="block text-sm font-bold text-slate-700 mb-1.5">Cargo / Ocupación</label>
-                            <input v-model="cargo" v-bind="cargoProps" type="text" placeholder="Opcional"
-                                class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl text-slate-900 placeholder:text-slate-400 focus:ring-4 focus:ring-[var(--accent-20)] focus:border-[var(--accent)] bg-white transition-all duration-200 outline-none" />
+                            <label class="block text-sm font-bold text-slate-700 mb-1.5">Profesión <span class="text-red-500">*</span></label>
+                            <input v-model="profesion" v-bind="profesionProps" type="text" placeholder="Ingrese su profesión"
+                                class="w-full px-4 py-3 border-2 rounded-xl text-slate-900 placeholder:text-slate-400 focus:ring-4 focus:ring-[var(--accent-20)] focus:border-[var(--accent)] bg-white transition-all duration-200 outline-none"
+                                :class="formErrors.profesion ? 'border-red-400' : 'border-slate-200'" />
+                            <p v-if="formErrors.profesion" class="mt-1 text-sm text-red-600">{{ formErrors.profesion }}</p>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-bold text-slate-700 mb-1.5">Cargo / Ocupación <span class="text-red-500">*</span></label>
+                            <input v-model="cargo" v-bind="cargoProps" type="text" placeholder="Ingrese su cargo"
+                                class="w-full px-4 py-3 border-2 rounded-xl text-slate-900 placeholder:text-slate-400 focus:ring-4 focus:ring-[var(--accent-20)] focus:border-[var(--accent)] bg-white transition-all duration-200 outline-none"
+                                :class="formErrors.cargo ? 'border-red-400' : 'border-slate-200'" />
+                            <p v-if="formErrors.cargo" class="mt-1 text-sm text-red-600">{{ formErrors.cargo }}</p>
                         </div>
 
                         <div>
@@ -419,8 +407,6 @@ const formatFecha = (fecha) => {
 
 const formatHora = (hora) => hora ? hora.slice(0, 5) : hora;
 
-const destinoTipo = ref('office');
-
 const inscripcionSchema = toTypedSchema(
     yup.object({
         nombres: yup.string().required('Los nombres son obligatorios').min(2),
@@ -430,15 +416,10 @@ const inscripcionSchema = toTypedSchema(
         numero_documento: yup.string().required('El número de documento es obligatorio').max(20),
         correo: yup.string().required('El correo es obligatorio').email('Ingrese un correo válido'),
         celular: yup.string().required('El celular es obligatorio').matches(/^\d{9}$/, 'El celular debe tener 9 dígitos'),
-        institucion: yup.string().transform((v) => v || null).nullable(),
-        direction_id: yup.string().nullable().test('direction-required', 'Debe seleccionar una dirección', function (val) {
-            return destinoTipo.value === 'office' || (!!val && val.length > 0);
-        }),
-        office_id: yup.string().nullable().test('office-required', 'Debe seleccionar una oficina', function (val) {
-            return destinoTipo.value === 'direction' || (!!val && val.length > 0);
-        }),
-        cargo: yup.string().transform((v) => v || null).nullable(),
-        profesion: yup.string().transform((v) => v || null).nullable(),
+        direction_id: yup.string().required('Debe seleccionar una dirección'),
+        office_id: yup.string().required('Debe seleccionar una oficina'),
+        cargo: yup.string().required('El cargo es obligatorio'),
+        profesion: yup.string().required('La profesión es obligatoria'),
         contract_type_id: yup.string().required('Debe seleccionar un régimen'),
     })
 );
@@ -453,7 +434,6 @@ const { errors: formErrors, defineField, handleSubmit: validateForm } = useForm(
         numero_documento: '',
         correo: '',
         celular: '',
-        institucion: '',
         direction_id: '',
         office_id: '',
         cargo: '',
@@ -469,7 +449,6 @@ const [tipoDocumento, tipoDocumentoProps] = defineField('tipo_documento');
 const [numeroDocumento, numeroDocumentoProps] = defineField('numero_documento');
 const [correo, correoProps] = defineField('correo');
 const [celular, celularProps] = defineField('celular');
-const [institucion, institucionProps] = defineField('institucion');
 const [directionId, directionIdProps] = defineField('direction_id');
 const [officeId, officeIdProps] = defineField('office_id');
 const [cargo, cargoProps] = defineField('cargo');
@@ -544,15 +523,6 @@ const closeOfficeDropdown = () => {
     setTimeout(() => {
         showOfficeDropdown.value = false;
     }, 200);
-};
-
-const toggleDestino = (tipo) => {
-    destinoTipo.value = tipo;
-    if (tipo === 'direction') {
-        clearOffice();
-    } else {
-        clearDirection();
-    }
 };
 
 const handleCelularInput = (event) => {

@@ -7,7 +7,7 @@
                         <th class="px-6 py-4 text-left text-xs font-bold text-slate-600 uppercase">Participante</th>
                         <th class="px-6 py-4 text-left text-xs font-bold text-slate-600 uppercase">Documento</th>
                         <th class="px-6 py-4 text-left text-xs font-bold text-slate-600 uppercase">Género</th>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-slate-600 uppercase">Institución / Dirección u Oficina</th>
+                        <th class="px-6 py-4 text-left text-xs font-bold text-slate-600 uppercase">Dirección / Oficina</th>
                         <th class="px-6 py-4 text-left text-xs font-bold text-slate-600 uppercase">Profesión / Cargo</th>
                         <th class="px-6 py-4 text-left text-xs font-bold text-slate-600 uppercase">Régimen</th>
                         <th class="px-6 py-4 text-center text-xs font-bold text-slate-600 uppercase">Asistencia</th>
@@ -23,8 +23,8 @@
                         <td class="px-6 py-4 font-mono text-slate-700">{{ inscripcion.numero_documento }}</td>
                         <td class="px-6 py-4 text-sm text-slate-700">{{ inscripcion.genero || '-' }}</td>
                         <td class="px-6 py-4 text-sm text-slate-700">
-                            <p>{{ inscripcion.institucion || '-' }}</p>
-                            <p v-if="inscripcion.direccion" class="text-xs text-slate-500">{{ inscripcion.direccion }}</p>
+                            <p>{{ inscripcion.direccion || '-' }}</p>
+                            <p v-if="inscripcion.oficina" class="text-xs text-slate-500">{{ inscripcion.oficina }}</p>
                         </td>
                         <td class="px-6 py-4 text-sm text-slate-700">
                             <p>{{ inscripcion.profesion || '-' }}</p>

@@ -11,7 +11,6 @@ use App\Services\ReniecService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
-use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 
 class EventoInscripcionController extends Controller
@@ -91,11 +90,10 @@ class EventoInscripcionController extends Controller
             ],
             'correo' => 'required|email|max:150',
             'celular' => 'required|digits:9',
-            'institucion' => 'nullable|string|max:150',
-            'direction_id' => 'nullable|exists:hr_directions,id',
-            'office_id' => 'nullable|exists:hr_offices,id',
-            'cargo' => 'nullable|string|max:100',
-            'profesion' => 'nullable|string|max:100',
+            'direction_id' => 'required|exists:hr_directions,id',
+            'office_id' => 'required|exists:hr_offices,id',
+            'cargo' => 'required|string|max:100',
+            'profesion' => 'required|string|max:100',
             'contract_type_id' => 'required|exists:hr_contract_types,id',
         ], [
             'numero_documento.unique' => 'Este número de documento ya está inscrito en este evento.',
@@ -103,18 +101,12 @@ class EventoInscripcionController extends Controller
             'numero_documento.regex' => 'El número de documento contiene caracteres no válidos.',
             'celular.digits' => 'El celular debe tener exactamente 9 dígitos.',
             'genero.required' => 'Debe seleccionar un género.',
+            'direction_id.required' => 'Debe seleccionar una dirección.',
+            'office_id.required' => 'Debe seleccionar una oficina.',
+            'cargo.required' => 'El cargo es obligatorio.',
+            'profesion.required' => 'La profesión es obligatoria.',
             'contract_type_id.required' => 'Debe seleccionar un régimen.',
         ]);
-
-        if (empty($validated['direction_id']) && empty($validated['office_id'])) {
-            throw ValidationException::withMessages([
-                'direction_id' => 'Debe seleccionar una Dirección o una Oficina.',
-            ]);
-        }
-
-        if (empty($validated['direction_id']) && !empty($validated['office_id'])) {
-            $validated['direction_id'] = HrOffice::find($validated['office_id'])?->direction_id;
-        }
 
         $inscripcion = DB::transaction(function () use ($evento, $validated) {
             $eventoBloqueado = Evento::where('id', $evento->id)->lockForUpdate()->first();

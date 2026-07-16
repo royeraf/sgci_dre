@@ -31,10 +31,8 @@ class EventoAsistenciaController extends Controller
                 'genero' => $inscripcion->genero,
                 'numero_documento' => $inscripcion->numero_documento,
                 'correo' => $inscripcion->correo,
-                'institucion' => $inscripcion->institucion,
-                'direccion' => $inscripcion->office
-                    ? ($inscripcion->office->nombre . ($inscripcion->direction?->nombre ? " - {$inscripcion->direction->nombre}" : ''))
-                    : $inscripcion->direction?->nombre,
+                'direccion' => $inscripcion->direction?->nombre,
+                'oficina' => $inscripcion->office?->nombre,
                 'cargo' => $inscripcion->cargo,
                 'profesion' => $inscripcion->profesion,
                 'regimen' => $inscripcion->contractType?->nombre,
