@@ -51,10 +51,6 @@
                             <span class="font-semibold text-white/90 flex-shrink-0">Enlace de reunión:</span>
                             <span class="truncate">{{ evento.enlace_virtual }}</span>
                         </a>
-                    </div>
-
-                    <div v-if="evento.expositores.length || evento.cupo_maximo || evento.horas_educativas"
-                        class="flex flex-col gap-2 text-xs sm:text-sm text-white/80 mt-4 pt-4 border-t border-white/10">
                         <span v-if="evento.expositores.length" class="inline-flex items-center gap-1.5">
                             <Mic class="w-3.5 h-3.5 text-[var(--accent-light)] flex-shrink-0" />
                             <span class="font-semibold text-white/90">Ponente:</span>
