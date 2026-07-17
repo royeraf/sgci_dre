@@ -27,6 +27,13 @@
             padding: 24px;
             text-align: center;
         }
+        .header .logo-wrap {
+            display: inline-block;
+            background-color: #ffffff;
+            border-radius: 8px;
+            padding: 6px 10px;
+            margin-bottom: 12px;
+        }
         .header .institucion {
             font-size: 12px;
             letter-spacing: 1px;
@@ -73,6 +80,11 @@
 <body>
     <div class="container">
         <div class="header">
+            @if(file_exists(public_path('images/logo.png')))
+                <div class="logo-wrap">
+                    <img src="{{ $message->embed(public_path('images/logo.png')) }}" alt="DRE Huánuco" style="height: 32px; display: block;">
+                </div>
+            @endif
             <p class="institucion">Dirección Regional de Educación Huánuco</p>
             <p class="titulo-evento">{{ $evento->titulo }}</p>
         </div>
