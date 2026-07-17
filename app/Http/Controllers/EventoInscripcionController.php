@@ -108,18 +108,21 @@ class EventoInscripcionController extends Controller
                 abort(response()->json(['message' => 'El cupo para este evento ya está lleno.'], 422));
             }
 
-            // Buscar o crear la persona en people (solo se sobrescriben sus datos si no es un empleado interno)
+            // Buscar o crear la persona en people (nombres/apellidos solo se sobrescriben si no es un empleado
+            // interno, para no pisar datos de RRHH; el correo y celular siempre se actualizan con lo que la
+            // persona entrega al inscribirse, ya que muchos internos no tienen contacto cargado en RRHH)
             $person = Person::firstOrNew(['dni' => $validated['numero_documento']]);
 
             if ($person->tipo !== 'INTERNO') {
                 $person->nombres = Str::upper($validated['nombres']);
                 $person->apellidos = Str::upper($validated['apellidos']);
-                $person->email = $validated['correo'];
-                $person->telefono = $validated['celular'];
                 $person->tipo = 'EXTERNO';
                 $person->is_active = true;
-                $person->save();
             }
+
+            $person->email = $validated['correo'];
+            $person->telefono = $validated['celular'];
+            $person->save();
 
             if ($eventoBloqueado->inscripciones()->where('person_id', $person->id)->exists()) {
                 abort(response()->json(['message' => 'Ya se encuentra inscrito a este evento con este número de documento.'], 422));
