@@ -77,4 +77,26 @@ class EventoInscripcion extends Model
     {
         return $this->person?->dni;
     }
+
+    public function toAdminArray(): array
+    {
+        return [
+            'id' => $this->id,
+            'evento_id' => $this->evento_id,
+            'nombres' => $this->nombres,
+            'apellidos' => $this->apellidos,
+            'genero' => $this->genero,
+            'numero_documento' => $this->numero_documento,
+            'correo' => $this->correo,
+            'direccion' => $this->direction?->nombre,
+            'oficina' => $this->office?->nombre,
+            'cargo' => $this->cargo,
+            'profesion' => $this->profesion,
+            'regimen' => $this->contractType?->nombre,
+            'asistencias' => $this->asistencias->map(fn ($a) => [
+                'fecha' => $a->fecha->format('Y-m-d'),
+                'marcado_en' => $a->marcado_en?->format('Y-m-d H:i'),
+            ]),
+        ];
+    }
 }

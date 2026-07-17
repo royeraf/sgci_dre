@@ -24,23 +24,16 @@ class EventoAsistenciaController extends Controller
                 'cupo_maximo' => $evento->cupo_maximo,
                 'dias' => $evento->diasEvento(),
             ],
-            'inscripciones' => $evento->inscripciones->map(fn (EventoInscripcion $inscripcion) => [
-                'id' => $inscripcion->id,
-                'nombres' => $inscripcion->nombres,
-                'apellidos' => $inscripcion->apellidos,
-                'genero' => $inscripcion->genero,
-                'numero_documento' => $inscripcion->numero_documento,
-                'correo' => $inscripcion->correo,
-                'direccion' => $inscripcion->direction?->nombre,
-                'oficina' => $inscripcion->office?->nombre,
-                'cargo' => $inscripcion->cargo,
-                'profesion' => $inscripcion->profesion,
-                'regimen' => $inscripcion->contractType?->nombre,
-                'asistencias' => $inscripcion->asistencias->map(fn ($a) => [
-                    'fecha' => $a->fecha->format('Y-m-d'),
-                    'marcado_en' => $a->marcado_en?->format('Y-m-d H:i'),
-                ]),
-            ]),
+            'inscripciones' => $evento->inscripciones->map(fn (EventoInscripcion $inscripcion) => $inscripcion->toAdminArray()),
+        ]);
+    }
+
+    public function data(string $evento)
+    {
+        $evento = Evento::with(['inscripciones.asistencias', 'inscripciones.contractType', 'inscripciones.direction', 'inscripciones.office', 'inscripciones.person'])->findOrFail($evento);
+
+        return response()->json([
+            'inscripciones' => $evento->inscripciones->map(fn (EventoInscripcion $inscripcion) => $inscripcion->toAdminArray()),
         ]);
     }
 

@@ -270,6 +270,7 @@ Route::middleware('auth')->group(function () {
 
         // Inscritos y asistencia por día
         Route::get('/eventos/{evento}/inscritos', [EventoAsistenciaController::class, 'index'])->name('eventos.inscritos');
+        Route::get('/eventos/{evento}/inscritos/data', [EventoAsistenciaController::class, 'data'])->name('eventos.inscritos.data');
         Route::post('/eventos/{evento}/inscritos/{inscripcion}/asistencia', [EventoAsistenciaController::class, 'marcar'])->name('eventos.inscritos.asistencia.marcar');
         Route::delete('/eventos/{evento}/inscritos/{inscripcion}/asistencia', [EventoAsistenciaController::class, 'desmarcar'])->name('eventos.inscritos.asistencia.desmarcar');
     });

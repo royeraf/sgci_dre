@@ -11,7 +11,7 @@
                         {{ evento.titulo }}
                     </h1>
                     <p class="mt-2 text-slate-600">
-                        {{ inscripciones.length }} inscrito(s)<span v-if="evento.cupo_maximo"> de {{ evento.cupo_maximo }} cupos</span>
+                        {{ inscripcionesList.length }} inscrito(s)<span v-if="evento.cupo_maximo"> de {{ evento.cupo_maximo }} cupos</span>
                     </p>
                 </div>
             </div>
@@ -51,7 +51,7 @@ export default {
 </script>
 
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { Link } from '@inertiajs/vue3';
 import axios from 'axios';
 import { ArrowLeft } from 'lucide-vue-next';
@@ -70,6 +70,8 @@ const props = defineProps({
     }
 });
 
+const inscripcionesList = ref([...props.inscripciones]);
+
 const search = ref('');
 const currentPage = ref(1);
 const perPage = ref(10);
@@ -87,9 +89,9 @@ const normalizeText = (text) => {
 };
 
 const filteredInscripciones = computed(() => {
-    if (!search.value) return props.inscripciones;
+    if (!search.value) return inscripcionesList.value;
     const q = normalizeText(search.value);
-    return props.inscripciones.filter((i) =>
+    return inscripcionesList.value.filter((i) =>
         normalizeText(`${i.nombres} ${i.apellidos}`).includes(q) || i.numero_documento.includes(search.value)
     );
 });
@@ -122,4 +124,61 @@ const toggleAsistencia = async (inscripcion) => {
         marcando.value = null;
     }
 };
+
+const canalInscripciones = `evento.${props.evento.id}.inscripciones`;
+let echoChannel = null;
+let pollingInterval = null;
+
+const agregarInscripcionNueva = (nuevaInscripcion) => {
+    if (inscripcionesList.value.some((i) => i.id === nuevaInscripcion.id)) return;
+
+    inscripcionesList.value.push(nuevaInscripcion);
+    window.Swal?.fire?.({
+        icon: 'info',
+        title: 'Nueva inscripción',
+        text: `${nuevaInscripcion.nombres} ${nuevaInscripcion.apellidos} se acaba de inscribir.`,
+        toast: true,
+        position: 'top-end',
+        showConfirmButton: false,
+        timer: 4000,
+    });
+};
+
+const checkNuevasInscripciones = async () => {
+    try {
+        const { data } = await axios.get(`/utilitarios/eventos/${props.evento.id}/inscritos/data`);
+        (data.inscripciones || []).forEach((inscripcion) => {
+            if (!inscripcionesList.value.some((i) => i.id === inscripcion.id)) {
+                agregarInscripcionNueva(inscripcion);
+            }
+        });
+    } catch (error) {
+        // Silencioso: solo es el fallback de respaldo, no interrumpe la pantalla
+    }
+};
+
+onMounted(() => {
+    if (typeof window.Echo !== 'undefined') {
+        try {
+            echoChannel = window.Echo.channel(canalInscripciones)
+                .listen('.new-inscripcion', (nuevaInscripcion) => {
+                    agregarInscripcionNueva(nuevaInscripcion);
+                });
+            return;
+        } catch (error) {
+            console.warn('Echo no disponible, usando polling de respaldo');
+        }
+    }
+
+    pollingInterval = setInterval(checkNuevasInscripciones, 15000);
+});
+
+onUnmounted(() => {
+    if (echoChannel && typeof window.Echo !== 'undefined') {
+        window.Echo.leave(canalInscripciones);
+    }
+    if (pollingInterval) {
+        clearInterval(pollingInterval);
+    }
+});
 </script>

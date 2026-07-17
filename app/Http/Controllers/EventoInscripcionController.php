@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\NewInscripcionCreated;
 use App\Mail\InscripcionConfirmada;
 use App\Models\Evento;
 use App\Models\EventoInscripcion;
@@ -136,6 +137,8 @@ class EventoInscripcionController extends Controller
 
         $emailEnviado = $this->enviarCorreoConfirmacion($inscripcion);
 
+        event(new NewInscripcionCreated($inscripcion));
+
         return response()->json([
             'message' => 'Inscripción registrada correctamente',
             'id' => $inscripcion->id,
@@ -145,7 +148,7 @@ class EventoInscripcionController extends Controller
 
     private function enviarCorreoConfirmacion(EventoInscripcion $inscripcion): bool
     {
-        $inscripcion->load(['person', 'evento', 'direction', 'office', 'contractType']);
+        $inscripcion->load(['person', 'evento', 'direction', 'office', 'contractType', 'asistencias']);
 
         try {
             Mail::to($inscripcion->correo)->send(new InscripcionConfirmada($inscripcion));

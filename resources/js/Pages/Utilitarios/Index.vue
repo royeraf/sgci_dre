@@ -62,7 +62,7 @@ export default {
 </script>
 
 <script setup>
-import { ref, onMounted, computed, watch } from 'vue';
+import { ref, onMounted, onUnmounted, computed, watch } from 'vue';
 import axios from 'axios';
 import { router } from '@inertiajs/vue3';
 import { Plus, SlidersHorizontal, ChevronDown } from 'lucide-vue-next';
@@ -252,8 +252,41 @@ const verInscritos = (evento) => {
     router.visit(`/utilitarios/eventos/${evento.id}/inscritos`);
 };
 
+let echoChannel = null;
+let pollingInterval = null;
+
+const incrementarContador = (nuevaInscripcion) => {
+    const evento = eventos.value.find((e) => e.id === nuevaInscripcion.evento_id);
+    if (evento) {
+        evento.inscritos_count = (evento.inscritos_count || 0) + 1;
+    }
+};
+
 onMounted(() => {
     fetchEventos();
+
+    if (typeof window.Echo !== 'undefined') {
+        try {
+            echoChannel = window.Echo.channel('inscripciones')
+                .listen('.new-inscripcion', (nuevaInscripcion) => {
+                    incrementarContador(nuevaInscripcion);
+                });
+            return;
+        } catch (error) {
+            console.warn('Echo no disponible, usando polling de respaldo');
+        }
+    }
+
+    pollingInterval = setInterval(fetchEventos, 20000);
+});
+
+onUnmounted(() => {
+    if (echoChannel && typeof window.Echo !== 'undefined') {
+        window.Echo.leave('inscripciones');
+    }
+    if (pollingInterval) {
+        clearInterval(pollingInterval);
+    }
 });
 </script>
 
