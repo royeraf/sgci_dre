@@ -96,7 +96,7 @@
                 <CheckCircle2 class="w-14 h-14 text-green-500 mx-auto mb-4" />
                 <h2 class="text-xl font-bold text-slate-800 mb-2">¡Inscripción registrada!</h2>
                 <p class="text-slate-500">Gracias por registrarte, {{ nombres }}. Tu inscripción a este evento ha sido confirmada.</p>
-                <p v-if="emailEnviado" class="text-slate-400 text-sm mt-2">Te enviamos un correo de confirmación a {{ correo }}.</p>
+                <p v-if="emailEnviado" class="text-slate-400 text-sm mt-2">Te enviamos un correo de confirmación a {{ correo }}. Si no lo ves en tu bandeja principal, revisa la carpeta de spam o no deseados.</p>
             </div>
 
             <!-- Formulario de inscripción -->
