@@ -267,7 +267,7 @@ onMounted(() => {
 
     if (typeof window.Echo !== 'undefined') {
         try {
-            echoChannel = window.Echo.channel('inscripciones')
+            echoChannel = window.Echo.private('inscripciones')
                 .listen('.new-inscripcion', (nuevaInscripcion) => {
                     incrementarContador(nuevaInscripcion);
                 });

@@ -160,7 +160,7 @@ const checkNuevasInscripciones = async () => {
 onMounted(() => {
     if (typeof window.Echo !== 'undefined') {
         try {
-            echoChannel = window.Echo.channel(canalInscripciones)
+            echoChannel = window.Echo.private(canalInscripciones)
                 .listen('.new-inscripcion', (nuevaInscripcion) => {
                     agregarInscripcionNueva(nuevaInscripcion);
                 });

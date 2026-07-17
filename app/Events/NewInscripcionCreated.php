@@ -3,8 +3,8 @@
 namespace App\Events;
 
 use App\Models\EventoInscripcion;
-use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
+use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
@@ -21,16 +21,18 @@ class NewInscripcionCreated implements ShouldBroadcast
     }
 
     /**
-     * Se transmite en un canal por evento (para la pantalla de Inscritos de ese
-     * evento) y en un canal global (para el contador de la tabla de eventos).
+     * Canales privados (requieren autorización en routes/channels.php): uno por
+     * evento (para la pantalla de Inscritos de ese evento) y uno global (para el
+     * contador de la tabla de eventos). No son públicos porque el payload incluye
+     * datos personales (DNI, correo) de los inscritos.
      *
-     * @return array<int, \Illuminate\Broadcasting\Channel>
+     * @return array<int, \Illuminate\Broadcasting\PrivateChannel>
      */
     public function broadcastOn(): array
     {
         return [
-            new Channel('evento.' . $this->inscripcion->evento_id . '.inscripciones'),
-            new Channel('inscripciones'),
+            new PrivateChannel('evento.' . $this->inscripcion->evento_id . '.inscripciones'),
+            new PrivateChannel('inscripciones'),
         ];
     }
 
