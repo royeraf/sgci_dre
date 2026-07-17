@@ -144,7 +144,7 @@ class EventoInscripcionController extends Controller
 
     private function enviarCorreoConfirmacion(EventoInscripcion $inscripcion): bool
     {
-        $inscripcion->load(['person', 'evento']);
+        $inscripcion->load(['person', 'evento', 'direction', 'office', 'contractType']);
 
         try {
             Mail::to($inscripcion->correo)->send(new InscripcionConfirmada($inscripcion));

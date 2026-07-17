@@ -121,6 +121,42 @@
                 @endif
             </table>
 
+            <p style="font-weight: bold; margin: 20px 0 8px;">Tus datos de inscripción</p>
+            <table class="detalle">
+                <tr>
+                    <td class="label">Nombre completo</td>
+                    <td>{{ $inscripcion->nombres }} {{ $inscripcion->apellidos }}</td>
+                </tr>
+                <tr>
+                    <td class="label">DNI</td>
+                    <td>{{ $inscripcion->numero_documento }}</td>
+                </tr>
+                <tr>
+                    <td class="label">Celular</td>
+                    <td>{{ $inscripcion->celular }}</td>
+                </tr>
+                <tr>
+                    <td class="label">Dirección</td>
+                    <td>{{ $inscripcion->direction?->nombre }}</td>
+                </tr>
+                <tr>
+                    <td class="label">Oficina</td>
+                    <td>{{ $inscripcion->office?->nombre }}</td>
+                </tr>
+                <tr>
+                    <td class="label">Cargo</td>
+                    <td>{{ $inscripcion->cargo }}</td>
+                </tr>
+                <tr>
+                    <td class="label">Profesión</td>
+                    <td>{{ $inscripcion->profesion }}</td>
+                </tr>
+                <tr>
+                    <td class="label">Régimen</td>
+                    <td>{{ $inscripcion->contractType?->nombre }}</td>
+                </tr>
+            </table>
+
             <p>Guarda este correo como constancia de tu inscripción.</p>
         </div>
 
