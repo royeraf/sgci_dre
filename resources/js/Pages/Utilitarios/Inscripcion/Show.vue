@@ -96,6 +96,7 @@
                 <CheckCircle2 class="w-14 h-14 text-green-500 mx-auto mb-4" />
                 <h2 class="text-xl font-bold text-slate-800 mb-2">¡Inscripción registrada!</h2>
                 <p class="text-slate-500">Gracias por registrarte, {{ nombres }}. Tu inscripción a este evento ha sido confirmada.</p>
+                <p v-if="emailEnviado" class="text-slate-400 text-sm mt-2">Te enviamos un correo de confirmación a {{ correo }}.</p>
             </div>
 
             <!-- Formulario de inscripción -->
@@ -334,6 +335,7 @@ const sanitizedDescripcion = computed(() => DOMPurify.sanitize(props.evento.desc
     ALLOWED_ATTR: ['href', 'target', 'rel'],
 }));
 const enviado = ref(false);
+const emailEnviado = ref(false);
 
 const hexToRgb = (hex) => {
     const clean = (hex || '#d97706').replace('#', '');
@@ -564,7 +566,8 @@ const buscarPorDni = async () => {
 const onSubmit = validateForm(async (values) => {
     submitting.value = true;
     try {
-        await axios.post(`/utilitarios/inscripcion/${props.evento.slug}`, values);
+        const { data } = await axios.post(`/utilitarios/inscripcion/${props.evento.slug}`, values);
+        emailEnviado.value = Boolean(data.email_enviado);
         enviado.value = true;
     } catch (error) {
         window.Swal?.fire?.('Error', error.response?.data?.message || 'No se pudo registrar la inscripción.', 'error');

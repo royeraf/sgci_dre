@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\InscripcionConfirmada;
 use App\Models\Evento;
+use App\Models\EventoInscripcion;
 use App\Models\HRContractType;
 use App\Models\HrDirection;
 use App\Models\HrOffice;
@@ -10,6 +12,8 @@ use App\Models\Person;
 use App\Services\ReniecService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 
@@ -129,10 +133,31 @@ class EventoInscripcionController extends Controller
             return $eventoBloqueado->inscripciones()->create($datosInscripcion);
         });
 
+        $emailEnviado = $this->enviarCorreoConfirmacion($inscripcion);
+
         return response()->json([
             'message' => 'Inscripción registrada correctamente',
             'id' => $inscripcion->id,
+            'email_enviado' => $emailEnviado,
         ], 201);
+    }
+
+    private function enviarCorreoConfirmacion(EventoInscripcion $inscripcion): bool
+    {
+        $inscripcion->load(['person', 'evento']);
+
+        try {
+            Mail::to($inscripcion->correo)->send(new InscripcionConfirmada($inscripcion));
+
+            return true;
+        } catch (\Throwable $e) {
+            Log::error('No se pudo enviar el correo de confirmación de inscripción', [
+                'inscripcion_id' => $inscripcion->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return false;
+        }
     }
 
     private function verificarDisponibilidad(Evento $evento): array
