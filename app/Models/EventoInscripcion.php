@@ -18,6 +18,8 @@ class EventoInscripcion extends Model
         'person_id',
         'genero',
         'institucion',
+        'correo',
+        'celular',
         'direction_id',
         'office_id',
         'cargo',
@@ -28,8 +30,6 @@ class EventoInscripcion extends Model
     protected $appends = [
         'nombres',
         'apellidos',
-        'correo',
-        'celular',
         'numero_documento',
     ];
 
@@ -71,16 +71,6 @@ class EventoInscripcion extends Model
     public function getApellidosAttribute(): ?string
     {
         return $this->person?->apellidos;
-    }
-
-    public function getCorreoAttribute(): ?string
-    {
-        return $this->person?->email;
-    }
-
-    public function getCelularAttribute(): ?string
-    {
-        return $this->person?->telefono;
     }
 
     public function getNumeroDocumentoAttribute(): ?string
