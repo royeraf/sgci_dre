@@ -46,6 +46,7 @@ class EventoController extends Controller
                         'entidad' => $e->entidad,
                     ]),
                     'enlace_publico' => url('/utilitarios/inscripcion/' . $evento->slug),
+                    'enlace_asistencia' => url('/utilitarios/asistencia/' . $evento->slug),
                 ];
             });
 

@@ -43,8 +43,12 @@
                                 <Circle v-else class="w-4 h-4" />
                                 {{ asistioEnDiaActivo(inscripcion) ? 'Presente' : 'Marcar presente' }}
                             </button>
-                            <p v-if="horaAsistencia(inscripcion)" class="text-[11px] text-slate-400 mt-1">
+                            <p v-if="horaAsistencia(inscripcion)" class="text-[11px] text-slate-400 mt-1 flex items-center justify-center gap-1">
                                 {{ horaAsistencia(inscripcion) }}
+                                <span v-if="esAutoMarcada(inscripcion)" title="Marcada por el propio inscrito desde el enlace público"
+                                    class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-600 font-semibold">
+                                    <Smartphone class="w-2.5 h-2.5" /> auto
+                                </span>
                             </p>
                         </td>
                     </tr>
@@ -71,7 +75,7 @@
 
 <script setup>
 import { computed } from 'vue';
-import { Loader2, CheckCircle2, Circle, UserX } from 'lucide-vue-next';
+import { Loader2, CheckCircle2, Circle, UserX, Smartphone } from 'lucide-vue-next';
 import ClientPagination from '@/Components/Common/ClientPagination.vue';
 
 const props = defineProps({
@@ -114,5 +118,10 @@ const asistioEnDiaActivo = (inscripcion) => !!asistenciaDelDia(inscripcion);
 const horaAsistencia = (inscripcion) => {
     const asistencia = asistenciaDelDia(inscripcion);
     return asistencia ? asistencia.marcado_en : null;
+};
+
+const esAutoMarcada = (inscripcion) => {
+    const asistencia = asistenciaDelDia(inscripcion);
+    return !!asistencia?.auto;
 };
 </script>

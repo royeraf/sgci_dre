@@ -15,6 +15,7 @@ use App\Http\Controllers\PapeletaAdminController;
 use App\Http\Controllers\EventoController;
 use App\Http\Controllers\EventoInscripcionController;
 use App\Http\Controllers\EventoAsistenciaController;
+use App\Http\Controllers\EventoAsistenciaPublicaController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -73,6 +74,11 @@ Route::get('/visitas/publico', [ExternalVisitController::class, 'publicIndex'])-
 Route::middleware('throttle:20,1')->get('/utilitarios/inscripcion/api/consultar-dni', [EventoInscripcionController::class, 'consultarDni'])->name('utilitarios.inscripcion.consultar-dni');
 Route::middleware('throttle:30,1')->get('/utilitarios/inscripcion/{evento:slug}', [EventoInscripcionController::class, 'show'])->name('utilitarios.inscripcion.show');
 Route::middleware('throttle:5,1')->post('/utilitarios/inscripcion/{evento:slug}', [EventoInscripcionController::class, 'store'])->name('utilitarios.inscripcion.store');
+
+// Public Event Attendance (self check-in): el propio inscrito marca su asistencia
+// ingresando su DNI, disponible solo durante el horario del evento.
+Route::middleware('throttle:30,1')->get('/utilitarios/asistencia/{evento:slug}', [EventoAsistenciaPublicaController::class, 'show'])->name('utilitarios.asistencia.show');
+Route::middleware('throttle:10,1')->post('/utilitarios/asistencia/{evento:slug}', [EventoAsistenciaPublicaController::class, 'marcar'])->name('utilitarios.asistencia.marcar');
 
 // Protected routes
 Route::middleware('auth')->group(function () {
