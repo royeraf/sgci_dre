@@ -16,6 +16,8 @@ use App\Http\Controllers\EventoController;
 use App\Http\Controllers\EventoInscripcionController;
 use App\Http\Controllers\EventoAsistenciaController;
 use App\Http\Controllers\EventoAsistenciaPublicaController;
+use App\Http\Controllers\ExamenController;
+use App\Http\Controllers\ExamenPublicoController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -79,6 +81,19 @@ Route::middleware('throttle:5,1')->post('/utilitarios/inscripcion/{evento:slug}'
 // ingresando su DNI, disponible solo durante el horario del evento.
 Route::middleware('throttle:30,1')->get('/utilitarios/asistencia/{evento:slug}', [EventoAsistenciaPublicaController::class, 'show'])->name('utilitarios.asistencia.show');
 Route::middleware('throttle:10,1')->post('/utilitarios/asistencia/{evento:slug}', [EventoAsistenciaPublicaController::class, 'marcar'])->name('utilitarios.asistencia.marcar');
+
+// Public Exam Taking: el inscrito rinde un examen de alternativas por link público,
+// identificándose con su DNI, dentro de la ventana programada y con el interruptor
+// manual del organizador activado (mismo criterio que la asistencia).
+// withoutScopedBindings(): Laravel intenta adivinar automáticamente una relación
+// "examens" (plural en inglés) en Evento para el binding anidado {evento}/{examen};
+// como el modelo usa el plural correcto en español "examenes", se desactiva ese
+// guess y la pertenencia se valida explícitamente en el controlador.
+Route::middleware('throttle:30,1')->get('/utilitarios/examen/{evento:slug}/{examen:slug}', [ExamenPublicoController::class, 'show'])->name('utilitarios.examen.show')->withoutScopedBindings();
+Route::middleware('throttle:10,1')->post('/utilitarios/examen/{evento:slug}/{examen:slug}/iniciar', [ExamenPublicoController::class, 'iniciar'])->name('utilitarios.examen.iniciar')->withoutScopedBindings();
+Route::middleware('throttle:60,1')->get('/utilitarios/examen/{evento:slug}/{examen:slug}/{intento}', [ExamenPublicoController::class, 'rendir'])->name('utilitarios.examen.rendir')->withoutScopedBindings();
+Route::middleware('throttle:60,1')->post('/utilitarios/examen/{evento:slug}/{examen:slug}/{intento}/responder', [ExamenPublicoController::class, 'responder'])->name('utilitarios.examen.responder')->withoutScopedBindings();
+Route::middleware('throttle:10,1')->post('/utilitarios/examen/{evento:slug}/{examen:slug}/{intento}/finalizar', [ExamenPublicoController::class, 'finalizar'])->name('utilitarios.examen.finalizar')->withoutScopedBindings();
 
 // Protected routes
 Route::middleware('auth')->group(function () {
@@ -280,6 +295,15 @@ Route::middleware('auth')->group(function () {
         Route::post('/eventos/{evento}/inscritos/{inscripcion}/asistencia', [EventoAsistenciaController::class, 'marcar'])->name('eventos.inscritos.asistencia.marcar');
         Route::delete('/eventos/{evento}/inscritos/{inscripcion}/asistencia', [EventoAsistenciaController::class, 'desmarcar'])->name('eventos.inscritos.asistencia.desmarcar');
         Route::patch('/eventos/{evento}/asistencia-habilitada', [EventoAsistenciaController::class, 'toggleAsistenciaHabilitada'])->name('eventos.asistencia-habilitada');
+
+        // Exámenes de alternativas por evento
+        Route::get('/eventos/{evento}/examenes', [ExamenController::class, 'index'])->name('eventos.examenes.index');
+        Route::post('/eventos/{evento}/examenes', [ExamenController::class, 'store'])->name('eventos.examenes.store');
+        Route::put('/eventos/{evento}/examenes/{examen}', [ExamenController::class, 'update'])->name('eventos.examenes.update');
+        Route::delete('/eventos/{evento}/examenes/{examen}', [ExamenController::class, 'destroy'])->name('eventos.examenes.destroy');
+        Route::patch('/eventos/{evento}/examenes/{examen}/estado', [ExamenController::class, 'cambiarEstado'])->name('eventos.examenes.estado');
+        Route::patch('/eventos/{evento}/examenes/{examen}/habilitado', [ExamenController::class, 'toggleHabilitado'])->name('eventos.examenes.habilitado');
+        Route::get('/eventos/{evento}/examenes/{examen}/resultados', [ExamenController::class, 'resultados'])->name('eventos.examenes.resultados');
     });
 
     // User Management (Admin only)

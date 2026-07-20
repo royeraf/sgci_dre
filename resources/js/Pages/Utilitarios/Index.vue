@@ -41,7 +41,8 @@
 
                 <EventoTable :eventos="filteredEventos" :loading="isLoading" v-model:currentPage="currentPage"
                     v-model:perPage="perPage" @edit="editEvento" @delete="handleDeleteEvento"
-                    @view-detalle="verDetalle" @view-inscritos="verInscritos" @change-estado="cambiarEstado" />
+                    @view-detalle="verDetalle" @view-inscritos="verInscritos" @view-examenes="verExamenes"
+                    @change-estado="cambiarEstado" />
             </BaseTableCard>
 
             <EventoModal v-if="showEventoModal" :evento="selectedEvento" :is-editing="isEditing"
@@ -275,6 +276,10 @@ const toggleAsistenciaHabilitada = async (evento) => {
 
 const verInscritos = (evento) => {
     router.visit(`/utilitarios/eventos/${evento.id}/inscritos`);
+};
+
+const verExamenes = (evento) => {
+    router.visit(`/utilitarios/eventos/${evento.id}/examenes`);
 };
 
 let echoChannel = null;

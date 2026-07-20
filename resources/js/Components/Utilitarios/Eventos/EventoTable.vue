@@ -56,6 +56,10 @@
                                 class="text-emerald-600 hover:text-emerald-800 p-2 rounded-lg hover:bg-emerald-50 transition-colors">
                                 <Users class="w-5 h-5" />
                             </button>
+                            <button @click="$emit('view-examenes', evento)" title="Ver exámenes"
+                                class="text-purple-600 hover:text-purple-800 p-2 rounded-lg hover:bg-purple-50 transition-colors">
+                                <ClipboardCheck class="w-5 h-5" />
+                            </button>
                             <button @click="$emit('edit', evento)" title="Editar evento"
                                 class="text-blue-600 hover:text-blue-800 p-2 rounded-lg hover:bg-blue-50 transition-colors">
                                 <Pencil class="w-5 h-5" />
@@ -99,7 +103,7 @@
 
 <script setup>
 import { computed } from 'vue';
-import { Loader2, Pencil, Trash2, Link2, Users, CheckCircle, Lock, CalendarX } from 'lucide-vue-next';
+import { Loader2, Pencil, Trash2, Link2, Users, CheckCircle, Lock, CalendarX, ClipboardCheck } from 'lucide-vue-next';
 import ClientPagination from '@/Components/Common/ClientPagination.vue';
 
 const props = defineProps({
@@ -121,7 +125,7 @@ const props = defineProps({
     }
 });
 
-defineEmits(['edit', 'delete', 'view-detalle', 'view-inscritos', 'change-estado', 'update:currentPage', 'update:perPage']);
+defineEmits(['edit', 'delete', 'view-detalle', 'view-inscritos', 'view-examenes', 'change-estado', 'update:currentPage', 'update:perPage']);
 
 const paginatedEventos = computed(() => {
     const start = (props.currentPage - 1) * props.perPage;

@@ -99,6 +99,11 @@ class Evento extends Model
         return $this->hasMany(EventoInscripcion::class, 'evento_id');
     }
 
+    public function examenes(): HasMany
+    {
+        return $this->hasMany(Examen::class, 'evento_id');
+    }
+
     public function creador(): BelongsTo
     {
         return $this->belongsTo(User::class, 'creado_por');
