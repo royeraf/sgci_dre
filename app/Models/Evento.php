@@ -34,11 +34,13 @@ class Evento extends Model
         'imagen_fondo',
         'estado',
         'creado_por',
+        'asistencia_habilitada',
     ];
 
     protected $casts = [
         'fecha_inicio' => 'date',
         'fecha_fin' => 'date',
+        'asistencia_habilitada' => 'boolean',
     ];
 
     protected static function boot()

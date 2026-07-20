@@ -39,6 +39,7 @@ class EventoController extends Controller
                     'color_primario' => $evento->color_primario,
                     'imagen_fondo_url' => $evento->imagen_fondo_url,
                     'estado' => $evento->estado,
+                    'asistencia_habilitada' => $evento->asistencia_habilitada,
                     'inscritos_count' => $evento->inscripciones_count,
                     'expositores' => $evento->expositores->map(fn ($e) => [
                         'id' => $e->id,

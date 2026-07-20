@@ -100,6 +100,12 @@ class EventoAsistenciaPublicaController extends Controller
             }
         }
 
+        // Interruptor manual del admin: aunque el evento esté dentro de su horario,
+        // el enlace solo acepta registros si el organizador lo habilitó explícitamente.
+        if (!$evento->asistencia_habilitada) {
+            return [false, 'El registro de asistencia aún no ha sido habilitado por el organizador.'];
+        }
+
         return [true, null];
     }
 

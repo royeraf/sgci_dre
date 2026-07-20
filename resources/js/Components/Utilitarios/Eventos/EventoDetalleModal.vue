@@ -10,7 +10,7 @@ const props = defineProps({
     }
 });
 
-const emit = defineEmits(['close', 'copy-link', 'copy-asistencia-link']);
+const emit = defineEmits(['close', 'copy-link', 'copy-asistencia-link', 'toggle-asistencia-habilitada']);
 
 const TIPO_LABELS = {
     curso: 'Curso',
@@ -197,6 +197,19 @@ const abrirEnlaceAsistencia = () => {
                                     <button @click="abrirEnlaceAsistencia" title="Abrir en nueva pestaña"
                                         class="cursor-pointer flex-shrink-0 p-2 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors duration-150">
                                         <ExternalLink class="w-4 h-4" />
+                                    </button>
+                                </div>
+
+                                <div class="flex items-center justify-between bg-slate-50 p-3 rounded-xl border border-slate-100 mt-2">
+                                    <div class="flex flex-col">
+                                        <span class="text-xs font-bold text-slate-700">Registro de asistencia por enlace</span>
+                                        <span class="text-[11px] text-slate-500">{{ evento.asistencia_habilitada ? 'Activo' : 'Inactivo' }}</span>
+                                    </div>
+                                    <button type="button" @click="emit('toggle-asistencia-habilitada', evento)"
+                                        class="cursor-pointer relative inline-flex h-6 w-11 flex-shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none"
+                                        :class="evento.asistencia_habilitada ? 'bg-emerald-500' : 'bg-slate-300'">
+                                        <span class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out"
+                                            :class="evento.asistencia_habilitada ? 'translate-x-5' : 'translate-x-0'" />
                                     </button>
                                 </div>
                             </div>

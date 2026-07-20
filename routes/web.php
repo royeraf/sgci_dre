@@ -279,6 +279,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/eventos/{evento}/inscritos/data', [EventoAsistenciaController::class, 'data'])->name('eventos.inscritos.data');
         Route::post('/eventos/{evento}/inscritos/{inscripcion}/asistencia', [EventoAsistenciaController::class, 'marcar'])->name('eventos.inscritos.asistencia.marcar');
         Route::delete('/eventos/{evento}/inscritos/{inscripcion}/asistencia', [EventoAsistenciaController::class, 'desmarcar'])->name('eventos.inscritos.asistencia.desmarcar');
+        Route::patch('/eventos/{evento}/asistencia-habilitada', [EventoAsistenciaController::class, 'toggleAsistenciaHabilitada'])->name('eventos.asistencia-habilitada');
     });
 
     // User Management (Admin only)

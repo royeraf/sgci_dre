@@ -23,6 +23,7 @@ class EventoAsistenciaController extends Controller
                 'fecha_fin' => $evento->fecha_fin->format('Y-m-d'),
                 'cupo_maximo' => $evento->cupo_maximo,
                 'dias' => $evento->diasEvento(),
+                'asistencia_habilitada' => $evento->asistencia_habilitada,
             ],
             'inscripciones' => $evento->inscripciones->map(fn (EventoInscripcion $inscripcion) => $inscripcion->toAdminArray()),
         ]);
@@ -72,6 +73,22 @@ class EventoAsistenciaController extends Controller
         $inscripcion->asistencias()->where('fecha', $validated['fecha'])->delete();
 
         return response()->json(['message' => 'Asistencia removida correctamente']);
+    }
+
+    public function toggleAsistenciaHabilitada(Request $request, string $evento)
+    {
+        $evento = Evento::findOrFail($evento);
+
+        $validated = $request->validate([
+            'habilitada' => 'required|boolean',
+        ]);
+
+        $evento->update(['asistencia_habilitada' => $validated['habilitada']]);
+
+        return response()->json([
+            'message' => $validated['habilitada'] ? 'Enlace de asistencia activado' : 'Enlace de asistencia desactivado',
+            'asistencia_habilitada' => $evento->asistencia_habilitada,
+        ]);
     }
 
     private function validarFechaEnRango(Evento $evento, string $fecha): void
