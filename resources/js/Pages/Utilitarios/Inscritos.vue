@@ -144,13 +144,29 @@ const agregarInscripcionNueva = (nuevaInscripcion) => {
     });
 };
 
+const agregarAsistenciaAutomarcada = ({ inscripcion_id, asistencia }) => {
+    const inscripcion = inscripcionesList.value.find((i) => i.id === inscripcion_id);
+    if (!inscripcion || inscripcion.asistencias.some((a) => a.fecha === asistencia.fecha)) return;
+
+    inscripcion.asistencias.push(asistencia);
+};
+
 const checkNuevasInscripciones = async () => {
     try {
         const { data } = await axios.get(`/utilitarios/eventos/${props.evento.id}/inscritos/data`);
         (data.inscripciones || []).forEach((inscripcion) => {
-            if (!inscripcionesList.value.some((i) => i.id === inscripcion.id)) {
+            const existente = inscripcionesList.value.find((i) => i.id === inscripcion.id);
+            if (!existente) {
                 agregarInscripcionNueva(inscripcion);
+                return;
             }
+
+            // Fallback sin Echo: sincroniza también las asistencias (incluye auto-marcadas
+            // por el propio inscrito desde el link público) de inscripciones ya listadas.
+            inscripcion.asistencias.forEach((asistencia) => agregarAsistenciaAutomarcada({
+                inscripcion_id: inscripcion.id,
+                asistencia,
+            }));
         });
     } catch (error) {
         // Silencioso: solo es el fallback de respaldo, no interrumpe la pantalla
@@ -163,6 +179,9 @@ onMounted(() => {
             echoChannel = window.Echo.private(canalInscripciones)
                 .listen('.new-inscripcion', (nuevaInscripcion) => {
                     agregarInscripcionNueva(nuevaInscripcion);
+                })
+                .listen('.asistencia-automarcada', (payload) => {
+                    agregarAsistenciaAutomarcada(payload);
                 });
             return;
         } catch (error) {

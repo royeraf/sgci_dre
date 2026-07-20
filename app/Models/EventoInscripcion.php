@@ -96,6 +96,7 @@ class EventoInscripcion extends Model
             'asistencias' => $this->asistencias->map(fn ($a) => [
                 'fecha' => $a->fecha->format('Y-m-d'),
                 'marcado_en' => $a->marcado_en?->format('Y-m-d H:i'),
+                'auto' => $a->marcado_por === null,
             ]),
         ];
     }

@@ -1,7 +1,7 @@
 <script setup>
 import { computed } from 'vue';
 import DOMPurify from 'dompurify';
-import { X, Calendar, Clock, MapPin, Video, Users, Mic, Clock3, Copy, ExternalLink } from 'lucide-vue-next';
+import { X, Calendar, Clock, MapPin, Video, Users, Mic, Clock3, Copy, ExternalLink, BadgeCheck } from 'lucide-vue-next';
 
 const props = defineProps({
     evento: {
@@ -10,7 +10,7 @@ const props = defineProps({
     }
 });
 
-const emit = defineEmits(['close', 'copy-link']);
+const emit = defineEmits(['close', 'copy-link', 'copy-asistencia-link']);
 
 const TIPO_LABELS = {
     curso: 'Curso',
@@ -57,6 +57,10 @@ const sanitizedDescripcion = computed(() => DOMPurify.sanitize(props.evento.desc
 
 const abrirEnlace = () => {
     window.open(props.evento.enlace_publico, '_blank', 'noopener,noreferrer');
+};
+
+const abrirEnlaceAsistencia = () => {
+    window.open(props.evento.enlace_asistencia, '_blank', 'noopener,noreferrer');
 };
 </script>
 
@@ -175,6 +179,22 @@ const abrirEnlace = () => {
                                         <Copy class="w-4 h-4" />
                                     </button>
                                     <button @click="abrirEnlace" title="Abrir en nueva pestaña"
+                                        class="cursor-pointer flex-shrink-0 p-2 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors duration-150">
+                                        <ExternalLink class="w-4 h-4" />
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div>
+                                <p class="text-xs text-slate-400 font-medium mb-1.5">Enlace de asistencia</p>
+                                <div class="flex items-center gap-2">
+                                    <input type="text" readonly :value="evento.enlace_asistencia"
+                                        class="flex-1 min-w-0 px-3 py-2 text-xs font-mono text-slate-600 bg-slate-50 border border-slate-200 rounded-lg truncate outline-none" />
+                                    <button @click="emit('copy-asistencia-link', evento)" title="Copiar enlace de asistencia"
+                                        class="cursor-pointer flex-shrink-0 p-2 rounded-lg bg-amber-50 text-amber-700 hover:bg-amber-100 transition-colors duration-150">
+                                        <BadgeCheck class="w-4 h-4" />
+                                    </button>
+                                    <button @click="abrirEnlaceAsistencia" title="Abrir en nueva pestaña"
                                         class="cursor-pointer flex-shrink-0 p-2 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors duration-150">
                                         <ExternalLink class="w-4 h-4" />
                                     </button>
