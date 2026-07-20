@@ -48,7 +48,8 @@
                 :submitting="isSubmitting" @close="closeEventoModal" @submit="saveEvento" />
 
             <EventoDetalleModal v-if="showDetalleModal" :evento="detalleEvento"
-                @close="showDetalleModal = false" @copy-link="copiarEnlace" @copy-asistencia-link="copiarEnlaceAsistencia" />
+                @close="showDetalleModal = false" @copy-link="copiarEnlace" @copy-asistencia-link="copiarEnlaceAsistencia"
+                @toggle-asistencia-habilitada="toggleAsistenciaHabilitada" />
         </div>
     </div>
 </template>
@@ -254,6 +255,21 @@ const copiarEnlaceAsistencia = async (evento) => {
         window.Swal?.fire?.({ icon: 'success', title: 'Enlace de asistencia copiado', toast: true, position: 'top-end', showConfirmButton: false, timer: 2000 });
     } catch (error) {
         window.Swal?.fire?.('Error', 'No se pudo copiar el enlace.', 'error');
+    }
+};
+
+const toggleAsistenciaHabilitada = async (evento) => {
+    try {
+        const { data } = await axios.patch(`/utilitarios/eventos/${evento.id}/asistencia-habilitada`, {
+            habilitada: !evento.asistencia_habilitada,
+        });
+        evento.asistencia_habilitada = data.asistencia_habilitada;
+        if (detalleEvento.value?.id === evento.id) {
+            detalleEvento.value.asistencia_habilitada = data.asistencia_habilitada;
+        }
+        window.Swal?.fire?.({ icon: 'success', title: data.message, toast: true, position: 'top-end', showConfirmButton: false, timer: 2000 });
+    } catch (error) {
+        window.Swal?.fire?.('Error', 'No se pudo actualizar el enlace de asistencia.', 'error');
     }
 };
 

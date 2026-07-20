@@ -14,6 +14,21 @@
                         {{ inscripcionesList.length }} inscrito(s)<span v-if="evento.cupo_maximo"> de {{ evento.cupo_maximo }} cupos</span>
                     </p>
                 </div>
+
+                <div class="flex items-center gap-3 bg-white border border-slate-200 rounded-2xl px-4 py-3 shadow-sm">
+                    <div class="flex flex-col">
+                        <span class="text-sm font-bold text-slate-700">Enlace de asistencia</span>
+                        <span class="text-xs text-slate-500">
+                            {{ asistenciaHabilitada ? 'Activo: los inscritos pueden marcar su asistencia' : 'Inactivo: el enlace público no acepta registros' }}
+                        </span>
+                    </div>
+                    <button type="button" @click="toggleEnlaceAsistencia" :disabled="cambiandoEnlace"
+                        class="cursor-pointer relative inline-flex h-7 w-12 flex-shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none disabled:opacity-50"
+                        :class="asistenciaHabilitada ? 'bg-emerald-500' : 'bg-slate-300'">
+                        <span class="pointer-events-none inline-block h-6 w-6 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out"
+                            :class="asistenciaHabilitada ? 'translate-x-5' : 'translate-x-0'" />
+                    </button>
+                </div>
             </div>
 
             <BaseTableCard
@@ -76,6 +91,23 @@ const search = ref('');
 const currentPage = ref(1);
 const perPage = ref(10);
 const marcando = ref(null);
+
+const asistenciaHabilitada = ref(props.evento.asistencia_habilitada);
+const cambiandoEnlace = ref(false);
+
+const toggleEnlaceAsistencia = async () => {
+    cambiandoEnlace.value = true;
+    try {
+        const { data } = await axios.patch(`/utilitarios/eventos/${props.evento.id}/asistencia-habilitada`, {
+            habilitada: !asistenciaHabilitada.value,
+        });
+        asistenciaHabilitada.value = data.asistencia_habilitada;
+    } catch (error) {
+        window.Swal?.fire?.('Error', error.response?.data?.message || 'No se pudo actualizar el enlace de asistencia.', 'error');
+    } finally {
+        cambiandoEnlace.value = false;
+    }
+};
 
 const diaActivo = ref(
     props.evento.dias.includes(new Date().toISOString().slice(0, 10))
