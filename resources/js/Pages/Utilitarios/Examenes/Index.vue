@@ -120,7 +120,7 @@ export default {
 </script>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, watch } from 'vue';
 import { Link, router } from '@inertiajs/vue3';
 import axios from 'axios';
 import { ArrowLeft, Plus, Pencil, Trash2, Copy, BarChart3, CheckCircle, Lock, ClipboardX } from 'lucide-vue-next';
@@ -138,6 +138,13 @@ const props = defineProps({
 });
 
 const examenesList = ref([...props.examenes]);
+
+// router.reload({ only: ['examenes'] }) actualiza props.examenes, pero examenesList
+// es una copia local tomada una sola vez al montar: sin este watch, la tabla no
+// reflejaría el examen recién creado/editado hasta recargar la página a mano.
+watch(() => props.examenes, (nuevosExamenes) => {
+    examenesList.value = [...nuevosExamenes];
+});
 
 const showModal = ref(false);
 const selectedExamen = ref(null);
