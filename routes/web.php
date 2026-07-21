@@ -73,14 +73,14 @@ Route::get('/visitas/publico', [ExternalVisitController::class, 'publicIndex'])-
 // Public Event Registration (Utilitarios)
 // Rutas públicas sin autenticación por diseño: el participante externo no tiene
 // cuenta en el sistema. Se limitan con throttle para mitigar abuso/enumeración.
-Route::middleware('throttle:20,1')->get('/utilitarios/inscripcion/api/consultar-dni', [EventoInscripcionController::class, 'consultarDni'])->name('utilitarios.inscripcion.consultar-dni');
+Route::middleware('throttle:inscripcion-consultar-dni')->get('/utilitarios/inscripcion/api/consultar-dni', [EventoInscripcionController::class, 'consultarDni'])->name('utilitarios.inscripcion.consultar-dni');
 Route::middleware('throttle:30,1')->get('/utilitarios/inscripcion/{evento:slug}', [EventoInscripcionController::class, 'show'])->name('utilitarios.inscripcion.show');
-Route::middleware('throttle:5,1')->post('/utilitarios/inscripcion/{evento:slug}', [EventoInscripcionController::class, 'store'])->name('utilitarios.inscripcion.store');
+Route::middleware('throttle:inscripcion-store')->post('/utilitarios/inscripcion/{evento:slug}', [EventoInscripcionController::class, 'store'])->name('utilitarios.inscripcion.store');
 
 // Public Event Attendance (self check-in): el propio inscrito marca su asistencia
 // ingresando su DNI, disponible solo durante el horario del evento.
 Route::middleware('throttle:30,1')->get('/utilitarios/asistencia/{evento:slug}', [EventoAsistenciaPublicaController::class, 'show'])->name('utilitarios.asistencia.show');
-Route::middleware('throttle:10,1')->post('/utilitarios/asistencia/{evento:slug}', [EventoAsistenciaPublicaController::class, 'marcar'])->name('utilitarios.asistencia.marcar');
+Route::middleware('throttle:asistencia-marcar')->post('/utilitarios/asistencia/{evento:slug}', [EventoAsistenciaPublicaController::class, 'marcar'])->name('utilitarios.asistencia.marcar');
 
 // Public Exam Taking: el inscrito rinde un examen de alternativas por link público,
 // identificándose con su DNI, dentro de la ventana programada y con el interruptor

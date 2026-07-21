@@ -43,6 +43,22 @@ class RouteServiceProvider extends ServiceProvider
             return Limit::perMinute(60)->by($request->ip() . '|' . $intentoId);
         });
 
+        // Asistencia e inscripción públicas: mismo problema que los exámenes — muchos
+        // asistentes marcan asistencia o se inscriben desde la misma red del local.
+        // Se combina la IP con el DNI para que cada persona tenga su propia cuota
+        // aunque compartan la IP.
+        RateLimiter::for('asistencia-marcar', function (Request $request) {
+            return Limit::perMinute(10)->by($request->ip() . '|' . $request->input('dni'));
+        });
+
+        RateLimiter::for('inscripcion-store', function (Request $request) {
+            return Limit::perMinute(5)->by($request->ip() . '|' . $request->input('numero_documento'));
+        });
+
+        RateLimiter::for('inscripcion-consultar-dni', function (Request $request) {
+            return Limit::perMinute(20)->by($request->ip() . '|' . $request->input('dni'));
+        });
+
         $this->routes(function () {
             Route::middleware('api')
                 ->prefix('api')
