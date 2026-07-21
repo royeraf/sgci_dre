@@ -1,9 +1,6 @@
 <template>
-    <div class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6">
-        <div class="fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity" @click="$emit('close')"></div>
-
-        <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-5xl h-full max-h-[95vh] z-10 overflow-hidden flex flex-col">
-            <!-- Header -->
+    <div class="fixed inset-0 z-50 bg-white flex flex-col">
+        <!-- Header -->
             <div class="bg-gradient-to-r from-purple-600 to-fuchsia-600 px-6 py-4 flex justify-between items-center flex-shrink-0">
                 <div>
                     <h3 class="text-xl font-bold text-white flex items-center gap-2">
@@ -177,7 +174,6 @@
                     </button>
                 </div>
             </form>
-        </div>
     </div>
 </template>
 
