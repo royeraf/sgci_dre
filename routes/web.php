@@ -90,10 +90,10 @@ Route::middleware('throttle:10,1')->post('/utilitarios/asistencia/{evento:slug}'
 // como el modelo usa el plural correcto en español "examenes", se desactiva ese
 // guess y la pertenencia se valida explícitamente en el controlador.
 Route::middleware('throttle:30,1')->get('/utilitarios/examen/{evento:slug}/{examen:slug}', [ExamenPublicoController::class, 'show'])->name('utilitarios.examen.show')->withoutScopedBindings();
-Route::middleware('throttle:10,1')->post('/utilitarios/examen/{evento:slug}/{examen:slug}/iniciar', [ExamenPublicoController::class, 'iniciar'])->name('utilitarios.examen.iniciar')->withoutScopedBindings();
-Route::middleware('throttle:60,1')->get('/utilitarios/examen/{evento:slug}/{examen:slug}/{intento}', [ExamenPublicoController::class, 'rendir'])->name('utilitarios.examen.rendir')->withoutScopedBindings();
-Route::middleware('throttle:60,1')->post('/utilitarios/examen/{evento:slug}/{examen:slug}/{intento}/responder', [ExamenPublicoController::class, 'responder'])->name('utilitarios.examen.responder')->withoutScopedBindings();
-Route::middleware('throttle:10,1')->post('/utilitarios/examen/{evento:slug}/{examen:slug}/{intento}/finalizar', [ExamenPublicoController::class, 'finalizar'])->name('utilitarios.examen.finalizar')->withoutScopedBindings();
+Route::middleware('throttle:examen-iniciar')->post('/utilitarios/examen/{evento:slug}/{examen:slug}/iniciar', [ExamenPublicoController::class, 'iniciar'])->name('utilitarios.examen.iniciar')->withoutScopedBindings();
+Route::middleware('throttle:examen-intento')->get('/utilitarios/examen/{evento:slug}/{examen:slug}/{intento}', [ExamenPublicoController::class, 'rendir'])->name('utilitarios.examen.rendir')->withoutScopedBindings();
+Route::middleware('throttle:examen-intento')->post('/utilitarios/examen/{evento:slug}/{examen:slug}/{intento}/responder', [ExamenPublicoController::class, 'responder'])->name('utilitarios.examen.responder')->withoutScopedBindings();
+Route::middleware('throttle:examen-intento')->post('/utilitarios/examen/{evento:slug}/{examen:slug}/{intento}/finalizar', [ExamenPublicoController::class, 'finalizar'])->name('utilitarios.examen.finalizar')->withoutScopedBindings();
 
 // Protected routes
 Route::middleware('auth')->group(function () {

@@ -67,12 +67,12 @@ class ExamenPublicoController extends Controller
                 ->latest('numero_intento')
                 ->first();
 
+            // Un intento abierto siempre se reanuda: el participante vuelve a su mismo
+            // intento con el tiempo restante. Si el tiempo ya venció, rendir() lo
+            // califica y muestra el resultado (auto-grade). Nunca se bloquea un
+            // intento en curso ni se cuenta contra el límite de intentos permitidos.
             if ($intentoAbierto) {
-                $limite = $intentoAbierto->iniciado_en->copy()->addMinutes($examenBloqueado->duracion_minutos);
-                if (now()->lt($limite)) {
-                    return $intentoAbierto;
-                }
-                $this->calificarIntento($intentoAbierto);
+                return $intentoAbierto;
             }
 
             $intentosUsados = $examenBloqueado->intentos()

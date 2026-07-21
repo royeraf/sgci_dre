@@ -28,6 +28,21 @@ class RouteServiceProvider extends ServiceProvider
             return Limit::perMinute(60)->by($request->user()?->id ?: $request->ip());
         });
 
+        // Exámenes públicos: muchos participantes pueden rendir desde la misma red/IP
+        // (aula, wifi institucional). Limitar solo por IP los bloquea entre sí, así que
+        // la clave combina la IP con lo que identifica a CADA participante: el DNI en
+        // /iniciar (aún no existe intento) y el propio intento en el resto de acciones.
+        RateLimiter::for('examen-iniciar', function (Request $request) {
+            return Limit::perMinute(10)->by($request->ip() . '|' . $request->input('dni'));
+        });
+
+        RateLimiter::for('examen-intento', function (Request $request) {
+            $intento = $request->route('intento');
+            $intentoId = is_object($intento) ? $intento->getKey() : $intento;
+
+            return Limit::perMinute(60)->by($request->ip() . '|' . $intentoId);
+        });
+
         $this->routes(function () {
             Route::middleware('api')
                 ->prefix('api')

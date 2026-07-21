@@ -155,6 +155,13 @@ const seleccionarRespuesta = async (preguntaId, alternativaId) => {
     }
 };
 
+const handleBeforeUnload = (e) => {
+    if (!yaFinalizado.value) {
+        e.preventDefault();
+        e.returnValue = '';
+    }
+};
+
 const finalizarExamen = async () => {
     if (finalizando.value || yaFinalizado.value) return;
     finalizando.value = true;
@@ -163,6 +170,7 @@ const finalizarExamen = async () => {
         resultadoFinal.value = data;
         yaFinalizado.value = true;
         if (timerInterval) clearInterval(timerInterval);
+        window.removeEventListener('beforeunload', handleBeforeUnload);
     } catch (error) {
         window.Swal?.fire?.('Error', 'No se pudo finalizar el examen.', 'error');
     } finally {
@@ -191,10 +199,12 @@ onMounted(() => {
                 finalizarExamen();
             }
         }, 1000);
+        window.addEventListener('beforeunload', handleBeforeUnload);
     }
 });
 
 onUnmounted(() => {
     if (timerInterval) clearInterval(timerInterval);
+    window.removeEventListener('beforeunload', handleBeforeUnload);
 });
 </script>

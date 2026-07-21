@@ -57,7 +57,8 @@
                 </h2>
                 <p class="text-sm text-slate-500 mb-6">
                     Ingresa tu número de DNI para comenzar. Una vez que inicies, el temporizador de
-                    {{ examen.duracion_minutos }} minutos no se detiene.
+                    {{ examen.duracion_minutos }} minutos no se detiene. Si ya iniciaste y la
+                    página se cerró o recargó, vuelve a ingresar tu DNI para continuar donde quedaste.
                 </p>
 
                 <form @submit.prevent="onSubmit" class="space-y-4">
