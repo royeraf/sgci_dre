@@ -17,7 +17,7 @@ class EventoController extends Controller
     public function getEventos()
     {
         $eventos = Evento::withCount('inscripciones')
-            ->with('expositores')
+            ->with(['expositores', 'examenes'])
             ->orderBy('fecha_inicio', 'desc')
             ->get()
             ->map(function (Evento $evento) {
@@ -45,6 +45,12 @@ class EventoController extends Controller
                         'id' => $e->id,
                         'nombre' => $e->nombre,
                         'entidad' => $e->entidad,
+                    ]),
+                    'examenes' => $evento->examenes->map(fn ($ex) => [
+                        'id' => $ex->id,
+                        'titulo' => $ex->titulo,
+                        'estado' => $ex->estado,
+                        'enlace_publico' => url('/utilitarios/examen/' . $evento->slug . '/' . $ex->slug),
                     ]),
                     'enlace_publico' => url('/utilitarios/inscripcion/' . $evento->slug),
                     'enlace_asistencia' => url('/utilitarios/asistencia/' . $evento->slug),

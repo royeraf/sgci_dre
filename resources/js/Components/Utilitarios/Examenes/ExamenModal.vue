@@ -1,28 +1,28 @@
 <template>
-    <div class="fixed inset-0 z-50 overflow-y-auto">
-        <div class="flex items-center justify-center min-h-screen px-4">
-            <div class="fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity" @click="$emit('close')"></div>
+    <div class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6">
+        <div class="fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity" @click="$emit('close')"></div>
 
-            <div class="relative bg-white rounded-2xl shadow-2xl max-w-2xl w-full z-10 overflow-hidden">
-                <!-- Header -->
-                <div class="bg-gradient-to-r from-purple-600 to-fuchsia-600 px-6 py-4 flex justify-between items-center">
-                    <div>
-                        <h3 class="text-xl font-bold text-white flex items-center gap-2">
-                            <ClipboardCheck v-if="!isEditing" class="w-6 h-6" />
-                            <Pencil v-else class="w-6 h-6" />
-                            {{ isEditing ? 'Editar Examen' : 'Nuevo Examen' }}
-                        </h3>
-                        <p class="text-purple-50 text-sm mt-1">
-                            {{ isEditing ? 'Modifique la programación y las preguntas del examen' : 'Programe un examen de alternativas para este evento' }}
-                        </p>
-                    </div>
-                    <button @click="$emit('close')" class="text-purple-100 hover:text-white transition-colors p-1">
-                        <X class="w-6 h-6" />
-                    </button>
+        <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-5xl h-full max-h-[95vh] z-10 overflow-hidden flex flex-col">
+            <!-- Header -->
+            <div class="bg-gradient-to-r from-purple-600 to-fuchsia-600 px-6 py-4 flex justify-between items-center flex-shrink-0">
+                <div>
+                    <h3 class="text-xl font-bold text-white flex items-center gap-2">
+                        <ClipboardCheck v-if="!isEditing" class="w-6 h-6" />
+                        <Pencil v-else class="w-6 h-6" />
+                        {{ isEditing ? 'Editar Examen' : 'Nuevo Examen' }}
+                    </h3>
+                    <p class="text-purple-50 text-sm mt-1">
+                        {{ isEditing ? 'Modifique la programación y las preguntas del examen' : 'Programe un examen de alternativas para este evento' }}
+                    </p>
                 </div>
+                <button @click="$emit('close')" class="text-purple-100 hover:text-white transition-colors p-1">
+                    <X class="w-6 h-6" />
+                </button>
+            </div>
 
-                <!-- Form -->
-                <form @submit.prevent="onSubmit" class="p-6 space-y-6 max-h-[80vh] overflow-y-auto custom-scrollbar">
+            <!-- Form -->
+            <form @submit.prevent="onSubmit" class="flex-1 flex flex-col min-h-0">
+                <div class="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
                     <p v-if="isEditing && examen?.intentos_count > 0"
                         class="text-xs font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
                         Este examen ya tiene {{ examen.intentos_count }} intento(s) registrado(s): los cambios a las
@@ -162,21 +162,21 @@
                         </button>
                         <p v-if="preguntasError" class="mt-2 text-sm text-red-600">{{ preguntasError }}</p>
                     </div>
+                </div>
 
-                    <!-- Actions -->
-                    <div class="flex justify-end gap-3 pt-4 border-t border-slate-200 font-bold">
-                        <button type="button" @click="$emit('close')"
-                            class="px-6 py-2.5 border-2 border-slate-300 text-slate-600 rounded-xl hover:bg-slate-50 transition-all">
-                            Cancelar
-                        </button>
-                        <button type="submit" :disabled="submitting"
-                            class="px-6 py-2.5 bg-gradient-to-r from-purple-600 to-fuchsia-600 text-white rounded-xl hover:from-purple-700 hover:to-fuchsia-700 transition-all shadow-lg shadow-purple-600/20 disabled:opacity-50 flex items-center gap-2">
-                            <Loader2 v-if="submitting" class="w-5 h-5 animate-spin" />
-                            {{ submitting ? 'Guardando...' : (isEditing ? 'Actualizar Examen' : 'Registrar Examen') }}
-                        </button>
-                    </div>
-                </form>
-            </div>
+                <!-- Actions -->
+                <div class="flex justify-end gap-3 px-6 py-4 border-t border-slate-200 font-bold flex-shrink-0">
+                    <button type="button" @click="$emit('close')"
+                        class="px-6 py-2.5 border-2 border-slate-300 text-slate-600 rounded-xl hover:bg-slate-50 transition-all">
+                        Cancelar
+                    </button>
+                    <button type="submit" :disabled="submitting"
+                        class="px-6 py-2.5 bg-gradient-to-r from-purple-600 to-fuchsia-600 text-white rounded-xl hover:from-purple-700 hover:to-fuchsia-700 transition-all shadow-lg shadow-purple-600/20 disabled:opacity-50 flex items-center gap-2">
+                        <Loader2 v-if="submitting" class="w-5 h-5 animate-spin" />
+                        {{ submitting ? 'Guardando...' : (isEditing ? 'Actualizar Examen' : 'Registrar Examen') }}
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 </template>

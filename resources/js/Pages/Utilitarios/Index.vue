@@ -50,7 +50,7 @@
 
             <EventoDetalleModal v-if="showDetalleModal" :evento="detalleEvento"
                 @close="showDetalleModal = false" @copy-link="copiarEnlace" @copy-asistencia-link="copiarEnlaceAsistencia"
-                @toggle-asistencia-habilitada="toggleAsistenciaHabilitada" />
+                @toggle-asistencia-habilitada="toggleAsistenciaHabilitada" @copy-examen-link="copiarEnlaceExamen" />
         </div>
     </div>
 </template>
@@ -254,6 +254,15 @@ const copiarEnlaceAsistencia = async (evento) => {
     try {
         await navigator.clipboard.writeText(evento.enlace_asistencia);
         window.Swal?.fire?.({ icon: 'success', title: 'Enlace de asistencia copiado', toast: true, position: 'top-end', showConfirmButton: false, timer: 2000 });
+    } catch (error) {
+        window.Swal?.fire?.('Error', 'No se pudo copiar el enlace.', 'error');
+    }
+};
+
+const copiarEnlaceExamen = async (examen) => {
+    try {
+        await navigator.clipboard.writeText(examen.enlace_publico);
+        window.Swal?.fire?.({ icon: 'success', title: 'Enlace del examen copiado', toast: true, position: 'top-end', showConfirmButton: false, timer: 2000 });
     } catch (error) {
         window.Swal?.fire?.('Error', 'No se pudo copiar el enlace.', 'error');
     }

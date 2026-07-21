@@ -1,7 +1,7 @@
 <script setup>
 import { computed } from 'vue';
 import DOMPurify from 'dompurify';
-import { X, Calendar, Clock, MapPin, Video, Users, Mic, Clock3, Copy, ExternalLink, BadgeCheck } from 'lucide-vue-next';
+import { X, Calendar, Clock, MapPin, Video, Users, Mic, Clock3, Copy, ExternalLink, BadgeCheck, ClipboardCheck } from 'lucide-vue-next';
 
 const props = defineProps({
     evento: {
@@ -10,7 +10,7 @@ const props = defineProps({
     }
 });
 
-const emit = defineEmits(['close', 'copy-link', 'copy-asistencia-link', 'toggle-asistencia-habilitada']);
+const emit = defineEmits(['close', 'copy-link', 'copy-asistencia-link', 'toggle-asistencia-habilitada', 'copy-examen-link']);
 
 const TIPO_LABELS = {
     curso: 'Curso',
@@ -61,6 +61,10 @@ const abrirEnlace = () => {
 
 const abrirEnlaceAsistencia = () => {
     window.open(props.evento.enlace_asistencia, '_blank', 'noopener,noreferrer');
+};
+
+const abrirEnlaceExamen = (examen) => {
+    window.open(examen.enlace_publico, '_blank', 'noopener,noreferrer');
 };
 </script>
 
@@ -212,6 +216,37 @@ const abrirEnlaceAsistencia = () => {
                                             :class="evento.asistencia_habilitada ? 'translate-x-5' : 'translate-x-0'" />
                                     </button>
                                 </div>
+                            </div>
+
+                            <div>
+                                <p class="text-xs text-slate-400 font-medium mb-1.5 flex items-center gap-1">
+                                    <ClipboardCheck class="w-3.5 h-3.5" /> Exámenes
+                                </p>
+                                <div v-if="evento.examenes?.length" class="space-y-2">
+                                    <div v-for="examen in evento.examenes" :key="examen.id"
+                                        class="bg-slate-50 border border-slate-100 rounded-xl p-3">
+                                        <div class="flex items-center justify-between gap-2 mb-1.5">
+                                            <p class="text-xs font-bold text-slate-700 truncate">{{ examen.titulo }}</p>
+                                            <span class="flex-shrink-0 px-2 py-0.5 text-[10px] font-bold rounded-md border"
+                                                :class="estadoClass(examen.estado)">
+                                                {{ estadoLabel(examen.estado) }}
+                                            </span>
+                                        </div>
+                                        <div class="flex items-center gap-2">
+                                            <input type="text" readonly :value="examen.enlace_publico"
+                                                class="flex-1 min-w-0 px-3 py-2 text-xs font-mono text-slate-600 bg-white border border-slate-200 rounded-lg truncate outline-none" />
+                                            <button @click="emit('copy-examen-link', examen)" title="Copiar enlace del examen"
+                                                class="cursor-pointer flex-shrink-0 p-2 rounded-lg bg-amber-50 text-amber-700 hover:bg-amber-100 transition-colors duration-150">
+                                                <Copy class="w-4 h-4" />
+                                            </button>
+                                            <button @click="abrirEnlaceExamen(examen)" title="Abrir en nueva pestaña"
+                                                class="cursor-pointer flex-shrink-0 p-2 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors duration-150">
+                                                <ExternalLink class="w-4 h-4" />
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <p v-else class="text-xs text-slate-400 italic">Sin exámenes registrados para este evento.</p>
                             </div>
                         </div>
 
