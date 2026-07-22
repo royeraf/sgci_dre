@@ -420,6 +420,7 @@ const hasModulePermission = (module, action = 'ver') => {
     'recursos_humanos': ['recursos_humanos', 'vacaciones', 'areas', 'cargos'],
     'bienestar':        ['bienestar', 'licencias'],
     'patrimonio':       ['patrimonio', 'bienes'],
+    'utilitarios':      ['utilitarios'],
   };
 
   const dbKeys = mapping[module];
