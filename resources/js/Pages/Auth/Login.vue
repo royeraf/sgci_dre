@@ -149,9 +149,39 @@ const bgImages = [
 
 const selectedBg = ref(bgImages[0]);
 
+const getEqualRandomBg = () => {
+  const STORAGE_KEY = 'sgci_login_bg_queue';
+  let queue = [];
+
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored) {
+      queue = JSON.parse(stored);
+    }
+  } catch (e) {
+    queue = [];
+  }
+
+  // Reiniciar la cola con todas las imágenes si está vacía o inválida
+  if (!Array.isArray(queue) || queue.length === 0 || queue.some(i => i < 0 || i >= bgImages.length)) {
+    queue = Array.from({ length: bgImages.length }, (_, i) => i);
+  }
+
+  // Seleccionar aleatoriamente un elemento restante de la cola
+  const randomIndexInQueue = Math.floor(Math.random() * queue.length);
+  const selectedImageIndex = queue[randomIndexInQueue];
+
+  // Remover de la cola y actualizar localStorage
+  queue.splice(randomIndexInQueue, 1);
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(queue));
+  } catch (e) {}
+
+  return bgImages[selectedImageIndex];
+};
+
 onMounted(() => {
-  const randomIndex = Math.floor(Math.random() * bgImages.length);
-  selectedBg.value = bgImages[randomIndex];
+  selectedBg.value = getEqualRandomBg();
 });
 
 const showPassword = ref(false);
