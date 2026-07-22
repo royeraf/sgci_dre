@@ -132,7 +132,9 @@
                     </table>
                 </div>
 
-                <Pagination :links="intentos.links" />
+                <ClientPagination :total-items="intentos.total" :current-page="intentos.current_page"
+                    :per-page="intentos.per_page" :per-page-options="[10, 15, 25, 50]"
+                    @update:current-page="irAPagina" @update:per-page="cambiarPerPage" />
             </div>
 
             <DetalleIntentoModal v-if="detalleIntentoId" :evento="evento" :examen="examen"
@@ -153,7 +155,7 @@ export default {
 import { reactive, ref, watch } from 'vue';
 import { Link, router } from '@inertiajs/vue3';
 import { ArrowLeft, ClipboardX, FilterX, Eye } from 'lucide-vue-next';
-import Pagination from '@/Components/Common/Pagination.vue';
+import ClientPagination from '@/Components/Common/ClientPagination.vue';
 import DetalleIntentoModal from '@/Components/Utilitarios/Examenes/DetalleIntentoModal.vue';
 
 const props = defineProps({
@@ -167,7 +169,7 @@ const props = defineProps({
     },
     intentos: {
         type: Object,
-        default: () => ({ data: [], links: [] })
+        default: () => ({ data: [], total: 0, current_page: 1, per_page: 15 })
     },
     resumen: {
         type: Object,
@@ -186,12 +188,14 @@ const form = reactive({
     fecha_hasta: props.filtros.fecha_hasta || '',
 });
 
-const aplicarFiltros = () => {
+const visitarResultados = (params) => {
     router.get(`/utilitarios/eventos/${props.evento.id}/examenes/${props.examen.id}/resultados`, {
         search: form.search || undefined,
         resultado: form.resultado || undefined,
         fecha_desde: form.fecha_desde || undefined,
         fecha_hasta: form.fecha_hasta || undefined,
+        per_page: props.intentos.per_page,
+        ...params,
     }, {
         preserveState: true,
         preserveScroll: true,
@@ -199,6 +203,8 @@ const aplicarFiltros = () => {
         only: ['intentos', 'resumen', 'filtros'],
     });
 };
+
+const aplicarFiltros = () => visitarResultados({ page: 1 });
 
 let debounceTimer = null;
 watch(() => form.search, () => {
@@ -213,6 +219,10 @@ const limpiarFiltros = () => {
     form.fecha_hasta = '';
     aplicarFiltros();
 };
+
+const irAPagina = (page) => visitarResultados({ page });
+
+const cambiarPerPage = (perPage) => visitarResultados({ page: 1, per_page: perPage });
 
 const detalleIntentoId = ref(null);
 
