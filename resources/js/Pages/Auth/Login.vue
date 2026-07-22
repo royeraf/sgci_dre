@@ -17,16 +17,6 @@
       </div>
     </div>
 
-    <!-- Mobile Banner Header (Visible only on Mobile/Tablet < lg) -->
-    <div class="lg:hidden relative w-full h-44 sm:h-52 overflow-hidden flex-shrink-0 bg-slate-950 flex items-end p-6">
-      <img :src="selectedBg" alt="Fondo Emblemático Perú" class="absolute inset-0 w-full h-full object-cover opacity-60 transition-opacity duration-700" />
-      <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/70 to-transparent"></div>
-      <div class="relative z-10 text-left">
-        <h2 class="text-xl sm:text-2xl font-bold text-white leading-snug">Sistema de Gestión y Control Institucional</h2>
-        <p class="text-xs sm:text-sm text-sky-200/90 mt-1 font-light">SGCI-DREH | Dirección Regional de Educación Huánuco</p>
-      </div>
-    </div>
-
     <!-- Right Side Form (Independent Scroll on Desktop, Natural Flow on Mobile) -->
     <div class="w-full lg:w-1/2 min-h-0 lg:h-full overflow-y-auto flex flex-col items-center justify-center p-4 sm:p-8 bg-white/60 backdrop-blur-md flex-1">
       <div class="w-full max-w-md py-4 sm:py-6">
