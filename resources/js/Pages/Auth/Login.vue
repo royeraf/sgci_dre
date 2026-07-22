@@ -2,7 +2,7 @@
   <div class="flex h-screen w-full overflow-hidden bg-gradient-to-br from-slate-50 via-sky-50/40 to-blue-50/80">
     <!-- Left Side Image (Height Fixed to 100vh) -->
     <div class="w-1/2 hidden lg:flex h-full relative overflow-hidden flex-shrink-0">
-      <img src="/images/login-bg.png" alt="Background" class="absolute inset-0 w-full h-full object-cover" />
+      <img :src="selectedBg" alt="Fondo Emblemático Perú" class="absolute inset-0 w-full h-full object-cover transition-opacity duration-700" />
       <div class="absolute inset-0 bg-gradient-to-br from-slate-950/90 via-blue-950/90 to-sky-950/85"></div>
 
       <!-- Decorative Elements -->
@@ -123,7 +123,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useForm, usePage } from '@inertiajs/vue3';
 import {
   Lock,
@@ -137,6 +137,22 @@ import {
 
 const page = usePage();
 const flashError = computed(() => page.props.flash?.error);
+
+const bgImages = [
+  '/images/login-bg.png',
+  '/images/felipeguerrero85-machu-pichu-1058510.jpg',
+  '/images/karlomanson-cusco-party-2912872.jpg',
+  '/images/loggawiggler-arequipa-43282.jpg',
+  '/images/nazca.jpg',
+  '/images/Ushno.jpg',
+];
+
+const selectedBg = ref(bgImages[0]);
+
+onMounted(() => {
+  const randomIndex = Math.floor(Math.random() * bgImages.length);
+  selectedBg.value = bgImages[randomIndex];
+});
 
 const showPassword = ref(false);
 const dniError = ref('');
