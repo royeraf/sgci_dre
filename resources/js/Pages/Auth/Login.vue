@@ -3,7 +3,7 @@
     <!-- Left Side Image (Height Fixed to 100vh on Desktop) -->
     <div class="w-full lg:w-1/2 hidden lg:flex h-full relative overflow-hidden flex-shrink-0">
       <img :src="selectedBg" alt="Fondo Emblemático Perú" class="absolute inset-0 w-full h-full object-cover transition-opacity duration-700" />
-      <div class="absolute inset-0 bg-gradient-to-br from-slate-950/80 via-blue-950/60 to-sky-950/40"></div>
+      <div class="absolute inset-0 bg-gradient-to-br from-slate-950/85 via-blue-950/75 to-sky-950/55"></div>
 
       <!-- Decorative Elements -->
       <div class="absolute top-10 right-10 w-32 h-32 bg-sky-400/5 rounded-full blur-3xl"></div>
