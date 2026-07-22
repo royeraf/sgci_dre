@@ -13,20 +13,6 @@
         <div class="max-w-lg">
           <h2 class="text-4xl font-bold text-white mb-4 leading-tight">Sistema de Gestión y Control Institucional</h2>
           <p class="text-xl text-sky-200/90 leading-relaxed font-light">SGCI-DREH | Administración Integral</p>
-          <div class="mt-8 flex items-center gap-4">
-            <div class="flex items-center gap-2 text-sky-100/80">
-              <Shield class="w-5 h-5" />
-              <span class="text-sm font-medium">Seguro</span>
-            </div>
-            <div class="flex items-center gap-2 text-sky-100/80">
-              <Zap class="w-5 h-5" />
-              <span class="text-sm font-medium">Eficiente</span>
-            </div>
-            <div class="flex items-center gap-2 text-sky-100/80">
-              <Lock class="w-5 h-5" />
-              <span class="text-sm font-medium">Centralizado</span>
-            </div>
-          </div>
         </div>
       </div>
     </div>
@@ -140,10 +126,7 @@
 import { ref, computed } from 'vue';
 import { useForm, usePage } from '@inertiajs/vue3';
 import {
-  Shield,
-  Zap,
   Lock,
-  Building2,
   AlertCircle,
   IdCard,
   Eye,
