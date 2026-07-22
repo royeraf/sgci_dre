@@ -191,7 +191,7 @@ const form = useForm({
   password: '',
 });
 
-const handleLogin = () => {
+const handleLogin = async () => {
   dniError.value = '';
   passwordError.value = '';
 
@@ -206,6 +206,14 @@ const handleLogin = () => {
   }
 
   if (dniError.value || passwordError.value) return;
+
+  // Renovar la cookie XSRF-TOKEN por si la página llevaba mucho tiempo abierta
+  // y la sesión expiró (evita el error 419 al enviar el formulario)
+  try {
+    await window.axios.get('/sanctum/csrf-cookie');
+  } catch (e) {
+    // Si falla, se intenta el login igual (el Handler actúa de respaldo)
+  }
 
   form.post('/login', {
     onFinish: () => form.reset('password'),
