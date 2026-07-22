@@ -301,9 +301,11 @@ Route::middleware('auth')->group(function () {
         Route::post('/eventos/{evento}/examenes', [ExamenController::class, 'store'])->name('eventos.examenes.store');
         Route::put('/eventos/{evento}/examenes/{examen}', [ExamenController::class, 'update'])->name('eventos.examenes.update');
         Route::delete('/eventos/{evento}/examenes/{examen}', [ExamenController::class, 'destroy'])->name('eventos.examenes.destroy');
+        Route::post('/eventos/{evento}/examenes/{examen}/duplicar', [ExamenController::class, 'duplicar'])->name('eventos.examenes.duplicar');
         Route::patch('/eventos/{evento}/examenes/{examen}/estado', [ExamenController::class, 'cambiarEstado'])->name('eventos.examenes.estado');
         Route::patch('/eventos/{evento}/examenes/{examen}/habilitado', [ExamenController::class, 'toggleHabilitado'])->name('eventos.examenes.habilitado');
         Route::get('/eventos/{evento}/examenes/{examen}/resultados', [ExamenController::class, 'resultados'])->name('eventos.examenes.resultados');
+        Route::get('/eventos/{evento}/examenes/{examen}/resultados/{intento}/detalle', [ExamenController::class, 'detalleIntento'])->name('eventos.examenes.resultados.detalle');
     });
 
     // User Management (Admin only)

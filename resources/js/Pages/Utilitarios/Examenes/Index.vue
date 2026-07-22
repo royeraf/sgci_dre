@@ -86,6 +86,10 @@
                                         class="text-blue-600 hover:text-blue-800 p-2 rounded-lg hover:bg-blue-50 transition-colors">
                                         <Pencil class="w-5 h-5" />
                                     </button>
+                                    <button @click="duplicarExamen(examen)" title="Duplicar examen"
+                                        class="text-purple-600 hover:text-purple-800 p-2 rounded-lg hover:bg-purple-50 transition-colors">
+                                        <CopyPlus class="w-5 h-5" />
+                                    </button>
                                     <button @click="eliminarExamen(examen)" title="Eliminar examen"
                                         class="text-red-600 hover:text-red-800 p-2 rounded-lg hover:bg-red-50 transition-colors">
                                         <Trash2 class="w-5 h-5" />
@@ -123,7 +127,7 @@ export default {
 import { ref, watch } from 'vue';
 import { Link, router } from '@inertiajs/vue3';
 import axios from 'axios';
-import { ArrowLeft, Plus, Pencil, Trash2, Copy, BarChart3, CheckCircle, Lock, ClipboardX } from 'lucide-vue-next';
+import { ArrowLeft, Plus, Pencil, Trash2, Copy, CopyPlus, BarChart3, CheckCircle, Lock, ClipboardX } from 'lucide-vue-next';
 import ExamenModal from '@/Components/Utilitarios/Examenes/ExamenModal.vue';
 
 const props = defineProps({
@@ -206,6 +210,27 @@ const guardarExamen = async (formData) => {
     } finally {
         isSubmitting.value = false;
     }
+};
+
+const duplicarExamen = (examen) => {
+    window.Swal?.fire?.({
+        title: '¿Duplicar examen?',
+        text: `Se creará una copia de "${examen.titulo}" en borrador con el enlace desactivado.`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#9333ea',
+        confirmButtonText: 'Sí, duplicar',
+        cancelButtonText: 'Cancelar'
+    }).then(async (result) => {
+        if (!result.isConfirmed) return;
+        try {
+            await axios.post(`/utilitarios/eventos/${props.evento.id}/examenes/${examen.id}/duplicar`);
+            window.Swal?.fire?.({ icon: 'success', title: 'Examen duplicado', toast: true, position: 'top-end', showConfirmButton: false, timer: 2500 });
+            router.reload({ only: ['examenes'] });
+        } catch (error) {
+            window.Swal?.fire?.('Error', error.response?.data?.message || 'No se pudo duplicar el examen.', 'error');
+        }
+    });
 };
 
 const eliminarExamen = (examen) => {

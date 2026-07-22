@@ -8,6 +8,7 @@ use App\Models\ExamenAlternativa;
 use App\Models\ExamenIntento;
 use App\Models\ExamenPregunta;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 
 class ExamenController extends Controller
@@ -87,6 +88,51 @@ class ExamenController extends Controller
         return response()->json(['message' => 'Examen eliminado correctamente']);
     }
 
+    public function duplicar(Request $request, string $evento, string $examen)
+    {
+        $evento = Evento::findOrFail($evento);
+        $original = $evento->examenes()->with('preguntas.alternativas')->findOrFail($examen);
+
+        $copia = DB::transaction(function () use ($evento, $original, $request) {
+            $copia = $evento->examenes()->create([
+                'titulo' => 'Copia de ' . $original->titulo,
+                'descripcion' => $original->descripcion,
+                'fecha_inicio' => $original->fecha_inicio,
+                'fecha_fin' => $original->fecha_fin,
+                'hora_inicio' => $original->hora_inicio,
+                'hora_fin' => $original->hora_fin,
+                'duracion_minutos' => $original->duracion_minutos,
+                'intentos_permitidos' => $original->intentos_permitidos,
+                'nota_minima_aprobatoria' => $original->nota_minima_aprobatoria,
+                'estado' => 'borrador',
+                'examen_habilitado' => false,
+                'creado_por' => $request->user()->id,
+            ]);
+
+            foreach ($original->preguntas as $pregunta) {
+                $nuevaPregunta = $copia->preguntas()->create([
+                    'enunciado' => $pregunta->enunciado,
+                    'orden' => $pregunta->orden,
+                ]);
+
+                foreach ($pregunta->alternativas as $alternativa) {
+                    $nuevaPregunta->alternativas()->create([
+                        'texto' => $alternativa->texto,
+                        'es_correcta' => $alternativa->es_correcta,
+                        'orden' => $alternativa->orden,
+                    ]);
+                }
+            }
+
+            return $copia;
+        });
+
+        return response()->json([
+            'message' => 'Examen duplicado correctamente',
+            'id' => $copia->id,
+        ], 201);
+    }
+
     public function cambiarEstado(Request $request, string $evento, string $examen)
     {
         $evento = Evento::findOrFail($evento);
@@ -118,11 +164,21 @@ class ExamenController extends Controller
         ]);
     }
 
-    public function resultados(string $evento, string $examen)
+    public function resultados(Request $request, string $evento, string $examen)
     {
         $evento = Evento::findOrFail($evento);
         $examen = $evento->examenes()->findOrFail($examen);
-        $examen->load(['intentos' => fn ($q) => $q->with('inscripcion.person')->orderBy('iniciado_en', 'desc')]);
+        $notaMinima = $examen->nota_minima_aprobatoria !== null ? (float) $examen->nota_minima_aprobatoria : null;
+
+        $query = $examen->intentos()->with('inscripcion.person');
+        $this->aplicarFiltrosResultados($query, $request, $notaMinima);
+
+        $resumen = $this->calcularResumenResultados((clone $query), $notaMinima);
+
+        $intentos = $query->orderBy('iniciado_en', 'desc')
+            ->paginate($request->input('per_page', 15))
+            ->through(fn (ExamenIntento $intento) => $intento->toResultadoArray())
+            ->withQueryString();
 
         return Inertia::render('Utilitarios/Examenes/Resultados', [
             'evento' => [
@@ -133,10 +189,123 @@ class ExamenController extends Controller
             'examen' => [
                 'id' => $examen->id,
                 'titulo' => $examen->titulo,
-                'nota_minima_aprobatoria' => $examen->nota_minima_aprobatoria !== null ? (float) $examen->nota_minima_aprobatoria : null,
+                'nota_minima_aprobatoria' => $notaMinima,
             ],
-            'intentos' => $examen->intentos->map(fn (ExamenIntento $intento) => $intento->toResultadoArray()),
+            'intentos' => $intentos,
+            'resumen' => $resumen,
+            'filtros' => $request->only(['search', 'resultado', 'fecha_desde', 'fecha_hasta']),
         ]);
+    }
+
+    public function detalleIntento(string $evento, string $examen, string $intento)
+    {
+        $evento = Evento::findOrFail($evento);
+        $examen = $evento->examenes()->findOrFail($examen);
+        $intento = $examen->intentos()->with(['inscripcion', 'respuestas'])->findOrFail($intento);
+
+        $preguntas = $examen->preguntas()->with('alternativas')->orderBy('orden')->get();
+        $respuestasPorPregunta = $intento->respuestas->keyBy('pregunta_id');
+
+        return response()->json([
+            'participante' => [
+                'nombres' => $intento->inscripcion?->nombres,
+                'apellidos' => $intento->inscripcion?->apellidos,
+                'numero_documento' => $intento->inscripcion?->numero_documento,
+            ],
+            'numero_intento' => $intento->numero_intento,
+            'puntaje' => $intento->puntaje !== null ? (float) $intento->puntaje : null,
+            'aciertos' => $intento->aciertos,
+            'total_preguntas' => $intento->total_preguntas,
+            'finalizado_en' => $intento->finalizado_en?->format('Y-m-d H:i'),
+            'preguntas' => $preguntas->map(function (ExamenPregunta $pregunta) use ($respuestasPorPregunta) {
+                $respuesta = $respuestasPorPregunta->get($pregunta->id);
+
+                return [
+                    'id' => $pregunta->id,
+                    'enunciado' => $pregunta->enunciado,
+                    'alternativa_marcada_id' => $respuesta?->alternativa_id,
+                    'respondida' => $respuesta !== null && $respuesta->alternativa_id !== null,
+                    'es_correcta' => $respuesta?->es_correcta,
+                    'alternativas' => $pregunta->alternativas->map(fn (ExamenAlternativa $alternativa) => [
+                        'id' => $alternativa->id,
+                        'texto' => $alternativa->texto,
+                        'es_correcta' => $alternativa->es_correcta,
+                    ]),
+                ];
+            }),
+        ]);
+    }
+
+    private function aplicarFiltrosResultados($query, Request $request, ?float $notaMinima): void
+    {
+        if ($search = $request->input('search')) {
+            $query->whereHas('inscripcion.person', function ($q) use ($search) {
+                $q->where('nombres', 'like', "%{$search}%")
+                    ->orWhere('apellidos', 'like', "%{$search}%")
+                    ->orWhere('dni', 'like', "%{$search}%");
+            });
+        }
+
+        switch ($request->input('resultado')) {
+            case 'en_curso':
+                $query->whereNull('finalizado_en');
+                break;
+            case 'finalizado':
+                $query->whereNotNull('finalizado_en');
+                break;
+            case 'aprobado':
+                $query->whereNotNull('finalizado_en');
+                if ($notaMinima !== null) {
+                    $query->where('puntaje', '>=', $notaMinima);
+                }
+                break;
+            case 'desaprobado':
+                $query->whereNotNull('finalizado_en');
+                if ($notaMinima !== null) {
+                    $query->where('puntaje', '<', $notaMinima);
+                } else {
+                    // Sin nota mínima configurada no se puede determinar desaprobados.
+                    $query->whereRaw('1 = 0');
+                }
+                break;
+        }
+
+        if ($fechaDesde = $request->input('fecha_desde')) {
+            $query->whereDate('iniciado_en', '>=', $fechaDesde);
+        }
+
+        if ($fechaHasta = $request->input('fecha_hasta')) {
+            $query->whereDate('iniciado_en', '<=', $fechaHasta);
+        }
+    }
+
+    private function calcularResumenResultados($query, ?float $notaMinima): array
+    {
+        $total = (clone $query)->count();
+        $finalizados = (clone $query)->whereNotNull('finalizado_en')->count();
+        $enCurso = $total - $finalizados;
+
+        $aprobados = null;
+        $desaprobados = null;
+        $tasaAprobacion = null;
+
+        if ($notaMinima !== null) {
+            $aprobados = (clone $query)->whereNotNull('finalizado_en')->where('puntaje', '>=', $notaMinima)->count();
+            $desaprobados = $finalizados - $aprobados;
+            $tasaAprobacion = $finalizados > 0 ? round($aprobados / $finalizados * 100, 1) : null;
+        }
+
+        $promedioNota = (clone $query)->whereNotNull('finalizado_en')->avg('puntaje');
+
+        return [
+            'total' => $total,
+            'finalizados' => $finalizados,
+            'en_curso' => $enCurso,
+            'aprobados' => $aprobados,
+            'desaprobados' => $desaprobados,
+            'tasa_aprobacion' => $tasaAprobacion,
+            'promedio_nota' => $promedioNota !== null ? round((float) $promedioNota, 2) : null,
+        ];
     }
 
     private function validarExamen(Request $request): array
