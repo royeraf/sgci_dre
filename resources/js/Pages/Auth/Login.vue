@@ -11,11 +11,6 @@
 
       <div class="absolute inset-0 flex flex-col justify-end p-12">
         <div class="max-w-lg">
-          <div
-            class="inline-flex items-center gap-2 px-4 py-2 bg-blue-950/40 backdrop-blur-md rounded-full mb-6 border border-sky-400/30">
-            <div class="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></div>
-            <span class="text-sky-100 text-sm font-semibold">Sistema Integral Activo</span>
-          </div>
           <h2 class="text-4xl font-bold text-white mb-4 leading-tight">Sistema de Gestión y Control Institucional</h2>
           <p class="text-xl text-sky-200/90 leading-relaxed font-light">SGCI-DREH | Administración Integral</p>
           <div class="mt-8 flex items-center gap-4">
