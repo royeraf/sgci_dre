@@ -2,7 +2,7 @@
     <div class="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex">
         <!-- Sidebar -->
         <aside
-            :class="[isCollapsed ? 'w-20' : 'w-72', 'bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 text-white flex-shrink-0 hidden md:flex flex-col transition-all duration-300 ease-in-out shadow-2xl h-screen sticky top-0']">
+            :class="[isCollapsed ? 'w-20' : 'w-72', 'bg-slate-900 text-white flex-shrink-0 hidden md:flex flex-col transition-all duration-300 ease-in-out shadow-2xl h-screen sticky top-0']">
 
             <!-- Toggle Button -->
             <button @click="toggleSidebar"
@@ -16,13 +16,13 @@
                 <div class="flex items-center font-bold text-xl tracking-wider transition-all duration-300"
                     :class="isCollapsed ? 'space-x-0' : 'space-x-3'">
                     <div
-                        class="bg-gradient-to-br from-blue-600 to-indigo-700 p-2 rounded-xl shadow-lg ring-2 ring-blue-400/30 transform hover:scale-105 transition-transform duration-200">
+                        class="bg-blue-700 p-2 rounded-xl shadow-lg ring-2 ring-blue-400/30 transform hover:scale-105 transition-transform duration-200">
                         <img src="/images/logo.png" alt="DRE Huánuco"
                             class="h-10 w-10 object-contain brightness-0 invert" />
                     </div>
                     <div class="flex flex-col transition-all duration-300 overflow-hidden" :class="isCollapsed ? 'opacity-0 max-w-0' : 'opacity-100 max-w-[200px]'">
                         <span
-                            class="bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent font-extrabold whitespace-nowrap uppercase">SGCI-DREH</span>
+                            class="text-white font-extrabold whitespace-nowrap uppercase">SGCI-DREH</span>
                         <span
                             class="text-[9px] text-slate-500 font-medium tracking-wide uppercase whitespace-nowrap leading-tight">Sistema
                             de Gestión<br />y Control Institucional</span>
@@ -41,7 +41,7 @@
                     <Link v-if="hasModulePermission('dashboard', 'ver')" href="/dashboard"
                         class="group flex items-center text-sm font-semibold rounded-xl transition-all duration-300 ease-in-out relative"
                         :class="[
-                            $page.component === 'Dashboard' ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/30 ring-1 ring-blue-400/50' : 'text-slate-300 hover:bg-slate-800/80 hover:text-white',
+                            $page.component === 'Dashboard' ? 'bg-blue-800 text-white shadow-lg shadow-blue-950/40 ring-1 ring-blue-700/40' : 'text-slate-300 hover:bg-slate-800/80 hover:text-white',
                             isCollapsed ? 'justify-center py-3' : 'px-4 py-3.5'
                         ]" :title="isCollapsed ? 'Dashboard' : ''">
                         <div class="rounded-lg transition-all duration-300 ease-in-out flex-shrink-0" :class="[
@@ -58,7 +58,7 @@
                     <Link v-if="hasModulePermission('ocurrencias', 'ver')" href="/occurrences"
                         class="group flex items-center text-sm font-semibold rounded-xl transition-all duration-300 ease-in-out relative"
                         :class="[
-                            $page.component.startsWith('Occurrences/') ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/30 ring-1 ring-blue-400/50' : 'text-slate-300 hover:bg-slate-800/80 hover:text-white',
+                            $page.component.startsWith('Occurrences/') ? 'bg-blue-800 text-white shadow-lg shadow-blue-950/40 ring-1 ring-blue-700/40' : 'text-slate-300 hover:bg-slate-800/80 hover:text-white',
                             isCollapsed ? 'justify-center py-3' : 'px-4 py-3.5'
                         ]" :title="isCollapsed ? 'Cuaderno de Ocurrencias' : ''">
                         <div class="rounded-lg transition-all duration-300 ease-in-out flex-shrink-0" :class="[
@@ -75,7 +75,7 @@
                     <Link v-if="hasModulePermission('control_personal', 'ver')" href="/entry-exits"
                         class="group flex items-center text-sm font-semibold rounded-xl transition-all duration-300 ease-in-out relative"
                         :class="[
-                            $page.component.startsWith('EntryExits/') ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-lg shadow-emerald-500/30 ring-1 ring-emerald-400/50' : 'text-slate-300 hover:bg-slate-800/80 hover:text-white',
+                            $page.component.startsWith('EntryExits/') ? 'bg-blue-800 text-white shadow-lg shadow-blue-950/40 ring-1 ring-blue-700/40' : 'text-slate-300 hover:bg-slate-800/80 hover:text-white',
                             isCollapsed ? 'justify-center py-3' : 'px-4 py-3.5'
                         ]" :title="isCollapsed ? 'Control de Personal' : ''">
                         <div class="rounded-lg transition-all duration-300 ease-in-out flex-shrink-0" :class="[
@@ -93,7 +93,7 @@
                     <Link v-if="hasModulePermission('visitas', 'ver')" href="/visitors"
                         class="group flex items-center text-sm font-semibold rounded-xl transition-all duration-300 ease-in-out relative"
                         :class="[
-                            $page.component.startsWith('Visitors/') ? 'bg-gradient-to-r from-purple-600 to-fuchsia-600 text-white shadow-lg shadow-purple-500/30 ring-1 ring-purple-400/50' : 'text-slate-300 hover:bg-slate-800/80 hover:text-white',
+                            $page.component.startsWith('Visitors/') ? 'bg-blue-800 text-white shadow-lg shadow-blue-950/40 ring-1 ring-blue-700/40' : 'text-slate-300 hover:bg-slate-800/80 hover:text-white',
                             isCollapsed ? 'justify-center py-3' : 'px-4 py-3.5'
                         ]" :title="isCollapsed ? 'Visitas Externas' : ''">
                         <div class="rounded-lg transition-all duration-300 ease-in-out flex-shrink-0" :class="[
@@ -111,7 +111,7 @@
                     <Link v-if="hasModulePermission('vehiculos', 'ver')" href="/vehicles"
                         class="group flex items-center text-sm font-semibold rounded-xl transition-all duration-300 ease-in-out relative"
                         :class="[
-                            $page.component.startsWith('Vehicles/') ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-lg shadow-cyan-500/30 ring-1 ring-cyan-400/50' : 'text-slate-300 hover:bg-slate-800/80 hover:text-white',
+                            $page.component.startsWith('Vehicles/') ? 'bg-blue-800 text-white shadow-lg shadow-blue-950/40 ring-1 ring-blue-700/40' : 'text-slate-300 hover:bg-slate-800/80 hover:text-white',
                             isCollapsed ? 'justify-center py-3' : 'px-4 py-3.5'
                         ]" :title="isCollapsed ? 'Control Vehicular' : ''">
                         <div class="rounded-lg transition-all duration-300 ease-in-out flex-shrink-0" :class="[
@@ -129,7 +129,7 @@
                     <Link v-if="hasModulePermission('patrimonio', 'ver')" href="/assets"
                         class="group flex items-center text-sm font-semibold rounded-xl transition-all duration-300 ease-in-out relative"
                         :class="[
-                            $page.component.startsWith('Assets/') ? 'bg-gradient-to-r from-slate-700 to-gray-700 text-white shadow-lg shadow-slate-500/30 ring-1 ring-slate-400/50' : 'text-slate-300 hover:bg-slate-800/80 hover:text-white',
+                            $page.component.startsWith('Assets/') ? 'bg-blue-800 text-white shadow-lg shadow-blue-950/40 ring-1 ring-blue-700/40' : 'text-slate-300 hover:bg-slate-800/80 hover:text-white',
                             isCollapsed ? 'justify-center py-3' : 'px-4 py-3.5'
                         ]" :title="isCollapsed ? 'Patrimonio' : ''">
                         <div class="rounded-lg transition-all duration-300 ease-in-out flex-shrink-0" :class="[
@@ -147,7 +147,7 @@
                     <Link v-if="hasModulePermission('secretaria', 'ver')" href="/citas"
                         class="group flex items-center text-sm font-semibold rounded-xl transition-all duration-300 ease-in-out relative"
                         :class="[
-                            $page.component.startsWith('Appointments/') ? 'bg-gradient-to-r from-pink-600 to-rose-600 text-white shadow-lg shadow-pink-500/30 ring-1 ring-pink-400/50' : 'text-slate-300 hover:bg-slate-800/80 hover:text-white',
+                            $page.component.startsWith('Appointments/') ? 'bg-blue-800 text-white shadow-lg shadow-blue-950/40 ring-1 ring-blue-700/40' : 'text-slate-300 hover:bg-slate-800/80 hover:text-white',
                             isCollapsed ? 'justify-center py-3' : 'px-4 py-3.5'
                         ]" :title="isCollapsed ? 'Gestión de Citas' : ''">
                         <div class="rounded-lg transition-all duration-300 ease-in-out flex-shrink-0" :class="[
@@ -165,7 +165,7 @@
                     <Link v-if="hasModulePermission('bienestar', 'ver')" href="/bienestar"
                         class="group flex items-center text-sm font-semibold rounded-xl transition-all duration-300 ease-in-out relative"
                         :class="[
-                            $page.component.startsWith('Bienestar/') ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-lg shadow-purple-500/30 ring-1 ring-purple-400/50' : 'text-slate-300 hover:bg-slate-800/80 hover:text-white',
+                            $page.component.startsWith('Bienestar/') ? 'bg-blue-800 text-white shadow-lg shadow-blue-950/40 ring-1 ring-blue-700/40' : 'text-slate-300 hover:bg-slate-800/80 hover:text-white',
                             isCollapsed ? 'justify-center py-3' : 'px-4 py-3.5'
                         ]" :title="isCollapsed ? 'Bienestar Social' : ''">
                         <div class="rounded-lg transition-all duration-300 ease-in-out flex-shrink-0" :class="[
@@ -183,7 +183,7 @@
                     <Link v-if="hasModulePermission('papeletas', 'ver')" href="/papeletas"
                         class="group flex items-center text-sm font-semibold rounded-xl transition-all duration-300 ease-in-out relative"
                         :class="[
-                            $page.component.startsWith('Papeletas/') ? 'bg-gradient-to-r from-amber-600 to-orange-600 text-white shadow-lg shadow-amber-500/30 ring-1 ring-amber-400/50' : 'text-slate-300 hover:bg-slate-800/80 hover:text-white',
+                            $page.component.startsWith('Papeletas/') ? 'bg-blue-800 text-white shadow-lg shadow-blue-950/40 ring-1 ring-blue-700/40' : 'text-slate-300 hover:bg-slate-800/80 hover:text-white',
                             isCollapsed ? 'justify-center py-3' : 'px-4 py-3.5'
                         ]" :title="isCollapsed ? 'Papeletas de Salida' : ''">
                         <div class="rounded-lg transition-all duration-300 ease-in-out flex-shrink-0" :class="[
@@ -201,7 +201,7 @@
                     <Link v-if="hasModulePermission('asistencia', 'ver')" href="/asistencia"
                         class="group flex items-center text-sm font-semibold rounded-xl transition-all duration-300 ease-in-out relative"
                         :class="[
-                            $page.component.startsWith('Asistencia/') ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-lg shadow-cyan-500/30 ring-1 ring-cyan-400/50' : 'text-slate-300 hover:bg-slate-800/80 hover:text-white',
+                            $page.component.startsWith('Asistencia/') ? 'bg-blue-800 text-white shadow-lg shadow-blue-950/40 ring-1 ring-blue-700/40' : 'text-slate-300 hover:bg-slate-800/80 hover:text-white',
                             isCollapsed ? 'justify-center py-3' : 'px-4 py-3.5'
                         ]" :title="isCollapsed ? 'Marcas de Asistencia' : ''">
                         <div class="rounded-lg transition-all duration-300 ease-in-out flex-shrink-0" :class="[
@@ -219,7 +219,7 @@
                     <Link v-if="hasModulePermission('recursos_humanos', 'ver')" href="/hr"
                         class="group flex items-center text-sm font-semibold rounded-xl transition-all duration-300 ease-in-out relative"
                         :class="[
-                            $page.component.startsWith('HR/') ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-lg shadow-emerald-500/30 ring-1 ring-emerald-400/50' : 'text-slate-300 hover:bg-slate-800/80 hover:text-white',
+                            $page.component.startsWith('HR/') ? 'bg-blue-800 text-white shadow-lg shadow-blue-950/40 ring-1 ring-blue-700/40' : 'text-slate-300 hover:bg-slate-800/80 hover:text-white',
                             isCollapsed ? 'justify-center py-3' : 'px-4 py-3.5'
                         ]" :title="isCollapsed ? 'Recursos Humanos' : ''">
                         <div class="rounded-lg transition-all duration-300 ease-in-out flex-shrink-0" :class="[
@@ -237,7 +237,7 @@
                     <Link v-if="hasModulePermission('utilitarios', 'ver')" href="/utilitarios"
                         class="group flex items-center text-sm font-semibold rounded-xl transition-all duration-300 ease-in-out relative"
                         :class="[
-                            $page.component.startsWith('Utilitarios/') ? 'bg-gradient-to-r from-amber-600 to-orange-600 text-white shadow-lg shadow-amber-500/30 ring-1 ring-amber-400/50' : 'text-slate-300 hover:bg-slate-800/80 hover:text-white',
+                            $page.component.startsWith('Utilitarios/') ? 'bg-blue-800 text-white shadow-lg shadow-blue-950/40 ring-1 ring-blue-700/40' : 'text-slate-300 hover:bg-slate-800/80 hover:text-white',
                             isCollapsed ? 'justify-center py-3' : 'px-4 py-3.5'
                         ]" :title="isCollapsed ? 'Utilitarios' : ''">
                         <div class="rounded-lg transition-all duration-300 ease-in-out flex-shrink-0" :class="[
@@ -263,7 +263,7 @@
                     <Link v-if="isAdmin()" href="/users"
                         class="group flex items-center text-sm font-semibold rounded-xl transition-all duration-300 ease-in-out relative"
                         :class="[
-                            $page.component.startsWith('Users/') ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg shadow-indigo-500/30 ring-1 ring-indigo-400/50' : 'text-slate-300 hover:bg-slate-800/80 hover:text-white',
+                            $page.component.startsWith('Users/') ? 'bg-blue-800 text-white shadow-lg shadow-blue-950/40 ring-1 ring-blue-700/40' : 'text-slate-300 hover:bg-slate-800/80 hover:text-white',
                             isCollapsed ? 'justify-center py-3' : 'px-4 py-3.5'
                         ]" :title="isCollapsed ? 'Gestión de Usuarios' : ''">
                         <div class="rounded-lg transition-all duration-300 ease-in-out flex-shrink-0" :class="[
@@ -280,13 +280,13 @@
             </div>
 
             <!-- User Profile - Fixed at bottom -->
-            <div class="flex-shrink-0 border-t border-slate-700/50 p-4 bg-gradient-to-t from-slate-900 to-slate-800/80 backdrop-blur-sm transition-all duration-300"
+            <div class="flex-shrink-0 border-t border-slate-700/50 p-4 bg-slate-900 backdrop-blur-sm transition-all duration-300"
                 :class="isCollapsed ? 'items-center justify-center p-2' : 'p-4'">
                 <div class="flex items-center gap-3 rounded-xl bg-slate-800/50 hover:bg-slate-700/50 transition-colors duration-200 cursor-pointer group"
                     :class="isCollapsed ? 'p-2 justify-center' : 'p-3'" @click="showProfileModal = true">
                     <div class="flex-shrink-0">
                         <div
-                            class="h-11 w-11 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-sm font-bold text-white shadow-lg ring-2 ring-blue-400/30 uppercase group-hover:ring-blue-300/50 transition-all">
+                            class="h-11 w-11 rounded-xl bg-blue-600 flex items-center justify-center text-sm font-bold text-white shadow-lg ring-2 ring-blue-400/30 uppercase group-hover:ring-blue-300/50 transition-all">
                             {{ $page.props.auth?.user?.name?.charAt(0) || 'U' }}
                         </div>
                     </div>
@@ -310,9 +310,9 @@
 
         <!-- Mobile Header -->
         <div
-            class="md:hidden fixed top-0 w-full bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white z-40 flex items-center justify-between px-4 h-16 shadow-lg">
+            class="md:hidden fixed top-0 w-full bg-slate-900 text-white z-40 flex items-center justify-between px-4 h-16 shadow-lg">
             <div class="flex items-center space-x-2 font-bold text-lg">
-                <div class="bg-gradient-to-br from-blue-500 to-indigo-600 p-1.5 rounded-lg border border-white/20">
+                <div class="bg-blue-700 p-1.5 rounded-lg border border-white/20">
                     <img src="/images/logo.png" alt="DREH" class="h-6 w-6 object-contain brightness-0 invert" />
                 </div>
                 <span class="tracking-tight uppercase">DRE Huánuco</span>
@@ -331,89 +331,89 @@
             <div v-if="mobileMenuOpen" class="fixed inset-0 z-40 md:hidden flex">
                 <div class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm" @click="mobileMenuOpen = false"></div>
                 <div
-                    class="relative flex-1 flex flex-col max-w-xs w-full bg-gradient-to-b from-slate-900 to-slate-800 shadow-2xl">
+                    class="relative flex-1 flex flex-col max-w-xs w-full bg-slate-900 shadow-2xl">
                     <div class="pt-20 pb-4 px-4 overflow-y-auto h-full space-y-2">
                         <Link v-if="hasModulePermission('dashboard', 'ver')" href="/dashboard"
                             @click="mobileMenuOpen = false"
                             class="flex items-center gap-3 px-4 py-3 rounded-xl text-base font-semibold transition-all duration-200"
-                            :class="$page.component === 'Dashboard' ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg' : 'text-slate-300 hover:bg-slate-700/50 hover:text-white'">
+                            :class="$page.component === 'Dashboard' ? 'bg-blue-800 text-white shadow-lg' : 'text-slate-300 hover:bg-slate-700/50 hover:text-white'">
                             <LayoutDashboard class="h-5 w-5" />
                             Dashboard
                         </Link>
                         <Link v-if="hasModulePermission('ocurrencias', 'ver')" href="/occurrences"
                             @click="mobileMenuOpen = false"
                             class="flex items-center gap-3 px-4 py-3 rounded-xl text-base font-semibold transition-all duration-200"
-                            :class="$page.component.startsWith('Occurrences/') ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg' : 'text-slate-300 hover:bg-slate-700/50 hover:text-white'">
+                            :class="$page.component.startsWith('Occurrences/') ? 'bg-blue-800 text-white shadow-lg' : 'text-slate-300 hover:bg-slate-700/50 hover:text-white'">
                             <ClipboardList class="h-5 w-5" />
                             Cuaderno de Ocurrencias
                         </Link>
                         <Link v-if="hasModulePermission('control_personal', 'ver')" href="/entry-exits"
                             @click="mobileMenuOpen = false"
                             class="flex items-center gap-3 px-4 py-3 rounded-xl text-base font-semibold transition-all duration-200"
-                            :class="$page.component.startsWith('EntryExits/') ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-lg' : 'text-slate-300 hover:bg-slate-700/50 hover:text-white'">
+                            :class="$page.component.startsWith('EntryExits/') ? 'bg-blue-800 text-white shadow-lg' : 'text-slate-300 hover:bg-slate-700/50 hover:text-white'">
                             <UserCheck class="h-5 w-5" />
                             Control de Personal
                         </Link>
                         <Link v-if="hasModulePermission('visitas', 'ver')" href="/visitors"
                             @click="mobileMenuOpen = false"
                             class="flex items-center gap-3 px-4 py-3 rounded-xl text-base font-semibold transition-all duration-200"
-                            :class="$page.component.startsWith('Visitors/') ? 'bg-gradient-to-r from-purple-600 to-fuchsia-600 text-white shadow-lg' : 'text-slate-300 hover:bg-slate-700/50 hover:text-white'">
+                            :class="$page.component.startsWith('Visitors/') ? 'bg-blue-800 text-white shadow-lg' : 'text-slate-300 hover:bg-slate-700/50 hover:text-white'">
                             <Users class="h-5 w-5" />
                             Visitas Externas
                         </Link>
                         <Link v-if="hasModulePermission('vehiculos', 'ver')" href="/vehicles"
                             @click="mobileMenuOpen = false"
                             class="flex items-center gap-3 px-4 py-3 rounded-xl text-base font-semibold transition-all duration-200"
-                            :class="$page.component.startsWith('Vehicles/') ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-lg' : 'text-slate-300 hover:bg-slate-700/50 hover:text-white'">
+                            :class="$page.component.startsWith('Vehicles/') ? 'bg-blue-800 text-white shadow-lg' : 'text-slate-300 hover:bg-slate-700/50 hover:text-white'">
                             <Car class="h-5 w-5" />
                             Control Vehicular
                         </Link>
                         <Link v-if="hasModulePermission('patrimonio', 'ver')" href="/assets"
                             @click="mobileMenuOpen = false"
                             class="flex items-center gap-3 px-4 py-3 rounded-xl text-base font-semibold transition-all duration-200"
-                            :class="$page.component.startsWith('Assets/') ? 'bg-gradient-to-r from-slate-700 to-gray-700 text-white shadow-lg' : 'text-slate-300 hover:bg-slate-700/50 hover:text-white'">
+                            :class="$page.component.startsWith('Assets/') ? 'bg-blue-800 text-white shadow-lg' : 'text-slate-300 hover:bg-slate-700/50 hover:text-white'">
                             <Box class="h-5 w-5" />
                             Patrimonio (Bienes)
                         </Link>
                         <Link v-if="hasModulePermission('secretaria', 'ver')" href="/citas"
                             @click="mobileMenuOpen = false"
                             class="flex items-center gap-3 px-4 py-3 rounded-xl text-base font-semibold transition-all duration-200"
-                            :class="$page.component.startsWith('Appointments/') ? 'bg-gradient-to-r from-pink-600 to-rose-600 text-white shadow-lg' : 'text-slate-300 hover:bg-slate-700/50 hover:text-white'">
+                            :class="$page.component.startsWith('Appointments/') ? 'bg-blue-800 text-white shadow-lg' : 'text-slate-300 hover:bg-slate-700/50 hover:text-white'">
                             <Calendar class="h-5 w-5" />
                             Gestión de Citas
                         </Link>
                         <Link v-if="hasModulePermission('bienestar', 'ver')" href="/bienestar"
                             @click="mobileMenuOpen = false"
                             class="flex items-center gap-3 px-4 py-3 rounded-xl text-base font-semibold transition-all duration-200"
-                            :class="$page.component.startsWith('Bienestar/') ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-lg' : 'text-slate-300 hover:bg-slate-700/50 hover:text-white'">
+                            :class="$page.component.startsWith('Bienestar/') ? 'bg-blue-800 text-white shadow-lg' : 'text-slate-300 hover:bg-slate-700/50 hover:text-white'">
                             <Heart class="h-5 w-5" />
                             Bienestar Social
                         </Link>
                         <Link v-if="hasModulePermission('papeletas', 'ver')" href="/papeletas"
                             @click="mobileMenuOpen = false"
                             class="flex items-center gap-3 px-4 py-3 rounded-xl text-base font-semibold transition-all duration-200"
-                            :class="$page.component.startsWith('Papeletas/') ? 'bg-gradient-to-r from-amber-600 to-orange-600 text-white shadow-lg' : 'text-slate-300 hover:bg-slate-700/50 hover:text-white'">
+                            :class="$page.component.startsWith('Papeletas/') ? 'bg-blue-800 text-white shadow-lg' : 'text-slate-300 hover:bg-slate-700/50 hover:text-white'">
                             <FileText class="h-5 w-5" />
                             Papeletas de Salida
                         </Link>
                         <Link v-if="hasModulePermission('asistencia', 'ver')" href="/asistencia"
                             @click="mobileMenuOpen = false"
                             class="flex items-center gap-3 px-4 py-3 rounded-xl text-base font-semibold transition-all duration-200"
-                            :class="$page.component.startsWith('Asistencia/') ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-lg' : 'text-slate-300 hover:bg-slate-700/50 hover:text-white'">
+                            :class="$page.component.startsWith('Asistencia/') ? 'bg-blue-800 text-white shadow-lg' : 'text-slate-300 hover:bg-slate-700/50 hover:text-white'">
                             <Fingerprint class="h-5 w-5" />
                             Marcas de Asistencia
                         </Link>
                         <Link v-if="hasModulePermission('recursos_humanos', 'ver')" href="/hr"
                             @click="mobileMenuOpen = false"
                             class="flex items-center gap-3 px-4 py-3 rounded-xl text-base font-semibold transition-all duration-200"
-                            :class="$page.component.startsWith('HR/') ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-lg' : 'text-slate-300 hover:bg-slate-700/50 hover:text-white'">
+                            :class="$page.component.startsWith('HR/') ? 'bg-blue-800 text-white shadow-lg' : 'text-slate-300 hover:bg-slate-700/50 hover:text-white'">
                             <Users class="h-5 w-5" />
                             Recursos Humanos
                         </Link>
                         <Link v-if="hasModulePermission('utilitarios', 'ver')" href="/utilitarios"
                             @click="mobileMenuOpen = false"
                             class="flex items-center gap-3 px-4 py-3 rounded-xl text-base font-semibold transition-all duration-200"
-                            :class="$page.component.startsWith('Utilitarios/') ? 'bg-gradient-to-r from-amber-600 to-orange-600 text-white shadow-lg' : 'text-slate-300 hover:bg-slate-700/50 hover:text-white'">
+                            :class="$page.component.startsWith('Utilitarios/') ? 'bg-blue-800 text-white shadow-lg' : 'text-slate-300 hover:bg-slate-700/50 hover:text-white'">
                             <GraduationCap class="h-5 w-5" />
                             Utilitarios
                         </Link>
@@ -427,7 +427,7 @@
                         <!-- User Management (Admin only) -->
                         <Link v-if="isAdmin()" href="/users" @click="mobileMenuOpen = false"
                             class="flex items-center gap-3 px-4 py-3 rounded-xl text-base font-semibold transition-all duration-200"
-                            :class="$page.component.startsWith('Users/') ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg' : 'text-slate-300 hover:bg-slate-700/50 hover:text-white'">
+                            :class="$page.component.startsWith('Users/') ? 'bg-blue-800 text-white shadow-lg' : 'text-slate-300 hover:bg-slate-700/50 hover:text-white'">
                             <Shield class="h-5 w-5" />
                             Gestión de Usuarios
                         </Link>
