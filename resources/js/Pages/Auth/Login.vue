@@ -31,7 +31,7 @@
     <div class="w-full lg:w-1/2 min-h-0 lg:h-full overflow-y-auto flex flex-col items-center justify-center p-4 sm:p-8 bg-white/60 backdrop-blur-md flex-1">
       <div class="w-full max-w-md py-4 sm:py-6">
         <!-- Logo/Header Card -->
-        <div class="text-center mb-6 sm:mb-10">
+        <div class="text-center mb-4 sm:mb-6">
           <div
             class="inline-flex items-center justify-center w-20 h-20 sm:w-24 sm:h-24 bg-gradient-to-br from-blue-700 to-sky-900 rounded-3xl shadow-2xl shadow-blue-900/20 mb-4 sm:mb-6 ring-4 ring-blue-50 transform hover:scale-105 transition-transform duration-300">
             <img src="/images/logo.png" alt="DRE Logo"
@@ -45,14 +45,12 @@
         </div>
 
         <!-- Error Alert -->
-        <div class="mb-6 min-h-[50px]">
-          <div v-if="form.errors.credentials || flashError" class="bg-red-50 border-2 border-red-200 rounded-xl p-4">
-            <div class="flex items-start gap-3">
-              <div class="flex-shrink-0">
-                <AlertCircle class="h-5 w-5 text-red-600" />
-              </div>
-              <p class="text-sm font-semibold text-red-800">{{ form.errors.credentials || flashError }}</p>
+        <div v-if="form.errors.credentials || flashError" class="mb-6 bg-red-50 border-2 border-red-200 rounded-xl p-4">
+          <div class="flex items-start gap-3">
+            <div class="flex-shrink-0">
+              <AlertCircle class="h-5 w-5 text-red-600" />
             </div>
+            <p class="text-sm font-semibold text-red-800">{{ form.errors.credentials || flashError }}</p>
           </div>
         </div>
 
