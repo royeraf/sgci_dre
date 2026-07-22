@@ -2,18 +2,19 @@
   <div class="p-4 sm:p-6 lg:p-8">
     <!-- Welcome Card -->
     <div
-      class="relative overflow-hidden rounded-[2rem] p-8 md:p-12 text-white mb-10 shadow-2xl shadow-blue-500/20 border border-white/10 ring-1 ring-white/5">
-      <!-- Background Image with Premium Overlay -->
+      class="relative overflow-hidden rounded-[2rem] p-6 sm:p-8 md:p-12 text-white mb-10 shadow-2xl shadow-blue-500/20 border border-white/10 ring-1 ring-white/5 bg-gradient-to-br from-blue-900 to-indigo-900">
+      <!-- Background Image with Premium Overlay (sm and up only) -->
       <img src="/images/login-bg.png" alt="Background"
-        class="absolute inset-0 w-full h-full object-cover transform scale-105 transition-transform duration-1000 ease-out" />
-      <div class="absolute inset-0 bg-gradient-to-r from-blue-900/95 via-blue-900/70 to-indigo-900/40"></div>
+        class="hidden sm:block absolute inset-0 w-full h-full object-cover transform scale-105 transition-transform duration-1000 ease-out" />
+      <div class="hidden sm:block absolute inset-0 bg-gradient-to-r from-blue-900/95 via-blue-900/70 to-indigo-900/40">
+      </div>
 
       <!-- Glossy Effect Overlay -->
-      <div class="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-white/10"></div>
+      <div class="hidden sm:block absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-white/10"></div>
 
       <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-8">
         <div class="max-w-2xl">
-          <h2 class="text-4xl md:text-5xl font-black mb-4 tracking-tight drop-shadow-lg">
+          <h2 class="text-2xl sm:text-4xl md:text-5xl font-black mb-4 tracking-tight drop-shadow-lg">
             ¡Bienvenido al <span
               class="bg-gradient-to-r from-blue-300 to-indigo-200 bg-clip-text text-transparent">SGCI</span>!
           </h2>
@@ -50,85 +51,95 @@
         </div>
         <h2 class="text-2xl font-extrabold text-slate-800 tracking-tight">Accesos Rápidos</h2>
       </div>
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div class="grid grid-cols-4 gap-2 sm:gap-4 lg:gap-6">
         <Link v-if="hasModulePermission('ocurrencias')" href="/occurrences"
-          class="flex flex-col items-center p-6 bg-white rounded-2xl hover:bg-blue-50/50 border-2 border-slate-100 hover:border-blue-200 transition-all group shadow-sm hover:shadow-md">
+          class="group flex flex-col sm:flex-row items-center gap-1.5 sm:gap-4 p-1 sm:p-5 text-center sm:text-left rounded-2xl sm:bg-white hover:bg-blue-50/60 sm:hover:bg-blue-50/50 sm:border-2 sm:border-slate-100 sm:hover:border-blue-200 sm:shadow-sm sm:hover:shadow-md sm:hover:-translate-y-0.5 active:bg-blue-50 transition-all duration-300">
           <div
-            class="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center mb-4 shadow-lg shadow-blue-600/30 group-hover:scale-110 group-hover:-rotate-3 transition-all duration-300">
-            <ClipboardList class="w-8 h-8 text-white" />
+            class="w-10 h-10 sm:w-12 sm:h-12 bg-blue-600 rounded-2xl sm:rounded-xl flex items-center justify-center shadow-lg shadow-blue-600/30 group-hover:scale-110 transition-transform duration-300 flex-shrink-0">
+            <ClipboardList class="w-5 h-5 sm:w-6 sm:h-6 text-white" />
           </div>
-          <span class="text-base font-bold text-slate-900">Cuaderno de Ocurrencias</span>
-          <span class="text-xs text-slate-500 mt-1 font-medium text-center">Registrar incidentes y novedades</span>
+          <span class="text-[11px] sm:text-sm font-bold text-slate-800 sm:text-slate-900 leading-tight sm:leading-snug sm:flex-1">Cuaderno de Ocurrencias</span>
+          <ChevronRight class="hidden sm:block w-4 h-4 text-slate-300 group-hover:text-blue-500 group-hover:translate-x-1 transition-all duration-300 flex-shrink-0" />
         </Link>
 
         <Link v-if="hasModulePermission('control_personal')" href="/entry-exits"
-          class="flex flex-col items-center p-6 bg-white rounded-2xl hover:bg-emerald-50/50 border-2 border-slate-100 hover:border-emerald-200 transition-all group shadow-sm hover:shadow-md">
+          class="group flex flex-col sm:flex-row items-center gap-1.5 sm:gap-4 p-1 sm:p-5 text-center sm:text-left rounded-2xl sm:bg-white hover:bg-emerald-50/60 sm:hover:bg-emerald-50/50 sm:border-2 sm:border-slate-100 sm:hover:border-emerald-200 sm:shadow-sm sm:hover:shadow-md sm:hover:-translate-y-0.5 active:bg-emerald-50 transition-all duration-300">
           <div
-            class="w-16 h-16 bg-emerald-600 rounded-2xl flex items-center justify-center mb-4 shadow-lg shadow-emerald-600/30 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300">
-            <UserCheck class="w-8 h-8 text-white" />
+            class="w-10 h-10 sm:w-12 sm:h-12 bg-emerald-600 rounded-2xl sm:rounded-xl flex items-center justify-center shadow-lg shadow-emerald-600/30 group-hover:scale-110 transition-transform duration-300 flex-shrink-0">
+            <UserCheck class="w-5 h-5 sm:w-6 sm:h-6 text-white" />
           </div>
-          <span class="text-base font-bold text-slate-900">Control de Personal</span>
-          <span class="text-xs text-slate-500 mt-1 font-medium text-center">Entradas y salidas (Papeletas)</span>
+          <span class="text-[11px] sm:text-sm font-bold text-slate-800 sm:text-slate-900 leading-tight sm:leading-snug sm:flex-1">Control de Personal</span>
+          <ChevronRight class="hidden sm:block w-4 h-4 text-slate-300 group-hover:text-emerald-500 group-hover:translate-x-1 transition-all duration-300 flex-shrink-0" />
         </Link>
 
         <Link v-if="hasModulePermission('visitas')" href="/visitors"
-          class="flex flex-col items-center p-6 bg-white rounded-2xl hover:bg-purple-50/50 border-2 border-slate-100 hover:border-purple-200 transition-all group shadow-sm hover:shadow-md">
+          class="group flex flex-col sm:flex-row items-center gap-1.5 sm:gap-4 p-1 sm:p-5 text-center sm:text-left rounded-2xl sm:bg-white hover:bg-purple-50/60 sm:hover:bg-purple-50/50 sm:border-2 sm:border-slate-100 sm:hover:border-purple-200 sm:shadow-sm sm:hover:shadow-md sm:hover:-translate-y-0.5 active:bg-purple-50 transition-all duration-300">
           <div
-            class="w-16 h-16 bg-purple-600 rounded-2xl flex items-center justify-center mb-4 shadow-lg shadow-purple-600/30 group-hover:scale-110 group-hover:-rotate-3 transition-all duration-300">
-            <Users class="w-8 h-8 text-white" />
+            class="w-10 h-10 sm:w-12 sm:h-12 bg-purple-600 rounded-2xl sm:rounded-xl flex items-center justify-center shadow-lg shadow-purple-600/30 group-hover:scale-110 transition-transform duration-300 flex-shrink-0">
+            <Users class="w-5 h-5 sm:w-6 sm:h-6 text-white" />
           </div>
-          <span class="text-base font-bold text-slate-900">Visitas Externas</span>
-          <span class="text-xs text-slate-500 mt-1 font-medium text-center">Registro de ciudadanos visitantes</span>
+          <span class="text-[11px] sm:text-sm font-bold text-slate-800 sm:text-slate-900 leading-tight sm:leading-snug sm:flex-1">Visitas Externas</span>
+          <ChevronRight class="hidden sm:block w-4 h-4 text-slate-300 group-hover:text-purple-500 group-hover:translate-x-1 transition-all duration-300 flex-shrink-0" />
         </Link>
 
         <Link v-if="hasModulePermission('vehiculos')" href="/vehicles"
-          class="flex flex-col items-center p-6 bg-white rounded-2xl hover:bg-cyan-50/50 border-2 border-slate-100 hover:border-cyan-200 transition-all group shadow-sm hover:shadow-md">
+          class="group flex flex-col sm:flex-row items-center gap-1.5 sm:gap-4 p-1 sm:p-5 text-center sm:text-left rounded-2xl sm:bg-white hover:bg-cyan-50/60 sm:hover:bg-cyan-50/50 sm:border-2 sm:border-slate-100 sm:hover:border-cyan-200 sm:shadow-sm sm:hover:shadow-md sm:hover:-translate-y-0.5 active:bg-cyan-50 transition-all duration-300">
           <div
-            class="w-16 h-16 bg-cyan-600 rounded-2xl flex items-center justify-center mb-4 shadow-lg shadow-cyan-600/30 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300">
-            <Car class="w-8 h-8 text-white" />
+            class="w-10 h-10 sm:w-12 sm:h-12 bg-cyan-600 rounded-2xl sm:rounded-xl flex items-center justify-center shadow-lg shadow-cyan-600/30 group-hover:scale-110 transition-transform duration-300 flex-shrink-0">
+            <Car class="w-5 h-5 sm:w-6 sm:h-6 text-white" />
           </div>
-          <span class="text-base font-bold text-slate-900">Control Vehicular</span>
-          <span class="text-xs text-slate-500 mt-1 font-medium text-center">Salida y retorno de unidades</span>
+          <span class="text-[11px] sm:text-sm font-bold text-slate-800 sm:text-slate-900 leading-tight sm:leading-snug sm:flex-1">Control Vehicular</span>
+          <ChevronRight class="hidden sm:block w-4 h-4 text-slate-300 group-hover:text-cyan-500 group-hover:translate-x-1 transition-all duration-300 flex-shrink-0" />
         </Link>
 
         <Link v-if="hasModulePermission('secretaria')" href="/citas"
-          class="flex flex-col items-center p-6 bg-white rounded-2xl hover:bg-pink-50/50 border-2 border-slate-100 hover:border-pink-200 transition-all group shadow-sm hover:shadow-md">
+          class="group flex flex-col sm:flex-row items-center gap-1.5 sm:gap-4 p-1 sm:p-5 text-center sm:text-left rounded-2xl sm:bg-white hover:bg-pink-50/60 sm:hover:bg-pink-50/50 sm:border-2 sm:border-slate-100 sm:hover:border-pink-200 sm:shadow-sm sm:hover:shadow-md sm:hover:-translate-y-0.5 active:bg-pink-50 transition-all duration-300">
           <div
-            class="w-16 h-16 bg-pink-600 rounded-2xl flex items-center justify-center mb-4 shadow-lg shadow-pink-600/30 group-hover:scale-110 group-hover:-rotate-3 transition-all duration-300">
-            <Calendar class="w-8 h-8 text-white" />
+            class="w-10 h-10 sm:w-12 sm:h-12 bg-pink-600 rounded-2xl sm:rounded-xl flex items-center justify-center shadow-lg shadow-pink-600/30 group-hover:scale-110 transition-transform duration-300 flex-shrink-0">
+            <Calendar class="w-5 h-5 sm:w-6 sm:h-6 text-white" />
           </div>
-          <span class="text-base font-bold text-slate-900">Gestión de Citas</span>
-          <span class="text-xs text-slate-500 mt-1 font-medium text-center">Administrar solicitudes de citas</span>
+          <span class="text-[11px] sm:text-sm font-bold text-slate-800 sm:text-slate-900 leading-tight sm:leading-snug sm:flex-1">Gestión de Citas</span>
+          <ChevronRight class="hidden sm:block w-4 h-4 text-slate-300 group-hover:text-pink-500 group-hover:translate-x-1 transition-all duration-300 flex-shrink-0" />
         </Link>
 
         <Link v-if="hasModulePermission('bienestar')" href="/bienestar"
-          class="flex flex-col items-center p-6 bg-white rounded-2xl hover:bg-purple-50/50 border-2 border-slate-100 hover:border-purple-200 transition-all group shadow-sm hover:shadow-md">
+          class="group flex flex-col sm:flex-row items-center gap-1.5 sm:gap-4 p-1 sm:p-5 text-center sm:text-left rounded-2xl sm:bg-white hover:bg-purple-50/60 sm:hover:bg-purple-50/50 sm:border-2 sm:border-slate-100 sm:hover:border-purple-200 sm:shadow-sm sm:hover:shadow-md sm:hover:-translate-y-0.5 active:bg-purple-50 transition-all duration-300">
           <div
-            class="w-16 h-16 bg-purple-600 rounded-2xl flex items-center justify-center mb-4 shadow-lg shadow-purple-600/30 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300">
-            <Heart class="w-8 h-8 text-white" />
+            class="w-10 h-10 sm:w-12 sm:h-12 bg-purple-600 rounded-2xl sm:rounded-xl flex items-center justify-center shadow-lg shadow-purple-600/30 group-hover:scale-110 transition-transform duration-300 flex-shrink-0">
+            <Heart class="w-5 h-5 sm:w-6 sm:h-6 text-white" />
           </div>
-          <span class="text-base font-bold text-slate-900">Bienestar Social</span>
-          <span class="text-xs text-slate-500 mt-1 font-medium text-center">Gestión de licencias y permisos</span>
+          <span class="text-[11px] sm:text-sm font-bold text-slate-800 sm:text-slate-900 leading-tight sm:leading-snug sm:flex-1">Bienestar Social</span>
+          <ChevronRight class="hidden sm:block w-4 h-4 text-slate-300 group-hover:text-purple-500 group-hover:translate-x-1 transition-all duration-300 flex-shrink-0" />
         </Link>
 
         <Link v-if="hasModulePermission('recursos_humanos')" href="/hr"
-          class="flex flex-col items-center p-6 bg-white rounded-2xl hover:bg-teal-50/50 border-2 border-slate-100 hover:border-teal-200 transition-all group shadow-sm hover:shadow-md">
+          class="group flex flex-col sm:flex-row items-center gap-1.5 sm:gap-4 p-1 sm:p-5 text-center sm:text-left rounded-2xl sm:bg-white hover:bg-teal-50/60 sm:hover:bg-teal-50/50 sm:border-2 sm:border-slate-100 sm:hover:border-teal-200 sm:shadow-sm sm:hover:shadow-md sm:hover:-translate-y-0.5 active:bg-teal-50 transition-all duration-300">
           <div
-            class="w-16 h-16 bg-teal-600 rounded-2xl flex items-center justify-center mb-4 shadow-lg shadow-teal-600/30 group-hover:scale-110 group-hover:-rotate-3 transition-all duration-300">
-            <UserCheck class="w-8 h-8 text-white" />
+            class="w-10 h-10 sm:w-12 sm:h-12 bg-teal-600 rounded-2xl sm:rounded-xl flex items-center justify-center shadow-lg shadow-teal-600/30 group-hover:scale-110 transition-transform duration-300 flex-shrink-0">
+            <UserCheck class="w-5 h-5 sm:w-6 sm:h-6 text-white" />
           </div>
-          <span class="text-base font-bold text-slate-900">Recursos Humanos</span>
-          <span class="text-xs text-slate-500 mt-1 font-medium text-center">Empleados, vacaciones y áreas</span>
+          <span class="text-[11px] sm:text-sm font-bold text-slate-800 sm:text-slate-900 leading-tight sm:leading-snug sm:flex-1">Recursos Humanos</span>
+          <ChevronRight class="hidden sm:block w-4 h-4 text-slate-300 group-hover:text-teal-500 group-hover:translate-x-1 transition-all duration-300 flex-shrink-0" />
         </Link>
 
         <Link v-if="hasModulePermission('patrimonio')" href="/assets"
-          class="flex flex-col items-center p-6 bg-white rounded-2xl hover:bg-slate-50/50 border-2 border-slate-100 hover:border-slate-200 transition-all group shadow-sm hover:shadow-md">
+          class="group flex flex-col sm:flex-row items-center gap-1.5 sm:gap-4 p-1 sm:p-5 text-center sm:text-left rounded-2xl sm:bg-white hover:bg-slate-100/60 sm:hover:bg-slate-50/50 sm:border-2 sm:border-slate-100 sm:hover:border-slate-200 sm:shadow-sm sm:hover:shadow-md sm:hover:-translate-y-0.5 active:bg-slate-100 transition-all duration-300">
           <div
-            class="w-16 h-16 bg-slate-700 rounded-2xl flex items-center justify-center mb-4 shadow-lg shadow-slate-600/30 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300">
-            <Box class="w-8 h-8 text-white" />
+            class="w-10 h-10 sm:w-12 sm:h-12 bg-slate-700 rounded-2xl sm:rounded-xl flex items-center justify-center shadow-lg shadow-slate-600/30 group-hover:scale-110 transition-transform duration-300 flex-shrink-0">
+            <Box class="w-5 h-5 sm:w-6 sm:h-6 text-white" />
           </div>
-          <span class="text-base font-bold text-slate-900">Patrimonio</span>
-          <span class="text-xs text-slate-500 mt-1 font-medium text-center">Gestión de bienes y activos</span>
+          <span class="text-[11px] sm:text-sm font-bold text-slate-800 sm:text-slate-900 leading-tight sm:leading-snug sm:flex-1">Patrimonio</span>
+          <ChevronRight class="hidden sm:block w-4 h-4 text-slate-300 group-hover:text-slate-500 group-hover:translate-x-1 transition-all duration-300 flex-shrink-0" />
+        </Link>
+
+        <Link v-if="hasModulePermission('utilitarios')" href="/utilitarios"
+          class="group flex flex-col sm:flex-row items-center gap-1.5 sm:gap-4 p-1 sm:p-5 text-center sm:text-left rounded-2xl sm:bg-white hover:bg-amber-50/60 sm:hover:bg-amber-50/50 sm:border-2 sm:border-slate-100 sm:hover:border-amber-200 sm:shadow-sm sm:hover:shadow-md sm:hover:-translate-y-0.5 active:bg-amber-50 transition-all duration-300">
+          <div
+            class="w-10 h-10 sm:w-12 sm:h-12 bg-amber-600 rounded-2xl sm:rounded-xl flex items-center justify-center shadow-lg shadow-amber-600/30 group-hover:scale-110 transition-transform duration-300 flex-shrink-0">
+            <GraduationCap class="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+          </div>
+          <span class="text-[11px] sm:text-sm font-bold text-slate-800 sm:text-slate-900 leading-tight sm:leading-snug sm:flex-1">Utilitarios</span>
+          <ChevronRight class="hidden sm:block w-4 h-4 text-slate-300 group-hover:text-amber-500 group-hover:translate-x-1 transition-all duration-300 flex-shrink-0" />
         </Link>
       </div>
     </div>
@@ -328,7 +339,9 @@ import {
   Car,
   Calendar,
   Heart,
-  Box
+  Box,
+  GraduationCap,
+  ChevronRight
 } from 'lucide-vue-next';
 
 const props = defineProps({
