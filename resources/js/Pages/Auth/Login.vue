@@ -3,16 +3,16 @@
     <!-- Left Side Image (Height Fixed to 100vh on Desktop) -->
     <div class="w-full lg:w-1/2 hidden lg:flex h-full relative overflow-hidden flex-shrink-0">
       <img :src="selectedBg" alt="Fondo Emblemático Perú" class="absolute inset-0 w-full h-full object-cover transition-opacity duration-700" />
-      <div class="absolute inset-0 bg-gradient-to-br from-slate-950/90 via-blue-950/90 to-sky-950/85"></div>
+      <div class="absolute inset-0 bg-gradient-to-br from-slate-950/70 via-blue-950/45 to-sky-950/20"></div>
 
       <!-- Decorative Elements -->
-      <div class="absolute top-10 right-10 w-32 h-32 bg-sky-400/10 rounded-full blur-3xl"></div>
-      <div class="absolute bottom-20 left-20 w-40 h-40 bg-blue-600/15 rounded-full blur-3xl"></div>
+      <div class="absolute top-10 right-10 w-32 h-32 bg-sky-400/5 rounded-full blur-3xl"></div>
+      <div class="absolute bottom-20 left-20 w-40 h-40 bg-blue-600/10 rounded-full blur-3xl"></div>
 
       <div class="absolute inset-0 flex flex-col justify-end p-12">
         <div class="max-w-lg">
-          <h2 class="text-4xl font-bold text-white mb-4 leading-tight">Sistema de Gestión y Control Institucional</h2>
-          <p class="text-xl text-sky-200/90 leading-relaxed font-light">SGCI-DREH | Administración Integral</p>
+          <h2 class="text-4xl font-bold text-white mb-4 leading-tight drop-shadow-md">Sistema de Gestión y Control Institucional</h2>
+          <p class="text-xl text-sky-100 leading-relaxed font-light drop-shadow">SGCI-DREH | Administración Integral</p>
         </div>
       </div>
     </div>
