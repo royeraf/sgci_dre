@@ -7,9 +7,9 @@
         <title inertia>{{ config('app.name', 'SGCI DRE Huánuco') }}</title>
         
         <!-- Favicon -->
-        <link rel="icon" type="image/png" href="{{ asset('favicon.png') }}">
-        <link rel="icon" type="image/x-icon" href="{{ asset('favicon.ico') }}">
-        <link rel="apple-touch-icon" href="{{ asset('favicon.png') }}">
+        <link rel="icon" type="image/png" href="{{ asset('images/logo.png') }}?v=2">
+        <link rel="shortcut icon" href="{{ asset('images/logo.png') }}?v=2">
+        <link rel="apple-touch-icon" href="{{ asset('images/logo.png') }}?v=2">
         
         <!-- Fonts -->
         <link rel="preconnect" href="https://fonts.bunny.net">
