@@ -1,7 +1,7 @@
 <template>
-  <div class="flex h-screen w-full overflow-hidden bg-gradient-to-br from-slate-50 via-sky-50/40 to-blue-50/80">
-    <!-- Left Side Image (Height Fixed to 100vh) -->
-    <div class="w-1/2 hidden lg:flex h-full relative overflow-hidden flex-shrink-0">
+  <div class="flex flex-col lg:flex-row min-h-screen lg:h-screen w-full overflow-y-auto lg:overflow-hidden bg-gradient-to-br from-slate-50 via-sky-50/40 to-blue-50/80">
+    <!-- Left Side Image (Height Fixed to 100vh on Desktop) -->
+    <div class="w-full lg:w-1/2 hidden lg:flex h-full relative overflow-hidden flex-shrink-0">
       <img :src="selectedBg" alt="Fondo Emblemático Perú" class="absolute inset-0 w-full h-full object-cover transition-opacity duration-700" />
       <div class="absolute inset-0 bg-gradient-to-br from-slate-950/90 via-blue-950/90 to-sky-950/85"></div>
 
@@ -17,25 +17,35 @@
       </div>
     </div>
 
-    <!-- Right Side Form (Independent Scroll) -->
-    <div class="w-full lg:w-1/2 h-full overflow-y-auto flex flex-col items-center justify-center p-8 bg-white/60 backdrop-blur-md">
-      <div class="w-full max-w-md py-6">
+    <!-- Mobile Banner Header (Visible only on Mobile/Tablet < lg) -->
+    <div class="lg:hidden relative w-full h-44 sm:h-52 overflow-hidden flex-shrink-0 bg-slate-950 flex items-end p-6">
+      <img :src="selectedBg" alt="Fondo Emblemático Perú" class="absolute inset-0 w-full h-full object-cover opacity-60 transition-opacity duration-700" />
+      <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/70 to-transparent"></div>
+      <div class="relative z-10 text-left">
+        <h2 class="text-xl sm:text-2xl font-bold text-white leading-snug">Sistema de Gestión y Control Institucional</h2>
+        <p class="text-xs sm:text-sm text-sky-200/90 mt-1 font-light">SGCI-DREH | Dirección Regional de Educación Huánuco</p>
+      </div>
+    </div>
+
+    <!-- Right Side Form (Independent Scroll on Desktop, Natural Flow on Mobile) -->
+    <div class="w-full lg:w-1/2 min-h-0 lg:h-full overflow-y-auto flex flex-col items-center justify-center p-4 sm:p-8 bg-white/60 backdrop-blur-md flex-1">
+      <div class="w-full max-w-md py-4 sm:py-6">
         <!-- Logo/Header Card -->
-        <div class="text-center mb-10">
+        <div class="text-center mb-6 sm:mb-10">
           <div
-            class="inline-flex items-center justify-center w-24 h-24 bg-gradient-to-br from-blue-700 to-sky-900 rounded-3xl shadow-2xl shadow-blue-900/20 mb-6 ring-4 ring-blue-50 transform hover:scale-105 transition-transform duration-300">
+            class="inline-flex items-center justify-center w-20 h-20 sm:w-24 sm:h-24 bg-gradient-to-br from-blue-700 to-sky-900 rounded-3xl shadow-2xl shadow-blue-900/20 mb-4 sm:mb-6 ring-4 ring-blue-50 transform hover:scale-105 transition-transform duration-300">
             <img src="/images/logo.png" alt="DRE Logo"
               class="w-full h-full object-contain drop-shadow-md brightness-0 invert p-3" />
           </div>
           <h2
-            class="text-3xl font-extrabold bg-gradient-to-r from-blue-950 to-slate-800 bg-clip-text text-transparent mb-2">
+            class="text-2xl sm:text-3xl font-extrabold bg-gradient-to-r from-blue-950 to-slate-800 bg-clip-text text-transparent mb-1.5 sm:mb-2">
             Bienvenido de nuevo
           </h2>
-          <p class="text-slate-500 text-sm font-medium">SGCI-DREH | Sistema de Gestión y Control Institucional</p>
+          <p class="text-slate-500 text-xs sm:text-sm font-medium">SGCI-DREH | Sistema de Gestión y Control Institucional</p>
         </div>
 
         <!-- Error Alert -->
-        <div class="mb-6 min-h-[60px]">
+        <div class="mb-6 min-h-[50px]">
           <div v-if="form.errors.credentials || flashError" class="bg-red-50 border-2 border-red-200 rounded-xl p-4">
             <div class="flex items-start gap-3">
               <div class="flex-shrink-0">
@@ -47,8 +57,8 @@
         </div>
 
         <!-- Login Form Card -->
-        <div class="bg-white rounded-2xl shadow-xl shadow-blue-950/5 border-2 border-slate-200 p-8">
-          <form class="space-y-8" @submit.prevent="handleLogin">
+        <div class="bg-white rounded-2xl shadow-xl shadow-blue-950/5 border-2 border-slate-200 p-6 sm:p-8">
+          <form class="space-y-6 sm:space-y-8" @submit.prevent="handleLogin">
             <!-- DNI Field -->
             <div class="group relative">
               <label for="dni" class="block text-sm font-semibold text-slate-700 mb-2 cursor-pointer">
@@ -60,13 +70,13 @@
                 </div>
                 <input v-model="form.dni" type="text" id="dni" maxlength="8" inputmode="numeric" autocomplete="username"
                   @input="form.dni = $event.target.value.replace(/[\D\s]/g, ''); dniError = ''" :class="[
-                    'block w-full pl-10 pr-4 py-3 border-2 rounded-xl transition-all duration-200 ease-in-out focus:outline-none focus:ring-4 cursor-pointer',
+                    'block w-full pl-10 pr-4 py-3 text-sm sm:text-base border-2 rounded-xl transition-all duration-200 ease-in-out focus:outline-none focus:ring-4 cursor-pointer',
                     dniError || form.errors.dni
                       ? 'border-red-300 bg-red-50 focus:border-red-500 focus:ring-red-500/20'
                       : 'border-slate-200 bg-white hover:border-blue-400 focus:border-blue-600 focus:ring-blue-500/20'
                   ]" placeholder="DNI (8 dígitos)">
               </div>
-              <p v-if="dniError || form.errors.dni" class="mt-1 text-sm text-red-600 flex items-center gap-1">
+              <p v-if="dniError || form.errors.dni" class="mt-1 text-xs sm:text-sm text-red-600 flex items-center gap-1">
                 <AlertCircle class="w-4 h-4" />
                 {{ dniError || form.errors.dni }}
               </p>
@@ -83,7 +93,7 @@
                 </div>
                 <input v-model="form.password" :type="showPassword ? 'text' : 'password'" id="password" autocomplete="current-password"
                   @input="passwordError = ''" :class="[
-                  'block w-full pl-10 pr-12 py-3 border-2 rounded-xl transition-all duration-200 ease-in-out focus:outline-none focus:ring-4 cursor-pointer',
+                  'block w-full pl-10 pr-12 py-3 text-sm sm:text-base border-2 rounded-xl transition-all duration-200 ease-in-out focus:outline-none focus:ring-4 cursor-pointer',
                   passwordError || form.errors.password
                     ? 'border-red-300 bg-red-50 focus:border-red-500 focus:ring-red-500/20'
                     : 'border-slate-200 bg-white hover:border-blue-400 focus:border-blue-600 focus:ring-blue-500/20'
@@ -95,7 +105,7 @@
                   <EyeOff v-else class="h-5 w-5" />
                 </button>
               </div>
-              <p v-if="passwordError || form.errors.password" class="mt-1 text-sm text-red-600 flex items-center gap-1">
+              <p v-if="passwordError || form.errors.password" class="mt-1 text-xs sm:text-sm text-red-600 flex items-center gap-1">
                 <AlertCircle class="w-4 h-4" />
                 {{ passwordError || form.errors.password }}
               </p>
@@ -103,7 +113,7 @@
 
             <!-- Submit Button -->
             <button type="submit" :disabled="form.processing"
-              class="cursor-pointer w-full inline-flex items-center justify-center px-8 py-3 border border-transparent rounded-xl text-sm font-bold text-white bg-gradient-to-r from-blue-700 to-blue-900 hover:from-blue-800 hover:to-slate-900 focus:outline-none focus:ring-4 focus:ring-blue-500/20 shadow-lg shadow-blue-900/20 hover:shadow-xl transition-all duration-300 ease-in-out transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed">
+              class="cursor-pointer w-full inline-flex items-center justify-center px-6 sm:px-8 py-3 sm:py-3.5 border border-transparent rounded-xl text-sm font-bold text-white bg-gradient-to-r from-blue-700 to-blue-900 hover:from-blue-800 hover:to-slate-900 focus:outline-none focus:ring-4 focus:ring-blue-500/20 shadow-lg shadow-blue-900/20 hover:shadow-xl transition-all duration-300 ease-in-out transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed">
               <Loader2 v-if="form.processing" class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" />
               <LogIn v-else class="w-5 h-5 mr-2" />
               {{ form.processing ? 'Ingresando...' : 'Ingresar al Sistema' }}
@@ -113,7 +123,7 @@
 
         <!-- Footer -->
         <div class="mt-6 text-center">
-          <p class="text-sm text-slate-500">
+          <p class="text-xs sm:text-sm text-slate-500">
             © 2026 DRE Huánuco. Todos los derechos reservados.
           </p>
         </div>
