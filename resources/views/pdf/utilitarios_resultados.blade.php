@@ -25,12 +25,13 @@
         .stat-tasa     { background: #faf5ff; border: 1.5px solid #d8b4fe; color: #6b21a8; }
         .stat-promedio { background: #fefce8; border: 1.5px solid #fde68a; color: #92400e; }
 
-        table.data { width: calc(100% - 40px); margin: 0 20px; border-collapse: collapse; }
+        .table-wrap { margin: 0 20px; }
+        table.data { width: 100%; border-collapse: collapse; table-layout: fixed; }
         thead tr { background: #7c2d12; color: #fff; }
         thead th { padding: 7px 8px; text-align: left; font-size: 8px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; }
         tbody tr:nth-child(even) { background: #f8fafc; }
         tbody tr { border-bottom: 1px solid #e2e8f0; }
-        tbody td { padding: 6px 8px; vertical-align: middle; }
+        tbody td { padding: 6px 8px; vertical-align: middle; word-wrap: break-word; overflow-wrap: break-word; }
 
         .badge { display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 7.5px; font-weight: 700; }
         .badge-aprobado    { background: #dcfce7; color: #15803d; }
@@ -91,7 +92,17 @@
     @if($intentos->isEmpty())
         <div class="no-data">No se encontraron intentos registrados para este examen.</div>
     @else
+    <div class="table-wrap">
     <table class="data">
+        <colgroup>
+            <col style="width: 22%;">
+            <col style="width: 13%;">
+            <col style="width: 11%;">
+            <col style="width: 11%;">
+            <col style="width: 11%;">
+            <col style="width: 14%;">
+            <col style="width: 18%;">
+        </colgroup>
         <thead>
             <tr>
                 <th>Nombres y Apellidos</th>
@@ -106,7 +117,7 @@
         <tbody>
             @foreach ($intentos as $i)
             <tr>
-                <td style="max-width:130px;">{{ trim(($i['nombres'] ?? '') . ' ' . ($i['apellidos'] ?? '')) }}</td>
+                <td>{{ trim(($i['nombres'] ?? '') . ' ' . ($i['apellidos'] ?? '')) }}</td>
                 <td>{{ $i['numero_documento'] ?? '-' }}</td>
                 <td>{{ $i['numero_intento'] }}</td>
                 <td>{{ $i['aciertos'] }}/{{ $i['total_preguntas'] }}</td>
@@ -127,6 +138,7 @@
             @endforeach
         </tbody>
     </table>
+    </div>
     @endif
 
     <table class="footer-table">

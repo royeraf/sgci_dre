@@ -21,16 +21,17 @@
         .stat-total { background: #fff7ed; border: 1.5px solid #fed7aa; color: #9a3412; }
         .stat-dias  { background: #fefce8; border: 1.5px solid #fde68a; color: #92400e; }
 
-        table.data { width: calc(100% - 40px); margin: 0 20px; border-collapse: collapse; }
+        .table-wrap { margin: 0 20px; }
+        table.data { width: 100%; border-collapse: collapse; table-layout: fixed; }
         thead tr { background: #7c2d12; color: #fff; }
         thead th { padding: 6px 5px; text-align: center; font-size: 7px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px; }
         thead th.col-name { text-align: left; }
         tbody tr:nth-child(even) { background: #f8fafc; }
         tbody tr { border-bottom: 1px solid #e2e8f0; }
-        tbody td { padding: 5px; vertical-align: middle; text-align: center; }
-        tbody td.col-name { text-align: left; max-width: 110px; }
+        tbody td { padding: 5px; vertical-align: middle; text-align: center; word-wrap: break-word; overflow-wrap: break-word; }
+        tbody td.col-name { text-align: left; }
 
-        .mark-yes { color: #15803d; font-weight: 900; }
+        .mark-yes { color: #15803d; font-weight: bold; font-size: 10px; }
         .mark-no  { color: #cbd5e1; }
 
         .footer-table { width: calc(100% - 40px); margin: 14px 20px 0; border-top: 1px solid #e2e8f0; border-collapse: collapse; }
@@ -71,7 +72,19 @@
     @if($inscritos->isEmpty() || empty($dias))
         <div class="no-data">No se encontraron inscritos o días registrados para este evento.</div>
     @else
+    @php
+        $diaColWidth = count($dias) > 0 ? round(45 / count($dias), 2) : 0;
+    @endphp
+    <div class="table-wrap">
     <table class="data">
+        <colgroup>
+            <col style="width: 30%;">
+            <col style="width: 15%;">
+            @foreach ($dias as $dia)
+                <col style="width: {{ $diaColWidth }}%;">
+            @endforeach
+            <col style="width: 10%;">
+        </colgroup>
         <thead>
             <tr>
                 <th class="col-name">Nombres y Apellidos</th>
@@ -101,6 +114,7 @@
             @endforeach
         </tbody>
     </table>
+    </div>
     @endif
 
     <table class="footer-table">

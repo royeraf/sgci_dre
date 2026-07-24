@@ -20,12 +20,13 @@
         .stat-box .lbl { font-size: 7.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px; }
         .stat-total { background: #fff7ed; border: 1.5px solid #fed7aa; color: #9a3412; }
 
-        table.data { width: calc(100% - 40px); margin: 0 20px; border-collapse: collapse; }
+        .table-wrap { margin: 0 20px; }
+        table.data { width: 100%; border-collapse: collapse; table-layout: fixed; }
         thead tr { background: #7c2d12; color: #fff; }
         thead th { padding: 7px 8px; text-align: left; font-size: 8px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; }
         tbody tr:nth-child(even) { background: #f8fafc; }
         tbody tr { border-bottom: 1px solid #e2e8f0; }
-        tbody td { padding: 6px 8px; vertical-align: middle; }
+        tbody td { padding: 6px 8px; vertical-align: middle; word-wrap: break-word; overflow-wrap: break-word; }
 
         .footer-table { width: calc(100% - 40px); margin: 14px 20px 0; border-top: 1px solid #e2e8f0; border-collapse: collapse; }
         .footer-table td { padding-top: 8px; font-size: 7.5px; color: #94a3b8; }
@@ -61,7 +62,18 @@
     @if($inscritos->isEmpty())
         <div class="no-data">No se encontraron inscritos para este evento.</div>
     @else
+    <div class="table-wrap">
     <table class="data">
+        <colgroup>
+            <col style="width: 20%;">
+            <col style="width: 10%;">
+            <col style="width: 16%;">
+            <col style="width: 14%;">
+            <col style="width: 14%;">
+            <col style="width: 10%;">
+            <col style="width: 8%;">
+            <col style="width: 8%;">
+        </colgroup>
         <thead>
             <tr>
                 <th>Nombres y Apellidos</th>
@@ -77,7 +89,7 @@
         <tbody>
             @foreach ($inscritos as $i)
             <tr>
-                <td style="max-width:130px;">{{ trim(($i['nombres'] ?? '') . ' ' . ($i['apellidos'] ?? '')) }}</td>
+                <td>{{ trim(($i['nombres'] ?? '') . ' ' . ($i['apellidos'] ?? '')) }}</td>
                 <td>{{ $i['numero_documento'] ?? '-' }}</td>
                 <td>{{ $i['correo'] ?? '-' }}</td>
                 <td>{{ $i['direccion'] ?? '-' }}</td>
@@ -89,6 +101,7 @@
             @endforeach
         </tbody>
     </table>
+    </div>
     @endif
 
     <table class="footer-table">
