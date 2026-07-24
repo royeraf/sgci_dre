@@ -95,16 +95,18 @@
     <div class="table-wrap">
     <table class="data">
         <colgroup>
-            <col style="width: 22%;">
-            <col style="width: 13%;">
-            <col style="width: 11%;">
-            <col style="width: 11%;">
-            <col style="width: 11%;">
+            <col style="width: 6%;">
+            <col style="width: 20%;">
+            <col style="width: 12%;">
+            <col style="width: 10%;">
+            <col style="width: 10%;">
+            <col style="width: 10%;">
             <col style="width: 14%;">
             <col style="width: 18%;">
         </colgroup>
         <thead>
             <tr>
+                <th>N.º</th>
                 <th>Nombres y Apellidos</th>
                 <th>Documento</th>
                 <th>N.º Intento</th>
@@ -117,6 +119,7 @@
         <tbody>
             @foreach ($intentos as $i)
             <tr>
+                <td>{{ $loop->iteration }}</td>
                 <td>{{ trim(($i['nombres'] ?? '') . ' ' . ($i['apellidos'] ?? '')) }}</td>
                 <td>{{ $i['numero_documento'] ?? '-' }}</td>
                 <td>{{ $i['numero_intento'] }}</td>
