@@ -20,7 +20,7 @@ class UtilitariosReporteController extends Controller
             'evento' => $evento,
             'inscritos' => $inscritos,
             'total' => $inscritos->count(),
-        ])->setPaper('a4', 'landscape');
+        ])->setPaper('a4', 'portrait');
 
         return $pdf->download('inscritos_' . $evento->slug . '.pdf');
     }
@@ -47,7 +47,7 @@ class UtilitariosReporteController extends Controller
             'evento' => $evento,
             'dias' => $dias,
             'inscritos' => $inscritos,
-        ])->setPaper('a4', 'landscape');
+        ])->setPaper('a4', 'portrait');
 
         return $pdf->download('asistencia_' . $evento->slug . '.pdf');
     }
@@ -72,7 +72,7 @@ class UtilitariosReporteController extends Controller
             'notaMinima' => $notaMinima,
             'resumen' => $resumen,
             'intentos' => $intentos,
-        ])->setPaper('a4', 'landscape');
+        ])->setPaper('a4', 'portrait');
 
         return $pdf->download('resultados_' . $examen->slug . '.pdf');
     }
