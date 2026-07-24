@@ -503,6 +503,7 @@ const MODULE_TABS = {
     bienestar:        [{ key: 'licenses', label: 'Licencias' }, { key: 'balances', label: 'Saldos' }],
     papeletas:        [{ key: 'pendientes', label: 'Pendientes' }, { key: 'pendientes_rrhh', label: 'Pendientes RRHH' }, { key: 'historial', label: 'Historial' }, { key: 'reportes', label: 'Reportes' }],
     recursos_humanos: [{ key: 'personal', label: 'Personal' }, { key: 'vacaciones', label: 'Vacaciones' }, { key: 'directions', label: 'Direcciones' }, { key: 'cargos', label: 'Cargos' }, { key: 'tipos_contrato', label: 'Tipos de Contrato' }],
+    utilitarios:      [{ key: 'eventos', label: 'Eventos' }, { key: 'reportes', label: 'Reportes' }],
 };
 
 const props = defineProps({

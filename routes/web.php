@@ -18,6 +18,7 @@ use App\Http\Controllers\EventoAsistenciaController;
 use App\Http\Controllers\EventoAsistenciaPublicaController;
 use App\Http\Controllers\ExamenController;
 use App\Http\Controllers\ExamenPublicoController;
+use App\Http\Controllers\UtilitariosReporteController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -306,6 +307,11 @@ Route::middleware('auth')->group(function () {
         Route::patch('/eventos/{evento}/examenes/{examen}/habilitado', [ExamenController::class, 'toggleHabilitado'])->name('eventos.examenes.habilitado');
         Route::get('/eventos/{evento}/examenes/{examen}/resultados', [ExamenController::class, 'resultados'])->name('eventos.examenes.resultados');
         Route::get('/eventos/{evento}/examenes/{examen}/resultados/{intento}/detalle', [ExamenController::class, 'detalleIntento'])->name('eventos.examenes.resultados.detalle');
+
+        // Reportes (PDF)
+        Route::get('/eventos/{evento}/reportes/inscritos/pdf', [UtilitariosReporteController::class, 'inscritosPdf'])->name('reportes.inscritos.pdf');
+        Route::get('/eventos/{evento}/reportes/asistencia/pdf', [UtilitariosReporteController::class, 'asistenciaPdf'])->name('reportes.asistencia.pdf');
+        Route::get('/eventos/{evento}/examenes/{examen}/reportes/resultados/pdf', [UtilitariosReporteController::class, 'resultadosPdf'])->name('reportes.resultados.pdf');
     });
 
     // User Management (Admin only)

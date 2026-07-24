@@ -173,7 +173,7 @@ class ExamenController extends Controller
         $query = $examen->intentos()->with('inscripcion.person');
         $this->aplicarFiltrosResultados($query, $request, $notaMinima);
 
-        $resumen = $this->calcularResumenResultados((clone $query), $notaMinima);
+        $resumen = self::calcularResumenResultados((clone $query), $notaMinima);
 
         $intentos = $query->orderBy('iniciado_en', 'desc')
             ->paginate($request->input('per_page', 15))
@@ -279,7 +279,12 @@ class ExamenController extends Controller
         }
     }
 
-    private function calcularResumenResultados($query, ?float $notaMinima): array
+    /**
+     * Calcula el resumen agregado (total, finalizados, aprobados, tasa, promedio) de un
+     * query de intentos. Se expone como público/estático para poder reutilizarlo desde
+     * UtilitariosReporteController al generar el PDF de resultados.
+     */
+    public static function calcularResumenResultados($query, ?float $notaMinima): array
     {
         $total = (clone $query)->count();
         $finalizados = (clone $query)->whereNotNull('finalizado_en')->count();

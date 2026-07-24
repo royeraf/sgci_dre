@@ -11,39 +11,85 @@
                 </div>
             </div>
 
-            <BaseTableCard
-                title="Eventos y Capacitaciones"
-                description="Cree eventos y comparta el enlace de inscripción con los participantes"
-                search-placeholder="Buscar por título..."
-                v-model:searchValue="search"
-            >
-                <template #actions>
-                    <button @click="filtersVisible = !filtersVisible"
-                        class="cursor-pointer inline-flex justify-center items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-sm font-bold text-slate-600 hover:bg-slate-50 transition-all duration-200 shadow-sm">
-                        <SlidersHorizontal class="w-4 h-4" />
-                        Filtros
-                        <ChevronDown class="w-4 h-4 transition-transform duration-300" :class="{ 'rotate-180': filtersVisible }" />
+            <!-- Tabs Navigation -->
+            <div class="border-b border-slate-200 mb-8 relative">
+                <nav ref="tabsRef" class="-mb-px flex">
+                    <button v-if="canViewTab('eventos')"
+                        @click="activeTab = 'eventos'"
+                        :class="[
+                            activeTab === 'eventos'
+                                ? 'text-amber-600 active-tab'
+                                : 'text-slate-500 hover:text-slate-700',
+                            'cursor-pointer whitespace-nowrap py-4 px-5 font-bold text-sm flex items-center gap-2 transition-colors duration-300'
+                        ]"
+                    >
+                        <ClipboardList class="w-5 h-5" />
+                        Eventos y Capacitaciones
                     </button>
-
-                    <button @click="createNewEvento"
-                        class="cursor-pointer inline-flex items-center px-5 py-2.5 text-sm font-bold rounded-xl shadow-lg shadow-amber-500/30 text-white bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 transition-all duration-300 hover:-translate-y-0.5">
-                        <Plus class="w-4 h-4 mr-2" />
-                        Nuevo Evento
+                    <button v-if="canViewTab('reportes')"
+                        @click="activeTab = 'reportes'"
+                        :class="[
+                            activeTab === 'reportes'
+                                ? 'text-orange-600 active-tab'
+                                : 'text-slate-500 hover:text-slate-700',
+                            'cursor-pointer whitespace-nowrap py-4 px-5 font-bold text-sm flex items-center gap-2 transition-colors duration-300'
+                        ]"
+                    >
+                        <FileText class="w-5 h-5" />
+                        Reportes
                     </button>
-                </template>
+                </nav>
+                <!-- Gliding Indicator -->
+                <div class="absolute bottom-0 h-0.5 transition-all duration-300 ease-out" :style="indicatorStyle"></div>
+            </div>
 
-                <div class="filters-collapse bg-slate-50 border-b border-slate-100" :class="{ 'filters-collapse--open': filtersVisible }">
-                    <div class="p-4 sm:p-5">
-                        <EventoFiltros :filters="localFilters" :result-count="filteredEventos.length"
-                            @update:filters="localFilters = $event" @clear="clearFilters" />
+            <!-- Tab Content with Transition -->
+            <Transition name="fade-slide" mode="out-in">
+                <div :key="activeTab">
+
+            <!-- Eventos Tab Content -->
+            <div v-if="activeTab === 'eventos'">
+                <BaseTableCard
+                    title="Eventos y Capacitaciones"
+                    description="Cree eventos y comparta el enlace de inscripción con los participantes"
+                    search-placeholder="Buscar por título..."
+                    v-model:searchValue="search"
+                >
+                    <template #actions>
+                        <button @click="filtersVisible = !filtersVisible"
+                            class="cursor-pointer inline-flex justify-center items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-sm font-bold text-slate-600 hover:bg-slate-50 transition-all duration-200 shadow-sm">
+                            <SlidersHorizontal class="w-4 h-4" />
+                            Filtros
+                            <ChevronDown class="w-4 h-4 transition-transform duration-300" :class="{ 'rotate-180': filtersVisible }" />
+                        </button>
+
+                        <button @click="createNewEvento"
+                            class="cursor-pointer inline-flex items-center px-5 py-2.5 text-sm font-bold rounded-xl shadow-lg shadow-amber-500/30 text-white bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 transition-all duration-300 hover:-translate-y-0.5">
+                            <Plus class="w-4 h-4 mr-2" />
+                            Nuevo Evento
+                        </button>
+                    </template>
+
+                    <div class="filters-collapse bg-slate-50 border-b border-slate-100" :class="{ 'filters-collapse--open': filtersVisible }">
+                        <div class="p-4 sm:p-5">
+                            <EventoFiltros :filters="localFilters" :result-count="filteredEventos.length"
+                                @update:filters="localFilters = $event" @clear="clearFilters" />
+                        </div>
+                    </div>
+
+                    <EventoTable :eventos="filteredEventos" :loading="isLoading" v-model:currentPage="currentPage"
+                        v-model:perPage="perPage" @edit="editEvento" @delete="handleDeleteEvento"
+                        @view-detalle="verDetalle" @view-inscritos="verInscritos" @view-examenes="verExamenes"
+                        @change-estado="cambiarEstado" />
+                </BaseTableCard>
+            </div>
+
+                    <!-- Reportes Tab Content -->
+                    <div v-else-if="activeTab === 'reportes'">
+                        <UtilitariosReports :eventos="eventos" />
                     </div>
                 </div>
-
-                <EventoTable :eventos="filteredEventos" :loading="isLoading" v-model:currentPage="currentPage"
-                    v-model:perPage="perPage" @edit="editEvento" @delete="handleDeleteEvento"
-                    @view-detalle="verDetalle" @view-inscritos="verInscritos" @view-examenes="verExamenes"
-                    @change-estado="cambiarEstado" />
-            </BaseTableCard>
+            </Transition>
 
             <EventoModal v-if="showEventoModal" :evento="selectedEvento" :is-editing="isEditing"
                 :submitting="isSubmitting" @close="closeEventoModal" @submit="saveEvento" />
@@ -64,16 +110,49 @@ export default {
 </script>
 
 <script setup>
-import { ref, onMounted, onUnmounted, computed, watch } from 'vue';
+import { ref, onMounted, onUnmounted, computed, watch, nextTick } from 'vue';
 import axios from 'axios';
 import { router } from '@inertiajs/vue3';
-import { Plus, SlidersHorizontal, ChevronDown } from 'lucide-vue-next';
+import { Plus, SlidersHorizontal, ChevronDown, FileText, ClipboardList } from 'lucide-vue-next';
 
 import BaseTableCard from '@/Components/Common/BaseTableCard.vue';
 import EventoTable from '@/Components/Utilitarios/Eventos/EventoTable.vue';
 import EventoModal from '@/Components/Utilitarios/Eventos/EventoModal.vue';
 import EventoDetalleModal from '@/Components/Utilitarios/Eventos/EventoDetalleModal.vue';
 import EventoFiltros from '@/Components/Utilitarios/Eventos/EventoFiltros.vue';
+import UtilitariosReports from '@/Components/Utilitarios/Reports/UtilitariosReports.vue';
+import { useTabPermission } from '@/composables/useTabPermission';
+
+const { canViewTab, firstAllowedTab } = useTabPermission('utilitarios', ['eventos', 'reportes']);
+const activeTab = ref(firstAllowedTab.value);
+
+// Tab indicator logic
+const tabsRef = ref(null);
+const indicatorStyle = ref({ left: '0px', width: '0px', backgroundColor: '' });
+
+const getIndicatorColor = (tab) => {
+    switch (tab) {
+        case 'eventos': return '#d97706'; // amber-600
+        case 'reportes': return '#ea580c'; // orange-600
+        default: return '#d97706';
+    }
+};
+
+const updateIndicator = () => {
+    if (!tabsRef.value) return;
+    const activeBtn = tabsRef.value.querySelector('.active-tab');
+    if (activeBtn) {
+        indicatorStyle.value = {
+            left: `${activeBtn.offsetLeft}px`,
+            width: `${activeBtn.offsetWidth}px`,
+            backgroundColor: getIndicatorColor(activeTab.value)
+        };
+    }
+};
+
+watch(activeTab, () => {
+    nextTick(updateIndicator);
+});
 
 const isLoading = ref(false);
 const isSubmitting = ref(false);
@@ -303,6 +382,7 @@ const incrementarContador = (nuevaInscripcion) => {
 
 onMounted(() => {
     fetchEventos();
+    nextTick(updateIndicator);
 
     if (typeof window.Echo !== 'undefined') {
         try {
@@ -330,6 +410,21 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
+.fade-slide-enter-active,
+.fade-slide-leave-active {
+    transition: all 0.3s ease;
+}
+
+.fade-slide-enter-from {
+    opacity: 0;
+    transform: translateX(10px);
+}
+
+.fade-slide-leave-to {
+    opacity: 0;
+    transform: translateX(-10px);
+}
+
 .filters-collapse {
     overflow: hidden;
     max-height: 0;
