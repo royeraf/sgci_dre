@@ -1,6 +1,9 @@
 <script setup>
 import { ref, computed, watch } from 'vue';
-import { FileText, Calendar, ChevronDown, Download, Tag, Users, ClipboardCheck, GraduationCap } from 'lucide-vue-next';
+import { FileText, Calendar, ChevronDown, Eye, Tag, Users, ClipboardCheck, GraduationCap } from 'lucide-vue-next';
+import { usePdfViewer } from '@/composables/usePdfViewer';
+
+const { openPdf } = usePdfViewer();
 
 const props = defineProps({
     eventos: {
@@ -44,15 +47,38 @@ const canGenerate = computed(() => {
     return true;
 });
 
+const slugify = (text) =>
+    (text || 'reporte')
+        .toString()
+        .normalize('NFD')
+        .replace(/[̀-ͯ]/g, '')
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '_')
+        .replace(/^_+|_+$/g, '');
+
 const generateReport = () => {
     if (!canGenerate.value) return;
 
+    const eventoSlug = slugify(selectedEvento.value?.titulo);
+
     if (reportType.value === 'inscritos') {
-        window.open(`/utilitarios/eventos/${selectedEventoId.value}/reportes/inscritos/pdf`, '_blank');
+        openPdf({
+            src: `/utilitarios/eventos/${selectedEventoId.value}/reportes/inscritos/pdf`,
+            filename: `inscritos_${eventoSlug}.pdf`,
+        });
     } else if (reportType.value === 'asistencia') {
-        window.open(`/utilitarios/eventos/${selectedEventoId.value}/reportes/asistencia/pdf`, '_blank');
+        openPdf({
+            src: `/utilitarios/eventos/${selectedEventoId.value}/reportes/asistencia/pdf`,
+            filename: `asistencia_${eventoSlug}.pdf`,
+        });
     } else if (reportType.value === 'resultados') {
-        window.open(`/utilitarios/eventos/${selectedEventoId.value}/examenes/${selectedExamenId.value}/reportes/resultados/pdf`, '_blank');
+        const examenSlug = slugify(
+            examenesDelEvento.value.find((e) => e.id === selectedExamenId.value)?.titulo
+        );
+        openPdf({
+            src: `/utilitarios/eventos/${selectedEventoId.value}/examenes/${selectedExamenId.value}/reportes/resultados/pdf`,
+            filename: `resultados_${examenSlug}.pdf`,
+        });
     }
 };
 </script>
@@ -139,8 +165,8 @@ const generateReport = () => {
             <div v-if="canGenerate" class="flex flex-col items-center gap-3">
                 <button @click="generateReport"
                     class="cursor-pointer inline-flex items-center justify-center px-8 py-3.5 bg-gradient-to-r from-amber-600 to-orange-600 text-white font-black rounded-2xl shadow-xl shadow-amber-200 hover:shadow-amber-300 transition-all duration-300 transform hover:-translate-y-0.5 active:translate-y-0">
-                    <Download class="w-5 h-5 mr-3" />
-                    Descargar Reporte PDF
+                    <Eye class="w-5 h-5 mr-3" />
+                    Ver Reporte PDF
                 </button>
                 <p class="text-xs text-slate-500 font-medium opacity-80">
                     {{ selectedEvento?.titulo }}

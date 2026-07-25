@@ -451,6 +451,9 @@
 
         <!-- User Profile Modal -->
         <UserProfileModal :show="showProfileModal" @close="showProfileModal = false" />
+
+        <!-- Visor de PDF global -->
+        <PdfViewer />
     </div>
 </template>
 
@@ -481,6 +484,7 @@ import {
     GraduationCap,
 } from 'lucide-vue-next';
 import UserProfileModal from '@/Components/Profile/UserProfileModal.vue';
+import PdfViewer from '@/Components/Common/PdfViewer.vue';
 
 const UserGroup = Users;
 
