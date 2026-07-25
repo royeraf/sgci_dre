@@ -26,5 +26,22 @@ export default defineConfig({
             '@': fileURLToPath(new URL('./resources/js', import.meta.url)),
         },
     },
+    build: {
+        rollupOptions: {
+            output: {
+                // El hosting de producción no sirve .mjs con el content-type
+                // correcto (nginx no lo mapea a application/javascript), lo
+                // que hace que el navegador rechace el worker de pdf.js por
+                // MIME type inválido. Forzamos .js para todos los assets.
+                assetFileNames: (assetInfo) => {
+                    const name = assetInfo.name ?? assetInfo.names?.[0] ?? '';
+                    if (name.endsWith('.mjs')) {
+                        return 'assets/[name]-[hash].js';
+                    }
+                    return 'assets/[name]-[hash][extname]';
+                },
+            },
+        },
+    },
 });
 
