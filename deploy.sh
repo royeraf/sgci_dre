@@ -76,6 +76,9 @@ do_vps_deploy() {
 
     # ── Git pull ──────────────────────────────────────────
     print_step "Descargando cambios (git pull)"
+    # npm/pnpm install modifica package-lock.json localmente en cada deploy;
+    # se descarta antes del pull para que nunca bloquee el merge.
+    git checkout -- package-lock.json 2>/dev/null || true
     git pull origin main || { print_error "git pull falló. Revisa conflictos."; exit 1; }
     print_ok "Código actualizado"
 
