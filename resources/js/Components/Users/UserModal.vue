@@ -395,7 +395,7 @@ import { ref, watch, computed, onMounted, onUnmounted, nextTick } from 'vue';
 import { useForm } from 'vee-validate';
 import { toTypedSchema } from '@vee-validate/yup';
 import * as yup from 'yup';
-import { X, UserCog, UserCheck, Key, Loader2, Eye, EyeOff, Search, LayoutGrid, LayoutDashboard, ClipboardList, Users, Car, Box, CalendarDays, Heart, FileText, Briefcase, Fingerprint } from 'lucide-vue-next';
+import { X, UserCog, UserCheck, Key, Loader2, Eye, EyeOff, Search, LayoutGrid, LayoutDashboard, ClipboardList, Users, Car, Box, CalendarDays, Heart, FileText, Briefcase, Fingerprint, GraduationCap } from 'lucide-vue-next';
 
 // Custom scrollbar
 const scrollRef = ref(null);
@@ -481,6 +481,7 @@ const ALL_MODULES = [
     { key: 'papeletas',        label: 'Papeletas de Salida',    icon: FileText },
     { key: 'recursos_humanos', label: 'Recursos Humanos',       icon: Briefcase },
     { key: 'asistencia',       label: 'Marcas de Asistencia',   icon: Fingerprint },
+    { key: 'utilitarios',      label: 'Utilitarios (Eventos y Asistencia)', icon: GraduationCap },
 ];
 
 // Módulos pre-asignados por defecto según el rol seleccionado
@@ -502,6 +503,7 @@ const MODULE_TABS = {
     bienestar:        [{ key: 'licenses', label: 'Licencias' }, { key: 'balances', label: 'Saldos' }],
     papeletas:        [{ key: 'pendientes', label: 'Pendientes' }, { key: 'pendientes_rrhh', label: 'Pendientes RRHH' }, { key: 'historial', label: 'Historial' }, { key: 'reportes', label: 'Reportes' }],
     recursos_humanos: [{ key: 'personal', label: 'Personal' }, { key: 'vacaciones', label: 'Vacaciones' }, { key: 'directions', label: 'Direcciones' }, { key: 'cargos', label: 'Cargos' }, { key: 'tipos_contrato', label: 'Tipos de Contrato' }],
+    utilitarios:      [{ key: 'eventos', label: 'Eventos' }, { key: 'reportes', label: 'Reportes' }],
 };
 
 const props = defineProps({

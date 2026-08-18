@@ -12,6 +12,13 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\PapeletaPortalController;
 use App\Http\Controllers\PapeletaAdminController;
+use App\Http\Controllers\EventoController;
+use App\Http\Controllers\EventoInscripcionController;
+use App\Http\Controllers\EventoAsistenciaController;
+use App\Http\Controllers\EventoAsistenciaPublicaController;
+use App\Http\Controllers\ExamenController;
+use App\Http\Controllers\ExamenPublicoController;
+use App\Http\Controllers\UtilitariosReporteController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -63,6 +70,31 @@ Route::get('/citas/status/{dni}', [AppointmentController::class, 'checkStatus'])
 
 // Public Visitors Portal
 Route::get('/visitas/publico', [ExternalVisitController::class, 'publicIndex'])->name('visitas.publico');
+
+// Public Event Registration (Utilitarios)
+// Rutas públicas sin autenticación por diseño: el participante externo no tiene
+// cuenta en el sistema. Se limitan con throttle para mitigar abuso/enumeración.
+Route::middleware('throttle:inscripcion-consultar-dni')->get('/utilitarios/inscripcion/api/consultar-dni', [EventoInscripcionController::class, 'consultarDni'])->name('utilitarios.inscripcion.consultar-dni');
+Route::middleware('throttle:30,1')->get('/utilitarios/inscripcion/{evento:slug}', [EventoInscripcionController::class, 'show'])->name('utilitarios.inscripcion.show');
+Route::middleware('throttle:inscripcion-store')->post('/utilitarios/inscripcion/{evento:slug}', [EventoInscripcionController::class, 'store'])->name('utilitarios.inscripcion.store');
+
+// Public Event Attendance (self check-in): el propio inscrito marca su asistencia
+// ingresando su DNI, disponible solo durante el horario del evento.
+Route::middleware('throttle:30,1')->get('/utilitarios/asistencia/{evento:slug}', [EventoAsistenciaPublicaController::class, 'show'])->name('utilitarios.asistencia.show');
+Route::middleware('throttle:asistencia-marcar')->post('/utilitarios/asistencia/{evento:slug}', [EventoAsistenciaPublicaController::class, 'marcar'])->name('utilitarios.asistencia.marcar');
+
+// Public Exam Taking: el inscrito rinde un examen de alternativas por link público,
+// identificándose con su DNI, dentro de la ventana programada y con el interruptor
+// manual del organizador activado (mismo criterio que la asistencia).
+// withoutScopedBindings(): Laravel intenta adivinar automáticamente una relación
+// "examens" (plural en inglés) en Evento para el binding anidado {evento}/{examen};
+// como el modelo usa el plural correcto en español "examenes", se desactiva ese
+// guess y la pertenencia se valida explícitamente en el controlador.
+Route::middleware('throttle:30,1')->get('/utilitarios/examen/{evento:slug}/{examen:slug}', [ExamenPublicoController::class, 'show'])->name('utilitarios.examen.show')->withoutScopedBindings();
+Route::middleware('throttle:examen-iniciar')->post('/utilitarios/examen/{evento:slug}/{examen:slug}/iniciar', [ExamenPublicoController::class, 'iniciar'])->name('utilitarios.examen.iniciar')->withoutScopedBindings();
+Route::middleware('throttle:examen-intento')->get('/utilitarios/examen/{evento:slug}/{examen:slug}/{intento}', [ExamenPublicoController::class, 'rendir'])->name('utilitarios.examen.rendir')->withoutScopedBindings();
+Route::middleware('throttle:examen-intento')->post('/utilitarios/examen/{evento:slug}/{examen:slug}/{intento}/responder', [ExamenPublicoController::class, 'responder'])->name('utilitarios.examen.responder')->withoutScopedBindings();
+Route::middleware('throttle:examen-intento')->post('/utilitarios/examen/{evento:slug}/{examen:slug}/{intento}/finalizar', [ExamenPublicoController::class, 'finalizar'])->name('utilitarios.examen.finalizar')->withoutScopedBindings();
 
 // Protected routes
 Route::middleware('auth')->group(function () {
@@ -246,6 +278,41 @@ Route::middleware('auth')->group(function () {
         Route::get('/api/marcas', [App\Http\Controllers\AsistenciaController::class, 'getMarcas'])->name('marcas');
         Route::post('/api/marcas', [App\Http\Controllers\AsistenciaController::class, 'storeMarca'])->name('store');
         Route::delete('/api/marcas/{marca}', [App\Http\Controllers\AsistenciaController::class, 'deleteMarca'])->name('delete');
+    });
+
+    // Utilitarios - Eventos (cursos, seminarios, capacitaciones) e inscripciones
+    Route::middleware('role:ROL001')->prefix('utilitarios')->name('utilitarios.')->group(function () {
+        Route::get('/', [EventoController::class, 'index'])->name('index');
+
+        // Eventos
+        Route::get('/eventos', [EventoController::class, 'getEventos'])->name('eventos.list');
+        Route::post('/eventos', [EventoController::class, 'store'])->name('eventos.store');
+        Route::put('/eventos/{evento}', [EventoController::class, 'update'])->name('eventos.update');
+        Route::delete('/eventos/{evento}', [EventoController::class, 'destroy'])->name('eventos.destroy');
+        Route::patch('/eventos/{evento}/estado', [EventoController::class, 'cambiarEstado'])->name('eventos.estado');
+
+        // Inscritos y asistencia por día
+        Route::get('/eventos/{evento}/inscritos', [EventoAsistenciaController::class, 'index'])->name('eventos.inscritos');
+        Route::get('/eventos/{evento}/inscritos/data', [EventoAsistenciaController::class, 'data'])->name('eventos.inscritos.data');
+        Route::post('/eventos/{evento}/inscritos/{inscripcion}/asistencia', [EventoAsistenciaController::class, 'marcar'])->name('eventos.inscritos.asistencia.marcar');
+        Route::delete('/eventos/{evento}/inscritos/{inscripcion}/asistencia', [EventoAsistenciaController::class, 'desmarcar'])->name('eventos.inscritos.asistencia.desmarcar');
+        Route::patch('/eventos/{evento}/asistencia-habilitada', [EventoAsistenciaController::class, 'toggleAsistenciaHabilitada'])->name('eventos.asistencia-habilitada');
+
+        // Exámenes de alternativas por evento
+        Route::get('/eventos/{evento}/examenes', [ExamenController::class, 'index'])->name('eventos.examenes.index');
+        Route::post('/eventos/{evento}/examenes', [ExamenController::class, 'store'])->name('eventos.examenes.store');
+        Route::put('/eventos/{evento}/examenes/{examen}', [ExamenController::class, 'update'])->name('eventos.examenes.update');
+        Route::delete('/eventos/{evento}/examenes/{examen}', [ExamenController::class, 'destroy'])->name('eventos.examenes.destroy');
+        Route::post('/eventos/{evento}/examenes/{examen}/duplicar', [ExamenController::class, 'duplicar'])->name('eventos.examenes.duplicar');
+        Route::patch('/eventos/{evento}/examenes/{examen}/estado', [ExamenController::class, 'cambiarEstado'])->name('eventos.examenes.estado');
+        Route::patch('/eventos/{evento}/examenes/{examen}/habilitado', [ExamenController::class, 'toggleHabilitado'])->name('eventos.examenes.habilitado');
+        Route::get('/eventos/{evento}/examenes/{examen}/resultados', [ExamenController::class, 'resultados'])->name('eventos.examenes.resultados');
+        Route::get('/eventos/{evento}/examenes/{examen}/resultados/{intento}/detalle', [ExamenController::class, 'detalleIntento'])->name('eventos.examenes.resultados.detalle');
+
+        // Reportes (PDF)
+        Route::get('/eventos/{evento}/reportes/inscritos/pdf', [UtilitariosReporteController::class, 'inscritosPdf'])->name('reportes.inscritos.pdf');
+        Route::get('/eventos/{evento}/reportes/asistencia/pdf', [UtilitariosReporteController::class, 'asistenciaPdf'])->name('reportes.asistencia.pdf');
+        Route::get('/eventos/{evento}/examenes/{examen}/reportes/resultados/pdf', [UtilitariosReporteController::class, 'resultadosPdf'])->name('reportes.resultados.pdf');
     });
 
     // User Management (Admin only)
