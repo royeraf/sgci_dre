@@ -19,7 +19,7 @@
                         <p class="text-blue-100 text-sm mt-1">{{ isEditing ? 'Actualice los datos de la autorización' :
                             'Complete los datos de la autorización de salida del vehículo' }}</p>
                     </div>
-                    <button @click="$emit('close')" class="text-blue-100 hover:text-white transition-colors p-1">
+                    <button @click="$emit('close')" class="cursor-pointer text-blue-100 hover:text-white transition-colors p-1">
                         <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                 d="M6 18L18 6M6 6l12 12" />
@@ -39,49 +39,19 @@
                         </h4>
                         
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <!-- Servidor o funcionario que solicita -->
-                            <div class="md:col-span-2 relative" ref="employeeDropdownRef">
+                            <!-- Servidor o funcionario que solicita: siempre el usuario logueado -->
+                            <div class="md:col-span-2">
                                 <label class="block text-sm font-bold text-slate-700 mb-2">
-                                    Servidor o Funcionario que Solicita <span class="text-red-500">*</span>
+                                    Servidor o Funcionario que Solicita
                                 </label>
-
-                                <!-- Empleado seleccionado (chip) -->
-                                <div v-if="selectedEmployeeData"
-                                    class="flex items-center gap-2 px-4 py-2.5 border border-blue-300 bg-blue-50 rounded-xl">
-                                    <svg class="w-4 h-4 text-blue-600 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                                <div class="flex items-center gap-2 px-4 py-2.5 border border-slate-200 bg-slate-50 rounded-xl">
+                                    <svg class="w-4 h-4 text-slate-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                                     </svg>
-                                    <div class="flex-1 min-w-0">
-                                        <p class="text-sm font-semibold text-blue-900 truncate">{{ selectedEmployeeData.nombre_completo }}</p>
-                                        <p v-if="selectedEmployeeData.cargo" class="text-xs text-blue-500 truncate">{{ selectedEmployeeData.cargo }}</p>
-                                    </div>
-                                    <button type="button" @click="clearEmployee"
-                                        class="flex-shrink-0 p-0.5 rounded-full hover:bg-blue-200 transition-colors text-blue-500 hover:text-blue-700">
-                                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                                        </svg>
-                                    </button>
+                                    <p class="text-sm font-semibold text-slate-700">
+                                        {{ isEditing ? (commission.solicitante || currentUserName) : currentUserName }}
+                                    </p>
                                 </div>
-
-                                <!-- Buscador -->
-                                <div v-else class="relative">
-                                    <input type="text" v-model="employeeSearchQuery" @focus="showEmployeeDropdown = true"
-                                        placeholder="Buscar por nombre o DNI..."
-                                        class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white border-slate-200"
-                                        :class="formErrors.solicitante_employee_id ? 'border-red-400' : 'border-slate-200'">
-                                    <div v-if="showEmployeeDropdown && filteredEmployees.length > 0"
-                                        class="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl max-h-60 overflow-y-auto">
-                                        <button type="button" v-for="emp in filteredEmployees" :key="emp.id"
-                                            @click="selectEmployee(emp)"
-                                            class="w-full text-left px-4 py-2.5 hover:bg-blue-50 transition-colors flex items-center gap-3 border-b border-slate-50 last:border-0">
-                                            <div class="flex-1 min-w-0">
-                                                <p class="font-semibold text-slate-700 text-sm truncate">{{ emp.nombre_completo }}</p>
-                                                <p class="text-xs text-slate-400 truncate">{{ emp.cargo || 'Sin cargo' }} · DNI: {{ emp.dni }}</p>
-                                            </div>
-                                        </button>
-                                    </div>
-                                </div>
-                                <p v-if="formErrors.solicitante_employee_id" class="mt-1 text-sm text-red-600">{{ formErrors.solicitante_employee_id }}</p>
                             </div>
 
                             <!-- Lugar -->
@@ -90,7 +60,7 @@
                                     Lugar de Destino <span class="text-red-500">*</span>
                                 </label>
                                 <input type="text" v-model="lugar" v-bind="lugarProps"
-                                    class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white"
+                                    class="w-full px-4 py-2.5 border-2 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-colors bg-white"
                                     :class="formErrors.lugar ? 'border-red-400' : 'border-slate-200'"
                                     placeholder="Ej: Lima - Sede MINEDU">
                                 <p v-if="formErrors.lugar" class="mt-1 text-sm text-red-600">{{ formErrors.lugar }}</p>
@@ -100,7 +70,7 @@
                             <div class="col-span-1">
                                 <label class="block text-sm font-bold text-slate-700 mb-2">Referencia / Documento</label>
                                 <input type="text" v-model="referencia" v-bind="referenciaProps"
-                                    class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white"
+                                    class="w-full px-4 py-2.5 border-2 border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-colors bg-white"
                                     placeholder="Ej: Oficio Nº 001-2026-DREH">
                             </div>
 
@@ -110,7 +80,7 @@
                                     Fecha Programada <span class="text-red-500">*</span>
                                 </label>
                                 <input type="date" v-model="dia" v-bind="diaProps"
-                                    class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white"
+                                    class="w-full px-4 py-2.5 border-2 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-colors bg-white"
                                     :class="formErrors.dia ? 'border-red-400' : 'border-slate-200'">
                                 <p v-if="formErrors.dia" class="mt-1 text-sm text-red-600">{{ formErrors.dia }}</p>
                             </div>
@@ -121,7 +91,7 @@
                                     Hora Programada <span class="text-red-500">*</span>
                                 </label>
                                 <input type="time" v-model="hora" v-bind="horaProps"
-                                    class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white"
+                                    class="w-full px-4 py-2.5 border-2 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-colors bg-white"
                                     :class="formErrors.hora ? 'border-red-400' : 'border-slate-200'">
                                 <p v-if="formErrors.hora" class="mt-1 text-sm text-red-600">{{ formErrors.hora }}</p>
                             </div>
@@ -131,7 +101,7 @@
                                 <label class="block text-sm font-bold text-slate-700 mb-2">Motivo de la Salida</label>
                                 <textarea v-model="motivo" v-bind="motivoProps" rows="2"
                                     placeholder="Describa el motivo de la comisión..."
-                                    class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none bg-white"></textarea>
+                                    class="w-full px-4 py-2.5 border-2 border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none resize-none bg-white"></textarea>
                             </div>
                         </div>
                     </div>
@@ -150,7 +120,7 @@
                             <div class="col-span-1">
                                 <label class="block text-sm font-bold text-slate-700 mb-2">Vehículo</label>
                                 <select v-model="vehicleId" v-bind="vehicleIdProps"
-                                    class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white">
+                                    class="w-full px-4 py-2.5 border-2 border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none bg-white">
                                     <option value="">Seleccionar vehículo</option>
                                     <option v-for="v in vehicles" :key="v.id" :value="v.id">{{ v.placa }} - {{ v.marca }} {{
                                         v.modelo }}</option>
@@ -163,7 +133,7 @@
                                     Conductor <span class="text-red-500">*</span>
                                 </label>
                                 <select v-model="conductorEmployeeId" v-bind="conductorEmployeeIdProps"
-                                    class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+                                    class="w-full px-4 py-2.5 border-2 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none bg-white"
                                     :class="formErrors.conductor_employee_id ? 'border-red-400' : 'border-slate-200'">
                                     <option value="">Seleccionar conductor (CHOFER II)</option>
                                     <option v-for="d in drivers" :key="d.id" :value="d.id">{{ d.nombre_completo }}</option>
@@ -175,14 +145,14 @@
                             <div class="md:col-span-2">
                                 <label class="block text-sm font-bold text-slate-700 mb-2">Pasajeros (Opcional)</label>
                                 <input type="text" v-model="usuarios" v-bind="usuariosProps"
-                                    class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+                                    class="w-full px-4 py-2.5 border-2 border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none bg-white"
                                     placeholder="Nombres de los pasajeros separados por comas">
                             </div>
                         </div>
                     </div>
 
-                    <!-- Sección 3: Control de Salida y Retorno -->
-                    <div class="bg-blue-50/50 border border-blue-100 rounded-2xl p-4 space-y-4">
+                    <!-- Sección 3: Control de Salida y Retorno (solo tras la confirmación del conductor) -->
+                    <div v-if="showControlSalida" class="bg-blue-50/50 border border-blue-100 rounded-2xl p-4 space-y-4">
                         <h4 class="font-bold text-blue-800 flex items-center gap-2 border-b border-blue-100/50 pb-2 text-sm uppercase tracking-wide">
                             <svg class="w-5 h-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -190,36 +160,36 @@
                             </svg>
                             Control de Salida y Retorno
                         </h4>
-                        
+
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <label class="block text-sm font-bold text-blue-700 mb-2">Hora de Salida</label>
                                 <input type="time" v-model="horaSalida" v-bind="horaSalidaProps"
-                                    class="w-full px-4 py-2.5 border border-blue-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white">
+                                    class="w-full px-4 py-2.5 border border-blue-200 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none bg-white">
                             </div>
                             <div>
                                 <label class="block text-sm font-bold text-blue-700 mb-2">Hora de Regreso</label>
                                 <input type="time" v-model="horaRegreso" v-bind="horaRegresoProps"
-                                    class="w-full px-4 py-2.5 border border-blue-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white">
+                                    class="w-full px-4 py-2.5 border border-blue-200 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none bg-white">
                             </div>
                             <div>
                                 <label class="block text-sm font-bold text-blue-700 mb-2">Km de Salida</label>
                                 <input type="text" v-model="kmSalida" v-bind="kmSalidaProps"
-                                    class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-colors"
+                                    class="w-full px-4 py-2.5 border-2 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none bg-white transition-colors"
                                     :class="formErrors.km_salida ? 'border-red-400' : 'border-blue-200'">
                                 <p v-if="formErrors.km_salida" class="mt-1 text-sm text-red-600">{{ formErrors.km_salida }}</p>
                             </div>
                             <div>
                                 <label class="block text-sm font-bold text-blue-700 mb-2">Km de Retorno</label>
                                 <input type="text" v-model="kmRetorno" v-bind="kmRetornoProps"
-                                    class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-colors"
+                                    class="w-full px-4 py-2.5 border-2 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none bg-white transition-colors"
                                     :class="formErrors.km_retorno ? 'border-red-400' : 'border-blue-200'">
                                 <p v-if="formErrors.km_retorno" class="mt-1 text-sm text-red-600">{{ formErrors.km_retorno }}</p>
                             </div>
                             <div>
                                 <label class="block text-sm font-bold text-blue-700 mb-2">Combustible</label>
                                 <select v-model="combustible" v-bind="combustibleProps"
-                                    class="w-full px-4 py-2.5 border border-blue-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white">
+                                    class="w-full px-4 py-2.5 border border-blue-200 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none bg-white">
                                     <option value="">Seleccionar combustible</option>
                                     <option value="Gasolina">Gasolina</option>
                                     <option value="Diesel">Diesel</option>
@@ -230,7 +200,7 @@
                             <div>
                                 <label class="block text-sm font-bold text-blue-700 mb-2">P/Nº</label>
                                 <input type="text" v-model="pnro" v-bind="pnroProps"
-                                    class="w-full px-4 py-2.5 border border-blue-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white">
+                                    class="w-full px-4 py-2.5 border border-blue-200 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none bg-white">
                             </div>
                             <div class="col-span-1 md:col-span-2 bg-blue-100/60 border border-blue-200 rounded-xl p-3.5 flex justify-between items-center mt-1">
                                 <span class="text-sm font-bold text-blue-800">Total Kilómetros Recorridos</span>
@@ -238,58 +208,17 @@
                                     {{ totalKmRecorrido !== null ? `${totalKmRecorrido} km` : '—' }}
                                 </span>
                             </div>
-                            <div class="col-span-1 md:col-span-2 relative" ref="authorizerDropdownRef">
-                                <label class="block text-sm font-bold text-blue-700 mb-2">Funcionario que Autoriza</label>
-                                
-                                <!-- Autorizador seleccionado (chip) -->
-                                <div v-if="selectedAuthorizerData"
-                                    class="flex items-center gap-2 px-4 py-2.5 border border-blue-300 bg-blue-50 rounded-xl">
-                                    <svg class="w-4 h-4 text-blue-600 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                                    </svg>
-                                    <div class="flex-1 min-w-0">
-                                        <p class="text-sm font-semibold text-blue-900 truncate">{{ selectedAuthorizerData.nombre_completo }}</p>
-                                        <p v-if="selectedAuthorizerData.cargo" class="text-xs text-blue-500 truncate">{{ selectedAuthorizerData.cargo }}</p>
-                                    </div>
-                                    <button type="button" @click="clearAuthorizer"
-                                        class="flex-shrink-0 p-0.5 rounded-full hover:bg-blue-200 transition-colors text-blue-500 hover:text-blue-700">
-                                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                                        </svg>
-                                    </button>
-                                </div>
-
-                                <!-- Buscador -->
-                                <div v-else class="relative">
-                                    <input type="text" v-model="authorizerSearchQuery" @focus="showAuthorizerDropdown = true"
-                                        placeholder="Buscar funcionario por nombre o DNI..."
-                                        class="w-full px-4 py-2.5 border border-blue-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-colors"
-                                        :class="formErrors.funcionario_autoriza ? 'border-red-400' : 'border-blue-200'">
-                                    <div v-if="showAuthorizerDropdown && filteredAuthorizers.length > 0"
-                                        class="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl max-h-60 overflow-y-auto">
-                                        <button type="button" v-for="emp in filteredAuthorizers" :key="emp.id"
-                                            @click="selectAuthorizer(emp)"
-                                            class="w-full text-left px-4 py-2.5 hover:bg-blue-50 transition-colors flex items-center gap-3 border-b border-slate-50 last:border-0">
-                                            <div class="flex-1 min-w-0">
-                                                <p class="font-semibold text-slate-700 text-sm truncate">{{ emp.nombre_completo }}</p>
-                                                <p class="text-xs text-slate-400 truncate">{{ emp.cargo || 'Sin cargo' }} · DNI: {{ emp.dni }}</p>
-                                            </div>
-                                        </button>
-                                    </div>
-                                </div>
-                                <p v-if="formErrors.funcionario_autoriza" class="mt-1 text-sm text-red-600">{{ formErrors.funcionario_autoriza }}</p>
-                            </div>
                         </div>
                     </div>
 
                     <!-- Actions -->
                     <div class="flex justify-end gap-3 pt-4 border-t border-slate-200">
                         <button type="button" @click="$emit('close')"
-                            class="px-6 py-2.5 border-2 border-slate-300 text-slate-600 font-bold rounded-xl hover:bg-slate-50 transition-all">
+                            class="cursor-pointer px-6 py-2.5 border-2 border-slate-300 text-slate-600 font-bold rounded-xl hover:bg-slate-50 transition-all">
                             Cancelar
                         </button>
                         <button type="submit" :disabled="isSubmitting"
-                            class="px-6 py-2.5 bg-gradient-to-r from-blue-600 to-sky-500 text-white font-bold rounded-xl hover:from-blue-700 hover:to-sky-600 transition-all disabled:opacity-50">
+                            class="cursor-pointer px-6 py-2.5 bg-gradient-to-r from-blue-600 to-sky-500 text-white font-bold rounded-xl hover:from-blue-700 hover:to-sky-600 shadow-lg shadow-blue-500/20 active:scale-95 transition-all disabled:opacity-50">
                             <svg v-if="isSubmitting" class="w-5 h-5 animate-spin inline mr-2" viewBox="0 0 24 24"
                                 fill="none">
                                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"
@@ -308,18 +237,24 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { useForm } from 'vee-validate';
 import { toTypedSchema } from '@vee-validate/yup';
 import * as yup from 'yup';
 import axios from 'axios';
-import { useEmployeeSearch } from '@/Composables/useEmployeeSearch';
+import { usePage } from '@inertiajs/vue3';
 
-const props = defineProps({ commission: Object, vehicles: Array, employees: { type: Array, default: () => [] }, drivers: { type: Array, default: () => [] } });
+const props = defineProps({ commission: Object, vehicles: Array, drivers: { type: Array, default: () => [] } });
 const emit = defineEmits(['close', 'saved']);
+
+const page = usePage();
+const currentUserName = computed(() => page.props.auth?.user?.full_name || page.props.auth?.user?.name || 'Usuario actual');
 
 const isEditing = computed(() => !!props.commission?.id);
 const isSubmitting = ref(false);
+
+// Salida/retorno solo se registran una vez que el conductor confirmó la autorización.
+const showControlSalida = computed(() => ['CONFIRMADA', 'EN_COMISION', 'COMPLETADA'].includes(props.commission?.estado));
 
 // Current date and time
 const currentDate = new Date().toISOString().split('T')[0];
@@ -328,8 +263,6 @@ const currentTime = new Date().toTimeString().slice(0, 5);
 // Validation Schema
 const commissionSchema = toTypedSchema(
     yup.object({
-        solicitante_employee_id: yup.string()
-            .required('Debe seleccionar el servidor o funcionario que solicita'),
         lugar: yup.string()
             .required('El lugar de destino es obligatorio')
             .min(3, 'El lugar debe tener al menos 3 caracteres'),
@@ -341,7 +274,6 @@ const commissionSchema = toTypedSchema(
             .required('Debe seleccionar el conductor'),
         usuarios: yup.string().nullable(),
         motivo: yup.string().nullable(),
-        funcionario_autoriza: yup.string().nullable(),
         hora_salida: yup.string().nullable(),
         hora_regreso: yup.string().nullable(),
         km_salida: yup.string()
@@ -372,7 +304,6 @@ const commissionSchema = toTypedSchema(
 const { errors: formErrors, defineField, handleSubmit: validateForm, resetForm, setValues } = useForm({
     validationSchema: commissionSchema,
     initialValues: {
-        solicitante_employee_id: '',
         lugar: '',
         referencia: '',
         dia: currentDate,
@@ -381,7 +312,6 @@ const { errors: formErrors, defineField, handleSubmit: validateForm, resetForm, 
         conductor_employee_id: '',
         usuarios: '',
         motivo: '',
-        funcionario_autoriza: '',
         hora_salida: '',
         hora_regreso: '',
         km_salida: '',
@@ -391,7 +321,6 @@ const { errors: formErrors, defineField, handleSubmit: validateForm, resetForm, 
     }
 });
 
-const [solicitanteEmployeeId] = defineField('solicitante_employee_id');
 const [lugar, lugarProps] = defineField('lugar');
 const [referencia, referenciaProps] = defineField('referencia');
 const [dia, diaProps] = defineField('dia');
@@ -400,7 +329,6 @@ const [vehicleId, vehicleIdProps] = defineField('vehicle_id');
 const [conductorEmployeeId, conductorEmployeeIdProps] = defineField('conductor_employee_id');
 const [usuarios, usuariosProps] = defineField('usuarios');
 const [motivo, motivoProps] = defineField('motivo');
-const [funcionarioAutoriza, funcionarioAutorizaProps] = defineField('funcionario_autoriza');
 const [horaSalida, horaSalidaProps] = defineField('hora_salida');
 const [horaRegreso, horaRegresoProps] = defineField('hora_regreso');
 const [kmSalida, kmSalidaProps] = defineField('km_salida');
@@ -433,81 +361,10 @@ watch(vehicleId, (newVehicleId) => {
     }
 });
 
-// Employee picker (Servidor o Funcionario que Solicita)
-const employeeDropdownRef = ref(null);
-const { searchQuery: employeeSearchQuery, showDropdown: showEmployeeDropdown, filteredEmployees } = useEmployeeSearch(props.employees);
-const selectedEmployeeData = ref(null);
-
-const selectEmployee = (emp) => {
-    selectedEmployeeData.value = emp;
-    solicitanteEmployeeId.value = String(emp.id);
-    employeeSearchQuery.value = '';
-    showEmployeeDropdown.value = false;
-};
-
-const clearEmployee = () => {
-    selectedEmployeeData.value = null;
-    solicitanteEmployeeId.value = '';
-    employeeSearchQuery.value = '';
-    showEmployeeDropdown.value = false;
-};
-
-const handleClickOutsideEmployee = (event) => {
-    if (employeeDropdownRef.value && !employeeDropdownRef.value.contains(event.target)) {
-        showEmployeeDropdown.value = false;
-    }
-};
-
-// Employee picker (Funcionario que Autoriza)
-const authorizerDropdownRef = ref(null);
-const { searchQuery: authorizerSearchQuery, showDropdown: showAuthorizerDropdown, filteredEmployees: filteredAuthorizers } = useEmployeeSearch(props.employees);
-const selectedAuthorizerData = ref(null);
-
-const selectAuthorizer = (emp) => {
-    selectedAuthorizerData.value = emp;
-    funcionarioAutoriza.value = emp.nombre_completo;
-    authorizerSearchQuery.value = '';
-    showAuthorizerDropdown.value = false;
-};
-
-const clearAuthorizer = () => {
-    selectedAuthorizerData.value = null;
-    funcionarioAutoriza.value = '';
-    authorizerSearchQuery.value = '';
-    showAuthorizerDropdown.value = false;
-};
-
-const handleClickOutsideAll = (event) => {
-    handleClickOutsideEmployee(event);
-    if (authorizerDropdownRef.value && !authorizerDropdownRef.value.contains(event.target)) {
-        showAuthorizerDropdown.value = false;
-    }
-};
-
-onMounted(() => document.addEventListener('click', handleClickOutsideAll));
-onUnmounted(() => document.removeEventListener('click', handleClickOutsideAll));
-
 // Load existing commission data if editing
 onMounted(() => {
     if (props.commission) {
-        if (props.commission.solicitante_employee_id) {
-            const emp = props.employees.find(e => String(e.id) === String(props.commission.solicitante_employee_id));
-            if (emp) selectedEmployeeData.value = emp;
-        }
-        if (props.commission.funcionario_autoriza) {
-            const emp = props.employees.find(e => String(e.nombre_completo).toLowerCase() === String(props.commission.funcionario_autoriza).toLowerCase());
-            if (emp) {
-                selectedAuthorizerData.value = emp;
-            } else {
-                selectedAuthorizerData.value = {
-                    id: 'temp-' + Date.now(),
-                    nombre_completo: props.commission.funcionario_autoriza,
-                    cargo: ''
-                };
-            }
-        }
         setValues({
-            solicitante_employee_id: props.commission.solicitante_employee_id || '',
             lugar: props.commission.lugar || '',
             referencia: props.commission.referencia || '',
             dia: props.commission.dia || currentDate,
@@ -516,7 +373,6 @@ onMounted(() => {
             conductor_employee_id: props.commission.conductor_employee_id || '',
             usuarios: props.commission.usuarios || '',
             motivo: props.commission.motivo || '',
-            funcionario_autoriza: props.commission.funcionario_autoriza || '',
             hora_salida: props.commission.hora_salida || '',
             hora_regreso: props.commission.hora_regreso || '',
             km_salida: props.commission.km_salida || '',

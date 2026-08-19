@@ -20,7 +20,7 @@
                             Nº {{ String(commission.numero).padStart(3, '0') }}-{{ commission.anio }}
                         </p>
                     </div>
-                    <button @click="$emit('close')" class="text-violet-100 hover:text-white transition-colors p-1">
+                    <button @click="$emit('close')" class="cursor-pointer text-violet-100 hover:text-white transition-colors p-1">
                         <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                 d="M6 18L18 6M6 6l12 12" />
@@ -179,9 +179,42 @@
                                 </span>
                             </div>
 
-                            <div class="col-span-2">
-                                <span class="block text-xs font-semibold text-blue-600 uppercase">Funcionario que Autoriza</span>
-                                <span class="text-sm font-bold text-slate-800 mt-0.5 block">{{ commission.funcionario_autoriza || 'No especificado' }}</span>
+                        </div>
+                    </div>
+
+                    <!-- Sección 4: Autorización -->
+                    <div class="space-y-3 pt-2">
+                        <h4 class="font-bold text-slate-800 flex items-center gap-2 border-b border-slate-100 pb-1.5 text-xs uppercase tracking-wide">
+                            <span class="p-1 rounded-lg bg-indigo-50 text-indigo-600">
+                                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                                </svg>
+                            </span>
+                            Autorización
+                        </h4>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <span class="block text-xs font-semibold text-slate-400 uppercase">Autorizado / Rechazado por</span>
+                                <span class="text-sm font-bold text-slate-800 mt-0.5 block">{{ commission.autorizado_por_nombre || 'Pendiente' }}</span>
+                            </div>
+                            <div>
+                                <span class="block text-xs font-semibold text-slate-400 uppercase">Fecha de Autorización</span>
+                                <span class="text-sm font-bold text-slate-800 mt-0.5 block">{{ commission.fecha_autorizacion || '—' }}</span>
+                            </div>
+                            <div class="sm:col-span-2" v-if="commission.comentario_autorizacion">
+                                <span class="block text-xs font-semibold text-slate-400 uppercase">
+                                    {{ commission.estado === 'RECHAZADA' ? 'Motivo del Rechazo' : 'Comentario' }}
+                                </span>
+                                <p class="text-sm text-slate-600 bg-slate-50 p-2.5 rounded-xl border border-slate-100 mt-1 whitespace-pre-line leading-relaxed">
+                                    {{ commission.comentario_autorizacion }}
+                                </p>
+                            </div>
+                            <div class="sm:col-span-2">
+                                <span class="block text-xs font-semibold text-slate-400 uppercase">Confirmación del Conductor</span>
+                                <span class="text-sm font-bold text-slate-800 mt-0.5 block">
+                                    {{ commission.fecha_confirmacion_conductor ? `Confirmada el ${commission.fecha_confirmacion_conductor}` : 'Pendiente' }}
+                                </span>
                             </div>
                         </div>
                     </div>
@@ -190,7 +223,7 @@
                 <!-- Footer / Close -->
                 <div class="px-6 py-4 bg-slate-50 border-t border-slate-200 flex justify-end">
                     <button @click="$emit('close')"
-                        class="px-5 py-2 bg-slate-200 text-slate-700 font-bold rounded-xl hover:bg-slate-300 transition-colors cursor-pointer text-sm">
+                        class="cursor-pointer px-5 py-2 bg-slate-200 text-slate-700 font-bold rounded-xl hover:bg-slate-300 transition-colors text-sm">
                         Cerrar Detalles
                     </button>
                 </div>
@@ -226,6 +259,12 @@ const getStatusClass = (status) => {
             return 'bg-green-100 text-green-800 border border-green-200';
         case 'EN_COMISION':
             return 'bg-blue-100 text-blue-800 border border-blue-200';
+        case 'CONFIRMADA':
+            return 'bg-cyan-100 text-cyan-800 border border-cyan-200';
+        case 'AUTORIZADA':
+            return 'bg-indigo-100 text-indigo-800 border border-indigo-200';
+        case 'RECHAZADA':
+            return 'bg-red-100 text-red-800 border border-red-200';
         case 'PENDIENTE':
             return 'bg-yellow-100 text-yellow-800 border border-yellow-200';
         default:

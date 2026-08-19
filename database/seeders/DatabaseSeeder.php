@@ -41,7 +41,7 @@ class DatabaseSeeder extends Seeder
                     'personal' => ['crear', 'leer', 'editar', 'eliminar'],
                     'ocurrencias' => ['crear', 'leer', 'editar', 'eliminar', 'aprobar'],
                     'visitas' => ['crear', 'leer', 'editar', 'eliminar'],
-                    'vehiculos' => ['crear', 'leer', 'editar', 'eliminar'],
+                    'vehiculos' => ['crear', 'leer', 'editar', 'eliminar', 'autorizar'],
                     'patrimonio' => ['crear', 'leer', 'editar', 'eliminar'],
                     'licencias' => ['crear', 'leer', 'editar', 'eliminar', 'aprobar'],
                     'reportes' => ['ver', 'exportar'],
@@ -57,7 +57,7 @@ class DatabaseSeeder extends Seeder
                 'permisos_json' => [
                     'ocurrencias' => ['crear', 'leer', 'editar'],
                     'visitas' => ['crear', 'leer', 'editar'],
-                    'vehiculos' => ['leer'],
+                    'vehiculos' => ['leer', 'autorizar'],
                     'personal' => ['leer'],
                     'reportes' => ['ver'],
                 ],

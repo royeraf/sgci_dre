@@ -182,8 +182,11 @@
             <td>
                 <span class="signature-line"></span>
                 <span class="signature-label">Funcionario que autoriza</span>
-                @if($commission->funcionario_autoriza)
-                    <br><span style="font-size: 8px;">{{ $commission->funcionario_autoriza }}</span>
+                @if($commission->autorizado_por_nombre)
+                    <br><span style="font-size: 8px;">{{ $commission->autorizado_por_nombre }}</span>
+                    @if($commission->fecha_autorizacion)
+                        <br><span style="font-size: 8px;">{{ $commission->fecha_autorizacion->format('d/m/Y H:i') }}</span>
+                    @endif
                 @endif
             </td>
             <td>

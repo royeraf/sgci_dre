@@ -20,7 +20,7 @@
                         </h3>
                         <p class="text-pink-100 text-sm mt-1">Registre la solicitud de servicio</p>
                     </div>
-                    <button @click="$emit('close')" class="text-pink-100 hover:text-white transition-colors p-1">
+                    <button @click="$emit('close')" class="cursor-pointer text-pink-100 hover:text-white transition-colors p-1">
                         <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                 d="M6 18L18 6M6 6l12 12" />
@@ -37,7 +37,7 @@
                                 Nombre del conductor/a <span class="text-red-500">*</span>
                             </label>
                             <input type="text" v-model="conductor" v-bind="conductorProps"
-                                class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-colors"
+                                class="w-full px-4 py-2.5 border-2 rounded-xl focus:ring-4 focus:ring-pink-500/20 focus:border-pink-500 outline-none transition-colors"
                                 :class="formErrors.conductor ? 'border-red-400' : 'border-slate-200'"
                                 placeholder="Nombre completo del conductor">
                             <p v-if="formErrors.conductor" class="mt-1 text-sm text-red-600">{{ formErrors.conductor }}
@@ -50,7 +50,7 @@
                                 Vehículo <span class="text-red-500">*</span>
                             </label>
                             <select v-model="vehicleId" v-bind="vehicleIdProps"
-                                class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-pink-500 focus:border-pink-500 bg-white transition-colors"
+                                class="w-full px-4 py-2.5 border-2 rounded-xl focus:ring-4 focus:ring-pink-500/20 focus:border-pink-500 outline-none bg-white transition-colors"
                                 :class="formErrors.vehicle_id ? 'border-red-400' : 'border-slate-200'">
                                 <option value="">Seleccionar vehículo</option>
                                 <option v-for="v in vehicles" :key="v.id" :value="v.id">{{ v.placa }} - {{ v.marca }} {{
@@ -64,14 +64,14 @@
                         <div>
                             <label class="block text-sm font-bold text-slate-700 mb-2">Estado del vehículo</label>
                             <input type="text" v-model="estadoVehiculo" v-bind="estadoVehiculoProps"
-                                class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-pink-500 focus:border-pink-500">
+                                class="w-full px-4 py-2.5 border-2 border-slate-200 rounded-xl focus:ring-4 focus:ring-pink-500/20 focus:border-pink-500 outline-none">
                         </div>
 
                         <!-- Estado del motor -->
                         <div>
                             <label class="block text-sm font-bold text-slate-700 mb-2">Estado del motor</label>
                             <input type="text" v-model="estadoMotor" v-bind="estadoMotorProps"
-                                class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-pink-500 focus:border-pink-500">
+                                class="w-full px-4 py-2.5 border-2 border-slate-200 rounded-xl focus:ring-4 focus:ring-pink-500/20 focus:border-pink-500 outline-none">
                         </div>
 
                         <!-- Sistema eléctrico -->
@@ -79,28 +79,28 @@
                             <label class="block text-sm font-bold text-slate-700 mb-2">Encendido y sistema
                                 eléctrico</label>
                             <input type="text" v-model="encendidoElectrico" v-bind="encendidoElectricoProps"
-                                class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-pink-500 focus:border-pink-500">
+                                class="w-full px-4 py-2.5 border-2 border-slate-200 rounded-xl focus:ring-4 focus:ring-pink-500/20 focus:border-pink-500 outline-none">
                         </div>
 
                         <!-- Transmisión -->
                         <div>
                             <label class="block text-sm font-bold text-slate-700 mb-2">Transmisión</label>
                             <input type="text" v-model="transmision" v-bind="transmisionProps"
-                                class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-pink-500 focus:border-pink-500">
+                                class="w-full px-4 py-2.5 border-2 border-slate-200 rounded-xl focus:ring-4 focus:ring-pink-500/20 focus:border-pink-500 outline-none">
                         </div>
 
                         <!-- Pintura y carrocería -->
                         <div>
                             <label class="block text-sm font-bold text-slate-700 mb-2">Pintura y carrocería</label>
                             <input type="text" v-model="pinturaCarroceria" v-bind="pinturaCarroceriaProps"
-                                class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-pink-500 focus:border-pink-500">
+                                class="w-full px-4 py-2.5 border-2 border-slate-200 rounded-xl focus:ring-4 focus:ring-pink-500/20 focus:border-pink-500 outline-none">
                         </div>
 
                         <!-- Llantas -->
                         <div>
                             <label class="block text-sm font-bold text-slate-700 mb-2">Estado de llantas</label>
                             <input type="text" v-model="llantas" v-bind="llantasProps"
-                                class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-pink-500 focus:border-pink-500">
+                                class="w-full px-4 py-2.5 border-2 border-slate-200 rounded-xl focus:ring-4 focus:ring-pink-500/20 focus:border-pink-500 outline-none">
                         </div>
 
                         <!-- Comisiones realizadas -->
@@ -108,7 +108,7 @@
                             <label class="block text-sm font-bold text-slate-700 mb-2">Comisiones realizadas</label>
                             <textarea v-model="comisionesRealizadas" v-bind="comisionesRealizadasProps" rows="2"
                                 placeholder="Describa las comisiones realizadas..."
-                                class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-pink-500 focus:border-pink-500 resize-none"></textarea>
+                                class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:ring-4 focus:ring-pink-500/20 focus:border-pink-500 outline-none resize-none"></textarea>
                         </div>
 
                         <!-- Motivo -->
@@ -118,7 +118,7 @@
                             </label>
                             <textarea v-model="motivo" v-bind="motivoProps" rows="3"
                                 placeholder="Describa el motivo por el cual solicita el servicio..."
-                                class="w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-pink-500 focus:border-pink-500 resize-none transition-colors"
+                                class="w-full px-4 py-3 border-2 rounded-xl focus:ring-4 focus:ring-pink-500/20 focus:border-pink-500 outline-none resize-none transition-colors"
                                 :class="formErrors.motivo ? 'border-red-400' : 'border-slate-200'"></textarea>
                             <p v-if="formErrors.motivo" class="mt-1 text-sm text-red-600">{{ formErrors.motivo }}</p>
                         </div>
@@ -127,11 +127,11 @@
                     <!-- Actions -->
                     <div class="flex justify-end gap-3 pt-4 border-t border-slate-200">
                         <button type="button" @click="$emit('close')"
-                            class="px-6 py-2.5 border-2 border-slate-300 text-slate-600 font-bold rounded-xl hover:bg-slate-50 transition-all">
+                            class="cursor-pointer px-6 py-2.5 border-2 border-slate-300 text-slate-600 font-bold rounded-xl hover:bg-slate-50 transition-all">
                             Cancelar
                         </button>
                         <button type="submit" :disabled="isSubmitting"
-                            class="px-6 py-2.5 bg-gradient-to-r from-pink-600 to-rose-500 text-white font-bold rounded-xl hover:from-pink-700 hover:to-rose-600 transition-all disabled:opacity-50">
+                            class="cursor-pointer px-6 py-2.5 bg-gradient-to-r from-pink-600 to-rose-500 text-white font-bold rounded-xl hover:from-pink-700 hover:to-rose-600 shadow-lg shadow-pink-500/20 active:scale-95 transition-all disabled:opacity-50">
                             <svg v-if="isSubmitting" class="w-5 h-5 animate-spin inline mr-2" viewBox="0 0 24 24"
                                 fill="none">
                                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"

@@ -18,7 +18,7 @@
                         </h3>
                         <p class="text-amber-100 text-sm mt-1">Complete el formulario del acta vehicular</p>
                     </div>
-                    <button @click="$emit('close')" class="text-amber-100 hover:text-white transition-colors p-1">
+                    <button @click="$emit('close')" class="cursor-pointer text-amber-100 hover:text-white transition-colors p-1">
                         <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                 d="M6 18L18 6M6 6l12 12" />
@@ -36,20 +36,20 @@
                                 <label class="block text-sm font-bold text-slate-700 mb-2">Fecha <span
                                         class="text-red-500">*</span></label>
                                 <input type="date" v-model="fecha" v-bind="fechaProps"
-                                    class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-amber-500 transition-colors"
+                                    class="w-full px-4 py-2.5 border-2 rounded-xl focus:ring-4 focus:ring-amber-500/20 focus:border-amber-500 outline-none transition-colors"
                                     :class="formErrors.fecha ? 'border-red-400' : 'border-slate-200'">
                                 <p v-if="formErrors.fecha" class="mt-1 text-sm text-red-600">{{ formErrors.fecha }}</p>
                             </div>
                             <div class="md:col-span-2">
                                 <label class="block text-sm font-bold text-slate-700 mb-2">Entidad</label>
                                 <input type="text" v-model="entidad" v-bind="entidadProps"
-                                    class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-amber-500">
+                                    class="w-full px-4 py-2.5 border-2 border-slate-200 rounded-xl focus:ring-4 focus:ring-amber-500/20 focus:border-amber-500 outline-none">
                             </div>
                             <div>
                                 <label class="block text-sm font-bold text-slate-700 mb-2">Placa <span
                                         class="text-red-500">*</span></label>
                                 <input type="text" v-model="placa" v-bind="placaProps"
-                                    class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-amber-500 transition-colors"
+                                    class="w-full px-4 py-2.5 border-2 rounded-xl focus:ring-4 focus:ring-amber-500/20 focus:border-amber-500 outline-none transition-colors"
                                     :class="formErrors.placa ? 'border-red-400' : 'border-slate-200'">
                                 <p v-if="formErrors.placa" class="mt-1 text-sm text-red-600">{{ formErrors.placa }}</p>
                             </div>
@@ -57,7 +57,7 @@
                                 <label class="block text-sm font-bold text-slate-700 mb-2">Kilometraje <span
                                         class="text-red-500">*</span></label>
                                 <input type="text" v-model="kilometraje" v-bind="kilometrajeProps"
-                                    class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-amber-500 transition-colors"
+                                    class="w-full px-4 py-2.5 border-2 rounded-xl focus:ring-4 focus:ring-amber-500/20 focus:border-amber-500 outline-none transition-colors"
                                     :class="formErrors.kilometraje ? 'border-red-400' : 'border-slate-200'">
                                 <p v-if="formErrors.kilometraje" class="mt-1 text-sm text-red-600">{{
                                     formErrors.kilometraje }}</p>
@@ -65,7 +65,7 @@
                             <div>
                                 <label class="block text-sm font-bold text-slate-700 mb-2">Color</label>
                                 <input type="text" v-model="color" v-bind="colorProps"
-                                    class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-amber-500">
+                                    class="w-full px-4 py-2.5 border-2 border-slate-200 rounded-xl focus:ring-4 focus:ring-amber-500/20 focus:border-amber-500 outline-none">
                             </div>
                         </div>
                     </div>
@@ -74,7 +74,7 @@
                     <div>
                         <h4 class="font-bold text-slate-800 mb-3">Estado de Sistemas del Vehículo</h4>
                         <div
-                            class="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-48 overflow-y-auto border border-slate-200 rounded-xl p-4 bg-slate-50">
+                            class="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-48 overflow-y-auto border-2 border-slate-200 rounded-xl p-4 bg-slate-50">
                             <div v-for="(group, idx) in systemGroups" :key="idx" class="bg-white rounded-lg p-3 border">
                                 <div class="font-semibold text-amber-700 text-sm mb-2">{{ idx + 1 }}. {{ group.name }}
                                 </div>
@@ -100,13 +100,13 @@
                         <div>
                             <label class="block text-sm font-bold text-slate-700 mb-2">Jefe de Abastecimiento</label>
                             <input type="text" v-model="abastecimiento" v-bind="abastecimientoProps"
-                                class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-amber-500">
+                                class="w-full px-4 py-2.5 border-2 border-slate-200 rounded-xl focus:ring-4 focus:ring-amber-500/20 focus:border-amber-500 outline-none">
                         </div>
                         <div>
                             <label class="block text-sm font-bold text-slate-700 mb-2">Recepciona <span
                                     class="text-red-500">*</span></label>
                             <input type="text" v-model="recepciona" v-bind="recepcionaProps"
-                                class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-amber-500 transition-colors"
+                                class="w-full px-4 py-2.5 border-2 rounded-xl focus:ring-4 focus:ring-amber-500/20 focus:border-amber-500 outline-none transition-colors"
                                 :class="formErrors.recepciona ? 'border-red-400' : 'border-slate-200'">
                             <p v-if="formErrors.recepciona" class="mt-1 text-sm text-red-600">{{ formErrors.recepciona
                                 }}</p>
@@ -116,9 +116,9 @@
                     <!-- Actions -->
                     <div class="flex justify-end gap-3 pt-4 border-t border-slate-200">
                         <button type="button" @click="$emit('close')"
-                            class="px-6 py-2.5 border-2 border-slate-300 text-slate-600 font-bold rounded-xl hover:bg-slate-50">Cancelar</button>
+                            class="cursor-pointer px-6 py-2.5 border-2 border-slate-300 text-slate-600 font-bold rounded-xl hover:bg-slate-50">Cancelar</button>
                         <button type="submit" :disabled="isSubmitting"
-                            class="px-6 py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold rounded-xl hover:from-amber-600 hover:to-orange-600 disabled:opacity-50">
+                            class="cursor-pointer px-6 py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold rounded-xl hover:from-amber-600 hover:to-orange-600 shadow-lg shadow-amber-500/20 active:scale-95 transition-all disabled:opacity-50">
                             <svg v-if="isSubmitting" class="w-5 h-5 animate-spin inline mr-2" viewBox="0 0 24 24"
                                 fill="none">
                                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"

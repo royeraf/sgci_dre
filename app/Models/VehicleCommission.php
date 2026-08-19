@@ -21,7 +21,10 @@ class VehicleCommission extends Model
         'usuarios',
         'vehicle_id',
         'conductor_employee_id',
-        'funcionario_autoriza',
+        'autorizado_por',
+        'fecha_autorizacion',
+        'comentario_autorizacion',
+        'fecha_confirmacion_conductor',
         'hora_salida',
         'hora_regreso',
         'km_salida',
@@ -33,6 +36,8 @@ class VehicleCommission extends Model
 
     protected $casts = [
         'dia' => 'date',
+        'fecha_autorizacion' => 'datetime',
+        'fecha_confirmacion_conductor' => 'datetime',
     ];
 
     public function vehicle()
@@ -60,6 +65,37 @@ class VehicleCommission extends Model
         return $this->conductorEmployee?->person?->nombre_full;
     }
 
+    public function autorizadorEmployee()
+    {
+        return $this->belongsTo(Employee::class, 'autorizado_por');
+    }
+
+    public function getAutorizadoPorNombreAttribute(): ?string
+    {
+        return $this->autorizadorEmployee?->person?->nombre_full;
+    }
+
+    /**
+     * Estado en el que se acepta la solicitud pendiente de autorización.
+     */
+    public function necesitaAutorizacion(): bool
+    {
+        return $this->estado === 'PENDIENTE';
+    }
+
+    /**
+     * Estado en el que el conductor asignado debe confirmar la salida.
+     */
+    public function necesitaConfirmacionConductor(): bool
+    {
+        return $this->estado === 'AUTORIZADA';
+    }
+
+    public function estaAutorizada(): bool
+    {
+        return !is_null($this->autorizado_por);
+    }
+
     /**
      * Get the next correlative number for a given year (resets each year).
      */
@@ -85,8 +121,11 @@ class VehicleCommission extends Model
     public function getStatusClassAttribute(): string
     {
         return match($this->estado) {
+            'AUTORIZADA' => 'bg-indigo-100 text-indigo-800',
+            'CONFIRMADA' => 'bg-cyan-100 text-cyan-800',
             'EN_COMISION' => 'bg-blue-100 text-blue-800',
             'COMPLETADA' => 'bg-green-100 text-green-800',
+            'RECHAZADA' => 'bg-red-100 text-red-800',
             'CANCELADA' => 'bg-gray-100 text-gray-800',
             default => 'bg-yellow-100 text-yellow-800',
         };

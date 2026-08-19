@@ -178,6 +178,8 @@ Route::middleware('auth')->group(function () {
         Route::post('/commissions', [VehicleController::class, 'storeCommission'])->name('commissions.store');
         Route::put('/commissions/{id}', [VehicleController::class, 'updateCommission'])->name('commissions.update');
         Route::get('/commissions/{id}/pdf', [VehicleController::class, 'commissionPdf'])->name('commissions.pdf');
+        Route::patch('/commissions/{id}/authorize', [VehicleController::class, 'authorizeCommission'])->name('commissions.authorize');
+        Route::patch('/commissions/{id}/reject', [VehicleController::class, 'rejectCommission'])->name('commissions.reject');
 
         // Maintenance
         Route::get('/maintenance', [VehicleController::class, 'getMaintenances'])->name('maintenance.list');
@@ -191,7 +193,12 @@ Route::middleware('auth')->group(function () {
         Route::get('/service-requirements', [VehicleController::class, 'getServiceRequirements'])->name('service-requirements.list');
         Route::post('/service-requirements', [VehicleController::class, 'storeServiceRequirement'])->name('service-requirements.store');
     });
-    
+
+    // Confirmación del conductor: fuera del grupo role:ROL006,ROL007 porque el
+    // conductor asignado no necesariamente tiene ese rol ni el módulo vehiculos;
+    // el propio controlador verifica que sea el conductor asignado.
+    Route::patch('/vehicles/commissions/{id}/confirm-conductor', [VehicleController::class, 'confirmCommissionByConductor'])->name('vehicles.commissions.confirm-conductor');
+
     // Gestión de Citas
     Route::middleware('role:ROL010')->prefix('citas')->name('citas.')->group(function () {
         Route::get('/', [AppointmentController::class, 'adminIndex'])->name('index');

@@ -14,7 +14,7 @@
                         <p class="text-indigo-100 text-sm mt-1">{{ isEditing ? 'Modifique los datos del vehículo' :
                             'Complete los datos del vehículo' }}</p>
                     </div>
-                    <button @click="$emit('close')" class="text-indigo-100 hover:text-white transition-colors p-1">
+                    <button @click="$emit('close')" class="cursor-pointer text-indigo-100 hover:text-white transition-colors p-1">
                         <X class="w-6 h-6" />
                     </button>
                 </div>
@@ -28,7 +28,7 @@
                                 Tipo <span class="text-red-500">*</span>
                             </label>
                             <select v-model="tipo" v-bind="tipoProps"
-                                class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white transition-colors"
+                                class="w-full px-4 py-2.5 border-2 rounded-xl focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none bg-white transition-colors"
                                 :class="formErrors.tipo ? 'border-red-400' : 'border-slate-200'">
                                 <option value="">Seleccione tipo</option>
                                 <option>Automóvil</option>
@@ -46,7 +46,7 @@
                                 Placa <span class="text-red-500">*</span>
                             </label>
                             <input type="text" v-model="placa" v-bind="placaProps"
-                                class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                                class="w-full px-4 py-2.5 border-2 rounded-xl focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-colors"
                                 :class="formErrors.placa ? 'border-red-400' : 'border-slate-200'"
                                 placeholder="Ej: ABC-123">
                             <p v-if="formErrors.placa" class="mt-1 text-sm text-red-600">{{ formErrors.placa }}</p>
@@ -58,7 +58,7 @@
                                 Marca <span class="text-red-500">*</span>
                             </label>
                             <input type="text" v-model="marca" v-bind="marcaProps"
-                                class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                                class="w-full px-4 py-2.5 border-2 rounded-xl focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-colors"
                                 :class="formErrors.marca ? 'border-red-400' : 'border-slate-200'"
                                 placeholder="Ej: Toyota">
                             <p v-if="formErrors.marca" class="mt-1 text-sm text-red-600">{{ formErrors.marca }}</p>
@@ -70,7 +70,7 @@
                                 Modelo <span class="text-red-500">*</span>
                             </label>
                             <input type="text" v-model="modelo" v-bind="modeloProps"
-                                class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                                class="w-full px-4 py-2.5 border-2 rounded-xl focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-colors"
                                 :class="formErrors.modelo ? 'border-red-400' : 'border-slate-200'"
                                 placeholder="Ej: Hilux">
                             <p v-if="formErrors.modelo" class="mt-1 text-sm text-red-600">{{ formErrors.modelo }}</p>
@@ -80,7 +80,7 @@
                         <div>
                             <label class="block text-sm font-bold text-slate-700 mb-2">Año</label>
                             <input type="text" v-model="anio" v-bind="anioProps"
-                                class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                                class="w-full px-4 py-2.5 border-2 border-slate-200 rounded-xl focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none"
                                 placeholder="Ej: 2022">
                         </div>
 
@@ -88,7 +88,7 @@
                         <div>
                             <label class="block text-sm font-bold text-slate-700 mb-2">Color</label>
                             <input type="text" v-model="color" v-bind="colorProps"
-                                class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                                class="w-full px-4 py-2.5 border-2 border-slate-200 rounded-xl focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none"
                                 placeholder="Ej: Blanco">
                         </div>
 
@@ -96,7 +96,7 @@
                         <div>
                             <label class="block text-sm font-bold text-slate-700 mb-2">Estado</label>
                             <select v-model="estado" v-bind="estadoProps"
-                                class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white">
+                                class="w-full px-4 py-2.5 border-2 border-slate-200 rounded-xl focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none bg-white">
                                 <option>Operativo</option>
                                 <option>En Mantenimiento</option>
                                 <option>Inoperativo</option>
@@ -107,7 +107,7 @@
                         <div>
                             <label class="block text-sm font-bold text-slate-700 mb-2">Combustible</label>
                             <select v-model="combustible" v-bind="combustibleProps"
-                                class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white">
+                                class="w-full px-4 py-2.5 border-2 border-slate-200 rounded-xl focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none bg-white">
                                 <option>Gasolina</option>
                                 <option>Diesel</option>
                                 <option>GLP</option>
@@ -118,7 +118,7 @@
                         <div>
                             <label class="block text-sm font-bold text-slate-700 mb-2">Kilometraje</label>
                             <input type="text" v-model="kilometraje" v-bind="kilometrajeProps"
-                                class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                                class="w-full px-4 py-2.5 border-2 border-slate-200 rounded-xl focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none"
                                 placeholder="Ej: 50000">
                         </div>
 
@@ -126,21 +126,21 @@
                         <div>
                             <label class="block text-sm font-bold text-slate-700 mb-2">Nº Motor</label>
                             <input type="text" v-model="motor" v-bind="motorProps"
-                                class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                                class="w-full px-4 py-2.5 border-2 border-slate-200 rounded-xl focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none">
                         </div>
 
                         <!-- Fecha SOAT -->
                         <div>
                             <label class="block text-sm font-bold text-slate-700 mb-2">Fecha SOAT</label>
                             <input type="date" v-model="fechaSoat" v-bind="fechaSoatProps"
-                                class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                                class="w-full px-4 py-2.5 border-2 border-slate-200 rounded-xl focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none">
                         </div>
 
                         <!-- Fecha Revisión -->
                         <div>
                             <label class="block text-sm font-bold text-slate-700 mb-2">Fecha Revisión Técnica</label>
                             <input type="date" v-model="fechaRevision" v-bind="fechaRevisionProps"
-                                class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                                class="w-full px-4 py-2.5 border-2 border-slate-200 rounded-xl focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none">
                         </div>
                     </div>
 
@@ -149,17 +149,17 @@
                         <label class="block text-sm font-bold text-slate-700 mb-2">Observaciones</label>
                         <textarea v-model="observaciones" v-bind="observacionesProps" rows="3"
                             placeholder="Ingrese observaciones adicionales..."
-                            class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 resize-none"></textarea>
+                            class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none resize-none"></textarea>
                     </div>
 
                     <!-- Actions -->
                     <div class="flex justify-end gap-3 pt-4 border-t border-slate-200">
                         <button type="button" @click="$emit('close')"
-                            class="px-6 py-2.5 border-2 border-slate-300 text-slate-600 font-bold rounded-xl hover:bg-slate-50 transition-all">
+                            class="cursor-pointer px-6 py-2.5 border-2 border-slate-300 text-slate-600 font-bold rounded-xl hover:bg-slate-50 transition-all">
                             Cancelar
                         </button>
                         <button type="submit" :disabled="isSubmitting"
-                            class="px-6 py-2.5 bg-gradient-to-r from-indigo-600 to-violet-600 text-white font-bold rounded-xl hover:from-indigo-700 hover:to-violet-700 transition-all disabled:opacity-50">
+                            class="cursor-pointer px-6 py-2.5 bg-gradient-to-r from-indigo-600 to-violet-600 text-white font-bold rounded-xl hover:from-indigo-700 hover:to-violet-700 shadow-lg shadow-indigo-500/20 active:scale-95 transition-all disabled:opacity-50">
                             <Loader2 v-if="isSubmitting" class="w-5 h-5 animate-spin inline mr-2" />
                             {{ isSubmitting ? 'Guardando...' : 'Guardar Vehículo' }}
                         </button>

@@ -14,447 +14,584 @@
                 </div>
                 <div class="flex gap-3">
                     <a href="/dashboard"
-                        class="inline-flex items-center px-4 py-2.5 border border-slate-200 text-sm font-bold rounded-xl text-slate-600 bg-white hover:bg-slate-50 transition-all shadow-sm">
+                        class="cursor-pointer inline-flex items-center px-4 py-2.5 border border-slate-200 text-sm font-bold rounded-xl text-slate-600 bg-white hover:bg-slate-50 transition-all shadow-sm">
                         <ArrowLeft class="w-4 h-4 mr-2" />
                         Volver
                     </a>
-                    <!-- Dynamic action button based on active tab -->
-                    <button v-if="activeTab === 'commissions'" @click="openCommissionModal()"
-                        class="inline-flex items-center px-6 py-3 border border-transparent text-sm font-bold rounded-xl shadow-lg shadow-blue-600/20 text-white bg-gradient-to-r from-blue-600 to-sky-500 hover:from-blue-700 hover:to-sky-600 focus:outline-none focus:ring-4 focus:ring-blue-300 transition-all duration-300 transform hover:scale-105 active:scale-95">
-                        <Plus class="w-5 h-5 mr-2" />
-                        Nueva Autorización de Salida
-                    </button>
-                    <button v-if="activeTab === 'inventory'" @click="openVehicleModal()"
-                        class="inline-flex items-center px-6 py-3 border border-transparent text-sm font-bold rounded-xl shadow-lg shadow-indigo-600/20 text-white bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 focus:outline-none focus:ring-4 focus:ring-indigo-300 transition-all duration-300 transform hover:scale-105 active:scale-95">
-                        <Plus class="w-5 h-5 mr-2" />
-                        Registrar Vehículo
-                    </button>
-                    <button v-if="activeTab === 'maintenance'" @click="openMaintenanceModal()"
-                        class="inline-flex items-center px-6 py-3 border border-transparent text-sm font-bold rounded-xl shadow-lg shadow-emerald-600/20 text-white bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-700 hover:to-teal-600 focus:outline-none focus:ring-4 focus:ring-emerald-300 transition-all duration-300 transform hover:scale-105 active:scale-95">
-                        <Plus class="w-5 h-5 mr-2" />
-                        Registrar Gasto
-                    </button>
-                    <button v-if="activeTab === 'handover'" @click="openHandoverModal()"
-                        class="inline-flex items-center px-6 py-3 border border-transparent text-sm font-bold rounded-xl shadow-lg shadow-amber-600/20 text-white bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 focus:outline-none focus:ring-4 focus:ring-amber-300 transition-all duration-300 transform hover:scale-105 active:scale-95">
-                        <FilePlus class="w-5 h-5 mr-2" />
-                        Nueva Acta
-                    </button>
-                    <button v-if="activeTab === 'service'" @click="openServiceReqModal()"
-                        class="inline-flex items-center px-6 py-3 border border-transparent text-sm font-bold rounded-xl shadow-lg shadow-pink-600/20 text-white bg-gradient-to-r from-pink-600 to-rose-500 hover:from-pink-700 hover:to-rose-600 focus:outline-none focus:ring-4 focus:ring-pink-300 transition-all duration-300 transform hover:scale-105 active:scale-95">
-                        <Plus class="w-5 h-5 mr-2" />
-                        Nuevo Requerimiento
-                    </button>
                 </div>
             </div>
 
             <!-- Tabs Navigation -->
-            <div class="border-b border-slate-200 mb-8">
-                <nav class="-mb-px flex space-x-8 overflow-x-auto">
-                    <button v-if="canViewTab('commissions')" @click="activeTab = 'commissions'"
-                        :class="[activeTab === 'commissions' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300', 'whitespace-nowrap py-4 px-1 border-b-2 font-bold text-sm flex items-center gap-2 transition-all duration-200']">
+            <div class="border-b border-slate-200 mb-8 relative">
+                <nav ref="tabsRef" class="-mb-px flex overflow-x-auto">
+                    <button v-if="canViewTab('commissions')" @click="activeTab = 'commissions'" :class="[
+                        activeTab === 'commissions' ? 'text-blue-600 active-tab' : 'text-slate-500 hover:text-slate-700',
+                        'cursor-pointer whitespace-nowrap py-4 px-5 font-bold text-sm flex items-center gap-2 transition-colors duration-300'
+                    ]">
                         <MapPin class="w-5 h-5" />
                         Autorización Salida de Vehículos
                     </button>
-                    <button v-if="canViewTab('inventory')" @click="activeTab = 'inventory'"
-                        :class="[activeTab === 'inventory' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300', 'whitespace-nowrap py-4 px-1 border-b-2 font-bold text-sm flex items-center gap-2 transition-all duration-200']">
+                    <button v-if="canViewTab('inventory')" @click="activeTab = 'inventory'" :class="[
+                        activeTab === 'inventory' ? 'text-indigo-600 active-tab' : 'text-slate-500 hover:text-slate-700',
+                        'cursor-pointer whitespace-nowrap py-4 px-5 font-bold text-sm flex items-center gap-2 transition-colors duration-300'
+                    ]">
                         <Car class="w-5 h-5" />
                         Inventario
                     </button>
-                    <button v-if="canViewTab('maintenance')" @click="activeTab = 'maintenance'"
-                        :class="[activeTab === 'maintenance' ? 'border-emerald-600 text-emerald-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300', 'whitespace-nowrap py-4 px-1 border-b-2 font-bold text-sm flex items-center gap-2 transition-all duration-200']">
+                    <button v-if="canViewTab('maintenance')" @click="activeTab = 'maintenance'" :class="[
+                        activeTab === 'maintenance' ? 'text-emerald-600 active-tab' : 'text-slate-500 hover:text-slate-700',
+                        'cursor-pointer whitespace-nowrap py-4 px-5 font-bold text-sm flex items-center gap-2 transition-colors duration-300'
+                    ]">
                         <Wrench class="w-5 h-5" />
                         Gastos
                     </button>
-                    <button v-if="canViewTab('handover')" @click="activeTab = 'handover'"
-                        :class="[activeTab === 'handover' ? 'border-amber-600 text-amber-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300', 'whitespace-nowrap py-4 px-1 border-b-2 font-bold text-sm flex items-center gap-2 transition-all duration-200']">
+                    <button v-if="canViewTab('handover')" @click="activeTab = 'handover'" :class="[
+                        activeTab === 'handover' ? 'text-amber-600 active-tab' : 'text-slate-500 hover:text-slate-700',
+                        'cursor-pointer whitespace-nowrap py-4 px-5 font-bold text-sm flex items-center gap-2 transition-colors duration-300'
+                    ]">
                         <FileText class="w-5 h-5" />
                         Actas de Entrega
                     </button>
-                    <button v-if="canViewTab('service')" @click="activeTab = 'service'"
-                        :class="[activeTab === 'service' ? 'border-pink-600 text-pink-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300', 'whitespace-nowrap py-4 px-1 border-b-2 font-bold text-sm flex items-center gap-2 transition-all duration-200']">
+                    <button v-if="canViewTab('service')" @click="activeTab = 'service'" :class="[
+                        activeTab === 'service' ? 'text-pink-600 active-tab' : 'text-slate-500 hover:text-slate-700',
+                        'cursor-pointer whitespace-nowrap py-4 px-5 font-bold text-sm flex items-center gap-2 transition-colors duration-300'
+                    ]">
                         <Settings class="w-5 h-5" />
                         Requerimientos
                     </button>
                 </nav>
+                <!-- Gliding Indicator -->
+                <div class="absolute bottom-0 h-0.5 transition-all duration-300 ease-out" :style="indicatorStyle"></div>
             </div>
 
-            <!-- TAB: COMMISSIONS -->
-            <div v-if="activeTab === 'commissions'" class="space-y-6">
-                <!-- Search Filter -->
-                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4">
-                    <div class="relative max-w-md">
-                        <Search class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-                        <input type="text" v-model="searchCommission"
-                            class="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                            placeholder="Buscar por solicitante, conductor o placa...">
-                    </div>
-                </div>
+            <!-- Tab Content with Transition -->
+            <Transition name="fade-slide" mode="out-in">
+                <div :key="activeTab">
+                    <!-- TAB: COMMISSIONS -->
+                    <div v-if="activeTab === 'commissions'">
+                        <BaseTableCard title="Autorizaciones de Salida"
+                            description="Registro de salidas de vehículos autorizadas">
+                            <template #actions>
+                                <button @click="commissionsFiltersVisible = !commissionsFiltersVisible"
+                                    class="cursor-pointer inline-flex justify-center items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-sm font-bold text-slate-600 hover:bg-slate-50 transition-all duration-200 shadow-sm">
+                                    <SlidersHorizontal class="w-4 h-4" />
+                                    Filtros
+                                    <ChevronDown class="w-4 h-4 transition-transform duration-300"
+                                        :class="{ 'rotate-180': commissionsFiltersVisible }" />
+                                </button>
+                                <button @click="openCommissionModal()"
+                                    class="cursor-pointer inline-flex items-center justify-center px-5 py-2.5 border border-transparent text-sm font-bold rounded-xl shadow-sm shadow-blue-600/20 text-white bg-blue-600 hover:bg-blue-700 transition-all duration-200">
+                                    <Plus class="w-4 h-4 mr-1.5" />
+                                    Nueva Autorización de Salida
+                                </button>
+                            </template>
 
-                <!-- Commission Cards -->
-                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-                    <div v-if="loadingCommissions" class="px-6 py-24 text-center">
-                        <div
-                            class="animate-spin h-12 w-12 border-4 border-blue-600 border-t-transparent rounded-full mx-auto mb-4">
-                        </div>
-                        <p class="text-lg font-medium text-slate-600">Cargando autorizaciones...</p>
-                    </div>
-                    <div v-else-if="filteredCommissions.length === 0" class="text-center py-20">
-                        <MapPin class="w-16 h-16 mx-auto text-slate-300 mb-4" />
-                        <p class="text-slate-500 font-medium">No hay autorizaciones de salida registradas</p>
-                        <p class="text-slate-400 text-sm mt-1">Haz clic en "Nueva Autorización de Salida" para agregar una</p>
-                    </div>
-                    <div v-else>
-                        <div class="overflow-x-auto">
-                            <table class="w-full divide-y divide-slate-200 table-fixed">
-                                <colgroup>
-                                    <col class="w-32" />       <!-- Nº Autorización -->
-                                    <col class="w-48" />       <!-- Solicitante -->
-                                    <col class="w-28" />       <!-- Fecha / Hora -->
-                                    <col class="w-44" />       <!-- Destino -->
-                                    <col class="w-48" />       <!-- Vehículo / Conductor -->
-                                    <col class="w-28" />       <!-- Estado -->
-                                    <col class="w-36" />       <!-- Acciones -->
-                                </colgroup>
-                                <thead class="bg-slate-50">
-                                    <tr>
-                                        <th scope="col"
-                                            class="px-3 py-3 text-left text-xs font-bold text-slate-600 uppercase tracking-wider">
-                                            Nº Autorización
-                                        </th>
-                                        <th scope="col"
-                                            class="px-3 py-3 text-left text-xs font-bold text-slate-600 uppercase tracking-wider">
-                                            Solicitante
-                                        </th>
-                                        <th scope="col"
-                                            class="px-3 py-3 text-left text-xs font-bold text-slate-600 uppercase tracking-wider">
-                                            Fecha / Hora
-                                        </th>
-                                        <th scope="col"
-                                            class="px-3 py-3 text-left text-xs font-bold text-slate-600 uppercase tracking-wider">
-                                            Destino
-                                        </th>
-                                        <th scope="col"
-                                            class="px-3 py-3 text-left text-xs font-bold text-slate-600 uppercase tracking-wider">
-                                            Vehículo / Conductor
-                                        </th>
-                                        <th scope="col"
-                                            class="px-3 py-3 text-left text-xs font-bold text-slate-600 uppercase tracking-wider">
-                                            Estado
-                                        </th>
-                                        <th scope="col"
-                                            class="px-3 py-3 text-left text-xs font-bold text-slate-600 uppercase tracking-wider">
-                                            Acciones
-                                        </th>
-                                    </tr>
-                                </thead>
-                                <tbody class="bg-white divide-y divide-slate-100">
-                                    <tr v-for="commission in paginatedCommissions" :key="commission.id"
-                                        class="hover:bg-slate-50 transition-colors duration-200">
-                                        <td class="px-3 py-3 whitespace-nowrap">
-                                            <div class="text-xs font-bold text-blue-600">
-                                                Nº {{ String(commission.numero).padStart(3, '0') }}-{{ commission.anio }}
-                                            </div>
-                                        </td>
-                                        <td class="px-3 py-3">
-                                            <div class="text-xs font-bold text-slate-900 truncate" :title="commission.solicitante">
-                                                {{ commission.solicitante }}
-                                            </div>
-                                        </td>
-                                        <td class="px-3 py-3 whitespace-nowrap">
-                                            <div class="flex flex-col gap-0.5">
-                                                <span class="text-xs font-semibold text-slate-700 flex items-center gap-1">
-                                                    <Calendar class="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                                                    {{ formatDate(commission.dia) }}
-                                                </span>
-                                                <span class="text-[10px] text-slate-400 font-medium flex items-center gap-1">
-                                                    <Clock class="w-3 h-3 text-slate-400 shrink-0" />
-                                                    {{ commission.hora }}
-                                                </span>
-                                            </div>
-                                        </td>
-                                        <td class="px-3 py-3">
-                                            <div class="text-xs font-semibold text-slate-700 truncate flex items-center gap-1" :title="commission.lugar">
-                                                <MapPin class="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                                                {{ commission.lugar }}
-                                            </div>
-                                        </td>
-                                        <td class="px-3 py-3">
-                                            <div class="flex flex-col gap-0.5">
-                                                <span class="text-xs font-bold text-slate-800 flex items-center gap-1">
-                                                    <Car class="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                                                    {{ commission.placa }}
-                                                </span>
-                                                <span class="text-[10px] text-slate-500 font-medium truncate" :title="commission.conductor">
-                                                    {{ commission.conductor }}
-                                                </span>
-                                            </div>
-                                        </td>
-                                        <td class="px-3 py-3 whitespace-nowrap">
-                                            <span class="px-2.5 py-0.5 text-[10px] font-bold rounded-full inline-block"
-                                                :class="getStatusClass(commission.estado)">
-                                                {{ commission.estado }}
-                                            </span>
-                                        </td>
-                                        <td class="px-3 py-3 whitespace-nowrap text-xs font-medium">
-                                            <div class="flex flex-col gap-1.5 items-start">
-                                                <button @click="openCommissionDetailModal(commission)"
-                                                    class="cursor-pointer text-violet-600 hover:text-violet-900 bg-violet-50 hover:bg-violet-100 px-2 py-1 rounded-xl font-bold transition-all flex items-center gap-1 text-xs whitespace-nowrap">
-                                                    <Eye class="w-3.5 h-3.5" />
-                                                    Detalles
-                                                </button>
-                                                <button @click="printCommission(commission)"
-                                                    class="cursor-pointer text-blue-600 hover:text-blue-900 bg-blue-50 hover:bg-blue-100 px-2 py-1 rounded-xl font-bold transition-all flex items-center gap-1 text-xs whitespace-nowrap">
-                                                    <Printer class="w-3.5 h-3.5" />
-                                                    PDF
-                                                </button>
-                                                <button @click="openCommissionModal(commission)"
-                                                    class="cursor-pointer text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 px-2 py-1 rounded-xl font-bold transition-all flex items-center gap-1 text-xs whitespace-nowrap">
-                                                    <Pencil class="w-3.5 h-3.5" />
-                                                    Gestionar
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                        <ClientPagination
-                            :total-items="filteredCommissions.length"
-                            v-model:current-page="commissionsPage"
-                            v-model:per-page="commissionsPerPage"
-                        />
-                    </div>
-                </div>
-            </div>
-
-            <!-- TAB: INVENTORY -->
-            <div v-if="activeTab === 'inventory'" class="space-y-6">
-                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4">
-                    <div class="relative max-w-md">
-                        <Search class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-                        <input type="text" v-model="searchInventory"
-                            class="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                            placeholder="Buscar vehículo por placa, marca o modelo...">
-                    </div>
-                </div>
-                <div v-if="loadingInventory"
-                    class="bg-white rounded-2xl shadow-sm border border-slate-200 px-6 py-24 text-center">
-                    <div
-                        class="animate-spin h-12 w-12 border-4 border-indigo-600 border-t-transparent rounded-full mx-auto mb-4">
-                    </div>
-                    <p class="text-lg font-medium text-slate-600">Cargando inventario...</p>
-                </div>
-                <div v-else-if="filteredInventory.length === 0"
-                    class="text-center py-20 bg-white rounded-2xl shadow-sm border border-slate-200">
-                    <Car class="w-16 h-16 mx-auto text-slate-300 mb-4" />
-                    <p class="text-slate-500 font-medium">No hay vehículos en el inventario</p>
-                </div>
-                <div v-else class="space-y-6">
-                    <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                        <div v-for="vehicle in paginatedInventory" :key="vehicle.id"
-                            class="bg-white overflow-hidden shadow-sm hover:shadow-xl rounded-2xl border border-slate-200 transition-all duration-300 p-6 group">
-                            <div class="flex justify-between items-center mb-3">
-                                <span class="text-xs font-bold text-indigo-700 bg-indigo-100 px-3 py-1 rounded-lg">{{
-                                    vehicle.tipo }}</span>
-                                <span class="text-xs font-bold px-3 py-1 rounded-lg"
-                                    :class="vehicle.estado === 'Operativo' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'">{{
-                                        vehicle.estado }}</span>
+                            <!-- Filters toggle + collapsible panel -->
+                            <div class="filters-collapse bg-slate-50 border-b border-slate-100"
+                                :class="{ 'filters-collapse--open': commissionsFiltersVisible }">
+                                <div class="p-4 sm:p-5">
+                                    <div class="relative max-w-md">
+                                        <Search class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                                        <input type="text" v-model="searchCommission"
+                                            class="w-full pl-10 pr-4 py-2.5 border-2 border-slate-200 rounded-xl bg-white text-slate-900 placeholder:text-slate-400 focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200 text-sm outline-none cursor-pointer"
+                                            placeholder="Buscar por solicitante, conductor o placa...">
+                                    </div>
+                                </div>
                             </div>
-                            <h3 class="text-xl font-bold text-slate-800 group-hover:text-indigo-600 transition-colors">{{
-                                vehicle.marca }} {{ vehicle.modelo }}</h3>
-                            <p class="text-lg font-bold text-slate-600 mt-1">{{ vehicle.placa }}</p>
-                            <p class="text-sm text-slate-400 mt-2">{{ vehicle.color }} | {{ vehicle.anio }}</p>
-                            <button @click="openVehicleModal(vehicle)"
-                                class="mt-4 w-full py-2.5 text-indigo-600 border-2 border-indigo-200 rounded-xl hover:bg-indigo-50 font-bold text-sm transition-all">
-                                Editar Vehículo
-                            </button>
-                        </div>
-                    </div>
-                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-                        <ClientPagination
-                            :total-items="filteredInventory.length"
-                            v-model:current-page="inventoryPage"
-                            v-model:per-page="inventoryPerPage"
-                        />
-                    </div>
-                </div>
-            </div>
 
-            <!-- TAB: MAINTENANCE -->
-            <div v-if="activeTab === 'maintenance'" class="space-y-6">
-                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-                    <div v-if="loadingMaintenance" class="px-6 py-24 text-center">
-                        <div
-                            class="animate-spin h-12 w-12 border-4 border-emerald-600 border-t-transparent rounded-full mx-auto mb-4">
-                        </div>
-                        <p class="text-lg font-medium text-slate-600">Cargando gastos de mantenimiento...</p>
+                            <div v-if="loadingCommissions" class="px-6 py-24 text-center">
+                                <div
+                                    class="animate-spin h-12 w-12 border-4 border-blue-600 border-t-transparent rounded-full mx-auto mb-4">
+                                </div>
+                                <p class="text-lg font-medium text-slate-600">Cargando autorizaciones...</p>
+                            </div>
+                            <div v-else-if="filteredCommissions.length === 0" class="px-6 py-16 text-center">
+                                <div class="flex flex-col items-center">
+                                    <div class="bg-slate-100 rounded-full p-4 mb-4">
+                                        <MapPin class="h-12 w-12 text-slate-400" />
+                                    </div>
+                                    <h3 class="text-lg font-bold text-slate-900 mb-1">No hay autorizaciones de salida
+                                        registradas</h3>
+                                    <p class="text-sm text-slate-500">Haz clic en "Nueva Autorización de Salida" para
+                                        agregar una.</p>
+                                </div>
+                            </div>
+                            <div v-else>
+                                <div class="overflow-x-auto">
+                                    <table class="w-full divide-y divide-slate-200 table-fixed">
+                                        <colgroup>
+                                            <col class="w-32" />       <!-- Nº Autorización -->
+                                            <col class="w-48" />       <!-- Solicitante -->
+                                            <col class="w-28" />       <!-- Fecha / Hora -->
+                                            <col class="w-44" />       <!-- Destino -->
+                                            <col class="w-48" />       <!-- Vehículo / Conductor -->
+                                            <col class="w-28" />       <!-- Estado -->
+                                            <col class="w-36" />       <!-- Acciones -->
+                                        </colgroup>
+                                        <thead class="bg-slate-50">
+                                            <tr>
+                                                <th scope="col"
+                                                    class="px-3 py-3 text-left text-xs font-bold text-slate-600 uppercase tracking-wider">
+                                                    Nº Autorización
+                                                </th>
+                                                <th scope="col"
+                                                    class="px-3 py-3 text-left text-xs font-bold text-slate-600 uppercase tracking-wider">
+                                                    Solicitante
+                                                </th>
+                                                <th scope="col"
+                                                    class="px-3 py-3 text-left text-xs font-bold text-slate-600 uppercase tracking-wider">
+                                                    Fecha / Hora
+                                                </th>
+                                                <th scope="col"
+                                                    class="px-3 py-3 text-left text-xs font-bold text-slate-600 uppercase tracking-wider">
+                                                    Destino
+                                                </th>
+                                                <th scope="col"
+                                                    class="px-3 py-3 text-left text-xs font-bold text-slate-600 uppercase tracking-wider">
+                                                    Vehículo / Conductor
+                                                </th>
+                                                <th scope="col"
+                                                    class="px-3 py-3 text-left text-xs font-bold text-slate-600 uppercase tracking-wider">
+                                                    Estado
+                                                </th>
+                                                <th scope="col"
+                                                    class="px-3 py-3 text-left text-xs font-bold text-slate-600 uppercase tracking-wider">
+                                                    Acciones
+                                                </th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="bg-white divide-y divide-slate-100">
+                                            <tr v-for="commission in paginatedCommissions" :key="commission.id"
+                                                class="hover:bg-blue-50 transition-colors duration-200">
+                                                <td class="px-3 py-3 whitespace-nowrap">
+                                                    <div class="text-xs font-bold text-blue-600">
+                                                        Nº {{ String(commission.numero).padStart(3, '0') }}-{{ commission.anio }}
+                                                    </div>
+                                                </td>
+                                                <td class="px-3 py-3">
+                                                    <div class="text-xs font-bold text-slate-900 truncate" :title="commission.solicitante">
+                                                        {{ commission.solicitante }}
+                                                    </div>
+                                                </td>
+                                                <td class="px-3 py-3 whitespace-nowrap">
+                                                    <div class="flex flex-col gap-0.5">
+                                                        <span class="text-xs font-semibold text-slate-700 flex items-center gap-1">
+                                                            <Calendar class="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                                                            {{ formatDate(commission.dia) }}
+                                                        </span>
+                                                        <span class="text-[10px] text-slate-400 font-medium flex items-center gap-1">
+                                                            <Clock class="w-3 h-3 text-slate-400 shrink-0" />
+                                                            {{ commission.hora }}
+                                                        </span>
+                                                    </div>
+                                                </td>
+                                                <td class="px-3 py-3">
+                                                    <div class="text-xs font-semibold text-slate-700 truncate flex items-center gap-1" :title="commission.lugar">
+                                                        <MapPin class="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                                                        {{ commission.lugar }}
+                                                    </div>
+                                                </td>
+                                                <td class="px-3 py-3">
+                                                    <div class="flex flex-col gap-0.5">
+                                                        <span class="text-xs font-bold text-slate-800 flex items-center gap-1">
+                                                            <Car class="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                                                            {{ commission.placa }}
+                                                        </span>
+                                                        <span class="text-[10px] text-slate-500 font-medium truncate" :title="commission.conductor">
+                                                            {{ commission.conductor }}
+                                                        </span>
+                                                    </div>
+                                                </td>
+                                                <td class="px-3 py-3 whitespace-nowrap">
+                                                    <span class="px-2.5 py-0.5 text-[10px] font-bold rounded-full inline-block"
+                                                        :class="getStatusClass(commission.estado)">
+                                                        {{ commission.estado }}
+                                                    </span>
+                                                </td>
+                                                <td class="px-3 py-3 whitespace-nowrap text-xs font-medium">
+                                                    <div class="flex flex-col gap-1.5 items-start">
+                                                        <button @click="openCommissionDetailModal(commission)"
+                                                            class="cursor-pointer text-violet-600 hover:text-violet-900 bg-violet-50 hover:bg-violet-100 px-2 py-1 rounded-xl font-bold transition-all flex items-center gap-1 text-xs whitespace-nowrap">
+                                                            <Eye class="w-3.5 h-3.5" />
+                                                            Detalles
+                                                        </button>
+                                                        <button @click="printCommission(commission)"
+                                                            class="cursor-pointer text-blue-600 hover:text-blue-900 bg-blue-50 hover:bg-blue-100 px-2 py-1 rounded-xl font-bold transition-all flex items-center gap-1 text-xs whitespace-nowrap">
+                                                            <Printer class="w-3.5 h-3.5" />
+                                                            PDF
+                                                        </button>
+                                                        <button @click="openCommissionModal(commission)"
+                                                            class="cursor-pointer text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 px-2 py-1 rounded-xl font-bold transition-all flex items-center gap-1 text-xs whitespace-nowrap">
+                                                            <Pencil class="w-3.5 h-3.5" />
+                                                            Gestionar
+                                                        </button>
+                                                        <button v-if="commission.can_authorize" @click="handleAuthorize(commission)"
+                                                            :disabled="approvalProcessing"
+                                                            class="cursor-pointer text-indigo-600 hover:text-indigo-900 bg-indigo-50 hover:bg-indigo-100 px-2 py-1 rounded-xl font-bold transition-all flex items-center gap-1 text-xs whitespace-nowrap disabled:opacity-50">
+                                                            <CheckCircle class="w-3.5 h-3.5" />
+                                                            Autorizar
+                                                        </button>
+                                                        <button v-if="commission.can_authorize" @click="openRejectModal(commission)"
+                                                            :disabled="approvalProcessing"
+                                                            class="cursor-pointer text-red-600 hover:text-red-900 bg-red-50 hover:bg-red-100 px-2 py-1 rounded-xl font-bold transition-all flex items-center gap-1 text-xs whitespace-nowrap disabled:opacity-50">
+                                                            <XCircle class="w-3.5 h-3.5" />
+                                                            Rechazar
+                                                        </button>
+                                                        <button v-if="commission.can_confirm" @click="handleConfirmConductor(commission)"
+                                                            :disabled="approvalProcessing"
+                                                            class="cursor-pointer text-cyan-600 hover:text-cyan-900 bg-cyan-50 hover:bg-cyan-100 px-2 py-1 rounded-xl font-bold transition-all flex items-center gap-1 text-xs whitespace-nowrap disabled:opacity-50">
+                                                            <CheckCircle class="w-3.5 h-3.5" />
+                                                            Confirmar
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <ClientPagination
+                                    :total-items="filteredCommissions.length"
+                                    v-model:current-page="commissionsPage"
+                                    v-model:per-page="commissionsPerPage"
+                                />
+                            </div>
+                        </BaseTableCard>
                     </div>
-                    <div v-else-if="maintenances.length === 0" class="text-center py-20">
-                        <Wrench class="w-16 h-16 mx-auto text-slate-300 mb-4" />
-                        <p class="text-slate-500 font-medium">No hay gastos de mantenimiento registrados</p>
-                    </div>
-                    <div v-else>
-                        <div class="overflow-x-auto">
-                            <table class="min-w-full">
-                                <thead class="bg-gradient-to-r from-emerald-50 to-teal-50">
-                                    <tr>
-                                        <th
-                                            class="px-6 py-4 text-left text-xs font-bold text-emerald-700 uppercase tracking-wider">
-                                            Fecha</th>
-                                        <th
-                                            class="px-6 py-4 text-left text-xs font-bold text-emerald-700 uppercase tracking-wider">
-                                            Vehículo</th>
-                                        <th
-                                            class="px-6 py-4 text-left text-xs font-bold text-emerald-700 uppercase tracking-wider">
-                                            Detalle</th>
-                                        <th
-                                            class="px-6 py-4 text-left text-xs font-bold text-emerald-700 uppercase tracking-wider">
-                                            Costo</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="bg-white divide-y divide-slate-100">
-                                    <tr v-for="expense in paginatedMaintenances" :key="expense.id"
-                                        class="hover:bg-slate-50 transition-colors">
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-600">{{ formatDate(expense.fecha) }}
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-slate-800">{{
-                                            expense.vehicle_name }}</td>
-                                        <td class="px-6 py-4 text-sm text-slate-600">{{ expense.detalle }}</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-emerald-600">S/ {{
-                                            expense.costo }}</td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                        <ClientPagination
-                            :total-items="maintenances.length"
-                            v-model:current-page="maintenancePage"
-                            v-model:per-page="maintenancePerPage"
-                        />
-                    </div>
-                </div>
-            </div>
 
-            <!-- TAB: HANDOVER -->
-            <div v-if="activeTab === 'handover'" class="space-y-6">
-                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-                    <div v-if="loadingHandovers" class="px-6 py-24 text-center">
-                        <div
-                            class="animate-spin h-12 w-12 border-4 border-amber-600 border-t-transparent rounded-full mx-auto mb-4">
-                        </div>
-                        <p class="text-lg font-medium text-slate-600">Cargando actas de entrega...</p>
-                    </div>
-                    <div v-else-if="handovers.length === 0" class="text-center py-20">
-                        <FileText class="w-16 h-16 mx-auto text-slate-300 mb-4" />
-                        <p class="text-slate-500 font-medium">No hay actas registradas</p>
-                    </div>
-                    <div v-else>
-                        <div class="overflow-x-auto">
-                            <table class="min-w-full">
-                                <thead class="bg-gradient-to-r from-amber-50 to-orange-50">
-                                    <tr>
-                                        <th
-                                            class="px-6 py-4 text-left text-xs font-bold text-amber-700 uppercase tracking-wider">
-                                            Fecha</th>
-                                        <th
-                                            class="px-6 py-4 text-left text-xs font-bold text-amber-700 uppercase tracking-wider">
-                                            Placa</th>
-                                        <th
-                                            class="px-6 py-4 text-left text-xs font-bold text-amber-700 uppercase tracking-wider">
-                                            Entidad</th>
-                                        <th
-                                            class="px-6 py-4 text-left text-xs font-bold text-amber-700 uppercase tracking-wider">
-                                            Kilometraje</th>
-                                        <th
-                                            class="px-6 py-4 text-left text-xs font-bold text-amber-700 uppercase tracking-wider">
-                                            Recepciona</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="bg-white divide-y divide-slate-100">
-                                    <tr v-for="handover in paginatedHandovers" :key="handover.id"
-                                        class="hover:bg-slate-50 transition-colors">
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-600">{{ formatDate(handover.fecha) }}
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-amber-600">{{
-                                            handover.placa }}</td>
-                                        <td class="px-6 py-4 text-sm text-slate-600">{{ handover.entidad }}</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-600">{{
-                                            handover.kilometraje }} km</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-600">{{
-                                            handover.recepciona }}</td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                        <ClientPagination
-                            :total-items="handovers.length"
-                            v-model:current-page="handoverPage"
-                            v-model:per-page="handoverPerPage"
-                        />
-                    </div>
-                </div>
-            </div>
+                    <!-- TAB: INVENTORY -->
+                    <div v-else-if="activeTab === 'inventory'">
+                        <BaseTableCard title="Inventario de Vehículos"
+                            description="Vehículos registrados en la institución">
+                            <template #actions>
+                                <button @click="inventoryFiltersVisible = !inventoryFiltersVisible"
+                                    class="cursor-pointer inline-flex justify-center items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-sm font-bold text-slate-600 hover:bg-slate-50 transition-all duration-200 shadow-sm">
+                                    <SlidersHorizontal class="w-4 h-4" />
+                                    Filtros
+                                    <ChevronDown class="w-4 h-4 transition-transform duration-300"
+                                        :class="{ 'rotate-180': inventoryFiltersVisible }" />
+                                </button>
+                                <button @click="openVehicleModal()"
+                                    class="cursor-pointer inline-flex items-center justify-center px-5 py-2.5 border border-transparent text-sm font-bold rounded-xl shadow-sm shadow-indigo-600/20 text-white bg-indigo-600 hover:bg-indigo-700 transition-all duration-200">
+                                    <Plus class="w-4 h-4 mr-1.5" />
+                                    Registrar Vehículo
+                                </button>
+                            </template>
 
-            <!-- TAB: SERVICE REQUIREMENTS -->
-            <div v-if="activeTab === 'service'" class="space-y-6">
-                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-                    <div v-if="loadingServiceReqs" class="px-6 py-24 text-center">
-                        <div
-                            class="animate-spin h-12 w-12 border-4 border-pink-600 border-t-transparent rounded-full mx-auto mb-4">
-                        </div>
-                        <p class="text-lg font-medium text-slate-600">Cargando requerimientos...</p>
+                            <!-- Filters toggle + collapsible panel -->
+                            <div class="filters-collapse bg-slate-50 border-b border-slate-100"
+                                :class="{ 'filters-collapse--open': inventoryFiltersVisible }">
+                                <div class="p-4 sm:p-5">
+                                    <div class="relative max-w-md">
+                                        <Search class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                                        <input type="text" v-model="searchInventory"
+                                            class="w-full pl-10 pr-4 py-2.5 border-2 border-slate-200 rounded-xl bg-white text-slate-900 placeholder:text-slate-400 focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all duration-200 text-sm outline-none cursor-pointer"
+                                            placeholder="Buscar vehículo por placa, marca o modelo...">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div v-if="loadingInventory" class="px-6 py-24 text-center">
+                                <div
+                                    class="animate-spin h-12 w-12 border-4 border-indigo-600 border-t-transparent rounded-full mx-auto mb-4">
+                                </div>
+                                <p class="text-lg font-medium text-slate-600">Cargando inventario...</p>
+                            </div>
+                            <div v-else-if="filteredInventory.length === 0" class="px-6 py-16 text-center">
+                                <div class="flex flex-col items-center">
+                                    <div class="bg-slate-100 rounded-full p-4 mb-4">
+                                        <Car class="h-12 w-12 text-slate-400" />
+                                    </div>
+                                    <h3 class="text-lg font-bold text-slate-900 mb-1">No hay vehículos en el
+                                        inventario</h3>
+                                    <p class="text-sm text-slate-500">Haz clic en "Registrar Vehículo" para agregar
+                                        uno.</p>
+                                </div>
+                            </div>
+                            <div v-else class="p-4 sm:p-5 space-y-6">
+                                <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                                    <div v-for="vehicle in paginatedInventory" :key="vehicle.id"
+                                        class="bg-white overflow-hidden shadow-sm hover:shadow-xl rounded-2xl border border-slate-200 transition-all duration-300 p-6 group">
+                                        <div class="flex justify-between items-center mb-3">
+                                            <span class="text-xs font-bold text-indigo-700 bg-indigo-100 px-3 py-1 rounded-lg">{{
+                                                vehicle.tipo }}</span>
+                                            <span class="text-xs font-bold px-3 py-1 rounded-lg"
+                                                :class="vehicle.estado === 'Operativo' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'">{{
+                                                    vehicle.estado }}</span>
+                                        </div>
+                                        <h3 class="text-xl font-bold text-slate-800 group-hover:text-indigo-600 transition-colors">{{
+                                            vehicle.marca }} {{ vehicle.modelo }}</h3>
+                                        <p class="text-lg font-bold text-slate-600 mt-1">{{ vehicle.placa }}</p>
+                                        <p class="text-sm text-slate-400 mt-2">{{ vehicle.color }} | {{ vehicle.anio }}</p>
+                                        <button @click="openVehicleModal(vehicle)"
+                                            class="cursor-pointer mt-4 w-full py-2.5 text-indigo-600 border-2 border-indigo-200 rounded-xl hover:bg-indigo-50 font-bold text-sm transition-all">
+                                            Editar Vehículo
+                                        </button>
+                                    </div>
+                                </div>
+                                <ClientPagination
+                                    :total-items="filteredInventory.length"
+                                    v-model:current-page="inventoryPage"
+                                    v-model:per-page="inventoryPerPage"
+                                />
+                            </div>
+                        </BaseTableCard>
                     </div>
-                    <div v-else-if="serviceReqs.length === 0" class="text-center py-20">
-                        <Settings class="w-16 h-16 mx-auto text-slate-300 mb-4" />
-                        <p class="text-slate-500 font-medium">No hay requerimientos registrados</p>
+
+                    <!-- TAB: MAINTENANCE -->
+                    <div v-else-if="activeTab === 'maintenance'">
+                        <BaseTableCard title="Gastos de Mantenimiento"
+                            description="Historial de gastos por vehículo">
+                            <template #actions>
+                                <button @click="openMaintenanceModal()"
+                                    class="cursor-pointer inline-flex items-center justify-center px-5 py-2.5 border border-transparent text-sm font-bold rounded-xl shadow-sm shadow-emerald-600/20 text-white bg-emerald-600 hover:bg-emerald-700 transition-all duration-200">
+                                    <Plus class="w-4 h-4 mr-1.5" />
+                                    Registrar Gasto
+                                </button>
+                            </template>
+
+                            <div v-if="loadingMaintenance" class="px-6 py-24 text-center">
+                                <div
+                                    class="animate-spin h-12 w-12 border-4 border-emerald-600 border-t-transparent rounded-full mx-auto mb-4">
+                                </div>
+                                <p class="text-lg font-medium text-slate-600">Cargando gastos de mantenimiento...</p>
+                            </div>
+                            <div v-else-if="maintenances.length === 0" class="px-6 py-16 text-center">
+                                <div class="flex flex-col items-center">
+                                    <div class="bg-slate-100 rounded-full p-4 mb-4">
+                                        <Wrench class="h-12 w-12 text-slate-400" />
+                                    </div>
+                                    <h3 class="text-lg font-bold text-slate-900 mb-1">No hay gastos de mantenimiento
+                                        registrados</h3>
+                                    <p class="text-sm text-slate-500">Haz clic en "Registrar Gasto" para agregar uno.
+                                    </p>
+                                </div>
+                            </div>
+                            <div v-else>
+                                <div class="overflow-x-auto">
+                                    <table class="w-full divide-y divide-slate-200 table-fixed">
+                                        <colgroup>
+                                            <col class="w-28" />       <!-- Fecha -->
+                                            <col class="w-48" />       <!-- Vehículo -->
+                                            <col />                    <!-- Detalle -->
+                                            <col class="w-32" />       <!-- Costo -->
+                                        </colgroup>
+                                        <thead class="bg-slate-50">
+                                            <tr>
+                                                <th scope="col"
+                                                    class="px-3 py-3 text-left text-xs font-bold text-slate-600 uppercase tracking-wider">
+                                                    Fecha
+                                                </th>
+                                                <th scope="col"
+                                                    class="px-3 py-3 text-left text-xs font-bold text-slate-600 uppercase tracking-wider">
+                                                    Vehículo
+                                                </th>
+                                                <th scope="col"
+                                                    class="px-3 py-3 text-left text-xs font-bold text-slate-600 uppercase tracking-wider">
+                                                    Detalle
+                                                </th>
+                                                <th scope="col"
+                                                    class="px-3 py-3 text-left text-xs font-bold text-slate-600 uppercase tracking-wider">
+                                                    Costo
+                                                </th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="bg-white divide-y divide-slate-100">
+                                            <tr v-for="expense in paginatedMaintenances" :key="expense.id"
+                                                class="hover:bg-emerald-50 transition-colors duration-200">
+                                                <td class="px-3 py-3 whitespace-nowrap text-xs text-slate-600">{{ formatDate(expense.fecha) }}
+                                                </td>
+                                                <td class="px-3 py-3 whitespace-nowrap text-xs font-bold text-slate-800">{{
+                                                    expense.vehicle_name }}</td>
+                                                <td class="px-3 py-3 text-xs text-slate-600 truncate">{{ expense.detalle }}</td>
+                                                <td class="px-3 py-3 whitespace-nowrap text-xs font-bold text-emerald-600">S/ {{
+                                                    expense.costo }}</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <ClientPagination
+                                    :total-items="maintenances.length"
+                                    v-model:current-page="maintenancePage"
+                                    v-model:per-page="maintenancePerPage"
+                                />
+                            </div>
+                        </BaseTableCard>
                     </div>
-                    <div v-else>
-                        <div class="overflow-x-auto">
-                            <table class="min-w-full">
-                                <thead class="bg-gradient-to-r from-pink-50 to-rose-50">
-                                    <tr>
-                                        <th
-                                            class="px-6 py-4 text-left text-xs font-bold text-pink-700 uppercase tracking-wider">
-                                            Fecha</th>
-                                        <th
-                                            class="px-6 py-4 text-left text-xs font-bold text-pink-700 uppercase tracking-wider">
-                                            Vehículo</th>
-                                        <th
-                                            class="px-6 py-4 text-left text-xs font-bold text-pink-700 uppercase tracking-wider">
-                                            Conductor</th>
-                                        <th
-                                            class="px-6 py-4 text-left text-xs font-bold text-pink-700 uppercase tracking-wider">
-                                            Motivo</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="bg-white divide-y divide-slate-100">
-                                    <tr v-for="req in paginatedServiceReqs" :key="req.id"
-                                        class="hover:bg-slate-50 transition-colors">
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-600">{{ formatDate(req.created_at) }}
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-pink-600">{{
-                                            req.vehicle_name }}</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-600">{{ req.conductor }}
-                                        </td>
-                                        <td class="px-6 py-4 text-sm text-slate-600">{{ req.motivo }}</td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                        <ClientPagination
-                            :total-items="serviceReqs.length"
-                            v-model:current-page="servicePage"
-                            v-model:per-page="servicePerPage"
-                        />
+
+                    <!-- TAB: HANDOVER -->
+                    <div v-else-if="activeTab === 'handover'">
+                        <BaseTableCard title="Actas de Entrega"
+                            description="Entregas y recepciones de vehículos">
+                            <template #actions>
+                                <button @click="openHandoverModal()"
+                                    class="cursor-pointer inline-flex items-center justify-center px-5 py-2.5 border border-transparent text-sm font-bold rounded-xl shadow-sm shadow-amber-600/20 text-white bg-amber-600 hover:bg-amber-700 transition-all duration-200">
+                                    <FilePlus class="w-4 h-4 mr-1.5" />
+                                    Nueva Acta
+                                </button>
+                            </template>
+
+                            <div v-if="loadingHandovers" class="px-6 py-24 text-center">
+                                <div
+                                    class="animate-spin h-12 w-12 border-4 border-amber-600 border-t-transparent rounded-full mx-auto mb-4">
+                                </div>
+                                <p class="text-lg font-medium text-slate-600">Cargando actas de entrega...</p>
+                            </div>
+                            <div v-else-if="handovers.length === 0" class="px-6 py-16 text-center">
+                                <div class="flex flex-col items-center">
+                                    <div class="bg-slate-100 rounded-full p-4 mb-4">
+                                        <FileText class="h-12 w-12 text-slate-400" />
+                                    </div>
+                                    <h3 class="text-lg font-bold text-slate-900 mb-1">No hay actas registradas</h3>
+                                    <p class="text-sm text-slate-500">Haz clic en "Nueva Acta" para agregar una.</p>
+                                </div>
+                            </div>
+                            <div v-else>
+                                <div class="overflow-x-auto">
+                                    <table class="w-full divide-y divide-slate-200 table-fixed">
+                                        <colgroup>
+                                            <col class="w-28" />       <!-- Fecha -->
+                                            <col class="w-28" />       <!-- Placa -->
+                                            <col />                    <!-- Entidad -->
+                                            <col class="w-32" />       <!-- Kilometraje -->
+                                            <col class="w-40" />       <!-- Recepciona -->
+                                        </colgroup>
+                                        <thead class="bg-slate-50">
+                                            <tr>
+                                                <th scope="col"
+                                                    class="px-3 py-3 text-left text-xs font-bold text-slate-600 uppercase tracking-wider">
+                                                    Fecha
+                                                </th>
+                                                <th scope="col"
+                                                    class="px-3 py-3 text-left text-xs font-bold text-slate-600 uppercase tracking-wider">
+                                                    Placa
+                                                </th>
+                                                <th scope="col"
+                                                    class="px-3 py-3 text-left text-xs font-bold text-slate-600 uppercase tracking-wider">
+                                                    Entidad
+                                                </th>
+                                                <th scope="col"
+                                                    class="px-3 py-3 text-left text-xs font-bold text-slate-600 uppercase tracking-wider">
+                                                    Kilometraje
+                                                </th>
+                                                <th scope="col"
+                                                    class="px-3 py-3 text-left text-xs font-bold text-slate-600 uppercase tracking-wider">
+                                                    Recepciona
+                                                </th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="bg-white divide-y divide-slate-100">
+                                            <tr v-for="handover in paginatedHandovers" :key="handover.id"
+                                                class="hover:bg-amber-50 transition-colors duration-200">
+                                                <td class="px-3 py-3 whitespace-nowrap text-xs text-slate-600">{{ formatDate(handover.fecha) }}
+                                                </td>
+                                                <td class="px-3 py-3 whitespace-nowrap text-xs font-bold text-amber-600">{{
+                                                    handover.placa }}</td>
+                                                <td class="px-3 py-3 text-xs text-slate-600 truncate">{{ handover.entidad }}</td>
+                                                <td class="px-3 py-3 whitespace-nowrap text-xs text-slate-600">{{
+                                                    handover.kilometraje }} km</td>
+                                                <td class="px-3 py-3 whitespace-nowrap text-xs text-slate-600 truncate">{{
+                                                    handover.recepciona }}</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <ClientPagination
+                                    :total-items="handovers.length"
+                                    v-model:current-page="handoverPage"
+                                    v-model:per-page="handoverPerPage"
+                                />
+                            </div>
+                        </BaseTableCard>
+                    </div>
+
+                    <!-- TAB: SERVICE REQUIREMENTS -->
+                    <div v-else-if="activeTab === 'service'">
+                        <BaseTableCard title="Requerimientos de Servicio"
+                            description="Solicitudes de servicio registradas">
+                            <template #actions>
+                                <button @click="openServiceReqModal()"
+                                    class="cursor-pointer inline-flex items-center justify-center px-5 py-2.5 border border-transparent text-sm font-bold rounded-xl shadow-sm shadow-pink-600/20 text-white bg-pink-600 hover:bg-pink-700 transition-all duration-200">
+                                    <Plus class="w-4 h-4 mr-1.5" />
+                                    Nuevo Requerimiento
+                                </button>
+                            </template>
+
+                            <div v-if="loadingServiceReqs" class="px-6 py-24 text-center">
+                                <div
+                                    class="animate-spin h-12 w-12 border-4 border-pink-600 border-t-transparent rounded-full mx-auto mb-4">
+                                </div>
+                                <p class="text-lg font-medium text-slate-600">Cargando requerimientos...</p>
+                            </div>
+                            <div v-else-if="serviceReqs.length === 0" class="px-6 py-16 text-center">
+                                <div class="flex flex-col items-center">
+                                    <div class="bg-slate-100 rounded-full p-4 mb-4">
+                                        <Settings class="h-12 w-12 text-slate-400" />
+                                    </div>
+                                    <h3 class="text-lg font-bold text-slate-900 mb-1">No hay requerimientos
+                                        registrados</h3>
+                                    <p class="text-sm text-slate-500">Haz clic en "Nuevo Requerimiento" para agregar
+                                        uno.</p>
+                                </div>
+                            </div>
+                            <div v-else>
+                                <div class="overflow-x-auto">
+                                    <table class="w-full divide-y divide-slate-200 table-fixed">
+                                        <colgroup>
+                                            <col class="w-28" />       <!-- Fecha -->
+                                            <col class="w-48" />       <!-- Vehículo -->
+                                            <col class="w-48" />       <!-- Conductor -->
+                                            <col />                    <!-- Motivo -->
+                                        </colgroup>
+                                        <thead class="bg-slate-50">
+                                            <tr>
+                                                <th scope="col"
+                                                    class="px-3 py-3 text-left text-xs font-bold text-slate-600 uppercase tracking-wider">
+                                                    Fecha
+                                                </th>
+                                                <th scope="col"
+                                                    class="px-3 py-3 text-left text-xs font-bold text-slate-600 uppercase tracking-wider">
+                                                    Vehículo
+                                                </th>
+                                                <th scope="col"
+                                                    class="px-3 py-3 text-left text-xs font-bold text-slate-600 uppercase tracking-wider">
+                                                    Conductor
+                                                </th>
+                                                <th scope="col"
+                                                    class="px-3 py-3 text-left text-xs font-bold text-slate-600 uppercase tracking-wider">
+                                                    Motivo
+                                                </th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="bg-white divide-y divide-slate-100">
+                                            <tr v-for="req in paginatedServiceReqs" :key="req.id"
+                                                class="hover:bg-pink-50 transition-colors duration-200">
+                                                <td class="px-3 py-3 whitespace-nowrap text-xs text-slate-600">{{ formatDate(req.created_at) }}
+                                                </td>
+                                                <td class="px-3 py-3 whitespace-nowrap text-xs font-bold text-pink-600">{{
+                                                    req.vehicle_name }}</td>
+                                                <td class="px-3 py-3 whitespace-nowrap text-xs text-slate-600">{{ req.conductor }}
+                                                </td>
+                                                <td class="px-3 py-3 text-xs text-slate-600 truncate">{{ req.motivo }}</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <ClientPagination
+                                    :total-items="serviceReqs.length"
+                                    v-model:current-page="servicePage"
+                                    v-model:per-page="servicePerPage"
+                                />
+                            </div>
+                        </BaseTableCard>
                     </div>
                 </div>
-            </div>
+            </Transition>
 
             <!-- Modals -->
             <VehicleModal v-if="showVehicleModal" :vehicle="selectedVehicle" :vehicles="inventory"
                 @close="showVehicleModal = false" @saved="onVehicleSaved" />
             <CommissionModal v-if="showCommissionModal" :commission="selectedCommission" :vehicles="inventory"
-                :employees="props.employees" :drivers="props.drivers" @close="showCommissionModal = false"
+                :drivers="props.drivers" @close="showCommissionModal = false"
                 @saved="onCommissionSaved" />
             <CommissionDetailModal v-if="showCommissionDetailModal" :commission="selectedCommission"
                 @close="showCommissionDetailModal = false" />
@@ -463,6 +600,39 @@
             <HandoverModal v-if="showHandoverModal" @close="showHandoverModal = false" @saved="onHandoverSaved" />
             <ServiceReqModal v-if="showServiceReqModal" :vehicles="inventory" @close="showServiceReqModal = false"
                 @saved="onServiceReqSaved" />
+
+            <!-- Reject commission modal -->
+            <Teleport to="body">
+                <div v-if="showRejectModal" class="fixed inset-0 z-50 flex items-center justify-center p-4">
+                    <div class="fixed inset-0 bg-black/50 backdrop-blur-sm" @click="showRejectModal = false"></div>
+                    <div class="relative bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
+                        <h3 class="text-lg font-bold text-slate-900 mb-4">Rechazar Autorización de Salida</h3>
+                        <p class="text-sm text-slate-600 mb-4">
+                            Nº <strong class="text-blue-600">{{ String(rejectTargetCommission?.numero).padStart(3, '0') }}-{{ rejectTargetCommission?.anio }}</strong>
+                            de <strong>{{ rejectTargetCommission?.solicitante }}</strong>
+                        </p>
+                        <div class="mb-4">
+                            <label class="block text-sm font-semibold text-slate-700 mb-1">Motivo del rechazo *</label>
+                            <textarea v-model="rejectComentario" rows="3"
+                                class="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm resize-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                                :class="{ 'border-red-300': rejectError }"
+                                placeholder="Indique el motivo del rechazo..."></textarea>
+                            <p v-if="rejectError" class="mt-1 text-xs text-red-500">{{ rejectError }}</p>
+                        </div>
+                        <div class="flex justify-end gap-2">
+                            <button @click="showRejectModal = false"
+                                class="px-4 py-2 rounded-lg text-sm font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors">
+                                Cancelar
+                            </button>
+                            <button @click="handleReject" :disabled="approvalProcessing"
+                                class="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-bold text-white bg-red-600 hover:bg-red-700 disabled:opacity-50 transition-colors">
+                                <Loader2 v-if="approvalProcessing" class="h-4 w-4 animate-spin" />
+                                Confirmar Rechazo
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </Teleport>
         </div>
     </div>
 </template>
@@ -473,9 +643,10 @@ export default { layout: MainLayout }
 </script>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue';
+import { ref, computed, onMounted, nextTick, watch } from 'vue';
 import { useTabPermission } from '@/composables/useTabPermission';
-import { ArrowLeft, Plus, FilePlus, MapPin, Car, Wrench, FileText, Settings, Search, Printer, Pencil, Calendar, Clock, Eye } from 'lucide-vue-next';
+import { ArrowLeft, Plus, FilePlus, MapPin, Car, Wrench, FileText, Settings, Search, Printer, Pencil, Calendar, Clock, Eye, SlidersHorizontal, ChevronDown, CheckCircle, XCircle, Loader2 } from 'lucide-vue-next';
+import BaseTableCard from '@/Components/Common/BaseTableCard.vue';
 import VehicleModal from '@/Components/Vehicles/Inventory/VehicleModal.vue';
 import CommissionModal from '@/Components/Vehicles/Commissions/CommissionModal.vue';
 import CommissionDetailModal from '@/Components/Vehicles/Commissions/CommissionDetailModal.vue';
@@ -483,14 +654,19 @@ import MaintenanceModal from '@/Components/Vehicles/Maintenance/MaintenanceModal
 import HandoverModal from '@/Components/Vehicles/Handovers/HandoverModal.vue';
 import ServiceReqModal from '@/Components/Vehicles/ServiceRequirements/ServiceReqModal.vue';
 import ClientPagination from '@/Components/Common/ClientPagination.vue';
+import { useCommissionApproval } from '@/Composables/useCommissionApproval';
 import axios from 'axios';
 
-const props = defineProps({ employees: { type: Array, default: () => [] }, drivers: { type: Array, default: () => [] } });
+const props = defineProps({
+    drivers: { type: Array, default: () => [] },
+    canAuthorize: { type: Boolean, default: false },
+    currentEmployeeId: { type: String, default: null },
+});
 
 const formatDate = (dateString) => {
     if (!dateString) return '';
-    const datePart = dateString.includes(' ') 
-        ? dateString.split(' ')[0] 
+    const datePart = dateString.includes(' ')
+        ? dateString.split(' ')[0]
         : (dateString.includes('T') ? dateString.split('T')[0] : dateString);
     if (datePart.includes('-')) {
         return datePart.split('-').reverse().join('/');
@@ -500,6 +676,41 @@ const formatDate = (dateString) => {
 
 const { canViewTab, firstAllowedTab } = useTabPermission('vehiculos', ['commissions', 'inventory', 'maintenance', 'handover', 'service']);
 const activeTab = ref(firstAllowedTab.value);
+
+// Tab indicator logic
+const tabsRef = ref(null);
+const indicatorStyle = ref({ left: '0px', width: '0px', backgroundColor: '' });
+
+const getIndicatorColor = (tab) => {
+    switch (tab) {
+        case 'commissions': return '#2563eb'; // blue-600
+        case 'inventory': return '#4f46e5'; // indigo-600
+        case 'maintenance': return '#059669'; // emerald-600
+        case 'handover': return '#d97706'; // amber-600
+        case 'service': return '#db2777'; // pink-600
+        default: return '#2563eb';
+    }
+};
+
+const updateIndicator = () => {
+    if (!tabsRef.value) return;
+    const activeBtn = tabsRef.value.querySelector('.active-tab');
+    if (activeBtn) {
+        indicatorStyle.value = {
+            left: `${activeBtn.offsetLeft}px`,
+            width: `${activeBtn.offsetWidth}px`,
+            backgroundColor: getIndicatorColor(activeTab.value)
+        };
+    }
+};
+
+// Filters visibility (persisted)
+const COMMISSIONS_FILTERS_KEY = 'vehicles_commissions_filters_open';
+const INVENTORY_FILTERS_KEY = 'vehicles_inventory_filters_open';
+const commissionsFiltersVisible = ref(localStorage.getItem(COMMISSIONS_FILTERS_KEY) === 'true');
+const inventoryFiltersVisible = ref(localStorage.getItem(INVENTORY_FILTERS_KEY) === 'true');
+watch(commissionsFiltersVisible, (val) => localStorage.setItem(COMMISSIONS_FILTERS_KEY, String(val)));
+watch(inventoryFiltersVisible, (val) => localStorage.setItem(INVENTORY_FILTERS_KEY, String(val)));
 
 // Data
 const inventory = ref([]);
@@ -575,6 +786,7 @@ watch(activeTab, () => {
     maintenancePage.value = 1;
     handoverPage.value = 1;
     servicePage.value = 1;
+    nextTick(updateIndicator);
 });
 
 const paginatedCommissions = computed(() => {
@@ -687,10 +899,59 @@ const onServiceReqSaved = () => { fetchServiceReqs(); showServiceReqModal.value 
 // Helpers
 const getStatusClass = (estado) => {
     switch (estado) {
+        case 'AUTORIZADA': return 'bg-indigo-100 text-indigo-800';
+        case 'CONFIRMADA': return 'bg-cyan-100 text-cyan-800';
         case 'EN_COMISION': return 'bg-blue-100 text-blue-800';
         case 'COMPLETADA': return 'bg-green-100 text-green-800';
+        case 'RECHAZADA': return 'bg-red-100 text-red-800';
         case 'CANCELADA': return 'bg-gray-100 text-gray-800';
         default: return 'bg-yellow-100 text-yellow-800';
+    }
+};
+
+// Autorización de salida vehicular
+const { processing: approvalProcessing, autorizar, rechazar, confirmar } = useCommissionApproval();
+const showRejectModal = ref(false);
+const rejectTargetCommission = ref(null);
+const rejectComentario = ref('');
+const rejectError = ref('');
+
+const handleAuthorize = async (commission) => {
+    try {
+        await autorizar(commission.id);
+        await fetchCommissions();
+    } catch (e) {
+        alert(e.response?.data?.message || 'Error al autorizar la salida vehicular');
+    }
+};
+
+const openRejectModal = (commission) => {
+    rejectTargetCommission.value = commission;
+    rejectComentario.value = '';
+    rejectError.value = '';
+    showRejectModal.value = true;
+};
+
+const handleReject = async () => {
+    if (!rejectComentario.value.trim()) {
+        rejectError.value = 'Debe indicar el motivo del rechazo.';
+        return;
+    }
+    try {
+        await rechazar(rejectTargetCommission.value.id, rejectComentario.value.trim());
+        showRejectModal.value = false;
+        await fetchCommissions();
+    } catch (e) {
+        rejectError.value = e.response?.data?.message || 'Error al rechazar la salida vehicular';
+    }
+};
+
+const handleConfirmConductor = async (commission) => {
+    try {
+        await confirmar(commission.id);
+        await fetchCommissions();
+    } catch (e) {
+        alert(e.response?.data?.message || 'Error al confirmar la salida');
     }
 };
 
@@ -700,5 +961,36 @@ onMounted(() => {
     fetchMaintenances();
     fetchHandovers();
     fetchServiceReqs();
+    nextTick(updateIndicator);
 });
 </script>
+
+<style scoped>
+.fade-slide-enter-active,
+.fade-slide-leave-active {
+    transition: all 0.3s ease;
+}
+
+.fade-slide-enter-from {
+    opacity: 0;
+    transform: translateX(10px);
+}
+
+.fade-slide-leave-to {
+    opacity: 0;
+    transform: translateX(-10px);
+}
+
+/* Filters collapse animation */
+.filters-collapse {
+    overflow: hidden;
+    max-height: 0;
+    opacity: 0;
+    transition: max-height 0.35s ease, opacity 0.3s ease;
+}
+
+.filters-collapse--open {
+    max-height: 500px;
+    opacity: 1;
+}
+</style>

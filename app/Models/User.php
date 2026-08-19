@@ -259,4 +259,18 @@ class User extends Authenticatable
 
         return in_array($action, $permisos[$module]);
     }
+
+    /**
+     * Determina si el usuario puede autorizar/rechazar solicitudes de salida
+     * vehicular. Deliberadamente no usa hasModulePermission(), porque ese
+     * método ignora la acción cuando modulos_json está definido.
+     */
+    public function puedeAutorizarSalidaVehicular(): bool
+    {
+        if ($this->rol_id === 'ROL001') {
+            return true;
+        }
+
+        return (bool) $this->customRole?->hasPermission('vehiculos', 'autorizar');
+    }
 }

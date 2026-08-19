@@ -9,6 +9,7 @@ use App\Models\VehicleHandover;
 use App\Models\VehicleServiceRequirement;
 use App\Models\Employee;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use Carbon\Carbon;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -36,11 +37,14 @@ class VehicleController extends Controller
             'cargo' => $emp->position?->nombre,
         ];
 
+        $user = Auth::user();
+
         return Inertia::render('Vehicles/Index', [
-            'employees' => $activeEmployeesQuery()->get()->map($mapEmployee)->sortBy('nombre_completo')->values(),
             'drivers' => $activeEmployeesQuery()
                 ->whereHas('position', fn ($q) => $q->where('nombre', 'CHOFER II'))
                 ->get()->map($mapEmployee)->sortBy('nombre_completo')->values(),
+            'canAuthorize' => $user->puedeAutorizarSalidaVehicular(),
+            'currentEmployeeId' => $user->employee?->id,
         ]);
     }
 
@@ -145,11 +149,20 @@ class VehicleController extends Controller
      */
     public function getCommissions()
     {
-        $commissions = VehicleCommission::with(['vehicle', 'solicitanteEmployee.person', 'conductorEmployee.person'])
+        $user = Auth::user();
+        $canAuthorize = $user->puedeAutorizarSalidaVehicular();
+        $currentEmployeeId = $user->employee?->id;
+
+        $commissions = VehicleCommission::with([
+                'vehicle',
+                'solicitanteEmployee.person',
+                'conductorEmployee.person',
+                'autorizadorEmployee.person',
+            ])
             ->orderBy('dia', 'desc')
             ->orderBy('hora', 'desc')
             ->get()
-            ->map(function ($commission) {
+            ->map(function ($commission) use ($canAuthorize, $currentEmployeeId) {
                 return [
                     'id' => $commission->id,
                     'numero' => $commission->numero,
@@ -168,7 +181,11 @@ class VehicleController extends Controller
                     'modelo' => $commission->vehicle?->modelo ?? '',
                     'conductor_employee_id' => $commission->conductor_employee_id,
                     'conductor' => $commission->conductor_nombre,
-                    'funcionario_autoriza' => $commission->funcionario_autoriza,
+                    'autorizado_por' => $commission->autorizado_por,
+                    'autorizado_por_nombre' => $commission->autorizado_por_nombre,
+                    'fecha_autorizacion' => optional($commission->fecha_autorizacion)->format('Y-m-d H:i:s'),
+                    'comentario_autorizacion' => $commission->comentario_autorizacion,
+                    'fecha_confirmacion_conductor' => optional($commission->fecha_confirmacion_conductor)->format('Y-m-d H:i:s'),
                     'hora_salida' => $commission->hora_salida,
                     'hora_regreso' => $commission->hora_regreso,
                     'km_salida' => $commission->km_salida,
@@ -178,6 +195,10 @@ class VehicleController extends Controller
                     'pnro' => $commission->pnro,
                     'estado' => $commission->estado,
                     'created_at' => $commission->created_at->format('Y-m-d H:i:s'),
+                    'can_authorize' => $canAuthorize && $commission->necesitaAutorizacion(),
+                    'can_confirm' => $currentEmployeeId
+                        && $currentEmployeeId === $commission->conductor_employee_id
+                        && $commission->necesitaConfirmacionConductor(),
                 ];
             });
 
@@ -189,8 +210,15 @@ class VehicleController extends Controller
      */
     public function storeCommission(Request $request)
     {
+        $solicitanteEmployeeId = Auth::user()->employee?->id;
+
+        if (!$solicitanteEmployeeId) {
+            return response()->json([
+                'message' => 'Su usuario no está vinculado a un empleado y no puede solicitar una salida vehicular.',
+            ], 422);
+        }
+
         $validated = $request->validate([
-            'solicitante_employee_id' => 'required|uuid|exists:employees,id',
             'dia' => 'required|date',
             'hora' => 'required',
             'lugar' => 'required|string|max:255',
@@ -199,33 +227,12 @@ class VehicleController extends Controller
             'usuarios' => 'nullable|string',
             'vehicle_id' => 'nullable|uuid|exists:vehicles,id',
             'conductor_employee_id' => 'required|uuid|exists:employees,id',
-            'funcionario_autoriza' => 'nullable|string|max:255',
-            'hora_salida' => 'nullable',
-            'hora_regreso' => 'nullable',
-            'km_salida' => 'nullable|integer|min:0',
-            'km_retorno' => [
-                'nullable',
-                'integer',
-                'min:0',
-                function ($attribute, $value, $fail) use ($request) {
-                    $kmSalida = $request->input('km_salida');
-                    if (is_numeric($value) && is_numeric($kmSalida) && (int)$value < (int)$kmSalida) {
-                        $fail('El kilometraje de retorno debe ser mayor o igual al de salida.');
-                    }
-                }
-            ],
             'combustible' => 'nullable|string|in:Gasolina,Diesel,GLP,GNV',
             'pnro' => 'nullable|string|max:100',
         ]);
 
-        // Auto-update estado based on times, same as en updateCommission
-        if (!empty($validated['hora_regreso'])) {
-            $validated['estado'] = 'COMPLETADA';
-        } elseif (!empty($validated['hora_salida'])) {
-            $validated['estado'] = 'EN_COMISION';
-        } else {
-            $validated['estado'] = 'PENDIENTE';
-        }
+        $validated['solicitante_employee_id'] = $solicitanteEmployeeId;
+        $validated['estado'] = 'PENDIENTE';
         $validated['anio'] = (int) date('Y', strtotime($validated['dia']));
         $validated['numero'] = VehicleCommission::nextNumero($validated['anio']);
 
@@ -245,7 +252,6 @@ class VehicleController extends Controller
         $commission = VehicleCommission::findOrFail($id);
 
         $validated = $request->validate([
-            'solicitante_employee_id' => 'sometimes|uuid|exists:employees,id',
             'dia' => 'sometimes|date',
             'hora' => 'sometimes',
             'lugar' => 'sometimes|string|max:255',
@@ -254,7 +260,6 @@ class VehicleController extends Controller
             'usuarios' => 'nullable|string',
             'vehicle_id' => 'nullable|uuid|exists:vehicles,id',
             'conductor_employee_id' => 'sometimes|uuid|exists:employees,id',
-            'funcionario_autoriza' => 'nullable|string|max:255',
             'hora_salida' => 'nullable',
             'hora_regreso' => 'nullable',
             'km_salida' => 'nullable|integer|min:0',
@@ -271,13 +276,27 @@ class VehicleController extends Controller
             ],
             'combustible' => 'nullable|string|in:Gasolina,Diesel,GLP,GNV',
             'pnro' => 'nullable|string|max:100',
-            'estado' => 'nullable|string|max:50',
+            // Solo la cancelación se hace por esta vía; autorizar/rechazar/confirmar
+            // tienen sus propios endpoints para no saltarse el flujo de aprobación.
+            'estado' => 'nullable|string|in:CANCELADA',
         ]);
 
+        if (!empty($validated['hora_salida']) && $commission->estado !== 'CONFIRMADA') {
+            return response()->json([
+                'message' => 'La salida solo puede registrarse una vez que el conductor haya confirmado la autorización.',
+            ], 422);
+        }
+
+        if (!empty($validated['hora_regreso']) && $commission->estado !== 'EN_COMISION' && empty($validated['hora_salida'])) {
+            return response()->json([
+                'message' => 'El regreso solo puede registrarse una vez que la comisión esté en curso.',
+            ], 422);
+        }
+
         // Auto-update estado based on times
-        if (isset($validated['hora_regreso']) && $validated['hora_regreso']) {
+        if (!empty($validated['hora_regreso'])) {
             $validated['estado'] = 'COMPLETADA';
-        } elseif (isset($validated['hora_salida']) && $validated['hora_salida']) {
+        } elseif (!empty($validated['hora_salida'])) {
             $validated['estado'] = 'EN_COMISION';
         }
 
@@ -290,11 +309,100 @@ class VehicleController extends Controller
     }
 
     /**
+     * Authorize a pending commission (Autorización Salida de Vehículos).
+     */
+    public function authorizeCommission(Request $request, string $id)
+    {
+        if (!Auth::user()->puedeAutorizarSalidaVehicular()) {
+            return response()->json(['message' => 'No tiene permisos para autorizar salidas vehiculares.'], 403);
+        }
+
+        $commission = VehicleCommission::findOrFail($id);
+
+        if (!$commission->necesitaAutorizacion()) {
+            return response()->json(['message' => 'La solicitud ya fue procesada.'], 422);
+        }
+
+        $commission->update([
+            'estado' => 'AUTORIZADA',
+            'autorizado_por' => Auth::user()->employee?->id,
+            'fecha_autorizacion' => now(),
+            'comentario_autorizacion' => $request->input('comentario'),
+        ]);
+
+        return response()->json([
+            'message' => 'Salida vehicular autorizada correctamente.',
+            'commission' => $commission->fresh(['vehicle', 'solicitanteEmployee.person', 'conductorEmployee.person', 'autorizadorEmployee.person']),
+        ]);
+    }
+
+    /**
+     * Reject a pending commission (Autorización Salida de Vehículos).
+     */
+    public function rejectCommission(Request $request, string $id)
+    {
+        if (!Auth::user()->puedeAutorizarSalidaVehicular()) {
+            return response()->json(['message' => 'No tiene permisos para autorizar salidas vehiculares.'], 403);
+        }
+
+        $request->validate([
+            'comentario' => 'required|string|max:500',
+        ], [
+            'comentario.required' => 'Debe indicar el motivo del rechazo.',
+        ]);
+
+        $commission = VehicleCommission::findOrFail($id);
+
+        if (!$commission->necesitaAutorizacion()) {
+            return response()->json(['message' => 'La solicitud ya fue procesada.'], 422);
+        }
+
+        $commission->update([
+            'estado' => 'RECHAZADA',
+            'autorizado_por' => Auth::user()->employee?->id,
+            'fecha_autorizacion' => now(),
+            'comentario_autorizacion' => $request->comentario,
+        ]);
+
+        return response()->json([
+            'message' => 'Salida vehicular rechazada.',
+            'commission' => $commission->fresh(['vehicle', 'solicitanteEmployee.person', 'conductorEmployee.person', 'autorizadorEmployee.person']),
+        ]);
+    }
+
+    /**
+     * Driver confirmation of an authorized commission (Autorización Salida de Vehículos).
+     */
+    public function confirmCommissionByConductor(string $id)
+    {
+        $commission = VehicleCommission::findOrFail($id);
+        $employeeId = Auth::user()->employee?->id;
+
+        if (!$employeeId || $employeeId !== $commission->conductor_employee_id) {
+            return response()->json(['message' => 'Solo el conductor asignado puede confirmar esta salida.'], 403);
+        }
+
+        if (!$commission->necesitaConfirmacionConductor()) {
+            return response()->json(['message' => 'La solicitud no está pendiente de confirmación del conductor.'], 422);
+        }
+
+        $commission->update([
+            'estado' => 'CONFIRMADA',
+            'fecha_confirmacion_conductor' => now(),
+        ]);
+
+        return response()->json([
+            'message' => 'Salida confirmada por el conductor.',
+            'commission' => $commission->fresh(['vehicle', 'solicitanteEmployee.person', 'conductorEmployee.person', 'autorizadorEmployee.person']),
+        ]);
+    }
+
+    /**
      * Generate the printable PDF for an Autorización Salida de Vehículos
      */
     public function commissionPdf(string $id)
     {
-        $commission = VehicleCommission::with(['vehicle', 'solicitanteEmployee.person', 'conductorEmployee.person'])->findOrFail($id);
+        $commission = VehicleCommission::with(['vehicle', 'solicitanteEmployee.person', 'conductorEmployee.person', 'autorizadorEmployee.person'])->findOrFail($id);
 
         $pdf = Pdf::loadView('pdf.vehicle_exit_authorization', [
             'commission' => $commission,
