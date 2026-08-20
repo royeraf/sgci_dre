@@ -463,7 +463,7 @@ class HRController extends Controller
      */
     public function getDirections()
     {
-        $directions = HrDirection::with('offices')->withCount('offices')->orderBy('nombre')->get();
+        $directions = HrDirection::with(['offices', 'jefeInmediato.person'])->withCount('offices')->orderBy('nombre')->get();
         return response()->json($directions);
     }
 
@@ -633,7 +633,7 @@ class HRController extends Controller
      */
     public function getOffices()
     {
-        $offices = HrOffice::with('direction')->orderBy('nombre')->get();
+        $offices = HrOffice::with(['direction', 'jefeInmediato.person'])->orderBy('nombre')->get();
         return response()->json($offices);
     }
 
@@ -653,7 +653,7 @@ class HRController extends Controller
         ]);
 
         $office = HrOffice::create($validated);
-        $office->load('direction');
+        $office->load(['direction', 'jefeInmediato.person']);
         
         return response()->json([
             'message' => 'Oficina registrada correctamente',
@@ -683,7 +683,7 @@ class HRController extends Controller
         ]);
 
         $office->update($validated);
-        $office->load('direction');
+        $office->load(['direction', 'jefeInmediato.person']);
         
         return response()->json([
             'message' => 'Oficina actualizada correctamente',

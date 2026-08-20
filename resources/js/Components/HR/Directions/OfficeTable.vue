@@ -9,6 +9,8 @@
                         Dirección Perteneciente</th>
                     <th class="px-6 py-4 text-left text-xs font-bold text-indigo-700 uppercase tracking-widest">
                         Info. Adicional</th>
+                    <th class="px-6 py-4 text-left text-xs font-bold text-indigo-700 uppercase tracking-widest">
+                        Jefe Inmediato</th>
                     <th class="px-6 py-4 text-center text-xs font-bold text-indigo-700 uppercase tracking-widest">
                         Estado</th>
                     <th class="px-6 py-4"></th>
@@ -58,6 +60,16 @@
                             </div>
                         </div>
                     </td>
+                    <td class="px-6 py-4">
+                        <div v-if="office.jefe_inmediato" class="flex items-center gap-1.5 text-xs font-bold text-slate-700">
+                            <UserCheck class="w-3.5 h-3.5 text-indigo-500" />
+                            {{ office.jefe_inmediato.full_name }}
+                        </div>
+                        <div v-else class="flex items-center gap-1.5 text-[11px] font-bold text-amber-600">
+                            <AlertTriangle class="w-3.5 h-3.5" />
+                            Sin asignar
+                        </div>
+                    </td>
                     <td class="px-6 py-4 text-center">
                         <span
                             class="inline-flex items-center gap-1.5 px-3 py-1 text-[10px] font-black rounded-lg shadow-sm tracking-widest"
@@ -94,7 +106,7 @@
 </template>
 
 <script setup>
-import { Building, Pencil, Trash2, MapPin, Phone } from 'lucide-vue-next';
+import { Building, Pencil, Trash2, MapPin, Phone, UserCheck, AlertTriangle } from 'lucide-vue-next';
 
 defineProps({
     offices: {

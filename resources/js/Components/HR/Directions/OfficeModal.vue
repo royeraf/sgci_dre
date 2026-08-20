@@ -65,6 +65,22 @@
                         <p v-if="formErrors.ubicacion" class="mt-1 text-sm text-red-600">{{ formErrors.ubicacion }}</p>
                     </div>
 
+                    <div>
+                        <label class="block text-sm font-bold text-slate-700 mb-2">Jefe Inmediato</label>
+                        <select v-model="jefe_inmediato_id" v-bind="jefeInmediatoProps"
+                            class="w-full px-4 py-2.5 border-2 rounded-xl text-slate-900 focus:ring-4 focus:ring-sky-500/20 focus:border-sky-500 bg-white transition-all duration-200 outline-none cursor-pointer"
+                            :class="formErrors.jefe_inmediato_id ? 'border-red-400 focus:border-red-500 focus:ring-red-500/20 bg-red-50' : 'border-slate-200'">
+                            <option value="">Sin jefe asignado</option>
+                            <option v-for="emp in employees" :key="emp.id" :value="emp.id">{{ emp.dni }} - {{
+                                emp.nombres }} {{ emp.apellidos }}</option>
+                        </select>
+                        <p v-if="formErrors.jefe_inmediato_id" class="mt-1 text-sm text-red-600">{{
+                            formErrors.jefe_inmediato_id }}</p>
+                        <p class="text-[10px] text-slate-500 mt-1 italic">
+                            Tiene prioridad sobre el jefe asignado a la dirección.
+                        </p>
+                    </div>
+
                     <div v-if="isEditing" class="flex items-center gap-2 pt-2">
                         <input type="checkbox" v-model="activo" v-bind="activoProps" id="office-activo"
                             class="w-4 h-4 text-sky-600 border-slate-300 rounded focus:ring-sky-500" />
@@ -96,6 +112,7 @@ import { Building2, X, Loader2, MapPin } from 'lucide-vue-next';
 
 const props = defineProps({
     office: { type: Object, default: null },
+    employees: { type: Array, default: () => [] },
     isEditing: { type: Boolean, default: false },
     submitting: { type: Boolean, default: false },
 });
@@ -108,6 +125,7 @@ const schema = toTypedSchema(yup.object({
     ubicacion: yup.string().transform((value) => value || null).nullable(),
     telefono_interno: yup.string().transform((value) => value || null).nullable(),
     activo: yup.boolean(),
+    jefe_inmediato_id: yup.string().nullable(),
 }));
 
 const { errors: formErrors, defineField, handleSubmit: validateForm, setValues, resetForm } = useForm({
@@ -117,7 +135,8 @@ const { errors: formErrors, defineField, handleSubmit: validateForm, setValues, 
         codigo: '',
         ubicacion: '',
         telefono_interno: '',
-        activo: true
+        activo: true,
+        jefe_inmediato_id: ''
     }
 });
 
@@ -126,6 +145,7 @@ const [codigo, codigoProps] = defineField('codigo');
 const [ubicacion, ubicacionProps] = defineField('ubicacion');
 const [telefono_interno, telefonoProps] = defineField('telefono_interno');
 const [activo, activoProps] = defineField('activo');
+const [jefe_inmediato_id, jefeInmediatoProps] = defineField('jefe_inmediato_id');
 
 watch(() => props.office, (o) => {
     if (o && props.isEditing) {
@@ -134,7 +154,8 @@ watch(() => props.office, (o) => {
             codigo: o.codigo || '',
             ubicacion: o.ubicacion || '',
             telefono_interno: o.telefono_interno || '',
-            activo: o.activo !== undefined ? Boolean(o.activo) : true
+            activo: o.activo !== undefined ? Boolean(o.activo) : true,
+            jefe_inmediato_id: o.jefe_inmediato_id || ''
         });
     } else {
         resetForm({
@@ -143,7 +164,8 @@ watch(() => props.office, (o) => {
                 codigo: '',
                 ubicacion: '',
                 telefono_interno: '',
-                activo: true
+                activo: true,
+                jefe_inmediato_id: ''
             }
         });
     }

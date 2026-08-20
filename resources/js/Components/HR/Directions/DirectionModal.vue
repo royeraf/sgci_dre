@@ -87,6 +87,23 @@
                                 }}</p>
                         </div>
 
+                        <div>
+                            <label class="block text-sm font-bold text-slate-700 mb-2">Jefe Inmediato</label>
+                            <select v-model="jefe_inmediato_id" v-bind="jefeInmediatoProps"
+                                class="w-full px-4 py-2.5 border-2 rounded-xl text-slate-900 focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 bg-white transition-all duration-200 outline-none cursor-pointer"
+                                :class="formErrors.jefe_inmediato_id ? 'border-red-400 focus:border-red-500 focus:ring-red-500/20 bg-red-50' : 'border-slate-200'">
+                                <option value="">Sin jefe asignado</option>
+                                <option v-for="emp in employees" :key="emp.id" :value="emp.id">{{ emp.dni }} - {{
+                                    emp.nombres }} {{ emp.apellidos }}</option>
+                            </select>
+                            <p v-if="formErrors.jefe_inmediato_id" class="mt-1 text-sm text-red-600">{{
+                                formErrors.jefe_inmediato_id }}</p>
+                            <p class="text-[10px] text-slate-500 mt-1 italic">
+                                Aprobará las papeletas de los empleados que no tengan un jefe asignado a nivel de
+                                oficina.
+                            </p>
+                        </div>
+
                         <!-- Office Selection Section -->
                         <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200">
                             <div class="flex items-center justify-between mb-3">
@@ -174,6 +191,7 @@ import { Building2, X, Loader2, Search, LayoutGrid, CheckCircle2, AlertTriangle,
 const props = defineProps({
     direction: { type: Object, default: null },
     offices: { type: Array, default: () => [] },
+    employees: { type: Array, default: () => [] },
     isEditing: { type: Boolean, default: false },
     submitting: { type: Boolean, default: false }
 });
@@ -191,6 +209,7 @@ const schema = toTypedSchema(yup.object({
     ubicacion: yup.string().nullable(),
     activo: yup.boolean(),
     office_ids: yup.array().of(yup.string()),
+    jefe_inmediato_id: yup.string().nullable(),
 }));
 
 const { errors: formErrors, defineField, handleSubmit: validateForm, setValues } = useForm({
@@ -203,7 +222,8 @@ const { errors: formErrors, defineField, handleSubmit: validateForm, setValues }
         telefono_interno: '',
         ubicacion: '',
         activo: true,
-        office_ids: []
+        office_ids: [],
+        jefe_inmediato_id: ''
     }
 });
 
@@ -215,6 +235,7 @@ const [telefono_interno, telefonoInternoProps] = defineField('telefono_interno')
 const [ubicacion, ubicacionProps] = defineField('ubicacion');
 const [activo, activoProps] = defineField('activo');
 const [office_ids, officeIdsProps] = defineField('office_ids');
+const [jefe_inmediato_id, jefeInmediatoProps] = defineField('jefe_inmediato_id');
 
 const filteredOffices = computed(() => {
     if (!officeQuery.value) return props.offices;
@@ -235,7 +256,8 @@ watch(() => props.direction, (d) => {
             telefono_interno: d.telefono_interno || '',
             ubicacion: d.ubicacion || '',
             activo: d.activo !== undefined ? d.activo : true,
-            office_ids: d.offices ? d.offices.map(o => o.id) : []
+            office_ids: d.offices ? d.offices.map(o => o.id) : [],
+            jefe_inmediato_id: d.jefe_inmediato_id || ''
         });
     } else {
         setValues({
@@ -246,7 +268,8 @@ watch(() => props.direction, (d) => {
             telefono_interno: '',
             ubicacion: '',
             activo: true,
-            office_ids: []
+            office_ids: [],
+            jefe_inmediato_id: ''
         });
     }
 }, { immediate: true });
