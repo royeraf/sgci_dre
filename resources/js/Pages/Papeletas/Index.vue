@@ -764,9 +764,13 @@ const handleStorePapeleta = async () => {
 };
 
 const showControlQr = (papeleta) => {
+    const isCommission = papeleta.motivo_salida === 'comision' || papeleta.reason?.tipo === 'comision';
+    const commissionStep = isCommission
+        ? '<li><b>Comisión:</b> después de la salida, el responsable de destino valida su DNI, registra GPS y firma en la pantalla.</li>'
+        : '';
     window.Swal?.fire({
         title: `QR de control · ${papeleta.numero_papeleta}`,
-        html: `<p style="margin-bottom:12px;font-size:13px">Escanéelo en portería para marcar salida y retorno.</p><img alt="QR de control" src="/papeletas/${papeleta.id}/qr-control" style="width:300px;max-width:100%">`,
+        html: `<div style="margin:0 auto 12px;max-width:330px;text-align:left;font-size:13px;line-height:1.45"><ol style="margin:0;padding-left:20px"><li><b>Portería:</b> primer escaneo para marcar la salida.</li>${commissionStep}<li><b>Portería:</b> segundo escaneo para marcar el retorno.</li></ol></div><img alt="QR de control" src="/papeletas/${papeleta.id}/qr-control" style="width:300px;max-width:100%">`,
         confirmButtonText: 'Listo',
     });
 };

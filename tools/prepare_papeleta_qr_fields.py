@@ -28,9 +28,10 @@ FIELDS = {
     "QR_DESTINO_FIRMA": (50, 212, 140, 239, 0),
     # Keep every audit datum in its own one-line field. This avoids a long
     # personal name overflowing into the signature area in PDF viewers.
-    "QR_DESTINO_NOMBRE": (145, 229, 370, 239, 0),
-    "QR_DESTINO_DNI": (145, 218, 370, 228, 0),
-    "QR_DESTINO_COORDENADAS": (145, 204, 370, 218, 0),
+    "QR_DESTINO_NOMBRE": (145, 232, 370, 242, 0),
+    "QR_DESTINO_DNI": (145, 222, 370, 231, 0),
+    # Lift this line away from the dashed lower edge of the constancia box.
+    "QR_DESTINO_COORDENADAS": (145, 212, 370, 221, 0),
     # The GPS map intentionally uses the clear lower portion of the page,
     # not the signature/seal rectangle above it.
     "QR_DESTINO_MAP": (50, 55, 370, 145, 0),
