@@ -39,9 +39,7 @@
         .duration .value { font-size: 10px; font-weight: bold; height: 18px; }
         .constancia { margin-top: 8px; }
         .constancia-title { border-bottom: 1px dotted #000; font-size: 7px; font-weight: bold; padding-bottom: 1px; text-align: center; }
-        /* The lower block reserves room for the destination signature,
-           identity data and the GPS map that is filled through QR. */
-        .constancia-box { border: 1px dashed #000; height: 82px; margin: 4px 12px 0; position: relative; }
+        .constancia-box { border: 1px dashed #000; height: 44px; margin: 4px 12px 0; position: relative; }
         /* This reserved vertical space keeps the PAdES appearance cards above
            the three official signature captions, just as in the DRE form. */
         .signature-area { margin-top: 79px; }
