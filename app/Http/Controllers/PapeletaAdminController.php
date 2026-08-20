@@ -4,14 +4,25 @@ namespace App\Http\Controllers;
 
 use App\Models\Employee;
 use App\Models\EntryExitReason;
+use App\Models\DigitalCertificate;
 use App\Models\PapeletaRequest;
+use App\Services\PapeletaRequestSigningService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Endroid\QrCode\QrCode;
+use Endroid\QrCode\Writer\SvgWriter;
 
 class PapeletaAdminController extends Controller
 {
+    public function __construct(private readonly PapeletaRequestSigningService $signingService)
+    {
+    }
+
     /**
      * Get the employee associated with the current user.
      */
@@ -35,10 +46,15 @@ class PapeletaAdminController extends Controller
             'aprobador.person',
             'aprobadorJefe.person',
             'aprobadorRrhh.person'
+            ,'signatures'
         ]);
 
         if ($user->rol_id === 'ROL009' || $user->rol_id === 'ROL001') {
             return $query;
+        }
+
+        if ($user->rol_id !== 'ROL011') {
+            return $query->whereRaw('1 = 0');
         }
 
         // ROL011: filter by direction/office
@@ -47,13 +63,14 @@ class PapeletaAdminController extends Controller
             return $query->whereRaw('1 = 0'); // empty result
         }
 
-        return $query->where(function ($q) use ($employee) {
-            // Employees in same direction
-            if ($employee->direction_id) {
-                $q->whereHas('employee', function ($sub) use ($employee) {
-                    $sub->where('direction_id', $employee->direction_id);
+        return $query->whereHas('employee', function ($employeeQuery) use ($employee) {
+            $employeeQuery
+                ->whereHas('office', fn ($office) => $office->where('jefe_inmediato_id', $employee->id))
+                ->orWhere(function ($fallback) use ($employee) {
+                    $fallback
+                        ->whereDoesntHave('office', fn ($office) => $office->whereNotNull('jefe_inmediato_id'))
+                        ->whereHas('direction', fn ($direction) => $direction->where('jefe_inmediato_id', $employee->id));
                 });
-            }
         });
     }
 
@@ -68,7 +85,8 @@ class PapeletaAdminController extends Controller
         return Inertia::render('Papeletas/Index', [
             'userRole'   => $user->rol_id,
             'myEmployee' => $employee,
-            'reasons'    => EntryExitReason::active()->get(['id', 'nombre']),
+            'reasons'    => EntryExitReason::active()->get(['id', 'nombre', 'tipo']),
+            'certificate' => $this->certificatePublicData($this->certificateForDni($employee?->dni)),
         ]);
     }
 
@@ -85,7 +103,7 @@ class PapeletaAdminController extends Controller
         }
 
         $papeletas = PapeletaRequest::where('employee_id', $employee->id)
-            ->with(['reason', 'aprobadorJefe.person', 'aprobadorRrhh.person'])
+            ->with(['reason', 'aprobadorJefe.person', 'aprobadorRrhh.person', 'signatures'])
             ->orderBy('created_at', 'desc')
             ->get();
 
@@ -104,38 +122,74 @@ class PapeletaAdminController extends Controller
             return response()->json(['message' => 'No tiene un empleado asociado a su cuenta.'], 422);
         }
 
+        if (!$employee->jefe_inmediato) {
+            return response()->json(['message' => 'RR. HH. debe asignarle un jefe inmediato antes de solicitar una papeleta.'], 422);
+        }
+
         $validated = $request->validate([
             'entry_exit_reason_id'    => 'required|exists:entry_exit_reasons,id',
             'motivo'                  => 'required|string|max:500',
-            'fecha_salida'            => 'required|date|after_or_equal:today',
-            'hora_salida_estimada'    => 'required|date_format:H:i',
-            'hora_retorno_estimada'   => 'nullable|date_format:H:i|after:hora_salida_estimada',
-            'turno'                   => 'required|in:Manana,Tarde,Noche',
+            'tipo_motivo'             => 'required|in:comision,permiso',
+            'signing_pin'             => 'required|string|min:6|max:20',
         ], [
             'entry_exit_reason_id.required' => 'Seleccione un motivo de salida.',
             'motivo.required'               => 'La justificación es obligatoria.',
-            'fecha_salida.required'         => 'La fecha de salida es obligatoria.',
-            'fecha_salida.after_or_equal'   => 'La fecha no puede ser anterior a hoy.',
-            'hora_salida_estimada.required' => 'La hora de salida es obligatoria.',
-            'hora_retorno_estimada.after'   => 'La hora de retorno debe ser posterior a la salida.',
-            'turno.required'                => 'Seleccione un turno.',
+            'tipo_motivo.required'          => 'Seleccione el tipo de motivo.',
         ]);
+
+        $reason = EntryExitReason::active()->find($validated['entry_exit_reason_id']);
+        if (!$reason || !in_array($reason->tipo, [$validated['tipo_motivo'], 'ambos'], true)) {
+            throw ValidationException::withMessages([
+                'entry_exit_reason_id' => 'El motivo seleccionado no corresponde al tipo de salida.',
+            ]);
+        }
+
+        $certificate = $this->requiredCertificate($employee);
+        // La fecha, hora y turno se toman del servidor institucional para que
+        // la solicitud no pueda ser alterada desde el navegador.
+        $registeredAt = now();
 
         $papeleta = PapeletaRequest::create([
             'numero_papeleta'      => PapeletaRequest::generateNumeroPapeleta(),
             'employee_id'          => $employee->id,
             'entry_exit_reason_id' => $validated['entry_exit_reason_id'],
             'motivo'               => $validated['motivo'],
-            'fecha_salida'         => $validated['fecha_salida'],
-            'hora_salida_estimada' => $validated['hora_salida_estimada'],
-            'hora_retorno_estimada'=> $validated['hora_retorno_estimada'] ?? null,
-            'turno'                => $validated['turno'],
+            'fecha_salida'         => $registeredAt->toDateString(),
+            'hora_salida_estimada' => $registeredAt->format('H:i'),
+            'hora_retorno_estimada'=> null,
+            'turno'                => $this->turnoForTime($registeredAt),
+            'qr_token'             => (string) Str::uuid(),
+            // New records reserve certified AcroForm cells for real QR times.
+            // Older signed records remain in their original immutable format.
+            'qr_form_enabled'      => true,
         ]);
 
+        try {
+            $this->signingService->sign($papeleta, $employee, 'SERVIDOR', $certificate, $validated['signing_pin']);
+        } catch (\Throwable $exception) {
+            $papeleta->delete();
+            throw $exception;
+        }
+
         return response()->json(
-            $papeleta->load(['reason', 'aprobadorJefe.person', 'aprobadorRrhh.person']),
+            $papeleta->load(['reason', 'aprobadorJefe.person', 'aprobadorRrhh.person', 'signatures']),
             201
         );
+    }
+
+    private function turnoForTime(\DateTimeInterface $dateTime): string
+    {
+        $hour = (int) $dateTime->format('H');
+
+        if ($hour >= 6 && $hour < 14) {
+            return 'Manana';
+        }
+
+        if ($hour >= 14 && $hour < 22) {
+            return 'Tarde';
+        }
+
+        return 'Noche';
     }
 
     /**
@@ -143,8 +197,20 @@ class PapeletaAdminController extends Controller
      */
     public function getPendientes(Request $request)
     {
+        $role = Auth::user()->rol_id;
+        $states = match ($role) {
+            // El jefe inmediato solo procesa solicitudes que aún requieren
+            // su firma. Una vez remitidas a RR.HH. ya no deben aparecerle.
+            'ROL011' => ['PENDIENTE'],
+            // RR.HH. recibe únicamente las solicitudes firmadas por el jefe.
+            'ROL009' => ['PENDIENTE_RRHH'],
+            // El administrador conserva visibilidad de ambas etapas.
+            'ROL001' => ['PENDIENTE', 'PENDIENTE_RRHH'],
+            default => [],
+        };
+
         $papeletas = $this->baseQuery()
-            ->whereIn('estado', ['PENDIENTE', 'PENDIENTE_RRHH'])
+            ->whereIn('estado', $states)
             ->orderBy('created_at', 'desc')
             ->get();
 
@@ -188,14 +254,24 @@ class PapeletaAdminController extends Controller
      */
     public function aprobar(Request $request, string $papeletaId)
     {
+        $validated = $request->validate(['signing_pin' => 'required|string|min:6|max:20']);
         $papeleta = PapeletaRequest::findOrFail($papeletaId);
         $employee = $this->getEmployee();
+
+        if (!$employee) {
+            return response()->json(['message' => 'Su cuenta no tiene un funcionario asociado.'], 422);
+        }
 
         if ($papeleta->estado === 'APROBADO' || $papeleta->estado === 'DESAPROBADO') {
             return response()->json(['message' => 'La papeleta ya fue procesada.'], 422);
         }
 
         if ($papeleta->estado === 'PENDIENTE') {
+            $expectedBoss = $papeleta->employee?->jefe_inmediato;
+            if (Auth::user()->rol_id !== 'ROL001' && (!$expectedBoss || $expectedBoss->id !== $employee->id)) {
+                return response()->json(['message' => 'Solo el jefe inmediato asignado puede firmar esta papeleta.'], 403);
+            }
+            $this->signingService->sign($papeleta, $employee, 'JEFE_INMEDIATO', $this->requiredCertificate($employee), $validated['signing_pin']);
             $papeleta->update([
                 'estado' => 'PENDIENTE_RRHH',
                 'aprobado_por_jefe' => $employee?->id,
@@ -210,6 +286,10 @@ class PapeletaAdminController extends Controller
         }
 
         if ($papeleta->estado === 'PENDIENTE_RRHH') {
+            if (!in_array(Auth::user()->rol_id, ['ROL009', 'ROL001'], true)) {
+                return response()->json(['message' => 'Solo Recursos Humanos puede completar esta firma.'], 403);
+            }
+            $this->signingService->sign($papeleta, $employee, 'RRHH', $this->requiredCertificate($employee), $validated['signing_pin']);
             $papeleta->update([
                 'estado' => 'APROBADO',
                 'aprobado_por_rrhh' => $employee?->id,
@@ -238,12 +318,18 @@ class PapeletaAdminController extends Controller
 
         $papeleta = PapeletaRequest::findOrFail($papeletaId);
         $employee = $this->getEmployee();
+        $role = Auth::user()->rol_id;
 
         if ($papeleta->estado === 'APROBADO' || $papeleta->estado === 'DESAPROBADO') {
             return response()->json(['message' => 'La papeleta ya fue procesada.'], 422);
         }
 
         if ($papeleta->estado === 'PENDIENTE') {
+            $expectedBoss = $papeleta->employee?->jefe_inmediato;
+            if ($role !== 'ROL001' && (!$expectedBoss || $expectedBoss->id !== $employee?->id)) {
+                return response()->json(['message' => 'Solo el jefe inmediato asignado puede desaprobar esta papeleta.'], 403);
+            }
+
             $papeleta->update([
                 'estado' => 'DESAPROBADO',
                 'aprobado_por_jefe' => $employee?->id,
@@ -251,6 +337,10 @@ class PapeletaAdminController extends Controller
                 'comentario_aprobacion' => $request->comentario,
             ]);
         } elseif ($papeleta->estado === 'PENDIENTE_RRHH') {
+            if (!in_array($role, ['ROL009', 'ROL001'], true)) {
+                return response()->json(['message' => 'Solo Recursos Humanos puede desaprobar esta papeleta en esta etapa.'], 403);
+            }
+
             $papeleta->update([
                 'estado' => 'DESAPROBADO',
                 'aprobado_por_rrhh' => $employee?->id,
@@ -275,6 +365,15 @@ class PapeletaAdminController extends Controller
         $total = (clone $query)->count();
         $pendientes = (clone $query)->where('estado', 'PENDIENTE')->count();
         $pendientesRrhh = (clone $query)->where('estado', 'PENDIENTE_RRHH')->count();
+
+        // Los jefes inmediatos no gestionan la segunda etapa ni deben recibir
+        // su contador. RR.HH. y el administrador sí la visualizan.
+        if (!in_array(Auth::user()->rol_id, ['ROL009', 'ROL001'], true)) {
+            $pendientesRrhh = 0;
+        }
+        if (!in_array(Auth::user()->rol_id, ['ROL011', 'ROL001'], true)) {
+            $pendientes = 0;
+        }
         $aprobadas = (clone $query)->aprobado()->count();
         $desaprobadas = (clone $query)->desaprobado()->count();
 
@@ -292,14 +391,101 @@ class PapeletaAdminController extends Controller
      */
     public function generatePdf(string $papeletaId)
     {
-        $papeleta = PapeletaRequest::with(['employee.person', 'employee.direction', 'employee.office', 'employee.position', 'reason', 'aprobador.person'])
+        $papeleta = PapeletaRequest::with(['employee.person', 'employee.direction', 'employee.office', 'employee.position', 'reason', 'aprobador.person', 'signatures'])
             ->findOrFail($papeletaId);
+
+        $currentEmployee = $this->getEmployee();
+        $isOwner = $currentEmployee?->id === $papeleta->employee_id;
+        $isAssignedBoss = $currentEmployee?->id === $papeleta->employee?->jefe_inmediato?->id;
+        $isInstitutionalReviewer = in_array(Auth::user()->rol_id, ['ROL001', 'ROL009'], true);
+
+        if (!$isOwner && !$isAssignedBoss && !$isInstitutionalReviewer) {
+            abort(403, 'No tiene permiso para ver esta papeleta.');
+        }
+
+        if ($papeleta->executed_document_path && Storage::disk('local')->exists($papeleta->executed_document_path)) {
+            return response()->file(Storage::disk('local')->path($papeleta->executed_document_path), [
+                'Content-Type' => 'application/pdf',
+                'Content-Disposition' => 'inline; filename="papeleta_'.$papeleta->numero_papeleta.'_final.pdf"',
+            ]);
+        }
+
+        $signed = $papeleta->signatures
+            ->filter(fn ($signature) => $signature->signed_document_path !== 'pending')
+            ->sortByDesc('signed_at')
+            ->first();
+
+        // Once any signer has completed a PAdES signature, only ever serve
+        // that signed binary. Re-rendering a preview would lose its ByteRange
+        // and make a PDF reader correctly report it as unsigned.
+        if ($signed && Storage::disk('local')->exists($signed->signed_document_path)) {
+            return response()->file(Storage::disk('local')->path($signed->signed_document_path), [
+                'Content-Type' => 'application/pdf',
+                'Content-Disposition' => 'inline; filename="papeleta_'.$papeleta->numero_papeleta.'_firmada.pdf"',
+            ]);
+        }
 
         $pdf = Pdf::loadView('pdf.papeleta_request', [
             'papeleta' => $papeleta,
+            'preview' => true,
         ])->setPaper('a5', 'portrait');
 
-        return $pdf->stream("papeleta_{$papeleta->numero_papeleta}.pdf");
+        return $pdf->stream('papeleta_'.$papeleta->numero_papeleta.'_vista_previa.pdf');
+    }
+
+    /** QR para portería. Solo se entrega cuando RR.HH. culminó la aprobación. */
+    public function controlQr(string $papeletaId)
+    {
+        $papeleta = PapeletaRequest::findOrFail($papeletaId);
+        abort_unless($papeleta->estado === 'APROBADO' && $papeleta->qr_token, 422, 'El QR se habilita al aprobar la papeleta.');
+
+        $currentEmployee = $this->getEmployee();
+        abort_unless(
+            $currentEmployee?->id === $papeleta->employee_id || in_array(Auth::user()->rol_id, ['ROL001', 'ROL009', 'ROL011'], true),
+            403
+        );
+
+        $svg = (new SvgWriter())->write(QrCode::create(route('papeletas.qr.show', $papeleta->qr_token))->setSize(360)->setMargin(12))->getString();
+        return response($svg, 200, ['Content-Type' => 'image/svg+xml', 'Cache-Control' => 'no-store']);
+    }
+
+    /** Constancia separada: no altera el PDF PAdES ya firmado. */
+    public function controlConstanciaPdf(string $papeletaId)
+    {
+        $papeleta = PapeletaRequest::with(['employee.person', 'reason'])->findOrFail($papeletaId);
+        $employee = $this->getEmployee();
+        abort_unless($employee?->id === $papeleta->employee_id || in_array(Auth::user()->rol_id, ['ROL001', 'ROL009', 'ROL011'], true), 403);
+        return Pdf::loadView('pdf.papeleta_qr_constancia', compact('papeleta'))->setPaper('a5', 'portrait')
+            ->stream('constancia_qr_papeleta_'.$papeleta->numero_papeleta.'.pdf');
+    }
+
+    private function certificateForDni(?string $dni): ?DigitalCertificate
+    {
+        if (!$dni) return null;
+        return DigitalCertificate::where('signer_dni', $dni)
+            ->where('is_active', true)
+            ->where('valid_to', '>', now())
+            ->first();
+    }
+
+    private function requiredCertificate(Employee $employee): DigitalCertificate
+    {
+        $certificate = $this->certificateForDni($employee->dni);
+        if (!$certificate) {
+            throw ValidationException::withMessages(['certificate' => 'Primero debe registrar su certificado RENIEC (.pfx) en su cuenta.']);
+        }
+        return $certificate;
+    }
+
+    private function certificatePublicData(?DigitalCertificate $certificate): ?array
+    {
+        if (!$certificate) return null;
+        return [
+            'id' => $certificate->id,
+            'subject' => $certificate->certificate_subject,
+            'thumbprint' => $certificate->certificate_thumbprint,
+            'valid_to' => $certificate->valid_to?->toIso8601String(),
+        ];
     }
 
     /**

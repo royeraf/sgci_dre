@@ -79,7 +79,7 @@
         }
         .signature-area td {
             border: none;
-            padding-top: 20px;
+            padding-top: 65px;
             text-align: center;
         }
         .signature-line {
@@ -117,10 +117,24 @@
             color: #854d0e;
             border: 1px solid #854d0e;
         }
+        .preview-notice {
+            margin: 0 0 8px;
+            padding: 5px;
+            text-align: center;
+            font-size: 9px;
+            font-weight: bold;
+            color: #854d0e;
+            background-color: #fef3c7;
+            border: 1px solid #d97706;
+        }
     </style>
 </head>
 <body>
     <div class="wrapper">
+
+        @if($preview ?? false)
+            <div class="preview-notice">VISTA PREVIA — PAPELETA PENDIENTE DE APROBACIÓN Y FIRMAS</div>
+        @endif
 
         <!-- Header Section -->
         <table class="main-table" style="margin-bottom: 5px; border: none;">
@@ -219,13 +233,19 @@
                 <td colspan="4" class="section-header">DURACION</td>
             </tr>
             <tr>
-                <td class="text-bold text-center" style="background-color: #f9fafb;">HORA SALIDA (ESTIMADA)</td>
+                <td class="text-bold text-center" style="background-color: #f9fafb;">HORA SALIDA (REAL)</td>
                 <td class="text-center text-bold" style="font-size: 12px;">
-                    {{ $papeleta->hora_salida_estimada }}
+                    {{-- New certified QR forms keep this cell blank.  A later
+                         incremental field update writes the actual QR time. --}}
+                    @unless($papeleta->qr_form_enabled)
+                        {{ $papeleta->salida_real_at?->format('H:i') ?? 'PENDIENTE QR' }}
+                    @endunless
                 </td>
-                <td class="text-bold text-center" style="background-color: #f9fafb;">HORA RETORNO (ESTIMADA)</td>
+                <td class="text-bold text-center" style="background-color: #f9fafb;">HORA RETORNO (REAL)</td>
                 <td class="text-center text-bold" style="font-size: 12px;">
-                    {{ $papeleta->hora_retorno_estimada ?? '--:--' }}
+                    @unless($papeleta->qr_form_enabled)
+                        {{ $papeleta->retorno_real_at?->format('H:i') ?? 'PENDIENTE QR' }}
+                    @endunless
                 </td>
             </tr>
 
@@ -239,25 +259,6 @@
                 </td>
             </tr>
 
-            <!-- Approval Info -->
-            @if($papeleta->estado !== 'PENDIENTE')
-            <tr>
-                <td colspan="4" class="section-header">RESOLUCION</td>
-            </tr>
-            <tr>
-                <td class="text-bold" style="background-color: #f9fafb;">ESTADO</td>
-                <td><span class="badge badge-{{ strtolower($papeleta->estado) }}">{{ $papeleta->estado }}</span></td>
-                <td class="text-bold" style="background-color: #f9fafb;">APROBADO POR</td>
-                <td>{{ $papeleta->aprobador ? $papeleta->aprobador->apellidos . ', ' . $papeleta->aprobador->nombres : '-' }}</td>
-            </tr>
-            <tr>
-                <td class="text-bold" style="background-color: #f9fafb;">FECHA</td>
-                <td>{{ $papeleta->fecha_aprobacion ? $papeleta->fecha_aprobacion->format('d/m/Y H:i') : '-' }}</td>
-                <td class="text-bold" style="background-color: #f9fafb;">COMENTARIO</td>
-                <td>{{ $papeleta->comentario_aprobacion ?? '-' }}</td>
-            </tr>
-            @endif
-
             <!-- Destination Stamp -->
             <tr>
                 <td colspan="4" class="section-header">CONSTANCIA DE DESTINO (COMISION)</td>
@@ -265,9 +266,20 @@
             <tr>
                 <td colspan="4" style="padding: 10px;">
                     <div class="dashed-box">
+                        @if($papeleta->destino_firmado_at)
+                            <div style="padding: 5px; font-size: 8px;">
+                                <strong>Conformidad registrada:</strong> {{ $papeleta->destino_firmante_nombre }} — {{ $papeleta->destino_firmante_cargo }}<br>
+                                {{ $papeleta->destino_firmado_at->format('d/m/Y H:i') }}
+                            </div>
+                            @php($firmaPath = $papeleta->destino_firma_path ? storage_path('app/private/'.$papeleta->destino_firma_path) : null)
+                            @if($firmaPath && file_exists($firmaPath))
+                                <img src="data:image/png;base64,{{ base64_encode(file_get_contents($firmaPath)) }}" style="height: 32px; max-width: 160px; margin: 2px 5px;">
+                            @endif
+                        @elseif(!$papeleta->qr_form_enabled)
                         <div style="position: absolute; bottom: 5px; width: 100%; text-align: center; color: #9ca3af; font-size: 8px;">
                             SELLO Y FIRMA DE LA ENTIDAD DE DESTINO
                         </div>
+                        @endif
                     </div>
                 </td>
             </tr>
@@ -276,27 +288,18 @@
         <!-- Signatures -->
         <table class="signature-area">
             <tr>
-                <td style="width: 50%;">
+                <td style="width: 33%;">
                     <span class="signature-line"></span>
                     <span class="text-bold" style="font-size: 9px;">FIRMA DEL SERVIDOR</span>
                     <br><span style="font-size: 8px;">DNI: {{ $papeleta->employee?->dni }}</span>
                 </td>
-                <td style="width: 50%;">
+                <td style="width: 33%;">
                     <span class="signature-line"></span>
                     <span class="text-bold" style="font-size: 9px;">V°B° JEFE INMEDIATO</span>
                 </td>
-            </tr>
-            <tr>
-                <td colspan="2" style="height: 20px;"></td>
-            </tr>
-            <tr>
-                <td>
+                <td style="width: 34%;">
                     <span class="signature-line"></span>
-                    <span class="text-bold" style="font-size: 9px;">VIGILANCIA (SALIDA)</span>
-                </td>
-                <td>
-                    <span class="signature-line"></span>
-                    <span class="text-bold" style="font-size: 9px;">VIGILANCIA (RETORNO)</span>
+                    <span class="text-bold" style="font-size: 9px;">V°B° RECURSOS HUMANOS</span>
                 </td>
             </tr>
         </table>

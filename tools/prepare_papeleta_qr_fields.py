@@ -1,0 +1,125 @@
+#!/usr/bin/env python3
+"""Reserve AcroForm fields in a new papeleta before any PAdES signature.
+
+These fields are intentionally added *before* the server, boss and RR.HH.
+signatures.  They are later populated by ``update_papeleta_qr_fields.py`` as a
+PDF incremental update.  This is why the QR checkpoints can be displayed in
+the same one-page document without regenerating its signed content.
+"""
+
+import argparse
+
+from pyhanko.pdf_utils import generic
+from pyhanko.pdf_utils.incremental_writer import IncrementalPdfFileWriter
+from pyhanko.sign.fields import SigFieldSpec, append_signature_field
+
+
+# A5 portrait coordinates (origin is the lower-left corner).  The positions
+# match the empty cells and destination box rendered by papeleta_request.blade.
+FIELDS = {
+    # These narrow boxes center the static appearance in the duration cells.
+    "QR_SALIDA_REAL": (156, 348, 191, 368, 0),
+    "QR_RETORNO_REAL": (326, 348, 361, 368, 0),
+    "QR_DESTINO_FIRMA": (48, 214, 170, 248, 0),
+    "QR_DESTINO_DETALLE": (176, 212, 372, 251, 4096),  # multiline text field
+}
+
+# These approval fields must also be present before the certification signature.
+# Adding a new signature widget after certification is a structural change and
+# is correctly rejected by strict PDF validators, even when form filling itself
+# is permitted.
+SIGNATURE_FIELDS = {
+    'Papeleta_SERVIDOR': (42, 130, 136, 190),
+    'Papeleta_JEFE_INMEDIATO': (160, 130, 255, 190),
+    'Papeleta_RRHH': (282, 130, 380, 190),
+}
+
+
+def _name(value: str):
+    return generic.pdf_name(value)
+
+
+def add_static_text_field(writer, page_ref, page, acroform, field_name, spec):
+    """Add one combined field/widget annotation to the first page.
+
+    A combined field/widget is deliberate: pyHanko's form helper can find it
+    reliably, render a static appearance and set it read-only after QR data is
+    recorded.  Nothing in this function is called after a digital signature.
+    """
+    x1, y1, x2, y2, flags = spec
+    field = generic.DictionaryObject(
+        {
+            _name('/FT'): _name('/Tx'),
+            _name('/T'): generic.TextStringObject(field_name),
+            _name('/Type'): _name('/Annot'),
+            _name('/Subtype'): _name('/Widget'),
+            _name('/Rect'): generic.ArrayObject(
+                [
+                    generic.FloatObject(x1), generic.FloatObject(y1),
+                    generic.FloatObject(x2), generic.FloatObject(y2),
+                ]
+            ),
+            _name('/P'): page_ref,
+            _name('/F'): generic.NumberObject(4),  # print the appearance
+            _name('/Ff'): generic.NumberObject(flags),
+        }
+    )
+    field_ref = writer.add_object(field)
+    acroform['/Fields'].append(field_ref)
+
+    try:
+        annotations = page['/Annots']
+    except KeyError:
+        annotations = generic.ArrayObject()
+        page['/Annots'] = annotations
+    annotations.append(field_ref)
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--input', required=True)
+    parser.add_argument('--output', required=True)
+    args = parser.parse_args()
+
+    with open(args.input, 'rb') as source, open(args.output, 'wb') as target:
+        writer = IncrementalPdfFileWriter(source, strict=False)
+        page_ref, _ = writer.find_page_for_modification(0)
+        # ``find_page_for_modification`` returns a page reference and its
+        # resources, not the page dictionary itself.
+        page = page_ref.get_object()
+
+        try:
+            acroform = writer.root['/AcroForm']
+        except KeyError:
+            acroform = generic.DictionaryObject(
+                {
+                    _name('/Fields'): generic.ArrayObject(),
+                    _name('/NeedAppearances'): generic.BooleanObject(False),
+                }
+            )
+            writer.root['/AcroForm'] = writer.add_object(acroform)
+            writer.update_root()
+
+        if '/Fields' not in acroform:
+            acroform['/Fields'] = generic.ArrayObject()
+
+        for field_name, spec in FIELDS.items():
+            add_static_text_field(writer, page_ref, page, acroform, field_name, spec)
+
+        for field_name, box in SIGNATURE_FIELDS.items():
+            append_signature_field(
+                writer,
+                SigFieldSpec(sig_field_name=field_name, on_page=0, box=box),
+            )
+
+        writer.update_container(acroform)
+        # ``page`` was retrieved through an indirect page reference. Marking
+        # that reference explicitly is what persists the /Annots array, which
+        # lets every viewer paint the field appearances (not just read /V).
+        writer.mark_update(page_ref)
+        writer.write(target)
+    return 0
+
+
+if __name__ == '__main__':
+    raise SystemExit(main())

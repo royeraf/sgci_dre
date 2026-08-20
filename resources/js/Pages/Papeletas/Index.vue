@@ -7,6 +7,24 @@
                 <p class="text-sm text-slate-500 mt-1">Gestion y aprobacion de solicitudes de papeletas</p>
             </div>
 
+            <div v-if="myEmployee" class="mb-6 rounded-2xl border p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                :class="registeredCertificate ? 'border-emerald-200 bg-emerald-50' : 'border-amber-200 bg-amber-50'">
+                <div class="flex items-start gap-3">
+                    <ShieldCheck class="h-6 w-6 mt-0.5" :class="registeredCertificate ? 'text-emerald-600' : 'text-amber-600'" />
+                    <div>
+                        <p class="font-bold" :class="registeredCertificate ? 'text-emerald-900' : 'text-amber-900'">
+                            {{ registeredCertificate ? 'Certificado RENIEC vinculado' : 'Debe vincular su certificado RENIEC' }}
+                        </p>
+                        <p class="text-xs mt-0.5" :class="registeredCertificate ? 'text-emerald-700' : 'text-amber-700'">
+                            {{ registeredCertificate ? `Vigente hasta ${formatDate(registeredCertificate.valid_to)}` : 'Es obligatorio para firmar y enviar una papeleta.' }}
+                        </p>
+                    </div>
+                </div>
+                <button @click="showCertificateModal = true" class="px-4 py-2 rounded-xl text-sm font-bold text-white bg-slate-900 hover:bg-slate-800">
+                    {{ registeredCertificate ? 'Renovar certificado' : 'Registrar .pfx' }}
+                </button>
+            </div>
+
             <!-- Stats (admin only) -->
             <div v-if="isAdminRole" class="grid grid-cols-2 sm:grid-cols-5 gap-3 sm:gap-4 mb-6">
                 <div class="bg-white rounded-xl p-4 shadow-sm border border-slate-100">
@@ -18,8 +36,8 @@
                     <p class="text-xs font-semibold text-yellow-600 uppercase">Pendientes</p>
                     <p class="text-2xl font-black text-yellow-700">{{ stats.pendientes }}</p>
                 </div>
-                <div class="bg-orange-50 rounded-xl p-4 shadow-sm border border-orange-100 cursor-pointer hover:ring-2 ring-orange-300 transition-all"
-                    @click="activeTab = 'pendientes'">
+                <div v-if="isHrRole" class="bg-orange-50 rounded-xl p-4 shadow-sm border border-orange-100 cursor-pointer hover:ring-2 ring-orange-300 transition-all"
+                    @click="activeTab = 'pendientes_rrhh'">
                     <p class="text-xs font-semibold text-orange-600 uppercase">P. RRHH</p>
                     <p class="text-2xl font-black text-orange-700">{{ stats.pendientes_rrhh }}</p>
                 </div>
@@ -42,7 +60,7 @@
                             <ClipboardList class="h-4 w-4 inline-block mr-1.5 -mt-0.5" />
                             Mis Papeletas
                         </button>
-                        <button v-if="isAdminRole && canViewTab('pendientes')" @click="activeTab = 'pendientes'"
+                        <button v-if="isBossRole && canViewTab('pendientes')" @click="activeTab = 'pendientes'"
                             :class="[activeTab === 'pendientes' ? 'border-blue-600 text-blue-600 bg-blue-50/50' : 'border-transparent text-slate-500 hover:text-slate-700', 'flex-1 sm:flex-none px-6 py-4 border-b-2 font-bold text-sm transition-all']">
                             <Clock class="h-4 w-4 inline-block mr-1.5 -mt-0.5" />
                             Pendientes
@@ -50,7 +68,7 @@
                                 {{ stats.pendientes }}
                             </span>
                         </button>
-                        <button v-if="isAdminRole && canViewTab('pendientes_rrhh')" @click="activeTab = 'pendientes_rrhh'"
+                        <button v-if="isHrRole && canViewTab('pendientes_rrhh')" @click="activeTab = 'pendientes_rrhh'"
                             :class="[activeTab === 'pendientes_rrhh' ? 'border-blue-600 text-blue-600 bg-blue-50/50' : 'border-transparent text-slate-500 hover:text-slate-700', 'flex-1 sm:flex-none px-6 py-4 border-b-2 font-bold text-sm transition-all']">
                             <Clock class="h-4 w-4 inline-block mr-1.5 -mt-0.5" />
                             Pendientes RRHH
@@ -115,9 +133,9 @@
                                     <th class="text-left px-4 py-3 font-semibold text-slate-600">N°</th>
                                     <th class="text-left px-4 py-3 font-semibold text-slate-600">Fecha Salida</th>
                                     <th class="text-left px-4 py-3 font-semibold text-slate-600 hidden sm:table-cell">Motivo</th>
-                                    <th class="text-left px-4 py-3 font-semibold text-slate-600 hidden md:table-cell">Horario</th>
+                                    <th class="text-left px-4 py-3 font-semibold text-slate-600 hidden md:table-cell">Control QR</th>
                                     <th class="text-center px-4 py-3 font-semibold text-slate-600">Estado</th>
-                                    <th class="text-center px-4 py-3 font-semibold text-slate-600">PDF</th>
+                                    <th class="text-center px-4 py-3 font-semibold text-slate-600">Documento</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-slate-50">
@@ -126,7 +144,10 @@
                                     <td class="px-4 py-3 text-slate-700">{{ formatDate(p.fecha_salida) }}</td>
                                     <td class="px-4 py-3 text-slate-500 hidden sm:table-cell">{{ p.reason?.nombre ?? '-' }}</td>
                                     <td class="px-4 py-3 text-slate-500 hidden md:table-cell">
-                                        {{ p.hora_salida_estimada }} - {{ p.hora_retorno_estimada || '--:--' }}
+                                        <div class="text-xs leading-5">
+                                            <div><span class="font-semibold text-slate-600">Salida:</span> {{ formatQrTime(p.salida_real_at) }}</div>
+                                            <div><span class="font-semibold text-slate-600">Retorno:</span> {{ formatQrTime(p.retorno_real_at) }}</div>
+                                        </div>
                                     </td>
                                     <td class="px-4 py-3 text-center">
                                         <span :class="estadoBadgeClass(p.estado)" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold">
@@ -134,9 +155,18 @@
                                         </span>
                                     </td>
                                     <td class="px-4 py-3 text-center">
-                                        <a :href="`/papeletas/${p.id}/pdf`" target="_blank" class="text-slate-400 hover:text-indigo-600 transition-colors">
-                                            <FileText class="h-4 w-4 inline-block" />
+                                        <a v-if="p.estado === 'APROBADO' && (p.signatures?.length || 0) >= 3" :href="`/papeletas/${p.id}/pdf`" target="_blank" class="inline-flex items-center gap-1 rounded-lg bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700 hover:bg-emerald-100 transition-colors" title="PDF con las tres firmas digitales">
+                                            <FileText class="h-4 w-4" />
+                                            Papeleta firmada
                                         </a>
+                                        <a v-else :href="`/papeletas/${p.id}/pdf`" target="_blank" class="inline-flex items-center gap-1 text-xs font-semibold text-amber-700 hover:text-amber-800 transition-colors" title="Ver papeleta pendiente de aprobación">
+                                            <FileText class="h-4 w-4" />
+                                            Vista previa
+                                        </a>
+                                        <button v-if="p.estado === 'APROBADO' && p.qr_token" @click="showControlQr(p)" class="ml-2 inline-flex items-center gap-1 text-xs font-semibold text-indigo-700 hover:text-indigo-900" title="QR para salida y retorno">
+                                            QR control
+                                        </button>
+                                        <a v-if="p.estado === 'APROBADO'" :href="`/papeletas/${p.id}/constancia-qr.pdf`" target="_blank" class="ml-2 inline-flex text-xs font-semibold text-slate-600 hover:text-slate-900" title="Constancia de salida, retorno y destino">Constancia QR</a>
                                     </td>
                                 </tr>
                             </tbody>
@@ -180,7 +210,7 @@
                                     </p>
                                     <p class="text-xs text-slate-600 mt-1 line-clamp-1">{{ p.motivo }}</p>
                                 </div>
-                                <div class="flex items-center gap-2 flex-shrink-0">
+                                <div v-if="canProcess(p)" class="flex items-center gap-2 flex-shrink-0">
                                     <button @click="openApproveModal(p)"
                                         class="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold text-white bg-green-600 hover:bg-green-700 transition-colors">
                                         <CheckCircle class="h-3.5 w-3.5" />
@@ -202,7 +232,7 @@
                 </div>
 
                 <!-- Tab: Pendientes RRHH -->
-                <div v-if="activeTab === 'pendientes_rrhh'" class="p-4 sm:p-6">
+                <div v-if="isHrRole && activeTab === 'pendientes_rrhh'" class="p-4 sm:p-6">
                     <div v-if="loading" class="text-center py-12 text-slate-400">
                         <Loader2 class="h-8 w-8 animate-spin mx-auto mb-2" />
                         <p>Cargando...</p>
@@ -365,74 +395,107 @@
         <Teleport to="body">
             <div v-if="showCreateModal" class="fixed inset-0 z-50 flex items-center justify-center p-4">
                 <div class="fixed inset-0 bg-black/50 backdrop-blur-sm" @click="showCreateModal = false"></div>
-                <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden">
-                    <div class="bg-gradient-to-r from-indigo-600 to-blue-600 px-6 py-4">
-                        <h3 class="text-lg font-bold text-white">Nueva Solicitud de Papeleta</h3>
-                        <p class="text-indigo-100 text-sm mt-0.5">{{ myEmployee?.person?.apellidos }}, {{ myEmployee?.person?.nombres }}</p>
+                <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden">
+                    <div class="bg-gradient-to-r from-green-600 to-emerald-600 px-6 py-4 flex items-center justify-between">
+                        <div>
+                            <h3 class="text-xl font-bold text-white flex items-center gap-2">
+                                <Plus class="h-6 w-6" />
+                                Registrar Salida
+                            </h3>
+                            <p class="text-green-100 text-sm mt-1">Complete los datos de su salida</p>
+                        </div>
+                        <button type="button" @click="showCreateModal = false" class="p-1 text-green-100 hover:text-white transition-colors" aria-label="Cerrar">
+                            <XCircle class="h-6 w-6" />
+                        </button>
                     </div>
-                    <form @submit.prevent="handleStorePapeleta" class="p-6 space-y-4">
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <div class="sm:col-span-2">
-                                <label class="block text-sm font-bold text-slate-700 mb-1.5">Motivo de salida <span class="text-red-500">*</span></label>
-                                <select v-model="createForm.entry_exit_reason_id"
-                                    class="w-full px-3 py-2.5 border rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white outline-none"
-                                    :class="createErrors.entry_exit_reason_id ? 'border-red-400' : 'border-slate-200'">
-                                    <option value="">Seleccione motivo</option>
-                                    <option v-for="r in reasons" :key="r.id" :value="r.id">{{ r.nombre }}</option>
-                                </select>
-                                <p v-if="createErrors.entry_exit_reason_id" class="mt-1 text-xs text-red-600">{{ createErrors.entry_exit_reason_id[0] }}</p>
+                    <form @submit.prevent="handleStorePapeleta" class="p-6 space-y-6">
+                        <div class="rounded-xl border border-green-100 bg-gradient-to-br from-green-50 to-emerald-50 p-4">
+                            <div class="flex items-center gap-4 rounded-xl border border-green-200 bg-white p-4 shadow-sm">
+                                <div class="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-green-500 to-emerald-600 text-xl font-bold text-white shadow-lg">
+                                    {{ employeeInitial }}
+                                </div>
+                                <div class="min-w-0 flex-1">
+                                    <p class="truncate text-lg font-bold text-slate-900">{{ employeeFullName }}</p>
+                                    <div class="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-slate-600">
+                                        <span>DNI: {{ myEmployee?.dni || myEmployee?.person?.dni || '-' }}</span>
+                                        <span class="rounded-full border border-slate-200 bg-slate-100 px-2 py-0.5 text-xs font-bold text-slate-600">{{ myEmployee?.contract_type?.nombre || myEmployee?.tipo_contrato || 'Servidor' }}</span>
+                                    </div>
+                                    <p class="mt-0.5 truncate text-xs text-slate-500">{{ myEmployee?.position?.nombre || myEmployee?.cargo || 'Sin cargo registrado' }} · {{ myEmployee?.office?.nombre || myEmployee?.direction?.nombre || 'Sin área registrada' }}</p>
+                                </div>
                             </div>
-                            <div class="sm:col-span-2">
-                                <label class="block text-sm font-bold text-slate-700 mb-1.5">Justificación <span class="text-red-500">*</span></label>
-                                <textarea v-model="createForm.motivo" rows="3" maxlength="500"
-                                    class="w-full px-3 py-2.5 border rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none resize-none"
-                                    :class="createErrors.motivo ? 'border-red-400' : 'border-slate-200'"
-                                    placeholder="Describa brevemente el motivo de la salida..."></textarea>
-                                <p v-if="createErrors.motivo" class="mt-1 text-xs text-red-600">{{ createErrors.motivo[0] }}</p>
+                            <p class="mt-3 text-xs font-medium text-green-800">La fecha, hora y turno se registran automáticamente con la hora institucional.</p>
+                        </div>
+
+                        <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
+                            <div>
+                                <label class="mb-2 flex items-center gap-2 text-sm font-bold text-slate-700">
+                                    Hora de Salida
+                                    <span class="relative flex h-2 w-2">
+                                        <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75"></span>
+                                        <span class="relative inline-flex h-2 w-2 rounded-full bg-emerald-500"></span>
+                                    </span>
+                                    <span class="text-[10px] font-medium uppercase tracking-tight text-emerald-600">Automático</span>
+                                </label>
+                                <input type="time" :value="automaticTime" disabled class="w-full cursor-not-allowed rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 font-bold text-slate-500 outline-none" />
                             </div>
                             <div>
-                                <label class="block text-sm font-bold text-slate-700 mb-1.5">Fecha de salida <span class="text-red-500">*</span></label>
-                                <input type="date" v-model="createForm.fecha_salida"
-                                    class="w-full px-3 py-2.5 border rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
-                                    :class="createErrors.fecha_salida ? 'border-red-400' : 'border-slate-200'" />
-                                <p v-if="createErrors.fecha_salida" class="mt-1 text-xs text-red-600">{{ createErrors.fecha_salida[0] }}</p>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-bold text-slate-700 mb-1.5">Turno <span class="text-red-500">*</span></label>
-                                <select v-model="createForm.turno"
-                                    class="w-full px-3 py-2.5 border rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white outline-none"
-                                    :class="createErrors.turno ? 'border-red-400' : 'border-slate-200'">
-                                    <option value="">Seleccione turno</option>
-                                    <option value="Manana">Mañana</option>
-                                    <option value="Tarde">Tarde</option>
-                                    <option value="Noche">Noche</option>
-                                </select>
-                                <p v-if="createErrors.turno" class="mt-1 text-xs text-red-600">{{ createErrors.turno[0] }}</p>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-bold text-slate-700 mb-1.5">Hora de salida <span class="text-red-500">*</span></label>
-                                <input type="time" v-model="createForm.hora_salida_estimada"
-                                    class="w-full px-3 py-2.5 border rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
-                                    :class="createErrors.hora_salida_estimada ? 'border-red-400' : 'border-slate-200'" />
-                                <p v-if="createErrors.hora_salida_estimada" class="mt-1 text-xs text-red-600">{{ createErrors.hora_salida_estimada[0] }}</p>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-bold text-slate-700 mb-1.5">Hora de retorno <span class="text-slate-400 font-normal">(opcional)</span></label>
-                                <input type="time" v-model="createForm.hora_retorno_estimada"
-                                    class="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none" />
-                                <p v-if="createErrors.hora_retorno_estimada" class="mt-1 text-xs text-red-600">{{ createErrors.hora_retorno_estimada[0] }}</p>
+                                <label class="mb-2 block text-sm font-bold text-slate-700">Turno <span class="text-xs font-normal text-green-500">(automático)</span></label>
+                                <div class="flex w-full items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5">
+                                    <Clock class="h-4 w-4 text-slate-400" />
+                                    <span class="font-medium" :class="turnoColor">{{ automaticTurno }}</span>
+                                </div>
+                                <p class="mt-1 text-xs text-slate-500">El turno se determina según la hora de salida.</p>
                             </div>
                         </div>
 
-                        <div class="flex justify-end gap-3 pt-2 border-t border-slate-100">
+                        <div>
+                            <label class="mb-2 block text-sm font-bold text-slate-700">Tipo de Motivo <span class="text-red-500">*</span></label>
+                            <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                <label class="flex cursor-pointer items-center rounded-xl border p-3 transition-colors" :class="createForm.tipo_motivo === 'comision' ? 'border-green-500 bg-green-50 ring-1 ring-green-500' : 'border-slate-200 hover:bg-slate-50'">
+                                    <input v-model="createForm.tipo_motivo" type="radio" value="comision" class="h-4 w-4 border-slate-300 text-green-600 focus:ring-green-500" />
+                                    <span class="ml-2 text-sm font-medium text-slate-700">Comisión de Servicios</span>
+                                </label>
+                                <label class="flex cursor-pointer items-center rounded-xl border p-3 transition-colors" :class="createForm.tipo_motivo === 'permiso' ? 'border-green-500 bg-green-50 ring-1 ring-green-500' : 'border-slate-200 hover:bg-slate-50'">
+                                    <input v-model="createForm.tipo_motivo" type="radio" value="permiso" class="h-4 w-4 border-slate-300 text-green-600 focus:ring-green-500" />
+                                    <span class="ml-2 text-sm font-medium text-slate-700">Permiso Personal</span>
+                                </label>
+                            </div>
+                            <p v-if="createErrors.tipo_motivo" class="mt-1 text-xs text-red-600">{{ createErrors.tipo_motivo[0] }}</p>
+                        </div>
+
+                        <div>
+                            <label class="mb-2 block text-sm font-bold text-slate-700">Motivo predefinido <span class="text-red-500">*</span></label>
+                            <select v-model="createForm.entry_exit_reason_id" class="w-full rounded-xl border bg-white px-4 py-3 text-sm outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500" :class="createErrors.entry_exit_reason_id ? 'border-red-400' : 'border-slate-200'">
+                                <option value="">Seleccione motivo</option>
+                                <option v-for="reason in filteredReasons" :key="reason.id" :value="reason.id">{{ reason.nombre }}</option>
+                            </select>
+                            <p v-if="createErrors.entry_exit_reason_id" class="mt-1 text-xs text-red-600">{{ createErrors.entry_exit_reason_id[0] }}</p>
+                        </div>
+
+                        <div>
+                            <label class="mb-2 block text-sm font-bold text-slate-700">Descripción del Motivo <span class="text-red-500">*</span></label>
+                            <textarea v-model="createForm.motivo" rows="3" maxlength="500" class="w-full resize-none rounded-xl border px-4 py-3 text-sm outline-none transition-colors focus:border-green-500 focus:ring-2 focus:ring-green-500" :class="createErrors.motivo ? 'border-red-400' : 'border-slate-200'" placeholder="Indique el motivo de la salida..."></textarea>
+                            <p v-if="createErrors.motivo" class="mt-1 text-xs text-red-600">{{ createErrors.motivo[0] }}</p>
+                        </div>
+
+                        <div class="rounded-xl border border-indigo-200 bg-indigo-50 p-4">
+                            <label class="mb-1.5 block text-sm font-bold text-indigo-900">Clave de firma <span class="text-red-500">*</span></label>
+                                <input type="password" v-model="createForm.signing_pin" autocomplete="off"
+                                    class="w-full rounded-xl border px-3 py-2.5 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500"
+                                    :class="createErrors.signing_pin ? 'border-red-400' : 'border-indigo-200'" placeholder="Clave creada al registrar el PFX" />
+                            <p class="mt-1 text-xs text-indigo-700">Al enviar, firma digitalmente la solicitud y se remite a su jefe inmediato. No se usa QR.</p>
+                            <p v-if="createErrors.signing_pin" class="mt-1 text-xs text-red-600">{{ createErrors.signing_pin[0] }}</p>
+                        </div>
+
+                        <div class="flex justify-end gap-3 border-t border-slate-200 pt-4">
                             <button type="button" @click="showCreateModal = false"
-                                class="px-5 py-2.5 rounded-xl text-sm font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors">
+                                class="rounded-xl border-2 border-slate-300 px-6 py-2.5 text-sm font-bold text-slate-600 transition-all hover:bg-slate-50">
                                 Cancelar
                             </button>
                             <button type="submit" :disabled="createSubmitting"
-                                class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 disabled:opacity-50 transition-all shadow-md">
+                                class="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-green-600 to-emerald-600 px-6 py-2.5 text-sm font-bold text-white transition-all hover:from-green-700 hover:to-emerald-700 disabled:opacity-50">
                                 <Loader2 v-if="createSubmitting" class="h-4 w-4 animate-spin" />
-                                {{ createSubmitting ? 'Enviando...' : 'Enviar Solicitud' }}
+                                {{ createSubmitting ? 'Registrando...' : 'Registrar Salida' }}
                             </button>
                         </div>
                     </form>
@@ -455,6 +518,11 @@
                         <textarea v-model="modalComentario" rows="3"
                             class="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm resize-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                             placeholder="Agregue un comentario..."></textarea>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-semibold text-slate-700 mb-1">Clave de firma digital *</label>
+                        <input v-model="approvalPin" type="password" autocomplete="off" class="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm focus:border-green-500 focus:ring-2 focus:ring-green-500/20" placeholder="Clave de su certificado" />
+                        <p class="mt-1 text-xs text-slate-500">La aprobación continuará únicamente si se genera su firma digital.</p>
                     </div>
                     <div class="flex justify-end gap-2">
                         <button @click="showApproveModal = false"
@@ -503,25 +571,69 @@
                 </div>
             </div>
         </Teleport>
+
+        <Teleport to="body">
+            <div v-if="showCertificateModal" class="fixed inset-0 z-[60] flex items-center justify-center p-4">
+                <div class="fixed inset-0 bg-black/50 backdrop-blur-sm" @click="showCertificateModal = false"></div>
+                <form @submit.prevent="uploadCertificate" class="relative bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6 space-y-4">
+                    <div>
+                        <h3 class="text-xl font-black text-slate-900">Vincular certificado RENIEC</h3>
+                        <p class="text-sm text-slate-500 mt-1">Acción voluntaria del titular. El archivo se cifra antes de almacenarse.</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-slate-700 mb-1">Archivo .pfx o .p12</label>
+                        <input ref="certificateFileInput" type="file" accept=".pfx,.p12" required class="block w-full text-sm border border-slate-200 rounded-xl p-2" />
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-slate-700 mb-1">Contraseña original del PFX</label>
+                        <input v-model="certificateForm.pfx_password" type="password" required autocomplete="off" class="w-full rounded-xl border border-slate-200 px-4 py-3" />
+                    </div>
+                    <div class="grid sm:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-sm font-bold text-slate-700 mb-1">Crear clave de firma</label>
+                            <input v-model="certificateForm.signing_pin" type="password" required minlength="6" autocomplete="new-password" class="w-full rounded-xl border border-slate-200 px-4 py-3" />
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-slate-700 mb-1">Confirmar clave</label>
+                            <input v-model="certificateForm.signing_pin_confirmation" type="password" required minlength="6" autocomplete="new-password" class="w-full rounded-xl border border-slate-200 px-4 py-3" />
+                        </div>
+                    </div>
+                    <p class="text-xs text-slate-500">La nueva clave debe contener letras y números. Se solicitará en cada firma y no se almacena.</p>
+                    <label class="flex items-start gap-2 rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">
+                        <input v-model="certificateForm.consent" type="checkbox" required class="mt-1 rounded border-slate-300" />
+                        <span>Autorizo voluntariamente el uso de este certificado para firmar mis papeletas. Confirmo que soy su titular y que conozco que cada firma requerirá mi clave personal.</span>
+                    </label>
+                    <div class="flex justify-end gap-2 pt-2">
+                        <button type="button" @click="showCertificateModal = false" class="px-4 py-2.5 rounded-xl bg-slate-100 font-semibold text-slate-700">Cancelar</button>
+                        <button type="submit" :disabled="certificateUploading" class="px-4 py-2.5 rounded-xl bg-indigo-600 text-white font-bold disabled:opacity-50">
+                            {{ certificateUploading ? 'Validando...' : 'Cifrar y vincular' }}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </Teleport>
     </MainLayout>
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, watch } from 'vue';
+import { ref, reactive, computed, onMounted, onBeforeUnmount, watch } from 'vue';
 import { useTabPermission } from '@/composables/useTabPermission';
 import MainLayout from '@/Layouts/MainLayout.vue';
 import { usePapeletaList } from '@/Composables/usePapeletaList';
 import { usePapeletaApproval } from '@/Composables/usePapeletaApproval';
-import { Clock, History, FileBarChart, FileText, CheckCircle, XCircle, Loader2, Plus, ClipboardList } from 'lucide-vue-next';
+import { Clock, History, FileBarChart, FileText, CheckCircle, XCircle, Loader2, Plus, ClipboardList, ShieldCheck } from 'lucide-vue-next';
 import axios from 'axios';
 
 const props = defineProps({
     userRole: String,
     myEmployee: { type: Object, default: null },
     reasons: { type: Array, default: () => [] },
+    certificate: { type: Object, default: null },
 });
 
-const isAdminRole = computed(() => ['ROL001', 'ROL009', 'ROL011'].includes(props.userRole));
+const isBossRole = computed(() => ['ROL001', 'ROL011'].includes(props.userRole));
+const isHrRole = computed(() => ['ROL001', 'ROL009'].includes(props.userRole));
+const isAdminRole = computed(() => isBossRole.value || isHrRole.value);
 
 const { canViewTab, firstAllowedTab } = useTabPermission('papeletas', ['pendientes', 'pendientes_rrhh', 'historial', 'reportes']);
 
@@ -532,6 +644,12 @@ const showRejectModal = ref(false);
 const selectedPapeleta = ref(null);
 const modalComentario = ref('');
 const rejectError = ref('');
+const approvalPin = ref('');
+const registeredCertificate = ref(props.certificate);
+const showCertificateModal = ref(false);
+const certificateUploading = ref(false);
+const certificateFileInput = ref(null);
+const certificateForm = reactive({ pfx_password: '', signing_pin: '', signing_pin_confirmation: '', consent: false });
 
 // ===== MIS PAPELETAS =====
 const misPapeletas = ref([]);
@@ -540,13 +658,41 @@ const showCreateModal = ref(false);
 const createForm = reactive({
     entry_exit_reason_id: '',
     motivo: '',
-    fecha_salida: '',
-    hora_salida_estimada: '',
-    hora_retorno_estimada: '',
-    turno: '',
+    tipo_motivo: 'comision',
+    signing_pin: '',
 });
 const createErrors = ref({});
 const createSubmitting = ref(false);
+const currentDateTime = ref(new Date());
+let automaticClock = null;
+
+const employeeFullName = computed(() => {
+    const person = props.myEmployee?.person;
+    return [person?.nombres || props.myEmployee?.nombres, person?.apellidos || props.myEmployee?.apellidos]
+        .filter(Boolean)
+        .join(' ') || 'Servidor';
+});
+
+const employeeInitial = computed(() => employeeFullName.value.charAt(0).toUpperCase() || 'S');
+
+const automaticTime = computed(() => currentDateTime.value.toTimeString().slice(0, 5));
+
+const automaticTurno = computed(() => {
+    const hour = currentDateTime.value.getHours();
+    if (hour >= 6 && hour < 14) return 'Mañana';
+    if (hour >= 14 && hour < 22) return 'Tarde';
+    return 'Noche';
+});
+
+const turnoColor = computed(() => ({
+    'Mañana': 'text-amber-600',
+    'Tarde': 'text-orange-600',
+    'Noche': 'text-indigo-600',
+}[automaticTurno.value]));
+
+const filteredReasons = computed(() => props.reasons.filter(reason =>
+    reason.tipo === createForm.tipo_motivo || reason.tipo === 'ambos'
+));
 
 const fetchMisPapeletas = async () => {
     misPapeletasLoading.value = true;
@@ -559,16 +705,45 @@ const fetchMisPapeletas = async () => {
 };
 
 const openCreateModal = () => {
+    if (!registeredCertificate.value) {
+        showCertificateModal.value = true;
+        window.Swal?.fire({ icon: 'info', title: 'Primero vincule su certificado', text: 'La papeleta debe salir firmada por el funcionario.' });
+        return;
+    }
     Object.assign(createForm, {
         entry_exit_reason_id: '',
         motivo: '',
-        fecha_salida: '',
-        hora_salida_estimada: '',
-        hora_retorno_estimada: '',
-        turno: '',
+        tipo_motivo: 'comision',
+        signing_pin: '',
     });
     createErrors.value = {};
     showCreateModal.value = true;
+};
+
+const uploadCertificate = async () => {
+    const file = certificateFileInput.value?.files?.[0];
+    if (!file) return;
+    certificateUploading.value = true;
+    const data = new FormData();
+    data.append('pfx_file', file);
+    data.append('pfx_password', certificateForm.pfx_password);
+    data.append('signing_pin', certificateForm.signing_pin);
+    data.append('signing_pin_confirmation', certificateForm.signing_pin_confirmation);
+    data.append('consent', certificateForm.consent ? '1' : '0');
+    try {
+        const response = await axios.post('/papeletas/mi-certificado', data, { headers: { 'Content-Type': 'multipart/form-data' } });
+        registeredCertificate.value = response.data.certificate;
+        showCertificateModal.value = false;
+        Object.assign(certificateForm, { pfx_password: '', signing_pin: '', signing_pin_confirmation: '', consent: false });
+        if (certificateFileInput.value) certificateFileInput.value.value = '';
+        window.Swal?.fire({ icon: 'success', title: 'Certificado vinculado', text: 'Ya puede firmar sus papeletas con la nueva clave.' });
+    } catch (error) {
+        const errors = error.response?.data?.errors;
+        const message = errors ? Object.values(errors).flat().join('\n') : (error.response?.data?.message || 'No se pudo registrar el certificado.');
+        window.Swal?.fire({ icon: 'error', title: 'Certificado no registrado', text: message });
+    } finally {
+        certificateUploading.value = false;
+    }
 };
 
 const handleStorePapeleta = async () => {
@@ -590,12 +765,26 @@ const handleStorePapeleta = async () => {
     }
 };
 
+const showControlQr = (papeleta) => {
+    window.Swal?.fire({
+        title: `QR de control · ${papeleta.numero_papeleta}`,
+        html: `<p style="margin-bottom:12px;font-size:13px">Escanéelo en portería para marcar salida y retorno.</p><img alt="QR de control" src="/papeletas/${papeleta.id}/qr-control" style="width:300px;max-width:100%">`,
+        confirmButtonText: 'Listo',
+    });
+};
+
 const { pendientes, historial, stats, loading, filtros, fetchPendientes, fetchHistorial, fetchStats } = usePapeletaList();
 const { processing: approvalProcessing, aprobar, desaprobar } = usePapeletaApproval();
 
 const pendientesRrhh = computed(() => {
     return pendientes.value.filter(p => p.estado === 'PENDIENTE_RRHH');
 });
+
+const canProcess = (papeleta) => {
+    if (papeleta?.estado === 'PENDIENTE') return isBossRole.value;
+    if (papeleta?.estado === 'PENDIENTE_RRHH') return isHrRole.value;
+    return false;
+};
 
 const reportFiltros = reactive({
     estado: 'TODOS',
@@ -616,6 +805,13 @@ const formatDate = (date) => {
     return new Date(date).toLocaleDateString('es-PE', { day: '2-digit', month: '2-digit', year: 'numeric' });
 };
 
+// La hora de creación de la solicitud no es una marca de asistencia. Solo se
+// muestran las horas que portería registró mediante el QR.
+const formatQrTime = (dateTime) => {
+    if (!dateTime) return 'Pendiente QR';
+    return new Date(dateTime).toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' });
+};
+
 const estadoBadgeClass = (estado) => {
     const classes = {
         PENDIENTE: 'bg-yellow-100 text-yellow-800',
@@ -627,12 +823,15 @@ const estadoBadgeClass = (estado) => {
 };
 
 const openApproveModal = (papeleta) => {
+    if (!canProcess(papeleta)) return;
     selectedPapeleta.value = papeleta;
     modalComentario.value = '';
+    approvalPin.value = '';
     showApproveModal.value = true;
 };
 
 const openRejectModal = (papeleta) => {
+    if (!canProcess(papeleta)) return;
     selectedPapeleta.value = papeleta;
     modalComentario.value = '';
     rejectError.value = '';
@@ -640,13 +839,24 @@ const openRejectModal = (papeleta) => {
 };
 
 const handleAprobar = async () => {
+    if (!registeredCertificate.value) {
+        showApproveModal.value = false;
+        showCertificateModal.value = true;
+        return;
+    }
+    if (!approvalPin.value) {
+        window.Swal?.fire({ icon: 'warning', title: 'Ingrese su clave de firma' });
+        return;
+    }
     try {
-        await aprobar(selectedPapeleta.value.id, modalComentario.value);
+        await aprobar(selectedPapeleta.value.id, modalComentario.value, approvalPin.value);
         showApproveModal.value = false;
         window.Swal?.fire({ icon: 'success', title: 'Papeleta aprobada', toast: true, position: 'top-end', showConfirmButton: false, timer: 3000 });
         refreshData();
-    } catch {
-        // error handled in composable
+    } catch (error) {
+        const errors = error.response?.data?.errors;
+        const message = errors ? Object.values(errors).flat().join('\n') : (error.response?.data?.message || 'No se pudo firmar la aprobación.');
+        window.Swal?.fire({ icon: 'error', title: 'Firma no realizada', text: message });
     }
 };
 
@@ -692,12 +902,26 @@ watch(activeTab, (newTab) => {
     }
 });
 
+watch(() => createForm.tipo_motivo, () => {
+    const currentReason = props.reasons.find(reason => reason.id === createForm.entry_exit_reason_id);
+    if (!currentReason || (currentReason.tipo !== createForm.tipo_motivo && currentReason.tipo !== 'ambos')) {
+        createForm.entry_exit_reason_id = filteredReasons.value[0]?.id || '';
+    }
+}, { immediate: true });
+
 onMounted(() => {
+    automaticClock = window.setInterval(() => {
+        currentDateTime.value = new Date();
+    }, 30000);
     if (props.myEmployee) fetchMisPapeletas();
     if (isAdminRole.value) {
         fetchPendientes();
         fetchHistorial();
         fetchStats();
     }
+});
+
+onBeforeUnmount(() => {
+    if (automaticClock) window.clearInterval(automaticClock);
 });
 </script>

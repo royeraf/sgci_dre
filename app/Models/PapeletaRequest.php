@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class PapeletaRequest extends Model
 {
@@ -20,6 +21,15 @@ class PapeletaRequest extends Model
         'hora_retorno_estimada',
         'turno',
         'estado',
+        'qr_token',
+        'qr_form_enabled',
+        'executed_document_path',
+        'salida_real_at',
+        'retorno_real_at',
+        'destino_firmante_nombre',
+        'destino_firmante_cargo',
+        'destino_firma_path',
+        'destino_firmado_at',
         'aprobado_por',
         'fecha_aprobacion',
         'comentario_aprobacion',
@@ -34,6 +44,10 @@ class PapeletaRequest extends Model
         'fecha_aprobacion' => 'datetime',
         'fecha_aprobacion_jefe' => 'datetime',
         'fecha_aprobacion_rrhh' => 'datetime',
+        'salida_real_at' => 'datetime',
+        'retorno_real_at' => 'datetime',
+        'destino_firmado_at' => 'datetime',
+        'qr_form_enabled' => 'boolean',
     ];
 
     protected $appends = [
@@ -67,6 +81,11 @@ class PapeletaRequest extends Model
     public function reason(): BelongsTo
     {
         return $this->belongsTo(EntryExitReason::class, 'entry_exit_reason_id');
+    }
+
+    public function signatures(): HasMany
+    {
+        return $this->hasMany(PapeletaRequestSignature::class, 'papeleta_request_id');
     }
 
     // Accessors
