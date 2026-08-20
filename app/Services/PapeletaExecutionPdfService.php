@@ -37,15 +37,14 @@ class PapeletaExecutionPdfService
         $destinationSignature = $papeleta->destino_firma_path
             ? Storage::disk('local')->path($papeleta->destino_firma_path)
             : '';
-        // Keep this line compact: the GPS map immediately below carries the
-        // coordinates, so the identity remains readable in its own strip.
-        $destinationDetail = $papeleta->destino_firmado_at
-            ? implode(' · ', array_filter([
-                $papeleta->destino_firmante_nombre,
-                $papeleta->destino_firmante_dni ? 'DNI: '.$papeleta->destino_firmante_dni : null,
-                $papeleta->destino_firmante_cargo,
-                $papeleta->destino_firmado_at->format('d/m/Y H:i'),
-            ]))
+        $destinationName = $papeleta->destino_firmado_at
+            ? 'NOMBRES Y APELLIDOS: '.$papeleta->destino_firmante_nombre
+            : '';
+        $destinationDni = $papeleta->destino_firmado_at
+            ? 'DNI: '.($papeleta->destino_firmante_dni ?: '-')
+            : '';
+        $destinationCoordinates = $papeleta->destino_latitude !== null && $papeleta->destino_longitude !== null
+            ? sprintf('COORDENADAS: X: %.6f, Y: %.6f', (float) $papeleta->destino_longitude, (float) $papeleta->destino_latitude)
             : '';
 
         try {
@@ -56,8 +55,10 @@ class PapeletaExecutionPdfService
                 '--output', $temporaryOutput,
                 '--salida', $papeleta->salida_real_at?->format('H:i') ?? '',
                 '--retorno', $papeleta->retorno_real_at?->format('H:i') ?? '',
-                '--destino-detalle', $destinationDetail,
                 '--destino-firma', $destinationSignature,
+                '--destino-nombre', $destinationName,
+                '--destino-dni', $destinationDni,
+                '--destino-coordenadas', $destinationCoordinates,
                 '--latitude', (string) ($papeleta->destino_latitude ?? ''),
                 '--longitude', (string) ($papeleta->destino_longitude ?? ''),
             ], base_path());

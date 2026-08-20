@@ -165,8 +165,11 @@ def main() -> int:
     parser.add_argument('--output', required=True)
     parser.add_argument('--salida', default='')
     parser.add_argument('--retorno', default='')
-    parser.add_argument('--destino-detalle', default='')
+    parser.add_argument('--destino-detalle', default='')  # Backward compatibility only.
     parser.add_argument('--destino-firma', default='')
+    parser.add_argument('--destino-nombre', default='')
+    parser.add_argument('--destino-dni', default='')
+    parser.add_argument('--destino-coordenadas', default='')
     parser.add_argument('--latitude', default='')
     parser.add_argument('--longitude', default='')
     args = parser.parse_args()
@@ -175,6 +178,13 @@ def main() -> int:
         writer = IncrementalPdfFileWriter(source, strict=False)
         fill_text(writer, 'QR_SALIDA_REAL', args.salida, 11)
         fill_text(writer, 'QR_RETORNO_REAL', args.retorno, 11)
+        # New papeletas use three short fields so names, DNI and coordinates
+        # remain readable alongside the tactile signature.
+        fill_text(writer, 'QR_DESTINO_NOMBRE', args.destino_nombre, 6)
+        fill_text(writer, 'QR_DESTINO_DNI', args.destino_dni, 6)
+        fill_text(writer, 'QR_DESTINO_COORDENADAS', args.destino_coordenadas, 6)
+        # This only applies to old, already prepared documents that have the
+        # previous combined field; it is never used on the new layout.
         fill_text(writer, 'QR_DESTINO_DETALLE', args.destino_detalle, 7)
         fill_signature(writer, 'QR_DESTINO_FIRMA', args.destino_firma, 'Firma tactil de destino')
         fill_map(writer, 'QR_DESTINO_MAP', args.latitude, args.longitude)
