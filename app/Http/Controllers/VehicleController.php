@@ -222,6 +222,7 @@ class VehicleController extends Controller
                     'dia' => $commission->dia->format('Y-m-d'),
                     'hora' => $commission->hora,
                     'lugar' => $commission->lugar,
+                    'ambito_destino' => $commission->ambito_destino,
                     'referencia' => $commission->referencia,
                     'motivo' => $commission->motivo,
                     'usuarios' => $commission->usuarios,
@@ -240,7 +241,9 @@ class VehicleController extends Controller
                     'fecha_autorizacion' => optional($commission->fecha_autorizacion)->format('Y-m-d H:i:s'),
                     'comentario_autorizacion' => $commission->comentario_autorizacion,
                     'fecha_confirmacion_conductor' => optional($commission->fecha_confirmacion_conductor)->format('Y-m-d H:i:s'),
+                    'fecha_salida' => optional($commission->fecha_salida)->format('Y-m-d'),
                     'hora_salida' => $commission->hora_salida,
+                    'fecha_retorno' => optional($commission->fecha_retorno)->format('Y-m-d'),
                     'hora_regreso' => $commission->hora_regreso,
                     'km_salida' => $commission->km_salida,
                     'km_retorno' => $commission->km_retorno,
@@ -276,6 +279,7 @@ class VehicleController extends Controller
             'dia' => 'required|date',
             'hora' => 'required',
             'lugar' => 'required|string|max:255',
+            'ambito_destino' => 'nullable|string|in:LOCAL,REGIONAL,NACIONAL',
             'referencia' => 'nullable|string|max:255',
             'motivo' => 'nullable|string',
             'pasajero_ids' => 'nullable|array',
@@ -314,13 +318,25 @@ class VehicleController extends Controller
             'dia' => 'sometimes|date',
             'hora' => 'sometimes',
             'lugar' => 'sometimes|string|max:255',
+            'ambito_destino' => 'nullable|string|in:LOCAL,REGIONAL,NACIONAL',
             'referencia' => 'nullable|string|max:255',
             'motivo' => 'nullable|string',
             'pasajero_ids' => 'nullable|array',
             'pasajero_ids.*' => 'uuid|exists:employees,id',
             'vehicle_id' => 'nullable|uuid|exists:vehicles,id',
             'conductor_employee_id' => 'sometimes|uuid|exists:employees,id',
+            'fecha_salida' => 'nullable|date',
             'hora_salida' => 'nullable',
+            'fecha_retorno' => [
+                'nullable',
+                'date',
+                function ($attribute, $value, $fail) use ($request, $commission) {
+                    $fechaSalida = $request->has('fecha_salida') ? $request->input('fecha_salida') : $commission->fecha_salida;
+                    if ($value && $fechaSalida && strtotime($value) < strtotime((string) $fechaSalida)) {
+                        $fail('La fecha de retorno debe ser igual o posterior a la fecha de salida.');
+                    }
+                }
+            ],
             'hora_regreso' => 'nullable',
             'km_salida' => 'nullable|integer|min:0',
             'km_retorno' => [

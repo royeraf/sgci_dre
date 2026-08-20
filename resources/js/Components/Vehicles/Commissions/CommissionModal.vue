@@ -66,6 +66,18 @@
                                 <p v-if="formErrors.lugar" class="mt-1 text-sm text-red-600">{{ formErrors.lugar }}</p>
                             </div>
 
+                            <!-- Ámbito del Destino -->
+                            <div class="col-span-1">
+                                <label class="block text-sm font-bold text-slate-700 mb-2">Ámbito del Destino</label>
+                                <select v-model="ambitoDestino" v-bind="ambitoDestinoProps"
+                                    class="w-full px-4 py-2.5 border-2 border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none bg-white">
+                                    <option value="">Seleccionar ámbito</option>
+                                    <option value="LOCAL">Local</option>
+                                    <option value="REGIONAL">Regional</option>
+                                    <option value="NACIONAL">Nacional</option>
+                                </select>
+                            </div>
+
                             <!-- Referencia -->
                             <div class="col-span-1">
                                 <label class="block text-sm font-bold text-slate-700 mb-2">Referencia / Documento</label>
@@ -186,9 +198,21 @@
 
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
+                                <label class="block text-sm font-bold text-blue-700 mb-2">Fecha de Salida</label>
+                                <input type="date" v-model="fechaSalida" v-bind="fechaSalidaProps"
+                                    class="w-full px-4 py-2.5 border border-blue-200 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none bg-white">
+                            </div>
+                            <div>
                                 <label class="block text-sm font-bold text-blue-700 mb-2">Hora de Salida</label>
                                 <input type="time" v-model="horaSalida" v-bind="horaSalidaProps"
                                     class="w-full px-4 py-2.5 border border-blue-200 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none bg-white">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-bold text-blue-700 mb-2">Fecha de Retorno</label>
+                                <input type="date" v-model="fechaRetorno" v-bind="fechaRetornoProps"
+                                    class="w-full px-4 py-2.5 border-2 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none bg-white transition-colors"
+                                    :class="formErrors.fecha_retorno ? 'border-red-400' : 'border-blue-200'">
+                                <p v-if="formErrors.fecha_retorno" class="mt-1 text-sm text-red-600">{{ formErrors.fecha_retorno }}</p>
                             </div>
                             <div>
                                 <label class="block text-sm font-bold text-blue-700 mb-2">Hora de Regreso</label>
@@ -295,6 +319,7 @@ const commissionSchema = toTypedSchema(
         lugar: yup.string()
             .required('El lugar de destino es obligatorio')
             .min(3, 'El lugar debe tener al menos 3 caracteres'),
+        ambito_destino: yup.string().nullable(),
         referencia: yup.string().nullable(),
         dia: yup.string().required('La fecha es obligatoria'),
         hora: yup.string().required('La hora programada es obligatoria'),
@@ -303,7 +328,15 @@ const commissionSchema = toTypedSchema(
             .required('Debe seleccionar el conductor'),
         pasajero_ids: yup.array().of(yup.string()).default([]),
         motivo: yup.string().nullable(),
+        fecha_salida: yup.string().nullable(),
         hora_salida: yup.string().nullable(),
+        fecha_retorno: yup.string()
+            .nullable()
+            .test('after-or-equal-salida', 'La fecha de retorno debe ser igual o posterior a la de salida', function(value) {
+                const { fecha_salida } = this.parent;
+                if (!value || !fecha_salida) return true;
+                return new Date(value) >= new Date(fecha_salida);
+            }),
         hora_regreso: yup.string().nullable(),
         km_salida: yup.string()
             .nullable()
@@ -334,6 +367,7 @@ const { errors: formErrors, defineField, handleSubmit: validateForm, resetForm, 
     validationSchema: commissionSchema,
     initialValues: {
         lugar: '',
+        ambito_destino: '',
         referencia: '',
         dia: currentDate,
         hora: currentTime,
@@ -341,7 +375,9 @@ const { errors: formErrors, defineField, handleSubmit: validateForm, resetForm, 
         conductor_employee_id: '',
         pasajero_ids: [],
         motivo: '',
+        fecha_salida: '',
         hora_salida: '',
+        fecha_retorno: '',
         hora_regreso: '',
         km_salida: '',
         km_retorno: '',
@@ -351,6 +387,7 @@ const { errors: formErrors, defineField, handleSubmit: validateForm, resetForm, 
 });
 
 const [lugar, lugarProps] = defineField('lugar');
+const [ambitoDestino, ambitoDestinoProps] = defineField('ambito_destino');
 const [referencia, referenciaProps] = defineField('referencia');
 const [dia, diaProps] = defineField('dia');
 const [hora, horaProps] = defineField('hora');
@@ -358,7 +395,9 @@ const [vehicleId, vehicleIdProps] = defineField('vehicle_id');
 const [conductorEmployeeId, conductorEmployeeIdProps] = defineField('conductor_employee_id');
 const [pasajeroIds] = defineField('pasajero_ids');
 const [motivo, motivoProps] = defineField('motivo');
+const [fechaSalida, fechaSalidaProps] = defineField('fecha_salida');
 const [horaSalida, horaSalidaProps] = defineField('hora_salida');
+const [fechaRetorno, fechaRetornoProps] = defineField('fecha_retorno');
 const [horaRegreso, horaRegresoProps] = defineField('hora_regreso');
 const [kmSalida, kmSalidaProps] = defineField('km_salida');
 const [kmRetorno, kmRetornoProps] = defineField('km_retorno');
@@ -437,6 +476,7 @@ onMounted(() => {
         selectedPassengers.value = props.commission.pasajeros || [];
         setValues({
             lugar: props.commission.lugar || '',
+            ambito_destino: props.commission.ambito_destino || '',
             referencia: props.commission.referencia || '',
             dia: props.commission.dia || currentDate,
             hora: props.commission.hora || currentTime,
@@ -444,7 +484,9 @@ onMounted(() => {
             conductor_employee_id: props.commission.conductor_employee_id || '',
             pasajero_ids: selectedPassengers.value.map(p => p.id),
             motivo: props.commission.motivo || '',
+            fecha_salida: props.commission.fecha_salida || '',
             hora_salida: props.commission.hora_salida || '',
+            fecha_retorno: props.commission.fecha_retorno || '',
             hora_regreso: props.commission.hora_regreso || '',
             km_salida: props.commission.km_salida || '',
             km_retorno: props.commission.km_retorno || '',

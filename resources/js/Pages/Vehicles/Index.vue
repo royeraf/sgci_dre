@@ -766,6 +766,7 @@ import ServiceReqModal from '@/Components/Vehicles/ServiceRequirements/ServiceRe
 import DriverLicenseModal from '@/Components/Vehicles/Drivers/DriverLicenseModal.vue';
 import ClientPagination from '@/Components/Common/ClientPagination.vue';
 import { useCommissionApproval } from '@/Composables/useCommissionApproval';
+import { usePdfViewer } from '@/composables/usePdfViewer';
 import axios from 'axios';
 
 const props = defineProps({
@@ -1021,7 +1022,11 @@ const openCommissionDetailModal = (commission) => {
 };
 
 const printCommission = (commission) => {
-    window.open(`/vehicles/commissions/${commission.id}/pdf`, '_blank');
+    const numero = String(commission.numero).padStart(3, '0');
+    openPdf({
+        src: `/vehicles/commissions/${commission.id}/pdf`,
+        filename: `autorizacion_salida_${numero}-${commission.anio}.pdf`,
+    });
 };
 
 const openMaintenanceModal = () => { showMaintenanceModal.value = true; };
@@ -1055,6 +1060,7 @@ const getStatusClass = (estado) => {
 
 // Autorización de salida vehicular
 const { processing: approvalProcessing, autorizar, rechazar, confirmar } = useCommissionApproval();
+const { openPdf } = usePdfViewer();
 const showRejectModal = ref(false);
 const rejectTargetCommission = ref(null);
 const rejectComentario = ref('');

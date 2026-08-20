@@ -57,7 +57,12 @@
                                     {{ commission.lugar }}
                                 </span>
                             </div>
-                            
+
+                            <div>
+                                <span class="block text-xs font-semibold text-slate-400 uppercase">Ámbito del Destino</span>
+                                <span class="text-sm font-semibold text-slate-800 mt-0.5 block">{{ ambitoLabel(commission.ambito_destino) }}</span>
+                            </div>
+
                             <div>
                                 <span class="block text-xs font-semibold text-slate-400 uppercase">Referencia / Doc.</span>
                                 <span class="text-sm font-semibold text-slate-800">{{ commission.referencia || 'Sin referencia' }}</span>
@@ -149,8 +154,16 @@
                         
                         <div class="grid grid-cols-2 gap-4">
                             <div>
+                                <span class="block text-xs font-semibold text-blue-600 uppercase">Fecha de Salida</span>
+                                <span class="text-sm font-bold text-slate-800 mt-0.5 block">{{ commission.fecha_salida ? formatDate(commission.fecha_salida) : '--' }}</span>
+                            </div>
+                            <div>
                                 <span class="block text-xs font-semibold text-blue-600 uppercase">Hora de Salida</span>
                                 <span class="text-sm font-bold text-slate-800 mt-0.5 block">{{ commission.hora_salida || '--:--' }}</span>
+                            </div>
+                            <div>
+                                <span class="block text-xs font-semibold text-blue-600 uppercase">Fecha de Retorno</span>
+                                <span class="text-sm font-bold text-slate-800 mt-0.5 block">{{ commission.fecha_retorno ? formatDate(commission.fecha_retorno) : '--' }}</span>
                             </div>
                             <div>
                                 <span class="block text-xs font-semibold text-blue-600 uppercase">Hora de Regreso</span>
@@ -244,6 +257,15 @@ defineProps({
 });
 
 defineEmits(['close']);
+
+const ambitoLabel = (ambito) => {
+    switch (ambito) {
+        case 'LOCAL': return 'Local';
+        case 'REGIONAL': return 'Regional';
+        case 'NACIONAL': return 'Nacional';
+        default: return 'No especificado';
+    }
+};
 
 const formatDate = (dateString) => {
     if (!dateString) return '';

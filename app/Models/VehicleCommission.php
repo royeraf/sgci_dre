@@ -17,6 +17,7 @@ class VehicleCommission extends Model
         'dia',
         'hora',
         'lugar',
+        'ambito_destino',
         'referencia',
         'motivo',
         'usuarios',
@@ -26,7 +27,9 @@ class VehicleCommission extends Model
         'fecha_autorizacion',
         'comentario_autorizacion',
         'fecha_confirmacion_conductor',
+        'fecha_salida',
         'hora_salida',
+        'fecha_retorno',
         'hora_regreso',
         'km_salida',
         'km_retorno',
@@ -39,6 +42,8 @@ class VehicleCommission extends Model
         'dia' => 'date',
         'fecha_autorizacion' => 'datetime',
         'fecha_confirmacion_conductor' => 'datetime',
+        'fecha_salida' => 'date',
+        'fecha_retorno' => 'date',
     ];
 
     public function vehicle()
