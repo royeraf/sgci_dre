@@ -24,13 +24,13 @@
                 <!-- Form -->
                 <form @submit.prevent="onSubmit" class="p-6 space-y-6 max-h-[80vh] overflow-y-auto custom-scrollbar">
                     <div class="grid grid-cols-1 gap-6">
-                        <!-- DNI Section with Consultation -->
-                        <div
+                        <!-- DNI Section with Consultation (crear, o editar con DNI temporal) -->
+                        <div v-if="!isEditing || isTempDni"
                             class="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-xl p-4 border border-emerald-100">
                             <div class="flex items-center gap-2 mb-3">
                                 <ScanBarcode class="w-5 h-5 text-emerald-600" />
                                 <span class="font-semibold text-emerald-900">Consulta de DNI</span>
-                                <button type="button" @click="isDniEditable = !isDniEditable" v-if="!isEditing"
+                                <button type="button" @click="isDniEditable = !isDniEditable"
                                     class="ml-auto text-xs flex items-center gap-1 px-2 py-1 rounded-md transition-colors"
                                     :class="isDniEditable ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'"
                                     :title="isDniEditable ? 'Bloquear edición' : 'Habilitar edición'">
@@ -62,6 +62,9 @@
                             </div>
 
                             <p v-if="formErrors.dni" class="mt-2 text-sm text-red-600">{{ formErrors.dni }}</p>
+                            <p v-if="isEditing && isTempDni && !isDniEditable" class="mt-2 text-sm text-amber-700">
+                                Este DNI es temporal. Haga clic en "Bloqueado" para habilitar la edición y reemplazarlo por el DNI real.
+                            </p>
 
                             <!-- Consulta Result Message -->
                             <div v-if="consultaMessage" class="mt-3 p-3 rounded-lg flex items-center gap-2"
@@ -76,6 +79,19 @@
                                     ¿Necesita editar los nombres manualmente?
                                 </button>
                             </div>
+                        </div>
+
+                        <!-- DNI ya registrado (editar, sin consulta RENIEC) -->
+                        <div v-else
+                            class="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+                            <div>
+                                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">DNI</p>
+                                <p class="text-lg font-mono font-semibold text-slate-700 tracking-wider">{{ dni }}</p>
+                            </div>
+                            <span class="flex items-center gap-1 text-xs font-medium text-slate-400">
+                                <Lock class="w-3.5 h-3.5" />
+                                Registrado
+                            </span>
                         </div>
                     </div>
 
@@ -178,6 +194,18 @@
                                 <option v-if="positions.length === 0" disabled>No hay cargos registrados</option>
                             </select>
                             <p v-if="formErrors.cargo" class="mt-1 text-sm text-red-600">{{ formErrors.cargo }}</p>
+                        </div>
+
+                        <!-- Encargatura (SELECT) -->
+                        <div>
+                            <label class="block text-sm font-bold text-slate-700 mb-2">Encargatura</label>
+                            <select v-model="encargaturaId" v-bind="encargaturaIdProps"
+                                class="w-full px-4 py-2.5 border-2 border-slate-200 rounded-xl text-slate-900 focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 bg-white transition-all duration-200 outline-none cursor-pointer">
+                                <option value="">Sin encargatura</option>
+                                <option v-for="pos in activePositions" :key="pos.id" :value="pos.id">
+                                    {{ pos.nombre }}
+                                </option>
+                            </select>
                         </div>
 
                         <!-- Dirección (chip UI) -->
@@ -357,7 +385,7 @@ const employeeSchema = toTypedSchema(
     yup.object({
         dni: yup.string()
             .required('El DNI es obligatorio')
-            .matches(/^\d{8}$/, 'El DNI debe tener exactamente 8 dígitos'),
+            .matches(/^(\d{8}|T\d{7})$/i, 'El DNI debe tener 8 dígitos, o ser un DNI temporal (T seguido de 7 dígitos)'),
         titulo: yup.string().transform((value) => value || null).nullable(),
         nombres: yup.string()
             .required('Los nombres son obligatorios')
@@ -371,6 +399,7 @@ const employeeSchema = toTypedSchema(
         telefono: yup.string().transform((value) => value || null).nullable(),
         correo: yup.string().transform((value) => value || null).email('Ingrese un correo válido').nullable(),
         cargo: yup.string().required('Debe seleccionar un cargo'),
+        encargatura_id: yup.string().transform((value) => value || null).nullable(),
         direction_id: yup.string().transform((value) => value || null).nullable(),
         office_id: yup.string().transform((value) => value || null).nullable(),
         fecha_ingreso: yup.string().transform((value) => value || null).nullable(),
@@ -393,6 +422,7 @@ const { errors: formErrors, defineField, handleSubmit: validateForm, setValues, 
         telefono: '',
         correo: '',
         cargo: '',
+        encargatura_id: '',
         direction_id: '',
         office_id: '',
         fecha_ingreso: '',
@@ -412,6 +442,7 @@ const [direccion, direccionProps] = defineField('direccion');
 const [telefono, telefonoProps] = defineField('telefono');
 const [correo, correoProps] = defineField('correo');
 const [cargo, cargoProps] = defineField('cargo');
+const [encargaturaId, encargaturaIdProps] = defineField('encargatura_id');
 const [directionId, directionIdProps] = defineField('direction_id');
 const [officeId, officeIdProps] = defineField('office_id');
 const [fechaIngreso, fechaIngresoProps] = defineField('fecha_ingreso');
@@ -426,6 +457,10 @@ const showDirectionDropdown = ref(false);
 const showOfficeDropdown = ref(false);
 const selectedDirectionData = ref(null);
 const selectedOfficeData = ref(null);
+
+const activePositions = computed(() => props.positions.filter(p => p.activo));
+
+const isTempDni = computed(() => /^T\d{7}$/i.test(dni.value || ''));
 
 const normalizeText = (text) => {
     if (!text) return '';
@@ -490,6 +525,7 @@ watch(() => props.employee, (emp) => {
             telefono: emp.telefono || '',
             correo: emp.correo || '',
             cargo: emp.cargo || '',
+            encargatura_id: emp.encargatura_id || '',
             direction_id: emp.direction_id || '',
             office_id: emp.office_id || '',
             fecha_ingreso: emp.fecha_ingreso ? emp.fecha_ingreso.split('T')[0] : '',

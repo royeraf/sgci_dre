@@ -378,7 +378,8 @@ const filteredEmployees = computed(() => {
         result = result.filter(e =>
             (e.nombres + ' ' + e.apellidos).toLowerCase().includes(q) ||
             String(e.dni).includes(q) ||
-            (e.cargo || '').toLowerCase().includes(q)
+            (e.cargo || '').toLowerCase().includes(q) ||
+            (e.encargatura || '').toLowerCase().includes(q)
         );
     }
 

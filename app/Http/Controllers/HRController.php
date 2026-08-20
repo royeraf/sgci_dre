@@ -30,7 +30,7 @@ class HRController extends Controller
     {
         // Cargamos la relación person para tener acceso a nombres/apellidos
         // Ordenamos la colección resultante usando el accessor 'apellidos'
-        $employees = Employee::with(['person', 'direction', 'office.direction', 'position'])
+        $employees = Employee::with(['person', 'direction', 'office.direction', 'position', 'encargaturaPosition'])
             ->get()
             ->sortBy('apellidos', SORT_NATURAL | SORT_FLAG_CASE)
             ->values(); // Reindexar array
@@ -43,7 +43,7 @@ class HRController extends Controller
      */
     public function getEmployee(string $id)
     {
-        $employee = Employee::with(['person', 'vacations', 'direction', 'office.direction', 'position'])->find($id);
+        $employee = Employee::with(['person', 'vacations', 'direction', 'office.direction', 'position', 'encargaturaPosition'])->find($id);
         
         if (!$employee) {
             return response()->json(['message' => 'Empleado no encontrado'], 404);
@@ -60,7 +60,7 @@ class HRController extends Controller
         // Buscar empleado que tenga una persona con ese DNI
         $employee = Employee::whereHas('person', function($query) use ($dni) {
             $query->where('dni', $dni);
-        })->with(['person', 'direction', 'position'])->first();
+        })->with(['person', 'direction', 'position', 'encargaturaPosition'])->first();
         
         if (!$employee) {
             return response()->json(['message' => 'Empleado no encontrado'], 404);
@@ -90,6 +90,7 @@ class HRController extends Controller
             'correo' => 'nullable|email|max:255',
             // Datos laborales
             'cargo_id' => 'nullable|exists:hr_positions,id',
+            'encargatura_id' => 'nullable|exists:hr_positions,id',
             'direction_id' => 'nullable|exists:hr_directions,id',
             'office_id' => 'nullable|exists:hr_offices,id',
             'fecha_ingreso' => 'nullable|date',
@@ -170,6 +171,7 @@ class HRController extends Controller
             'direction_id' => $directionId,
             'office_id' => $officeId,
             'position_id' => $positionId,
+            'encargatura_id' => $validated['encargatura_id'] ?? null,
             'contract_type_id' => $contractTypeId,
             'fecha_ingreso' => $validated['fecha_ingreso'] ?? now(),
             'observaciones' => $validated['observaciones'],
@@ -205,6 +207,7 @@ class HRController extends Controller
             'direccion' => 'nullable|string|max:255',
             // Laborales
             'cargo_id' => 'nullable|exists:hr_positions,id',
+            'encargatura_id' => 'nullable|exists:hr_positions,id',
             'direction_id' => 'nullable|exists:hr_directions,id',
             'office_id' => 'nullable|exists:hr_offices,id',
             'fecha_ingreso' => 'nullable|date',
@@ -292,6 +295,8 @@ class HRController extends Controller
              $posObj = HRPosition::where('nombre', $request->cargo)->first();
              if ($posObj) $employeeData['position_id'] = $posObj->id;
         }
+
+        if ($request->has('encargatura_id')) $employeeData['encargatura_id'] = $validated['encargatura_id'];
 
         if (!empty($employeeData)) {
             $employee->update($employeeData);

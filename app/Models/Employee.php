@@ -15,6 +15,7 @@ class Employee extends Model
         'person_id',
         'direction_id',
         'position_id',
+        'encargatura_id',
         'office_id',
         'contract_type_id',
         'fecha_ingreso',
@@ -38,6 +39,7 @@ class Employee extends Model
         'telefono',
         'correo',
         'cargo',
+        'encargatura',
         'direction_nombre',
         'tipo_contrato', // Virtual attribute
         'full_name',
@@ -65,6 +67,14 @@ class Employee extends Model
     public function position(): BelongsTo
     {
         return $this->belongsTo(HRPosition::class, 'position_id');
+    }
+
+    /**
+     * Relación con el cargo de encargatura
+     */
+    public function encargaturaPosition(): BelongsTo
+    {
+        return $this->belongsTo(HRPosition::class, 'encargatura_id');
     }
 
     /**
@@ -177,6 +187,14 @@ class Employee extends Model
     public function getCargoAttribute(): ?string
     {
         return $this->position?->nombre;
+    }
+
+    /**
+     * Acceso a la encargatura (nombre) a través de encargaturaPosition
+     */
+    public function getEncargaturaAttribute(): ?string
+    {
+        return $this->encargaturaPosition?->nombre;
     }
 
     /**

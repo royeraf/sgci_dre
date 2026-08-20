@@ -7,6 +7,7 @@
                         <th class="px-6 py-4 text-left text-xs font-bold text-slate-600 uppercase">Empleado</th>
                         <th class="px-6 py-4 text-left text-xs font-bold text-slate-600 uppercase">DNI</th>
                         <th class="px-6 py-4 text-left text-xs font-bold text-slate-600 uppercase">Cargo</th>
+                        <th class="px-6 py-4 text-left text-xs font-bold text-slate-600 uppercase">Encargatura</th>
                         <th class="px-6 py-4 text-left text-xs font-bold text-slate-600 uppercase">Dirección</th>
                         <th class="px-6 py-4 text-left text-xs font-bold text-slate-600 uppercase">Contrato</th>
                         <th class="px-6 py-4 text-center text-xs font-bold text-slate-600 uppercase">Estado</th>
@@ -15,7 +16,7 @@
                 </thead>
                 <tbody class="divide-y divide-slate-100">
                     <tr v-if="loading">
-                        <td colspan="7" class="px-6 py-24 text-center">
+                        <td colspan="8" class="px-6 py-24 text-center">
                             <div class="flex flex-col items-center justify-center">
                                 <Loader2 class="animate-spin h-12 w-12 text-emerald-600 mb-4" />
                                 <p class="text-lg font-medium text-slate-600">Cargando personal...</p>
@@ -38,6 +39,7 @@
                         </td>
                         <td class="px-6 py-4 font-mono text-slate-700">{{ emp.dni }}</td>
                         <td class="px-6 py-4 text-sm text-slate-700">{{ emp.position?.nombre || emp.cargo || '-' }}</td>
+                        <td class="px-6 py-4 text-sm text-slate-700">{{ emp.encargaturaPosition?.nombre || emp.encargatura || '-' }}</td>
                         <td class="px-6 py-4 text-sm text-slate-700">{{ emp.direction?.nombre || emp.direction_nombre ||
                             '-' }}
                         </td>
@@ -64,7 +66,7 @@
                         </td>
                     </tr>
                     <tr v-if="!loading && employees.length === 0">
-                        <td colspan="7" class="px-6 py-12 text-center text-slate-500">
+                        <td colspan="8" class="px-6 py-12 text-center text-slate-500">
                             <div class="flex flex-col items-center">
                                 <UserX class="w-16 h-16 text-slate-300 mb-4" />
                                 <p>No hay empleados registrados.</p>
