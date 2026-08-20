@@ -37,7 +37,7 @@ class AuditLog extends Model
         string $action,
         string $description,
         ?string $modelType = null,
-        ?int $modelId = null
+        string|int|null $modelId = null
     ): self {
         return self::create([
             'user_id' => $userId,
