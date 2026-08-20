@@ -192,6 +192,13 @@ Route::middleware('auth')->group(function () {
         // Service Requirements
         Route::get('/service-requirements', [VehicleController::class, 'getServiceRequirements'])->name('service-requirements.list');
         Route::post('/service-requirements', [VehicleController::class, 'storeServiceRequirement'])->name('service-requirements.store');
+
+        // Drivers (Conductores)
+        Route::get('/drivers', [VehicleController::class, 'getDrivers'])->name('drivers.list');
+        Route::put('/drivers/{employeeId}/license', [VehicleController::class, 'saveDriverLicense'])->name('drivers.license.save');
+
+        // Employees (para selectores como el de pasajeros)
+        Route::get('/employees', [VehicleController::class, 'getEmployees'])->name('employees.list');
     });
 
     // Confirmación del conductor: fuera del grupo role:ROL006,ROL007 porque el

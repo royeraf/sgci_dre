@@ -8,6 +8,7 @@ use App\Models\VehicleMaintenance;
 use App\Models\VehicleHandover;
 use App\Models\VehicleServiceRequirement;
 use App\Models\Employee;
+use App\Models\DriverLicense;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
@@ -17,11 +18,12 @@ use Barryvdh\DomPDF\Facade\Pdf;
 class VehicleController extends Controller
 {
     /**
-     * Display the vehicle control page
+     * Empleados activos, con datos de persona completos. Base compartida por
+     * driversQuery() y getEmployees().
      */
-    public function index()
+    private function activeEmployeesQuery()
     {
-        $activeEmployeesQuery = fn () => Employee::with(['person', 'position'])
+        return Employee::with(['person', 'position', 'encargaturaPosition'])
             ->where('estado', 'ACTIVO')
             ->whereHas('person', function ($q) {
                 $q->whereNotNull('nombres')
@@ -29,20 +31,67 @@ class VehicleController extends Controller
                     ->where('nombres', '!=', '')
                     ->where('apellidos', '!=', '');
             });
+    }
 
-        $mapEmployee = fn ($emp) => [
+    /**
+     * Empleados activos cuyo cargo o encargatura es CHOFER II.
+     * Compartido por index() y getDrivers().
+     */
+    private function driversQuery()
+    {
+        return $this->activeEmployeesQuery()
+            ->with('driverLicense')
+            ->where(function ($q) {
+                $q->whereHas('position', fn ($q2) => $q2->where('nombre', 'CHOFER II'))
+                    ->orWhereHas('encargaturaPosition', fn ($q2) => $q2->where('nombre', 'CHOFER II'));
+            });
+    }
+
+    private function mapDriver($emp): array
+    {
+        return [
             'id' => $emp->id,
             'nombre_completo' => $emp->person->nombre_full,
             'dni' => $emp->dni,
             'cargo' => $emp->position?->nombre,
+            'encargatura' => $emp->encargaturaPosition?->nombre,
+            'licencia_numero' => $emp->driverLicense?->numero,
+            'licencia_categoria' => $emp->driverLicense?->categoria,
+            'licencia_vencimiento' => $emp->driverLicense?->fecha_vencimiento?->format('Y-m-d'),
+            'licencia_vencida' => $emp->driverLicense?->esta_vencida ?? false,
         ];
+    }
 
+    /**
+     * Listado de empleados activos, para selectores como el de pasajeros
+     * de la Autorización de Salida de Vehículos.
+     */
+    public function getEmployees()
+    {
+        $employees = $this->activeEmployeesQuery()
+            ->get()
+            ->map(fn ($emp) => [
+                'id' => $emp->id,
+                'nombre_completo' => $emp->person->nombre_full,
+                'dni' => $emp->dni,
+                'cargo' => $emp->position?->nombre,
+            ])
+            ->sortBy('nombre_completo')
+            ->values();
+
+        return response()->json($employees);
+    }
+
+    /**
+     * Display the vehicle control page
+     */
+    public function index()
+    {
         $user = Auth::user();
 
         return Inertia::render('Vehicles/Index', [
-            'drivers' => $activeEmployeesQuery()
-                ->whereHas('position', fn ($q) => $q->where('nombre', 'CHOFER II'))
-                ->get()->map($mapEmployee)->sortBy('nombre_completo')->values(),
+            'drivers' => $this->driversQuery()
+                ->get()->map(fn ($emp) => $this->mapDriver($emp))->sortBy('nombre_completo')->values(),
             'canAuthorize' => $user->puedeAutorizarSalidaVehicular(),
             'currentEmployeeId' => $user->employee?->id,
         ]);
@@ -158,6 +207,7 @@ class VehicleController extends Controller
                 'solicitanteEmployee.person',
                 'conductorEmployee.person',
                 'autorizadorEmployee.person',
+                'passengers.person',
             ])
             ->orderBy('dia', 'desc')
             ->orderBy('hora', 'desc')
@@ -175,6 +225,10 @@ class VehicleController extends Controller
                     'referencia' => $commission->referencia,
                     'motivo' => $commission->motivo,
                     'usuarios' => $commission->usuarios,
+                    'pasajeros' => $commission->passengers->map(fn ($e) => [
+                        'id' => $e->id,
+                        'nombre_completo' => $e->person->nombre_full,
+                    ])->values(),
                     'vehicle_id' => $commission->vehicle_id,
                     'placa' => $commission->vehicle?->placa ?? 'N/A',
                     'marca' => $commission->vehicle?->marca ?? '',
@@ -224,12 +278,16 @@ class VehicleController extends Controller
             'lugar' => 'required|string|max:255',
             'referencia' => 'nullable|string|max:255',
             'motivo' => 'nullable|string',
-            'usuarios' => 'nullable|string',
+            'pasajero_ids' => 'nullable|array',
+            'pasajero_ids.*' => 'uuid|exists:employees,id',
             'vehicle_id' => 'nullable|uuid|exists:vehicles,id',
             'conductor_employee_id' => 'required|uuid|exists:employees,id',
             'combustible' => 'nullable|string|in:Gasolina,Diesel,GLP,GNV',
             'pnro' => 'nullable|string|max:100',
         ]);
+
+        $pasajeroIds = $validated['pasajero_ids'] ?? [];
+        unset($validated['pasajero_ids']);
 
         $validated['solicitante_employee_id'] = $solicitanteEmployeeId;
         $validated['estado'] = 'PENDIENTE';
@@ -237,6 +295,7 @@ class VehicleController extends Controller
         $validated['numero'] = VehicleCommission::nextNumero($validated['anio']);
 
         $commission = VehicleCommission::create($validated);
+        $commission->passengers()->sync($pasajeroIds);
 
         return response()->json([
             'message' => 'Autorización de salida registrada correctamente',
@@ -257,7 +316,8 @@ class VehicleController extends Controller
             'lugar' => 'sometimes|string|max:255',
             'referencia' => 'nullable|string|max:255',
             'motivo' => 'nullable|string',
-            'usuarios' => 'nullable|string',
+            'pasajero_ids' => 'nullable|array',
+            'pasajero_ids.*' => 'uuid|exists:employees,id',
             'vehicle_id' => 'nullable|uuid|exists:vehicles,id',
             'conductor_employee_id' => 'sometimes|uuid|exists:employees,id',
             'hora_salida' => 'nullable',
@@ -300,7 +360,15 @@ class VehicleController extends Controller
             $validated['estado'] = 'EN_COMISION';
         }
 
+        $pasajeroIdsProvided = $request->has('pasajero_ids');
+        $pasajeroIds = $validated['pasajero_ids'] ?? [];
+        unset($validated['pasajero_ids']);
+
         $commission->update($validated);
+
+        if ($pasajeroIdsProvided) {
+            $commission->passengers()->sync($pasajeroIds);
+        }
 
         return response()->json([
             'message' => 'Autorización de salida actualizada correctamente',
@@ -402,7 +470,7 @@ class VehicleController extends Controller
      */
     public function commissionPdf(string $id)
     {
-        $commission = VehicleCommission::with(['vehicle', 'solicitanteEmployee.person', 'conductorEmployee.person', 'autorizadorEmployee.person'])->findOrFail($id);
+        $commission = VehicleCommission::with(['vehicle', 'solicitanteEmployee.person', 'conductorEmployee.person', 'conductorEmployee.driverLicense', 'autorizadorEmployee.person'])->findOrFail($id);
 
         $pdf = Pdf::loadView('pdf.vehicle_exit_authorization', [
             'commission' => $commission,
@@ -592,6 +660,53 @@ class VehicleController extends Controller
             'message' => 'Requerimiento de servicio registrado correctamente',
             'requirement' => $requirement
         ], 201);
+    }
+
+    // ========================================
+    // DRIVERS (Conductores)
+    // ========================================
+
+    /**
+     * Listado de conductores (empleados con cargo o encargatura CHOFER II)
+     * junto con su licencia de conducir registrada, si existe.
+     */
+    public function getDrivers()
+    {
+        $drivers = $this->driversQuery()
+            ->get()
+            ->map(fn ($emp) => $this->mapDriver($emp))
+            ->sortBy('nombre_completo')
+            ->values();
+
+        return response()->json($drivers);
+    }
+
+    /**
+     * Crea o actualiza la licencia de conducir de un conductor.
+     */
+    public function saveDriverLicense(Request $request, string $employeeId)
+    {
+        $employee = Employee::find($employeeId);
+
+        if (!$employee) {
+            return response()->json(['message' => 'Conductor no encontrado'], 404);
+        }
+
+        $validated = $request->validate([
+            'numero' => 'required|string|max:20',
+            'categoria' => 'required|string|max:10',
+            'fecha_vencimiento' => 'required|date',
+        ]);
+
+        $license = DriverLicense::updateOrCreate(
+            ['employee_id' => $employeeId],
+            $validated
+        );
+
+        return response()->json([
+            'message' => 'Licencia de conducir guardada correctamente',
+            'license' => $license,
+        ]);
     }
 
     // ========================================

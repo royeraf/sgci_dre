@@ -128,9 +128,12 @@
                                 <span class="text-sm font-bold text-slate-800 mt-0.5 block">{{ commission.conductor || 'N/A' }}</span>
                             </div>
 
-                            <div class="sm:col-span-2" v-if="commission.usuarios">
+                            <div class="sm:col-span-2" v-if="commission.pasajeros?.length || commission.usuarios">
                                 <span class="block text-xs font-semibold text-slate-400 uppercase">Pasajeros</span>
-                                <p class="text-sm text-slate-700 mt-0.5 font-medium">{{ commission.usuarios }}</p>
+                                <p v-if="commission.pasajeros?.length" class="text-sm text-slate-700 mt-0.5 font-medium">
+                                    {{ commission.pasajeros.map(p => p.nombre_completo).join(', ') }}
+                                </p>
+                                <p v-else class="text-sm text-slate-700 mt-0.5 font-medium">{{ commission.usuarios }}</p>
                             </div>
                         </div>
                     </div>

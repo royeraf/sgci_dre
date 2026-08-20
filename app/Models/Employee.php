@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Employee extends Model
 {
@@ -75,6 +76,14 @@ class Employee extends Model
     public function encargaturaPosition(): BelongsTo
     {
         return $this->belongsTo(HRPosition::class, 'encargatura_id');
+    }
+
+    /**
+     * Relación con la licencia de conducir (si el empleado es conductor)
+     */
+    public function driverLicense(): HasOne
+    {
+        return $this->hasOne(DriverLicense::class, 'employee_id');
     }
 
     /**

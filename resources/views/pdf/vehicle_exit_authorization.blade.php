@@ -110,6 +110,10 @@
             <td style="width: 35%;">
                 <span class="field-label">Conductor:</span>
                 <span class="field-value" style="width: 90%; display: block;">{{ $commission->conductor_nombre }}</span>
+                @if($commission->conductor_licencia)
+                    <span class="field-label">Licencia:</span>
+                    <span class="field-value" style="width: 90%; display: block;">{{ $commission->conductor_licencia }}</span>
+                @endif
             </td>
         </tr>
         <tr>
@@ -192,6 +196,12 @@
             <td>
                 <span class="signature-line"></span>
                 <span class="signature-label">Conductor</span>
+                @if($commission->conductor_nombre)
+                    <br><span style="font-size: 8px;">{{ $commission->conductor_nombre }}</span>
+                    @if($commission->conductor_licencia)
+                        <br><span style="font-size: 8px;">Lic. {{ $commission->conductor_licencia }}</span>
+                    @endif
+                @endif
             </td>
         </tr>
     </table>

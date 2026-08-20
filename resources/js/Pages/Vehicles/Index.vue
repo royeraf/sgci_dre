@@ -59,6 +59,13 @@
                         <Settings class="w-5 h-5" />
                         Requerimientos
                     </button>
+                    <button v-if="canViewTab('drivers')" @click="activeTab = 'drivers'" :class="[
+                        activeTab === 'drivers' ? 'text-cyan-600 active-tab' : 'text-slate-500 hover:text-slate-700',
+                        'cursor-pointer whitespace-nowrap py-4 px-5 font-bold text-sm flex items-center gap-2 transition-colors duration-300'
+                    ]">
+                        <IdCard class="w-5 h-5" />
+                        Conductores
+                    </button>
                 </nav>
                 <!-- Gliding Indicator -->
                 <div class="absolute bottom-0 h-0.5 transition-all duration-300 ease-out" :style="indicatorStyle"></div>
@@ -584,6 +591,107 @@
                             </div>
                         </BaseTableCard>
                     </div>
+
+                    <!-- TAB: DRIVERS -->
+                    <div v-else-if="activeTab === 'drivers'">
+                        <BaseTableCard title="Conductores"
+                            description="Licencias de conducir del personal con cargo o encargatura CHOFER II">
+                            <div v-if="loadingDrivers" class="px-6 py-24 text-center">
+                                <div
+                                    class="animate-spin h-12 w-12 border-4 border-cyan-600 border-t-transparent rounded-full mx-auto mb-4">
+                                </div>
+                                <p class="text-lg font-medium text-slate-600">Cargando conductores...</p>
+                            </div>
+                            <div v-else-if="driversList.length === 0" class="px-6 py-16 text-center">
+                                <div class="flex flex-col items-center">
+                                    <div class="bg-slate-100 rounded-full p-4 mb-4">
+                                        <IdCard class="h-12 w-12 text-slate-400" />
+                                    </div>
+                                    <h3 class="text-lg font-bold text-slate-900 mb-1">No hay conductores registrados</h3>
+                                    <p class="text-sm text-slate-500">No hay personal activo con cargo o encargatura
+                                        CHOFER II.</p>
+                                </div>
+                            </div>
+                            <div v-else>
+                                <div class="overflow-x-auto">
+                                    <table class="w-full divide-y divide-slate-200 table-fixed">
+                                        <colgroup>
+                                            <col class="w-56" />       <!-- Conductor -->
+                                            <col class="w-52" />       <!-- Cargo / Encargatura -->
+                                            <col class="w-36" />       <!-- Nº Licencia -->
+                                            <col class="w-24" />       <!-- Categoría -->
+                                            <col class="w-32" />       <!-- Revalidación -->
+                                            <col class="w-28" />       <!-- Acciones -->
+                                        </colgroup>
+                                        <thead class="bg-slate-50">
+                                            <tr>
+                                                <th scope="col"
+                                                    class="px-3 py-3 text-left text-xs font-bold text-slate-600 uppercase tracking-wider">
+                                                    Conductor
+                                                </th>
+                                                <th scope="col"
+                                                    class="px-3 py-3 text-left text-xs font-bold text-slate-600 uppercase tracking-wider">
+                                                    Cargo / Encargatura
+                                                </th>
+                                                <th scope="col"
+                                                    class="px-3 py-3 text-left text-xs font-bold text-slate-600 uppercase tracking-wider">
+                                                    Nº Licencia
+                                                </th>
+                                                <th scope="col"
+                                                    class="px-3 py-3 text-left text-xs font-bold text-slate-600 uppercase tracking-wider">
+                                                    Categoría
+                                                </th>
+                                                <th scope="col"
+                                                    class="px-3 py-3 text-left text-xs font-bold text-slate-600 uppercase tracking-wider">
+                                                    Revalidación
+                                                </th>
+                                                <th scope="col"
+                                                    class="px-3 py-3 text-left text-xs font-bold text-slate-600 uppercase tracking-wider">
+                                                    Acciones
+                                                </th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="bg-white divide-y divide-slate-100">
+                                            <tr v-for="driver in driversList" :key="driver.id"
+                                                class="hover:bg-cyan-50 transition-colors duration-200">
+                                                <td class="px-3 py-3">
+                                                    <div class="text-xs font-bold text-slate-900 truncate">{{ driver.nombre_completo }}</div>
+                                                    <div class="text-[10px] text-slate-400 font-mono">{{ driver.dni }}</div>
+                                                </td>
+                                                <td class="px-3 py-3">
+                                                    <div class="text-xs text-slate-700 truncate">{{ driver.cargo || '-' }}</div>
+                                                    <div v-if="driver.encargatura" class="text-[10px] text-amber-600 truncate">
+                                                        Encargatura: {{ driver.encargatura }}
+                                                    </div>
+                                                </td>
+                                                <td class="px-3 py-3 text-xs text-slate-700 font-mono">
+                                                    {{ driver.licencia_numero || 'Sin registrar' }}
+                                                </td>
+                                                <td class="px-3 py-3 text-xs text-slate-700">
+                                                    {{ driver.licencia_categoria || '-' }}
+                                                </td>
+                                                <td class="px-3 py-3 whitespace-nowrap">
+                                                    <span v-if="driver.licencia_vencimiento" class="px-2.5 py-0.5 text-[10px] font-bold rounded-full inline-block"
+                                                        :class="driver.licencia_vencida ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700'">
+                                                        {{ formatDate(driver.licencia_vencimiento) }}
+                                                        <span v-if="driver.licencia_vencida"> · Vencida</span>
+                                                    </span>
+                                                    <span v-else class="text-xs text-slate-400">-</span>
+                                                </td>
+                                                <td class="px-3 py-3 whitespace-nowrap text-xs font-medium">
+                                                    <button @click="openDriverLicenseModal(driver)"
+                                                        class="cursor-pointer text-cyan-600 hover:text-cyan-900 bg-cyan-50 hover:bg-cyan-100 px-2 py-1 rounded-xl font-bold transition-all inline-flex items-center gap-1 text-xs whitespace-nowrap">
+                                                        <Pencil class="w-3.5 h-3.5" />
+                                                        Editar
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </BaseTableCard>
+                    </div>
                 </div>
             </Transition>
 
@@ -591,7 +699,7 @@
             <VehicleModal v-if="showVehicleModal" :vehicle="selectedVehicle" :vehicles="inventory"
                 @close="showVehicleModal = false" @saved="onVehicleSaved" />
             <CommissionModal v-if="showCommissionModal" :commission="selectedCommission" :vehicles="inventory"
-                :drivers="props.drivers" @close="showCommissionModal = false"
+                :drivers="driversList" :employees="employeesList" @close="showCommissionModal = false"
                 @saved="onCommissionSaved" />
             <CommissionDetailModal v-if="showCommissionDetailModal" :commission="selectedCommission"
                 @close="showCommissionDetailModal = false" />
@@ -600,6 +708,8 @@
             <HandoverModal v-if="showHandoverModal" @close="showHandoverModal = false" @saved="onHandoverSaved" />
             <ServiceReqModal v-if="showServiceReqModal" :vehicles="inventory" @close="showServiceReqModal = false"
                 @saved="onServiceReqSaved" />
+            <DriverLicenseModal v-if="showDriverLicenseModal" :driver="selectedDriver"
+                @close="showDriverLicenseModal = false" @saved="onDriverLicenseSaved" />
 
             <!-- Reject commission modal -->
             <Teleport to="body">
@@ -645,7 +755,7 @@ export default { layout: MainLayout }
 <script setup>
 import { ref, computed, onMounted, nextTick, watch } from 'vue';
 import { useTabPermission } from '@/composables/useTabPermission';
-import { ArrowLeft, Plus, FilePlus, MapPin, Car, Wrench, FileText, Settings, Search, Printer, Pencil, Calendar, Clock, Eye, SlidersHorizontal, ChevronDown, CheckCircle, XCircle, Loader2 } from 'lucide-vue-next';
+import { ArrowLeft, Plus, FilePlus, MapPin, Car, Wrench, FileText, Settings, Search, Printer, Pencil, Calendar, Clock, Eye, SlidersHorizontal, ChevronDown, CheckCircle, XCircle, Loader2, IdCard } from 'lucide-vue-next';
 import BaseTableCard from '@/Components/Common/BaseTableCard.vue';
 import VehicleModal from '@/Components/Vehicles/Inventory/VehicleModal.vue';
 import CommissionModal from '@/Components/Vehicles/Commissions/CommissionModal.vue';
@@ -653,6 +763,7 @@ import CommissionDetailModal from '@/Components/Vehicles/Commissions/CommissionD
 import MaintenanceModal from '@/Components/Vehicles/Maintenance/MaintenanceModal.vue';
 import HandoverModal from '@/Components/Vehicles/Handovers/HandoverModal.vue';
 import ServiceReqModal from '@/Components/Vehicles/ServiceRequirements/ServiceReqModal.vue';
+import DriverLicenseModal from '@/Components/Vehicles/Drivers/DriverLicenseModal.vue';
 import ClientPagination from '@/Components/Common/ClientPagination.vue';
 import { useCommissionApproval } from '@/Composables/useCommissionApproval';
 import axios from 'axios';
@@ -674,7 +785,7 @@ const formatDate = (dateString) => {
     return dateString;
 };
 
-const { canViewTab, firstAllowedTab } = useTabPermission('vehiculos', ['commissions', 'inventory', 'maintenance', 'handover', 'service']);
+const { canViewTab, firstAllowedTab } = useTabPermission('vehiculos', ['commissions', 'inventory', 'maintenance', 'handover', 'service', 'drivers']);
 const activeTab = ref(firstAllowedTab.value);
 
 // Tab indicator logic
@@ -688,6 +799,7 @@ const getIndicatorColor = (tab) => {
         case 'maintenance': return '#059669'; // emerald-600
         case 'handover': return '#d97706'; // amber-600
         case 'service': return '#db2777'; // pink-600
+        case 'drivers': return '#0891b2'; // cyan-600
         default: return '#2563eb';
     }
 };
@@ -718,6 +830,11 @@ const commissions = ref([]);
 const maintenances = ref([]);
 const handovers = ref([]);
 const serviceReqs = ref([]);
+// Seeded from the initial Inertia props so the conductor select in
+// CommissionModal has data immediately; refreshed via fetchDrivers() below.
+const driversList = ref([...props.drivers]);
+// Empleados activos, para el selector múltiple de pasajeros en CommissionModal.
+const employeesList = ref([]);
 
 // Loading states
 const loadingInventory = ref(false);
@@ -725,6 +842,8 @@ const loadingCommissions = ref(false);
 const loadingMaintenance = ref(false);
 const loadingHandovers = ref(false);
 const loadingServiceReqs = ref(false);
+const loadingDrivers = ref(false);
+const loadingEmployees = ref(false);
 
 // Search
 const searchCommission = ref('');
@@ -737,9 +856,11 @@ const showCommissionDetailModal = ref(false);
 const showMaintenanceModal = ref(false);
 const showHandoverModal = ref(false);
 const showServiceReqModal = ref(false);
+const showDriverLicenseModal = ref(false);
 
 const selectedVehicle = ref(null);
 const selectedCommission = ref(null);
+const selectedDriver = ref(null);
 
 // Computed
 const filteredCommissions = computed(() => {
@@ -865,6 +986,24 @@ const fetchServiceReqs = async () => {
     finally { loadingServiceReqs.value = false; }
 };
 
+const fetchDrivers = async () => {
+    loadingDrivers.value = true;
+    try {
+        const res = await axios.get('/vehicles/drivers');
+        driversList.value = res.data;
+    } catch (e) { console.error(e); }
+    finally { loadingDrivers.value = false; }
+};
+
+const fetchEmployees = async () => {
+    loadingEmployees.value = true;
+    try {
+        const res = await axios.get('/vehicles/employees');
+        employeesList.value = res.data;
+    } catch (e) { console.error(e); }
+    finally { loadingEmployees.value = false; }
+};
+
 // Modal functions
 const openVehicleModal = (vehicle = null) => {
     selectedVehicle.value = vehicle;
@@ -888,6 +1027,10 @@ const printCommission = (commission) => {
 const openMaintenanceModal = () => { showMaintenanceModal.value = true; };
 const openHandoverModal = () => { showHandoverModal.value = true; };
 const openServiceReqModal = () => { showServiceReqModal.value = true; };
+const openDriverLicenseModal = (driver) => {
+    selectedDriver.value = driver;
+    showDriverLicenseModal.value = true;
+};
 
 // Callbacks
 const onVehicleSaved = () => { fetchInventory(); showVehicleModal.value = false; };
@@ -895,6 +1038,7 @@ const onCommissionSaved = () => { fetchCommissions(); showCommissionModal.value 
 const onMaintenanceSaved = () => { fetchMaintenances(); showMaintenanceModal.value = false; };
 const onHandoverSaved = () => { fetchHandovers(); showHandoverModal.value = false; };
 const onServiceReqSaved = () => { fetchServiceReqs(); showServiceReqModal.value = false; };
+const onDriverLicenseSaved = () => { fetchDrivers(); showDriverLicenseModal.value = false; };
 
 // Helpers
 const getStatusClass = (estado) => {
@@ -961,6 +1105,8 @@ onMounted(() => {
     fetchMaintenances();
     fetchHandovers();
     fetchServiceReqs();
+    fetchDrivers();
+    fetchEmployees();
     nextTick(updateIndicator);
 });
 </script>

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class VehicleCommission extends Model
 {
@@ -60,9 +61,21 @@ class VehicleCommission extends Model
         return $this->belongsTo(Employee::class, 'conductor_employee_id');
     }
 
+    public function passengers(): BelongsToMany
+    {
+        return $this->belongsToMany(Employee::class, 'vehicle_commission_passengers', 'vehicle_commission_id', 'employee_id');
+    }
+
     public function getConductorNombreAttribute(): ?string
     {
         return $this->conductorEmployee?->person?->nombre_full;
+    }
+
+    public function getConductorLicenciaAttribute(): ?string
+    {
+        $lic = $this->conductorEmployee?->driverLicense;
+
+        return $lic ? "{$lic->numero} ({$lic->categoria})" : null;
     }
 
     public function autorizadorEmployee()
