@@ -180,6 +180,18 @@
                             <p v-if="formErrors.cargo" class="mt-1 text-sm text-red-600">{{ formErrors.cargo }}</p>
                         </div>
 
+                        <!-- Encargatura (SELECT) -->
+                        <div>
+                            <label class="block text-sm font-bold text-slate-700 mb-2">Encargatura</label>
+                            <select v-model="encargaturaId" v-bind="encargaturaIdProps"
+                                class="w-full px-4 py-2.5 border-2 border-slate-200 rounded-xl text-slate-900 focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 bg-white transition-all duration-200 outline-none cursor-pointer">
+                                <option value="">Sin encargatura</option>
+                                <option v-for="pos in activePositions" :key="pos.id" :value="pos.id">
+                                    {{ pos.nombre }}
+                                </option>
+                            </select>
+                        </div>
+
                         <!-- Dirección (chip UI) -->
                         <div>
                             <label class="block text-sm font-bold text-slate-700 mb-2">Dirección</label>
@@ -371,6 +383,7 @@ const employeeSchema = toTypedSchema(
         telefono: yup.string().transform((value) => value || null).nullable(),
         correo: yup.string().transform((value) => value || null).email('Ingrese un correo válido').nullable(),
         cargo: yup.string().required('Debe seleccionar un cargo'),
+        encargatura_id: yup.string().transform((value) => value || null).nullable(),
         direction_id: yup.string().transform((value) => value || null).nullable(),
         office_id: yup.string().transform((value) => value || null).nullable(),
         fecha_ingreso: yup.string().transform((value) => value || null).nullable(),
@@ -393,6 +406,7 @@ const { errors: formErrors, defineField, handleSubmit: validateForm, setValues, 
         telefono: '',
         correo: '',
         cargo: '',
+        encargatura_id: '',
         direction_id: '',
         office_id: '',
         fecha_ingreso: '',
@@ -412,6 +426,7 @@ const [direccion, direccionProps] = defineField('direccion');
 const [telefono, telefonoProps] = defineField('telefono');
 const [correo, correoProps] = defineField('correo');
 const [cargo, cargoProps] = defineField('cargo');
+const [encargaturaId, encargaturaIdProps] = defineField('encargatura_id');
 const [directionId, directionIdProps] = defineField('direction_id');
 const [officeId, officeIdProps] = defineField('office_id');
 const [fechaIngreso, fechaIngresoProps] = defineField('fecha_ingreso');
@@ -426,6 +441,8 @@ const showDirectionDropdown = ref(false);
 const showOfficeDropdown = ref(false);
 const selectedDirectionData = ref(null);
 const selectedOfficeData = ref(null);
+
+const activePositions = computed(() => props.positions.filter(p => p.activo));
 
 const normalizeText = (text) => {
     if (!text) return '';
@@ -490,6 +507,7 @@ watch(() => props.employee, (emp) => {
             telefono: emp.telefono || '',
             correo: emp.correo || '',
             cargo: emp.cargo || '',
+            encargatura_id: emp.encargatura_id || '',
             direction_id: emp.direction_id || '',
             office_id: emp.office_id || '',
             fecha_ingreso: emp.fecha_ingreso ? emp.fecha_ingreso.split('T')[0] : '',

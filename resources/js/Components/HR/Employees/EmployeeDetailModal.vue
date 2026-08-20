@@ -57,6 +57,11 @@
                             }}</p>
                     </div>
 
+                    <div class="bg-slate-50 border border-slate-100 rounded-2xl p-4 transition-all hover:shadow-md">
+                        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Encargatura</p>
+                        <p class="text-base font-bold text-slate-800">{{ employee.encargatura || 'Sin encargatura' }}</p>
+                    </div>
+
                     <div class="grid grid-cols-2 gap-4">
                         <div class="bg-slate-50 border border-slate-100 rounded-2xl p-4 transition-all hover:shadow-md">
                             <p
