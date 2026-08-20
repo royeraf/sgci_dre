@@ -37,15 +37,14 @@ class PapeletaExecutionPdfService
         $destinationSignature = $papeleta->destino_firma_path
             ? Storage::disk('local')->path($papeleta->destino_firma_path)
             : '';
+        // Keep this line compact: the GPS map immediately below carries the
+        // coordinates, so the identity remains readable in its own strip.
         $destinationDetail = $papeleta->destino_firmado_at
-            ? implode("\n", array_filter([
+            ? implode(' · ', array_filter([
                 $papeleta->destino_firmante_nombre,
                 $papeleta->destino_firmante_dni ? 'DNI: '.$papeleta->destino_firmante_dni : null,
                 $papeleta->destino_firmante_cargo,
-                'Firmado: '.$papeleta->destino_firmado_at->format('d/m/Y H:i'),
-                $papeleta->destino_latitude !== null && $papeleta->destino_longitude !== null
-                    ? 'GPS: '.$papeleta->destino_latitude.', '.$papeleta->destino_longitude.($papeleta->destino_gps_accuracy_m ? ' (±'.$papeleta->destino_gps_accuracy_m.' m)' : '')
-                    : null,
+                $papeleta->destino_firmado_at->format('d/m/Y H:i'),
             ]))
             : '';
 
@@ -59,6 +58,8 @@ class PapeletaExecutionPdfService
                 '--retorno', $papeleta->retorno_real_at?->format('H:i') ?? '',
                 '--destino-detalle', $destinationDetail,
                 '--destino-firma', $destinationSignature,
+                '--latitude', (string) ($papeleta->destino_latitude ?? ''),
+                '--longitude', (string) ($papeleta->destino_longitude ?? ''),
             ], base_path());
             $process->setTimeout(45)->run();
 

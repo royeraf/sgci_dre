@@ -24,8 +24,11 @@ FIELDS = {
     "QR_RETORNO_REAL": (260, 370, 290, 396, 0),
     # The commission confirmation is below the three institutional signatures,
     # as defined by the DRE paper form. It remains a reserved form field.
-    "QR_DESTINO_FIRMA": (50, 212, 165, 239, 0),
-    "QR_DESTINO_DETALLE": (170, 207, 370, 239, 4096),  # multiline text field
+    # Signature and identity are placed above the map.  All three fields are
+    # created before PAdES signing, so later QR filling remains permitted.
+    "QR_DESTINO_FIRMA": (50, 224, 160, 254, 0),
+    "QR_DESTINO_DETALLE": (165, 235, 370, 254, 4096),  # multiline text field
+    "QR_DESTINO_MAP": (165, 190, 370, 232, 0),
 }
 
 # These approval fields must also be present before the certification signature.
