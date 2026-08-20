@@ -80,7 +80,7 @@ class PapeletaAdminController extends Controller
     public function index()
     {
         $user = Auth::user();
-        $employee = $user->employee?->load('person', 'direction', 'office', 'position');
+        $employee = $user->employee?->load('person', 'direction', 'office', 'position', 'contractType');
 
         return Inertia::render('Papeletas/Index', [
             'userRole'   => $user->rol_id,
@@ -127,32 +127,40 @@ class PapeletaAdminController extends Controller
         }
 
         $validated = $request->validate([
-            'entry_exit_reason_id'    => 'required|exists:entry_exit_reasons,id',
+            'destino'                 => 'required|string|max:250',
             'motivo'                  => 'required|string|max:500',
-            'tipo_motivo'             => 'required|in:comision,permiso',
+            'motivo_salida'           => 'required|in:comision,particular_compensable,por_salud',
             'signing_pin'             => 'required|string|min:6|max:20',
         ], [
-            'entry_exit_reason_id.required' => 'Seleccione un motivo de salida.',
+            'destino.required'              => 'Indique el destino.',
             'motivo.required'               => 'La justificación es obligatoria.',
-            'tipo_motivo.required'          => 'Seleccione el tipo de motivo.',
+            'motivo_salida.required'        => 'Seleccione el motivo de salida.',
         ]);
 
-        $reason = EntryExitReason::active()->find($validated['entry_exit_reason_id']);
-        if (!$reason || !in_array($reason->tipo, [$validated['tipo_motivo'], 'ambos'], true)) {
-            throw ValidationException::withMessages([
-                'entry_exit_reason_id' => 'El motivo seleccionado no corresponde al tipo de salida.',
-            ]);
-        }
+        // El formato institucional tiene tres causas fijas. El solicitante no
+        // elige ni crea datos personales ni catálogos desde este formulario.
+        $reasonData = match ($validated['motivo_salida']) {
+            'comision' => ['nombre' => 'Comisión de Servicios', 'tipo' => 'comision'],
+            'particular_compensable' => ['nombre' => 'Particular Compensable', 'tipo' => 'permiso'],
+            'por_salud' => ['nombre' => 'Por Salud', 'tipo' => 'permiso'],
+        };
+        $reason = EntryExitReason::firstOrCreate(
+            ['nombre' => $reasonData['nombre']],
+            ['tipo' => $reasonData['tipo'], 'descripcion' => 'Motivo institucional de papeleta.', 'is_active' => true]
+        );
+        $reason->update(['tipo' => $reasonData['tipo'], 'is_active' => true]);
 
         $certificate = $this->requiredCertificate($employee);
-        // La fecha, hora y turno se toman del servidor institucional para que
-        // la solicitud no pueda ser alterada desde el navegador.
+        // La fecha, hora y turno se toman del servidor institucional al crear
+        // la solicitud. La hora de salida real se obtiene después mediante QR.
         $registeredAt = now();
 
         $papeleta = PapeletaRequest::create([
             'numero_papeleta'      => PapeletaRequest::generateNumeroPapeleta(),
             'employee_id'          => $employee->id,
-            'entry_exit_reason_id' => $validated['entry_exit_reason_id'],
+            'entry_exit_reason_id' => $reason->id,
+            'motivo_salida'        => $validated['motivo_salida'],
+            'destino'              => $validated['destino'],
             'motivo'               => $validated['motivo'],
             'fecha_salida'         => $registeredAt->toDateString(),
             'hora_salida_estimada' => $registeredAt->format('H:i'),
@@ -391,7 +399,7 @@ class PapeletaAdminController extends Controller
      */
     public function generatePdf(string $papeletaId)
     {
-        $papeleta = PapeletaRequest::with(['employee.person', 'employee.direction', 'employee.office', 'employee.position', 'reason', 'aprobador.person', 'signatures'])
+        $papeleta = PapeletaRequest::with(['employee.person', 'employee.direction', 'employee.office', 'employee.position', 'employee.contractType', 'reason', 'aprobador.person', 'signatures'])
             ->findOrFail($papeletaId);
 
         $currentEmployee = $this->getEmployee();

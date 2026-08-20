@@ -400,9 +400,9 @@
                         <div>
                             <h3 class="text-xl font-bold text-white flex items-center gap-2">
                                 <Plus class="h-6 w-6" />
-                                Registrar Salida
+                                Nueva Papeleta
                             </h3>
-                            <p class="text-green-100 text-sm mt-1">Complete los datos de su salida</p>
+                            <p class="text-green-100 text-sm mt-1">Datos personales tomados automáticamente de Recursos Humanos</p>
                         </div>
                         <button type="button" @click="showCreateModal = false" class="p-1 text-green-100 hover:text-white transition-colors" aria-label="Cerrar">
                             <XCircle class="h-6 w-6" />
@@ -416,20 +416,21 @@
                                 </div>
                                 <div class="min-w-0 flex-1">
                                     <p class="truncate text-lg font-bold text-slate-900">{{ employeeFullName }}</p>
-                                    <div class="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-slate-600">
-                                        <span>DNI: {{ myEmployee?.dni || myEmployee?.person?.dni || '-' }}</span>
-                                        <span class="rounded-full border border-slate-200 bg-slate-100 px-2 py-0.5 text-xs font-bold text-slate-600">{{ myEmployee?.contract_type?.nombre || myEmployee?.tipo_contrato || 'Servidor' }}</span>
+                                    <div class="mt-1 grid grid-cols-1 gap-x-4 gap-y-1 text-xs text-slate-600 sm:grid-cols-2">
+                                        <span><b>DNI:</b> {{ myEmployee?.dni || myEmployee?.person?.dni || '-' }}</span>
+                                        <span><b>OFICINA:</b> {{ myEmployee?.office?.nombre || myEmployee?.direction?.nombre || 'Sin oficina registrada' }}</span>
+                                        <span><b>CONDICIÓN LABORAL:</b> {{ myEmployee?.contract_type?.nombre || myEmployee?.tipo_contrato || 'Sin condición registrada' }}</span>
+                                        <span><b>CARGO:</b> {{ myEmployee?.position?.nombre || myEmployee?.cargo || 'Sin cargo registrado' }}</span>
                                     </div>
-                                    <p class="mt-0.5 truncate text-xs text-slate-500">{{ myEmployee?.position?.nombre || myEmployee?.cargo || 'Sin cargo registrado' }} · {{ myEmployee?.office?.nombre || myEmployee?.direction?.nombre || 'Sin área registrada' }}</p>
                                 </div>
                             </div>
-                            <p class="mt-3 text-xs font-medium text-green-800">La fecha, hora y turno se registran automáticamente con la hora institucional.</p>
+                            <p class="mt-3 text-xs font-medium text-green-800">La fecha, hora de creación y turno se registran automáticamente con la hora institucional. La salida real se registrará al escanear el QR en portería.</p>
                         </div>
 
                         <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
                             <div>
                                 <label class="mb-2 flex items-center gap-2 text-sm font-bold text-slate-700">
-                                    Hora de Salida
+                                    Hora de creación de la papeleta
                                     <span class="relative flex h-2 w-2">
                                         <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75"></span>
                                         <span class="relative inline-flex h-2 w-2 rounded-full bg-emerald-500"></span>
@@ -444,36 +445,37 @@
                                     <Clock class="h-4 w-4 text-slate-400" />
                                     <span class="font-medium" :class="turnoColor">{{ automaticTurno }}</span>
                                 </div>
-                                <p class="mt-1 text-xs text-slate-500">El turno se determina según la hora de salida.</p>
+                                <p class="mt-1 text-xs text-slate-500">El turno se determina según la hora de creación.</p>
                             </div>
                         </div>
 
                         <div>
-                            <label class="mb-2 block text-sm font-bold text-slate-700">Tipo de Motivo <span class="text-red-500">*</span></label>
-                            <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                                <label class="flex cursor-pointer items-center rounded-xl border p-3 transition-colors" :class="createForm.tipo_motivo === 'comision' ? 'border-green-500 bg-green-50 ring-1 ring-green-500' : 'border-slate-200 hover:bg-slate-50'">
-                                    <input v-model="createForm.tipo_motivo" type="radio" value="comision" class="h-4 w-4 border-slate-300 text-green-600 focus:ring-green-500" />
+                            <label class="mb-2 block text-sm font-bold text-slate-700">Motivo de salida <span class="text-red-500">*</span></label>
+                            <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                                <label class="flex cursor-pointer items-center rounded-xl border p-3 transition-colors" :class="createForm.motivo_salida === 'comision' ? 'border-green-500 bg-green-50 ring-1 ring-green-500' : 'border-slate-200 hover:bg-slate-50'">
+                                    <input v-model="createForm.motivo_salida" type="radio" value="comision" class="h-4 w-4 border-slate-300 text-green-600 focus:ring-green-500" />
                                     <span class="ml-2 text-sm font-medium text-slate-700">Comisión de Servicios</span>
                                 </label>
-                                <label class="flex cursor-pointer items-center rounded-xl border p-3 transition-colors" :class="createForm.tipo_motivo === 'permiso' ? 'border-green-500 bg-green-50 ring-1 ring-green-500' : 'border-slate-200 hover:bg-slate-50'">
-                                    <input v-model="createForm.tipo_motivo" type="radio" value="permiso" class="h-4 w-4 border-slate-300 text-green-600 focus:ring-green-500" />
-                                    <span class="ml-2 text-sm font-medium text-slate-700">Permiso Personal</span>
+                                <label class="flex cursor-pointer items-center rounded-xl border p-3 transition-colors" :class="createForm.motivo_salida === 'particular_compensable' ? 'border-green-500 bg-green-50 ring-1 ring-green-500' : 'border-slate-200 hover:bg-slate-50'">
+                                    <input v-model="createForm.motivo_salida" type="radio" value="particular_compensable" class="h-4 w-4 border-slate-300 text-green-600 focus:ring-green-500" />
+                                    <span class="ml-2 text-sm font-medium text-slate-700">Particular Compensable</span>
+                                </label>
+                                <label class="flex cursor-pointer items-center rounded-xl border p-3 transition-colors" :class="createForm.motivo_salida === 'por_salud' ? 'border-green-500 bg-green-50 ring-1 ring-green-500' : 'border-slate-200 hover:bg-slate-50'">
+                                    <input v-model="createForm.motivo_salida" type="radio" value="por_salud" class="h-4 w-4 border-slate-300 text-green-600 focus:ring-green-500" />
+                                    <span class="ml-2 text-sm font-medium text-slate-700">Por Salud</span>
                                 </label>
                             </div>
-                            <p v-if="createErrors.tipo_motivo" class="mt-1 text-xs text-red-600">{{ createErrors.tipo_motivo[0] }}</p>
+                            <p v-if="createErrors.motivo_salida" class="mt-1 text-xs text-red-600">{{ createErrors.motivo_salida[0] }}</p>
                         </div>
 
                         <div>
-                            <label class="mb-2 block text-sm font-bold text-slate-700">Motivo predefinido <span class="text-red-500">*</span></label>
-                            <select v-model="createForm.entry_exit_reason_id" class="w-full rounded-xl border bg-white px-4 py-3 text-sm outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500" :class="createErrors.entry_exit_reason_id ? 'border-red-400' : 'border-slate-200'">
-                                <option value="">Seleccione motivo</option>
-                                <option v-for="reason in filteredReasons" :key="reason.id" :value="reason.id">{{ reason.nombre }}</option>
-                            </select>
-                            <p v-if="createErrors.entry_exit_reason_id" class="mt-1 text-xs text-red-600">{{ createErrors.entry_exit_reason_id[0] }}</p>
+                            <label class="mb-2 block text-sm font-bold text-slate-700">Destino <span class="text-red-500">*</span></label>
+                            <input v-model="createForm.destino" maxlength="250" class="w-full rounded-xl border px-4 py-3 text-sm outline-none transition-colors focus:border-green-500 focus:ring-2 focus:ring-green-500" :class="createErrors.destino ? 'border-red-400' : 'border-slate-200'" placeholder="Indique la entidad o lugar de destino" />
+                            <p v-if="createErrors.destino" class="mt-1 text-xs text-red-600">{{ createErrors.destino[0] }}</p>
                         </div>
 
                         <div>
-                            <label class="mb-2 block text-sm font-bold text-slate-700">Descripción del Motivo <span class="text-red-500">*</span></label>
+                            <label class="mb-2 block text-sm font-bold text-slate-700">Justificación <span class="text-red-500">*</span></label>
                             <textarea v-model="createForm.motivo" rows="3" maxlength="500" class="w-full resize-none rounded-xl border px-4 py-3 text-sm outline-none transition-colors focus:border-green-500 focus:ring-2 focus:ring-green-500" :class="createErrors.motivo ? 'border-red-400' : 'border-slate-200'" placeholder="Indique el motivo de la salida..."></textarea>
                             <p v-if="createErrors.motivo" class="mt-1 text-xs text-red-600">{{ createErrors.motivo[0] }}</p>
                         </div>
@@ -495,7 +497,7 @@
                             <button type="submit" :disabled="createSubmitting"
                                 class="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-green-600 to-emerald-600 px-6 py-2.5 text-sm font-bold text-white transition-all hover:from-green-700 hover:to-emerald-700 disabled:opacity-50">
                                 <Loader2 v-if="createSubmitting" class="h-4 w-4 animate-spin" />
-                                {{ createSubmitting ? 'Registrando...' : 'Registrar Salida' }}
+                                {{ createSubmitting ? 'Registrando...' : 'Firmar y enviar papeleta' }}
                             </button>
                         </div>
                     </form>
@@ -656,9 +658,9 @@ const misPapeletas = ref([]);
 const misPapeletasLoading = ref(false);
 const showCreateModal = ref(false);
 const createForm = reactive({
-    entry_exit_reason_id: '',
+    destino: '',
     motivo: '',
-    tipo_motivo: 'comision',
+    motivo_salida: 'comision',
     signing_pin: '',
 });
 const createErrors = ref({});
@@ -690,10 +692,6 @@ const turnoColor = computed(() => ({
     'Noche': 'text-indigo-600',
 }[automaticTurno.value]));
 
-const filteredReasons = computed(() => props.reasons.filter(reason =>
-    reason.tipo === createForm.tipo_motivo || reason.tipo === 'ambos'
-));
-
 const fetchMisPapeletas = async () => {
     misPapeletasLoading.value = true;
     try {
@@ -711,9 +709,9 @@ const openCreateModal = () => {
         return;
     }
     Object.assign(createForm, {
-        entry_exit_reason_id: '',
+        destino: '',
         motivo: '',
-        tipo_motivo: 'comision',
+        motivo_salida: 'comision',
         signing_pin: '',
     });
     createErrors.value = {};

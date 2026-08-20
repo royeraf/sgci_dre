@@ -125,7 +125,7 @@ class PapeletaRequestSigningService
             return $previous->signed_document_path;
         }
 
-        $papeleta->load(['employee.person', 'employee.direction', 'employee.office', 'employee.position', 'reason']);
+        $papeleta->load(['employee.person', 'employee.direction', 'employee.office', 'employee.position', 'employee.contractType', 'reason']);
         $path = 'papeletas/unsigned/papeleta-'.$papeleta->numero_papeleta.'.pdf';
         Storage::disk('local')->put($path, Pdf::loadView('pdf.papeleta_request', [
             'papeleta' => $papeleta,

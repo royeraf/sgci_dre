@@ -40,8 +40,12 @@ class PapeletaExecutionPdfService
         $destinationDetail = $papeleta->destino_firmado_at
             ? implode("\n", array_filter([
                 $papeleta->destino_firmante_nombre,
+                $papeleta->destino_firmante_dni ? 'DNI: '.$papeleta->destino_firmante_dni : null,
                 $papeleta->destino_firmante_cargo,
                 'Firmado: '.$papeleta->destino_firmado_at->format('d/m/Y H:i'),
+                $papeleta->destino_latitude !== null && $papeleta->destino_longitude !== null
+                    ? 'GPS: '.$papeleta->destino_latitude.', '.$papeleta->destino_longitude.($papeleta->destino_gps_accuracy_m ? ' (±'.$papeleta->destino_gps_accuracy_m.' m)' : '')
+                    : null,
             ]))
             : '';
 

@@ -3,15 +3,21 @@
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\OccurrenceController;
 use App\Http\Controllers\EntryExitController;
+use App\Http\Controllers\EntryExitSignatureController;
+use App\Http\Controllers\DigitalCertificateController;
+use App\Http\Controllers\ReniecSigningAgentController;
 use App\Http\Controllers\ExternalVisitController;
 use App\Http\Controllers\AppointmentController;
 use App\Http\Controllers\HRController;
 use App\Http\Controllers\LicenseController;
 use App\Http\Controllers\VehicleController;
+use App\Http\Controllers\VehicleFleetController;
+use App\Http\Controllers\VehicleFirmaPeruController;
+use App\Http\Controllers\VehicleMobileSignatureController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\UserController;
-use App\Http\Controllers\PapeletaPortalController;
 use App\Http\Controllers\PapeletaAdminController;
+use App\Http\Controllers\PapeletaQrControlController;
 use App\Http\Controllers\EventoController;
 use App\Http\Controllers\EventoInscripcionController;
 use App\Http\Controllers\EventoAsistenciaController;
@@ -32,7 +38,7 @@ use Inertia\Inertia;
 Route::get('/', function () {
     if (auth()->check()) {
         $user = auth()->user();
-        if ($user->rol_id === 'ROL012') return redirect('/dashboard');
+        if ($user->rol_id === 'ROL012') return redirect('/papeletas');
         if ($user->rol_id === 'ROL011') return redirect('/papeletas');
         return redirect('/dashboard');
     }
@@ -45,23 +51,8 @@ Route::middleware('guest')->group(function () {
     Route::post('/login', [AuthController::class, 'login']);
 });
 
-// Portal de Empleados (Papeletas)
-Route::prefix('portal')->group(function () {
-    Route::middleware('guest')->group(function () {
-        Route::get('/login', [PapeletaPortalController::class, 'showLogin'])->name('portal.login');
-        Route::post('/login', [PapeletaPortalController::class, 'login'])->name('portal.login.submit');
-    });
-    Route::middleware('auth')->group(function () {
-        Route::post('/logout', [PapeletaPortalController::class, 'logout'])->name('portal.logout');
-        Route::prefix('papeletas')->name('portal.papeletas.')->group(function () {
-            Route::get('/', [PapeletaPortalController::class, 'index'])->name('index');
-            Route::get('/nueva', [PapeletaPortalController::class, 'create'])->name('create');
-            Route::post('/', [PapeletaPortalController::class, 'store'])->name('store');
-            Route::get('/{papeleta}', [PapeletaPortalController::class, 'show'])->name('show');
-            Route::get('/{papeleta}/pdf', [PapeletaPortalController::class, 'getPapeletaPdf'])->name('pdf');
-        });
-    });
-});
+// Ruta histórica: el portal duplicado fue retirado; todo apunta al módulo oficial.
+Route::get('/portal/{path?}', fn () => redirect('/papeletas'))->where('path', '.*');
 
 // Public Appointments Portal
 Route::get('/citas/portal', [AppointmentController::class, 'create'])->name('citas.portal');
@@ -70,6 +61,46 @@ Route::get('/citas/status/{dni}', [AppointmentController::class, 'checkStatus'])
 
 // Public Visitors Portal
 Route::get('/visitas/publico', [ExternalVisitController::class, 'publicIndex'])->name('visitas.publico');
+
+// Control físico mediante QR. El token aleatorio identifica una sola papeleta.
+Route::middleware('throttle:30,1')->prefix('control-papeleta')->name('papeletas.qr.')->group(function () {
+    Route::get('/{token}', [PapeletaQrControlController::class, 'show'])->name('show');
+    Route::get('/{token}/responsable-dni', [PapeletaQrControlController::class, 'consultarDni'])->name('dni');
+    Route::post('/{token}/salida', [PapeletaQrControlController::class, 'salida'])->name('salida');
+    Route::post('/{token}/retorno', [PapeletaQrControlController::class, 'retorno'])->name('retorno');
+    Route::post('/{token}/destino', [PapeletaQrControlController::class, 'destino'])->name('destino');
+});
+
+// Firma y verificación pública mediante tokens criptográficos de un solo trámite.
+Route::middleware('throttle:30,1')->group(function () {
+    Route::get('/firma-papeleta/{token}', [EntryExitSignatureController::class, 'show'])->name('entry-exits.signatures.show');
+    Route::post('/firma-papeleta/{token}', [EntryExitSignatureController::class, 'submit'])->name('entry-exits.signatures.submit');
+    Route::get('/firma-papeleta/{token}/qr', [EntryExitSignatureController::class, 'qr'])->name('entry-exits.signatures.qr');
+    Route::get('/firma-papeleta/{token}/estado', [EntryExitSignatureController::class, 'status'])->name('entry-exits.signatures.status');
+
+    Route::get('/firma-vehicular/{token}', [VehicleMobileSignatureController::class, 'show'])->name('vehicles.mobile-signature.show');
+    Route::post('/firma-vehicular/{token}', [VehicleMobileSignatureController::class, 'submit'])->name('vehicles.mobile-signature.submit');
+    Route::get('/firma-vehicular/{token}/qr', [VehicleMobileSignatureController::class, 'qr'])->name('vehicles.mobile-signature.qr');
+    Route::get('/verificar/papeleta-vehicular/{token}', [VehicleMobileSignatureController::class, 'verify'])->name('vehicles.verify');
+
+    Route::post('/firma-peru/vehicular/{token}/parametros', [VehicleFirmaPeruController::class, 'parameters'])
+        ->withoutMiddleware(\App\Http\Middleware\VerifyCsrfToken::class)->name('vehicles.firma-peru.params');
+    Route::get('/firma-peru/vehicular/{token}/documento', [VehicleFirmaPeruController::class, 'document'])->name('vehicles.firma-peru.document');
+    Route::post('/firma-peru/vehicular/{token}/cargar', [VehicleFirmaPeruController::class, 'upload'])
+        ->withoutMiddleware(\App\Http\Middleware\VerifyCsrfToken::class)->name('vehicles.firma-peru.upload');
+});
+
+// API del agente Windows. El token Bearer es independiente de las sesiones web.
+Route::withoutMiddleware(\App\Http\Middleware\VerifyCsrfToken::class)
+    ->middleware('throttle:120,1')
+    ->prefix('api/reniec-agent')
+    ->name('reniec-agent.')
+    ->group(function () {
+        Route::get('/health', [ReniecSigningAgentController::class, 'health'])->name('health');
+        Route::get('/pending', [ReniecSigningAgentController::class, 'pending'])->name('pending');
+        Route::get('/requests/{token}/document', [ReniecSigningAgentController::class, 'document'])->name('document');
+        Route::post('/requests/{token}/signed', [ReniecSigningAgentController::class, 'upload'])->name('upload');
+    });
 
 // Public Event Registration (Utilitarios)
 // Rutas públicas sin autenticación por diseño: el participante externo no tiene
@@ -122,9 +153,11 @@ Route::middleware('auth')->group(function () {
     });
     
     // Entry/Exit routes
-    Route::middleware('role:ROL006,ROL007')->prefix('entry-exits')->name('entry-exits.')->group(function () {
-        Route::get('/', [EntryExitController::class, 'index'])->name('index');
-        Route::post('/', [EntryExitController::class, 'store'])->name('store');
+      Route::middleware('role:ROL006,ROL007')->prefix('entry-exits')->name('entry-exits.')->group(function () {
+          Route::get('/', [EntryExitController::class, 'index'])->name('index');
+          Route::post('/', [EntryExitController::class, 'store'])->name('store');
+          Route::post('/agent/pair', [ReniecSigningAgentController::class, 'pair'])->name('agent.pair');
+          Route::post('/certificates', [DigitalCertificateController::class, 'store'])->name('certificates.store');
         // API routes must come BEFORE dynamic parameter routes
         Route::get('/api/pending', [EntryExitController::class, 'pendingReturns'])->name('pending');
         Route::get('/api/absent', [EntryExitController::class, 'getAbsentPersonnel'])->name('absent');
@@ -137,6 +170,7 @@ Route::middleware('auth')->group(function () {
         Route::put('/reasons/{reason}', [EntryExitController::class, 'updateReason'])->name('reasons.update');
         Route::delete('/reasons/{reason}', [EntryExitController::class, 'deleteReason'])->name('reasons.destroy');
         // Dynamic parameter routes after static routes
+        Route::post('/{entryExit}/signatures', [EntryExitSignatureController::class, 'store'])->name('signatures.store');
         Route::patch('/{entryExit}/return', [EntryExitController::class, 'registerReturn'])->name('return');
         Route::get('/{entryExit}/pdf', [EntryExitController::class, 'generatePdf'])->name('pdf');
     });
@@ -189,6 +223,32 @@ Route::middleware('auth')->group(function () {
         // Service Requirements
         Route::get('/service-requirements', [VehicleController::class, 'getServiceRequirements'])->name('service-requirements.list');
         Route::post('/service-requirements', [VehicleController::class, 'storeServiceRequirement'])->name('service-requirements.store');
+
+        // Gestión integral de flota, operación, trazabilidad y firmas.
+        Route::prefix('fleet')->name('fleet.')->group(function () {
+            Route::get('/dashboard', [VehicleFleetController::class, 'dashboard'])->name('dashboard');
+            Route::post('/vehicles', [VehicleFleetController::class, 'storeVehicle'])->name('vehicles.store');
+            Route::put('/vehicles/{vehicle}', [VehicleFleetController::class, 'updateVehicle'])->name('vehicles.update');
+            Route::post('/vehicles/{vehicle}/documents', [VehicleFleetController::class, 'storeDocument'])->name('vehicles.documents.store');
+            Route::post('/drivers', [VehicleFleetController::class, 'storeDriver'])->name('drivers.store');
+            Route::put('/drivers/{driver}', [VehicleFleetController::class, 'updateDriver'])->name('drivers.update');
+            Route::post('/commissions', [VehicleFleetController::class, 'storeCommission'])->name('commissions.store');
+            Route::put('/commissions/{commission}', [VehicleFleetController::class, 'updateCommission'])->name('commissions.update');
+            Route::post('/commissions/{commission}/approve', [VehicleFleetController::class, 'approve'])->name('commissions.approve');
+            Route::post('/commissions/{commission}/reject', [VehicleFleetController::class, 'reject'])->name('commissions.reject');
+            Route::post('/commissions/{commission}/cancel', [VehicleFleetController::class, 'cancel'])->name('commissions.cancel');
+            Route::post('/commissions/{commission}/depart', [VehicleFleetController::class, 'depart'])->name('commissions.depart');
+            Route::post('/commissions/{commission}/return', [VehicleFleetController::class, 'returnVehicle'])->name('commissions.return');
+            Route::post('/commissions/{commission}/signatures', [VehicleFleetController::class, 'createSigningRequest'])->name('commissions.signatures.store');
+            Route::get('/commissions/{commission}/pdf', [VehicleFleetController::class, 'pdf'])->name('commissions.pdf');
+            Route::post('/signatures/{signingRequest}/firma-peru', [VehicleFirmaPeruController::class, 'start'])->name('signatures.firma-peru');
+            Route::post('/fuel', [VehicleFleetController::class, 'storeFuel'])->name('fuel.store');
+            Route::post('/incidents', [VehicleFleetController::class, 'storeIncident'])->name('incidents.store');
+            Route::post('/incidents/{incident}/close', [VehicleFleetController::class, 'closeIncident'])->name('incidents.close');
+            Route::post('/schedules', [VehicleFleetController::class, 'storeSchedule'])->name('schedules.store');
+            Route::post('/schedules/{schedule}/complete', [VehicleFleetController::class, 'completeSchedule'])->name('schedules.complete');
+            Route::get('/report', [VehicleFleetController::class, 'report'])->name('report');
+        });
     });
     
     // Gestión de Citas
@@ -254,12 +314,13 @@ Route::middleware('auth')->group(function () {
     });
 
     // Papeletas de Salida (Empleado + Jefe Inmediato + RRHH)
-    Route::middleware('role:ROL011,ROL009,ROL012')->prefix('papeletas')->name('papeletas.')->group(function () {
+    Route::middleware('role:ROL001,ROL011,ROL009,ROL012')->prefix('papeletas')->name('papeletas.')->group(function () {
         Route::get('/', [PapeletaAdminController::class, 'index'])->name('index');
 
         // Auto-servicio del empleado (cualquiera con empleado vinculado)
         Route::get('/api/mis', [PapeletaAdminController::class, 'getMisPapeletas'])->name('mis');
         Route::post('/solicitar', [PapeletaAdminController::class, 'storeMiPapeleta'])->name('solicitar');
+        Route::post('/mi-certificado', [DigitalCertificateController::class, 'storeMine'])->name('certificate.store');
 
         // Administración (Jefe + RRHH)
         Route::get('/api/pendientes', [PapeletaAdminController::class, 'getPendientes'])->name('pendientes');
@@ -269,6 +330,8 @@ Route::middleware('auth')->group(function () {
         Route::patch('/{papeleta}/aprobar', [PapeletaAdminController::class, 'aprobar'])->name('aprobar');
         Route::patch('/{papeleta}/desaprobar', [PapeletaAdminController::class, 'desaprobar'])->name('desaprobar');
         Route::get('/{papeleta}/pdf', [PapeletaAdminController::class, 'generatePdf'])->name('pdf');
+        Route::get('/{papeleta}/qr-control', [PapeletaAdminController::class, 'controlQr'])->name('qr-control');
+        Route::get('/{papeleta}/constancia-qr.pdf', [PapeletaAdminController::class, 'controlConstanciaPdf'])->name('constancia-qr');
     });
 
     // Asistencia - Marcas de entrada/salida

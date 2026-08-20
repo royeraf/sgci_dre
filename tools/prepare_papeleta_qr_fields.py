@@ -17,11 +17,15 @@ from pyhanko.sign.fields import SigFieldSpec, append_signature_field
 # A5 portrait coordinates (origin is the lower-left corner).  The positions
 # match the empty cells and destination box rendered by papeleta_request.blade.
 FIELDS = {
-    # These narrow boxes center the static appearance in the duration cells.
-    "QR_SALIDA_REAL": (156, 348, 191, 368, 0),
-    "QR_RETORNO_REAL": (326, 348, 361, 368, 0),
-    "QR_DESTINO_FIRMA": (48, 214, 170, 248, 0),
-    "QR_DESTINO_DETALLE": (176, 212, 372, 251, 4096),  # multiline text field
+    # A5 coordinates for the official DRE layout in papeleta_request.blade.
+    # The narrow cells are in the centre of the duration table; their values
+    # are added after QR scanning through a permitted incremental form update.
+    "QR_SALIDA_REAL": (135, 370, 165, 396, 0),
+    "QR_RETORNO_REAL": (260, 370, 290, 396, 0),
+    # The commission confirmation is below the three institutional signatures,
+    # as defined by the DRE paper form. It remains a reserved form field.
+    "QR_DESTINO_FIRMA": (50, 212, 165, 239, 0),
+    "QR_DESTINO_DETALLE": (170, 207, 370, 239, 4096),  # multiline text field
 }
 
 # These approval fields must also be present before the certification signature.
@@ -29,9 +33,11 @@ FIELDS = {
 # is correctly rejected by strict PDF validators, even when form filling itself
 # is permitted.
 SIGNATURE_FIELDS = {
-    'Papeleta_SERVIDOR': (42, 130, 136, 190),
-    'Papeleta_JEFE_INMEDIATO': (160, 130, 255, 190),
-    'Papeleta_RRHH': (282, 130, 380, 190),
+    # The cards sit immediately above the dotted signature lines in the
+    # official layout.  Their labels remain unobstructed below each card.
+    'Papeleta_SERVIDOR': (42, 277, 136, 335),
+    'Papeleta_JEFE_INMEDIATO': (160, 277, 255, 335),
+    'Papeleta_RRHH': (282, 277, 380, 335),
 }
 
 

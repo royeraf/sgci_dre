@@ -32,10 +32,25 @@ def fill_text(writer, field_name: str, value: str, font_size: int):
     # previous revision.  A completed field must be left untouched.
     if _empty_field(writer, field_name) is None:
         return
+    # QR hours are short values in bordered cells.  The default layout anchors
+    # text at the bottom, which makes the digits look cut off in PDF viewers.
+    # Center only these two values horizontally and vertically.
+    is_hour = field_name in {'QR_SALIDA_REAL', 'QR_RETORNO_REAL'}
+    box_layout_rule = (
+        layout.SimpleBoxLayoutRule(
+            layout.AxisAlignment.ALIGN_MID,
+            layout.AxisAlignment.ALIGN_MID,
+        )
+        if is_hour else None
+    )
     form_tools.populate_static_text_field(
         writer,
         field_name,
-        form_tools.TextBoxStyle(font_size=font_size, leading=max(font_size + 1, 9)),
+        form_tools.TextBoxStyle(
+            font_size=font_size,
+            leading=max(font_size + 1, 9),
+            box_layout_rule=box_layout_rule,
+        ),
         value,
     )
 
