@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\DigitalCertificate;
 use App\Models\Employee;
+use App\Models\JefeSuplente;
 use App\Models\Vacation;
 use App\Models\HrDirection;
 use App\Models\HRPosition;
@@ -34,7 +36,18 @@ class HRController extends Controller
             ->get()
             ->sortBy('apellidos', SORT_NATURAL | SORT_FLAG_CASE)
             ->values(); // Reindexar array
-        
+
+        // DNIs con certificado RENIEC vigente: solo esos empleados podrán
+        // firmar realmente si se les designa jefe titular o suplente.
+        $dnisConCertificado = DigitalCertificate::where('is_active', true)
+            ->where('valid_to', '>', now())
+            ->pluck('signer_dni')
+            ->unique();
+
+        $employees->each(function (Employee $employee) use ($dnisConCertificado) {
+            $employee->tiene_certificado = $employee->dni && $dnisConCertificado->contains($employee->dni);
+        });
+
         return response()->json($employees);
     }
 
@@ -463,7 +476,7 @@ class HRController extends Controller
      */
     public function getDirections()
     {
-        $directions = HrDirection::with(['offices', 'jefeInmediato.person'])->withCount('offices')->orderBy('nombre')->get();
+        $directions = HrDirection::with(['offices', 'jefeInmediato.person', 'suplentes.employee.person'])->withCount('offices')->orderBy('nombre')->get();
         return response()->json($directions);
     }
 
@@ -472,7 +485,7 @@ class HRController extends Controller
      */
     public function storeDirection(Request $request)
     {
-        $validated = $request->validate([
+        $validated = $request->validate(array_merge([
             'nombre' => 'required|string|max:255|unique:hr_directions,nombre',
             'abreviacion' => 'nullable|string|max:20',
             'codigo' => 'nullable|string|max:20',
@@ -483,16 +496,19 @@ class HRController extends Controller
             'jefe_inmediato_id' => 'nullable|exists:employees,id',
             'office_ids' => 'nullable|array',
             'office_ids.*' => 'exists:hr_offices,id',
-        ], [
+        ], $this->suplentesValidationRules()), [
             'nombre.unique' => 'Ya existe una dirección con ese nombre',
         ]);
 
-        $direction = HrDirection::create($validated);
+        $direction = HrDirection::create($this->withoutSuplentes($validated));
 
         if (!empty($validated['office_ids'])) {
             HrOffice::whereIn('id', $validated['office_ids'])->update(['direction_id' => $direction->id]);
         }
-        
+
+        $this->syncSuplentes($direction, $validated['suplentes'] ?? [], $direction->jefe_inmediato_id);
+        $direction->load('suplentes.employee.person');
+
         return response()->json([
             'message' => 'Dirección registrada correctamente',
             'direction' => $direction
@@ -510,7 +526,7 @@ class HRController extends Controller
             return response()->json(['message' => 'Dirección no encontrada'], 404);
         }
 
-        $validated = $request->validate([
+        $validated = $request->validate(array_merge([
             'nombre' => 'sometimes|string|max:255|unique:hr_directions,nombre,' . $id,
             'abreviacion' => 'nullable|string|max:20',
             'codigo' => 'nullable|string|max:20',
@@ -521,22 +537,26 @@ class HRController extends Controller
             'jefe_inmediato_id' => 'nullable|exists:employees,id',
             'office_ids' => 'nullable|array',
             'office_ids.*' => 'exists:hr_offices,id',
-        ]);
+        ], $this->suplentesValidationRules()));
 
-        $direction->update($validated);
+        $direction->update($this->withoutSuplentes($validated));
 
         // Reset previous offices (optional, or just update the new ones)
         // Usually, we want to sync.
         if (isset($validated['office_ids'])) {
             // First, remove this direction from all offices currently belonging to it
             HrOffice::where('direction_id', $direction->id)->update(['direction_id' => null]);
-            
+
             // Then, assign the new ones
             if (!empty($validated['office_ids'])) {
                 HrOffice::whereIn('id', $validated['office_ids'])->update(['direction_id' => $direction->id]);
             }
         }
-        
+
+        if (array_key_exists('suplentes', $validated)) {
+            $this->syncSuplentes($direction, $validated['suplentes'] ?? [], $direction->jefe_inmediato_id);
+        }
+
         return response()->json(['message' => 'Dirección actualizada correctamente']);
     }
 
@@ -553,9 +573,74 @@ class HRController extends Controller
 
         // Optional: check if direction is being used by employees before deleting or just allow it
         $direction->delete();
-        
+
         return response()->json(['message' => 'Dirección eliminada correctamente']);
     }
+
+    // ========== SUPLENTES DE JEFE INMEDIATO (compartido dirección/oficina) ==========
+
+    /**
+     * Reglas de validación del arreglo opcional de suplentes, compartidas
+     * por los cuatro endpoints de dirección/oficina.
+     */
+    private function suplentesValidationRules(): array
+    {
+        return [
+            'suplentes' => 'nullable|array',
+            'suplentes.*.employee_id' => 'required|uuid|exists:employees,id',
+            'suplentes.*.vigente_desde' => 'nullable|date',
+            'suplentes.*.vigente_hasta' => 'nullable|date|after_or_equal:suplentes.*.vigente_desde',
+            'suplentes.*.observacion' => 'nullable|string|max:255',
+        ];
+    }
+
+    /**
+     * El array de suplentes no es una columna de hr_directions/hr_offices;
+     * se procesa aparte con syncSuplentes() y no debe llegar a create/update.
+     */
+    private function withoutSuplentes(array $validated): array
+    {
+        unset($validated['suplentes']);
+        return $validated;
+    }
+
+    /**
+     * Sincroniza los suplentes de una oficina/dirección con lo recibido del
+     * formulario: borra los que ya no vienen, crea/actualiza el resto.
+     * Rechaza que el propio titular figure también como suplente y elimina
+     * duplicados del mismo empleado dentro del arreglo.
+     */
+    private function syncSuplentes(HrOffice|HrDirection $unidad, array $suplentes, ?string $jefeInmediatoId): void
+    {
+        $empleadosVistos = [];
+        $idsVigentes = [];
+
+        foreach ($suplentes as $suplente) {
+            $employeeId = $suplente['employee_id'];
+
+            if ($jefeInmediatoId && $employeeId === $jefeInmediatoId) {
+                continue; // el titular no puede además ser su propio suplente
+            }
+            if (in_array($employeeId, $empleadosVistos, true)) {
+                continue; // ignora duplicados del mismo empleado
+            }
+            $empleadosVistos[] = $employeeId;
+
+            $registro = $unidad->suplentes()->updateOrCreate(
+                ['employee_id' => $employeeId],
+                [
+                    'vigente_desde' => $suplente['vigente_desde'] ?? null,
+                    'vigente_hasta' => $suplente['vigente_hasta'] ?? null,
+                    'observacion' => $suplente['observacion'] ?? null,
+                    'activo' => true,
+                ]
+            );
+            $idsVigentes[] = $registro->id;
+        }
+
+        $unidad->suplentes()->whereNotIn('id', $idsVigentes)->delete();
+    }
+
     // ========== POSITION METHODS ==========
 
     /**
@@ -633,7 +718,7 @@ class HRController extends Controller
      */
     public function getOffices()
     {
-        $offices = HrOffice::with(['direction', 'jefeInmediato.person'])->orderBy('nombre')->get();
+        $offices = HrOffice::with(['direction', 'jefeInmediato.person', 'suplentes.employee.person'])->orderBy('nombre')->get();
         return response()->json($offices);
     }
 
@@ -642,7 +727,7 @@ class HRController extends Controller
      */
     public function storeOffice(Request $request)
     {
-        $validated = $request->validate([
+        $validated = $request->validate(array_merge([
             'direction_id' => 'nullable|exists:hr_directions,id',
             'nombre' => 'required|string|max:255',
             'codigo' => 'nullable|string|max:20',
@@ -650,11 +735,12 @@ class HRController extends Controller
             'telefono_interno' => 'nullable|string|max:50',
             'activo' => 'boolean',
             'jefe_inmediato_id' => 'nullable|exists:employees,id',
-        ]);
+        ], $this->suplentesValidationRules()));
 
-        $office = HrOffice::create($validated);
-        $office->load(['direction', 'jefeInmediato.person']);
-        
+        $office = HrOffice::create($this->withoutSuplentes($validated));
+        $this->syncSuplentes($office, $validated['suplentes'] ?? [], $office->jefe_inmediato_id);
+        $office->load(['direction', 'jefeInmediato.person', 'suplentes.employee.person']);
+
         return response()->json([
             'message' => 'Oficina registrada correctamente',
             'office' => $office
@@ -672,7 +758,7 @@ class HRController extends Controller
             return response()->json(['message' => 'Oficina no encontrada'], 404);
         }
 
-        $validated = $request->validate([
+        $validated = $request->validate(array_merge([
             'direction_id' => 'nullable|exists:hr_directions,id',
             'nombre' => 'sometimes|string|max:255',
             'codigo' => 'nullable|string|max:20',
@@ -680,11 +766,16 @@ class HRController extends Controller
             'telefono_interno' => 'nullable|string|max:50',
             'activo' => 'boolean',
             'jefe_inmediato_id' => 'nullable|exists:employees,id',
-        ]);
+        ], $this->suplentesValidationRules()));
 
-        $office->update($validated);
-        $office->load(['direction', 'jefeInmediato.person']);
-        
+        $office->update($this->withoutSuplentes($validated));
+
+        if (array_key_exists('suplentes', $validated)) {
+            $this->syncSuplentes($office, $validated['suplentes'] ?? [], $office->jefe_inmediato_id);
+        }
+
+        $office->load(['direction', 'jefeInmediato.person', 'suplentes.employee.person']);
+
         return response()->json([
             'message' => 'Oficina actualizada correctamente',
             'office' => $office

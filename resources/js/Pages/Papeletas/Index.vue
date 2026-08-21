@@ -133,6 +133,7 @@
                                     <th class="text-left px-4 py-3 font-semibold text-slate-600">N°</th>
                                     <th class="text-left px-4 py-3 font-semibold text-slate-600">Fecha Salida</th>
                                     <th class="text-left px-4 py-3 font-semibold text-slate-600 hidden sm:table-cell">Motivo</th>
+                                    <th class="text-left px-4 py-3 font-semibold text-slate-600 hidden lg:table-cell">Jefe asignado</th>
                                     <th class="text-left px-4 py-3 font-semibold text-slate-600 hidden md:table-cell">Control QR</th>
                                     <th class="text-center px-4 py-3 font-semibold text-slate-600">Estado</th>
                                     <th class="text-center px-4 py-3 font-semibold text-slate-600">Documento</th>
@@ -143,6 +144,7 @@
                                     <td class="px-4 py-3 font-mono font-bold text-indigo-600">{{ p.numero_papeleta }}</td>
                                     <td class="px-4 py-3 text-slate-700">{{ formatDate(p.fecha_salida) }}</td>
                                     <td class="px-4 py-3 text-slate-500 hidden sm:table-cell">{{ p.reason?.nombre ?? '-' }}</td>
+                                    <td class="px-4 py-3 text-slate-500 hidden lg:table-cell">{{ p.jefe_asignado_nombre || '—' }}</td>
                                     <td class="px-4 py-3 text-slate-500 hidden md:table-cell">
                                         <div class="text-xs leading-5">
                                             <div><span class="font-semibold text-slate-600">Salida:</span> {{ formatQrTime(p.salida_real_at) }}</div>
@@ -209,6 +211,11 @@
                                         {{ p.reason?.nombre }}
                                     </p>
                                     <p class="text-xs text-slate-600 mt-1 line-clamp-1">{{ p.motivo }}</p>
+                                    <p v-if="p.estado === 'PENDIENTE'" class="text-xs text-slate-500 mt-1">
+                                        Dirigida a:
+                                        <span v-if="p.jefe_asignado_nombre" class="font-semibold">{{ p.jefe_asignado_nombre }}</span>
+                                        <span v-else class="italic">jefe/suplente por designación de oficina</span>
+                                    </p>
                                 </div>
                                 <div v-if="canProcess(p)" class="flex items-center gap-2 flex-shrink-0">
                                     <button @click="openApproveModal(p)"
@@ -484,9 +491,26 @@
                             </div>
 
                             <div>
-                                <label class="mb-2 block text-sm font-bold text-slate-700">Justificación <span class="text-red-500">*</span></label>
+                                <label class="mb-2 block text-sm font-bold text-slate-700">Justificación <span class="text-xs font-normal text-slate-400">(opcional)</span></label>
                                 <textarea v-model="createForm.motivo" rows="3" maxlength="500" class="w-full resize-none rounded-xl border-2 px-4 py-3 text-sm outline-none transition-colors focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500" :class="createErrors.motivo ? 'border-red-400' : 'border-slate-200'" placeholder="Indique el motivo de la salida..."></textarea>
                                 <p v-if="createErrors.motivo" class="mt-1 text-xs text-red-600">{{ createErrors.motivo[0] }}</p>
+                            </div>
+
+                            <div class="rounded-xl border border-emerald-200 bg-emerald-50 p-4">
+                                <label class="mb-1.5 block text-sm font-bold text-emerald-900">Jefe que aprobará esta papeleta <span class="text-red-500">*</span></label>
+                                <EmployeeSearchSelect v-model="createForm.jefe_asignado_id" :employees="posiblesJefes"
+                                    :allow-empty="false" :disabled="posiblesJefesLoading"
+                                    :invalid="!!createErrors.jefe_asignado_id" accent="emerald"
+                                    placeholder="Buscar por DNI o nombre..." />
+                                <p v-if="posiblesJefesLoading" class="mt-1 text-xs text-emerald-700">Cargando servidores…</p>
+                                <p v-else class="mt-1 text-xs text-emerald-700">Se sugiere su jefe inmediato registrado. Puede elegir a otro servidor si él no se encuentra disponible.</p>
+                                <!-- Aviso de certificado RENIEC comentado por ahora.
+                                <p v-if="jefeSeleccionadoSinCertificado" class="mt-1 flex items-center gap-1 text-xs font-bold text-amber-600">
+                                    <AlertTriangle class="h-3.5 w-3.5 shrink-0" />
+                                    La persona seleccionada aún no registra su certificado RENIEC; no podrá firmar hasta que lo haga.
+                                </p>
+                                -->
+                                <p v-if="createErrors.jefe_asignado_id" class="mt-1 text-xs text-red-600">{{ createErrors.jefe_asignado_id[0] }}</p>
                             </div>
 
                             <div class="rounded-xl border border-indigo-200 bg-indigo-50 p-4">
@@ -494,7 +518,7 @@
                                     <input type="password" v-model="createForm.signing_pin" autocomplete="off"
                                         class="w-full rounded-xl border px-3 py-2.5 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500"
                                         :class="createErrors.signing_pin ? 'border-red-400' : 'border-indigo-200'" placeholder="Clave creada al registrar el PFX" />
-                                <p class="mt-1 text-xs text-indigo-700">Al enviar, firma digitalmente la solicitud y se remite a su jefe inmediato. No se usa QR.</p>
+                                <p class="mt-1 text-xs text-indigo-700">Al enviar, firma digitalmente la solicitud y se remite al jefe seleccionado. No se usa QR.</p>
                                 <p v-if="createErrors.signing_pin" class="mt-1 text-xs text-red-600">{{ createErrors.signing_pin[0] }}</p>
                             </div>
                         </div>
@@ -648,7 +672,8 @@ import { useTabPermission } from '@/composables/useTabPermission';
 import MainLayout from '@/Layouts/MainLayout.vue';
 import { usePapeletaList } from '@/Composables/usePapeletaList';
 import { usePapeletaApproval } from '@/Composables/usePapeletaApproval';
-import { Clock, History, FileBarChart, FileText, CheckCircle, XCircle, X, Loader2, Plus, ClipboardList, ShieldCheck } from 'lucide-vue-next';
+import { Clock, History, FileBarChart, FileText, CheckCircle, XCircle, X, Loader2, Plus, ClipboardList, ShieldCheck, AlertTriangle } from 'lucide-vue-next';
+import EmployeeSearchSelect from '@/Components/Common/EmployeeSearchSelect.vue';
 import axios from 'axios';
 
 const props = defineProps({
@@ -656,9 +681,14 @@ const props = defineProps({
     myEmployee: { type: Object, default: null },
     reasons: { type: Array, default: () => [] },
     certificate: { type: Object, default: null },
+    puedeAprobarComoJefe: { type: Boolean, default: false },
+    jefeSugeridoId: { type: String, default: null },
 });
 
-const isBossRole = computed(() => ['ROL001', 'ROL011'].includes(props.userRole));
+// El acceso a la bandeja del jefe ya no depende del rol ni solo de la
+// designación de oficina/dirección: también participa quien haya sido
+// elegido a mano en alguna papeleta puntual (ver participaEnEtapaJefe()).
+const isBossRole = computed(() => props.userRole === 'ROL001' || props.puedeAprobarComoJefe);
 const isHrRole = computed(() => ['ROL001', 'ROL009'].includes(props.userRole));
 const isAdminRole = computed(() => isBossRole.value || isHrRole.value);
 
@@ -686,12 +716,33 @@ const createForm = reactive({
     destino: '',
     motivo: '',
     motivo_salida: 'comision',
+    jefe_asignado_id: '',
     signing_pin: '',
 });
 const createErrors = ref({});
 const createSubmitting = ref(false);
 const currentDateTime = ref(new Date());
 let automaticClock = null;
+
+// ===== Buscador de "quién firma como jefe" en Nueva Papeleta =====
+const posiblesJefes = ref([]);
+const posiblesJefesLoading = ref(false);
+// Aviso de certificado RENIEC comentado por ahora (ver template).
+// const jefeSeleccionadoSinCertificado = computed(() => {
+//     const emp = posiblesJefes.value.find(e => e.id === createForm.jefe_asignado_id);
+//     return emp?.tiene_certificado === false;
+// });
+
+const loadPosiblesJefes = async () => {
+    if (posiblesJefes.value.length) return;
+    posiblesJefesLoading.value = true;
+    try {
+        const res = await axios.get('/papeletas/api/posibles-jefes');
+        posiblesJefes.value = res.data;
+    } finally {
+        posiblesJefesLoading.value = false;
+    }
+};
 
 const employeeFullName = computed(() => {
     const person = props.myEmployee?.person;
@@ -801,10 +852,12 @@ const openCreateModal = () => {
         destino: '',
         motivo: '',
         motivo_salida: 'comision',
+        jefe_asignado_id: props.jefeSugeridoId || '',
         signing_pin: '',
     });
     createErrors.value = {};
     showCreateModal.value = true;
+    loadPosiblesJefes();
     nextTick(() => {
         syncCreateThumb();
         if (createScrollRef.value) {
@@ -864,9 +917,10 @@ const showControlQr = (papeleta) => {
     const commissionStep = isCommission
         ? '<li><b>Comisión:</b> después de la salida, el responsable de destino valida su DNI, registra GPS y firma en la pantalla.</li>'
         : '';
+    const qrUrl = `${window.location.origin}/control-papeleta/${papeleta.qr_token}`;
     window.Swal?.fire({
         title: `QR de control · ${papeleta.numero_papeleta}`,
-        html: `<div style="margin:0 auto 12px;max-width:330px;text-align:left;font-size:13px;line-height:1.45"><ol style="margin:0;padding-left:20px"><li><b>Portería:</b> primer escaneo para marcar la salida.</li>${commissionStep}<li><b>Portería:</b> segundo escaneo para marcar el retorno.</li></ol></div><img alt="QR de control" src="/papeletas/${papeleta.id}/qr-control" style="width:300px;max-width:100%">`,
+        html: `<div style="margin:0 auto 12px;max-width:330px;text-align:left;font-size:13px;line-height:1.45"><ol style="margin:0;padding-left:20px"><li><b>Portería:</b> primer escaneo para marcar la salida.</li>${commissionStep}<li><b>Portería:</b> segundo escaneo para marcar el retorno.</li></ol></div><img alt="QR de control" src="/papeletas/${papeleta.id}/qr-control" style="width:300px;max-width:100%"><p style="margin:10px auto 0;max-width:330px;font-size:11px;color:#64748b;word-break:break-all;">${qrUrl}</p>`,
         confirmButtonText: 'Listo',
     });
 };
@@ -878,8 +932,17 @@ const pendientesRrhh = computed(() => {
     return pendientes.value.filter(p => p.estado === 'PENDIENTE_RRHH');
 });
 
+const myEmployeeId = computed(() => props.myEmployee?.id);
+
 const canProcess = (papeleta) => {
-    if (papeleta?.estado === 'PENDIENTE') return isBossRole.value;
+    if (papeleta?.estado === 'PENDIENTE') {
+        if (props.userRole === 'ROL001') return true;
+        // Si la papeleta fue dirigida a alguien en particular, solo esa
+        // persona puede procesarla (evita mostrar el botón a quien el
+        // backend igual rechazaría con 403).
+        if (papeleta.jefe_asignado_id) return papeleta.jefe_asignado_id === myEmployeeId.value;
+        return isBossRole.value;
+    }
     if (papeleta?.estado === 'PENDIENTE_RRHH') return isHrRole.value;
     return false;
 };

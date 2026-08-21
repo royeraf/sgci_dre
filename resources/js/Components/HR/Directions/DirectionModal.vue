@@ -89,18 +89,70 @@
 
                         <div>
                             <label class="block text-sm font-bold text-slate-700 mb-2">Jefe Inmediato</label>
-                            <select v-model="jefe_inmediato_id" v-bind="jefeInmediatoProps"
-                                class="w-full px-4 py-2.5 border-2 rounded-xl text-slate-900 focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 bg-white transition-all duration-200 outline-none cursor-pointer"
-                                :class="formErrors.jefe_inmediato_id ? 'border-red-400 focus:border-red-500 focus:ring-red-500/20 bg-red-50' : 'border-slate-200'">
-                                <option value="">Sin jefe asignado</option>
-                                <option v-for="emp in employees" :key="emp.id" :value="emp.id">{{ emp.dni }} - {{
-                                    emp.nombres }} {{ emp.apellidos }}</option>
-                            </select>
+                            <EmployeeSearchSelect v-model="jefe_inmediato_id" :employees="employees" accent="indigo"
+                                placeholder="Buscar jefe por nombre o DNI..." empty-label="Sin jefe asignado" />
                             <p v-if="formErrors.jefe_inmediato_id" class="mt-1 text-sm text-red-600">{{
                                 formErrors.jefe_inmediato_id }}</p>
                             <p class="text-[10px] text-slate-500 mt-1 italic">
                                 Aprobará las papeletas de los empleados que no tengan un jefe asignado a nivel de
                                 oficina.
+                            </p>
+                        </div>
+
+                        <!-- Suplentes -->
+                        <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200">
+                            <div class="flex items-center justify-between mb-3">
+                                <label class="text-sm font-bold text-slate-700 flex items-center gap-2">
+                                    <Users class="w-4 h-4 text-indigo-600" />
+                                    Suplentes autorizados
+                                </label>
+                                <button type="button" @click="addSuplente"
+                                    class="flex items-center gap-1 text-xs font-bold text-indigo-700 hover:text-indigo-900 transition-colors">
+                                    <Plus class="w-3.5 h-3.5" /> Agregar suplente
+                                </button>
+                            </div>
+
+                            <div v-if="suplentes.length === 0" class="text-xs text-slate-400 italic py-1">
+                                Sin suplentes. Solo el titular podrá aprobar papeletas.
+                            </div>
+
+                            <div v-for="(s, idx) in suplentes" :key="idx"
+                                class="flex flex-col gap-2 p-3 mb-2 last:mb-0 bg-white rounded-xl border border-slate-200">
+                                <div class="flex items-center gap-2">
+                                    <div class="flex-1 min-w-0">
+                                        <EmployeeSearchSelect v-model="s.employee_id" :employees="employees" accent="indigo"
+                                            placeholder="Buscar empleado por nombre o DNI..." :allow-empty="false" />
+                                    </div>
+                                    <button type="button" @click="removeSuplente(idx)"
+                                        class="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors">
+                                        <Trash2 class="w-4 h-4" />
+                                    </button>
+                                </div>
+                                <!-- Aviso de certificado RENIEC comentado por ahora.
+                                <div v-if="suplenteSinCertificado(s.employee_id)"
+                                    class="flex items-center gap-1 text-[10px] text-amber-600 font-bold">
+                                    <AlertTriangle class="w-3 h-3" />
+                                    Este empleado no tiene certificado RENIEC vigente; no podrá firmar aún.
+                                </div>
+                                -->
+                                <div class="grid grid-cols-2 gap-2">
+                                    <div>
+                                        <label class="block text-[10px] font-bold text-slate-500 mb-1">Desde
+                                            (opcional)</label>
+                                        <input v-model="s.vigente_desde" type="date"
+                                            class="w-full px-2 py-1.5 text-xs border-2 border-slate-200 rounded-lg text-slate-900 focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none" />
+                                    </div>
+                                    <div>
+                                        <label class="block text-[10px] font-bold text-slate-500 mb-1">Hasta
+                                            (opcional)</label>
+                                        <input v-model="s.vigente_hasta" type="date"
+                                            class="w-full px-2 py-1.5 text-xs border-2 border-slate-200 rounded-lg text-slate-900 focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none" />
+                                    </div>
+                                </div>
+                            </div>
+                            <p class="text-[10px] text-slate-500 mt-1 italic">
+                                Sin fechas, el suplente puede aprobar en cualquier momento. Con fechas, solo durante
+                                ese periodo (encargatura).
                             </p>
                         </div>
 
@@ -186,7 +238,8 @@ import { ref, watch, computed } from 'vue';
 import { useForm } from 'vee-validate';
 import { toTypedSchema } from '@vee-validate/yup';
 import * as yup from 'yup';
-import { Building2, X, Loader2, Search, LayoutGrid, CheckCircle2, AlertTriangle, MapPin } from 'lucide-vue-next';
+import { Building2, X, Loader2, Search, LayoutGrid, CheckCircle2, AlertTriangle, MapPin, Users, Plus, Trash2 } from 'lucide-vue-next';
+import EmployeeSearchSelect from '@/Components/Common/EmployeeSearchSelect.vue';
 
 const props = defineProps({
     direction: { type: Object, default: null },
@@ -235,7 +288,24 @@ const [telefono_interno, telefonoInternoProps] = defineField('telefono_interno')
 const [ubicacion, ubicacionProps] = defineField('ubicacion');
 const [activo, activoProps] = defineField('activo');
 const [office_ids, officeIdsProps] = defineField('office_ids');
-const [jefe_inmediato_id, jefeInmediatoProps] = defineField('jefe_inmediato_id');
+const [jefe_inmediato_id] = defineField('jefe_inmediato_id');
+
+// Suplentes: no forma parte del esquema yup (es un repetidor, no un campo
+// simple); se arma y se envía aparte, junto al resto del formData.
+const suplentes = ref([]);
+
+const addSuplente = () => {
+    suplentes.value.push({ employee_id: '', vigente_desde: '', vigente_hasta: '' });
+};
+const removeSuplente = (idx) => {
+    suplentes.value.splice(idx, 1);
+};
+// Aviso de certificado RENIEC comentado por ahora (ver template).
+// const suplenteSinCertificado = (employeeId) => {
+//     if (!employeeId) return false;
+//     const emp = props.employees.find(e => e.id === employeeId);
+//     return !!emp && emp.tiene_certificado === false;
+// };
 
 const filteredOffices = computed(() => {
     if (!officeQuery.value) return props.offices;
@@ -259,6 +329,11 @@ watch(() => props.direction, (d) => {
             office_ids: d.offices ? d.offices.map(o => o.id) : [],
             jefe_inmediato_id: d.jefe_inmediato_id || ''
         });
+        suplentes.value = (d.suplentes || []).map(s => ({
+            employee_id: s.employee_id || '',
+            vigente_desde: s.vigente_desde || '',
+            vigente_hasta: s.vigente_hasta || '',
+        }));
     } else {
         setValues({
             nombre: '',
@@ -271,10 +346,14 @@ watch(() => props.direction, (d) => {
             office_ids: [],
             jefe_inmediato_id: ''
         });
+        suplentes.value = [];
     }
 }, { immediate: true });
 
-const onSubmit = validateForm((values) => emit('submit', values));
+const onSubmit = validateForm((values) => emit('submit', {
+    ...values,
+    suplentes: suplentes.value.filter(s => s.employee_id),
+}));
 </script>
 
 <style scoped>

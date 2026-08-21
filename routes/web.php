@@ -314,12 +314,13 @@ Route::middleware('auth')->group(function () {
     });
 
     // Papeletas de Salida (Empleado + Jefe Inmediato + RRHH)
-    Route::middleware('role:ROL001,ROL011,ROL009,ROL012')->prefix('papeletas')->name('papeletas.')->group(function () {
+    Route::middleware('papeleta.access:ROL001,ROL011,ROL009,ROL012')->prefix('papeletas')->name('papeletas.')->group(function () {
         Route::get('/', [PapeletaAdminController::class, 'index'])->name('index');
 
         // Auto-servicio del empleado (cualquiera con empleado vinculado)
         Route::get('/api/mis', [PapeletaAdminController::class, 'getMisPapeletas'])->name('mis');
         Route::post('/solicitar', [PapeletaAdminController::class, 'storeMiPapeleta'])->name('solicitar');
+        Route::get('/api/posibles-jefes', [PapeletaAdminController::class, 'getPosiblesJefes'])->name('posibles-jefes');
         Route::post('/mi-certificado', [DigitalCertificateController::class, 'storeMine'])->name('certificate.store');
 
         // Administración (Jefe + RRHH)

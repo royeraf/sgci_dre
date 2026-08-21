@@ -11,6 +11,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -34,44 +35,43 @@ class PapeletaAdminController extends Controller
     /**
      * Build base query filtered by role: ROL011 sees their area, ROL009 sees all.
      */
+    /**
+     * Relaciones a precargar en cualquier listado de papeletas.
+     */
+    private function papeletaEagerLoads(): array
+    {
+        return [
+            'employee.person',
+            'employee.direction',
+            'employee.office',
+            'employee.position',
+            'reason',
+            'aprobador.person',
+            'aprobadorJefe.person',
+            'aprobadorRrhh.person',
+            'jefeAsignado.person',
+            'signatures',
+        ];
+    }
+
     private function baseQuery()
     {
         $user = Auth::user();
-        $query = PapeletaRequest::with([
-            'employee.person', 
-            'employee.direction', 
-            'employee.office', 
-            'employee.position', 
-            'reason', 
-            'aprobador.person',
-            'aprobadorJefe.person',
-            'aprobadorRrhh.person'
-            ,'signatures'
-        ]);
+        $query = PapeletaRequest::with($this->papeletaEagerLoads());
 
         if ($user->rol_id === 'ROL009' || $user->rol_id === 'ROL001') {
             return $query;
         }
 
-        if ($user->rol_id !== 'ROL011') {
-            return $query->whereRaw('1 = 0');
-        }
-
-        // ROL011: filter by direction/office
+        // Un empleado no designado en Direcciones/Oficinas puede igual
+        // tener papeletas dirigidas a él a mano; solo se descarta si no
+        // tiene ningún empleado vinculado.
         $employee = $this->getEmployee();
         if (!$employee) {
             return $query->whereRaw('1 = 0'); // empty result
         }
 
-        return $query->whereHas('employee', function ($employeeQuery) use ($employee) {
-            $employeeQuery
-                ->whereHas('office', fn ($office) => $office->where('jefe_inmediato_id', $employee->id))
-                ->orWhere(function ($fallback) use ($employee) {
-                    $fallback
-                        ->whereDoesntHave('office', fn ($office) => $office->whereNotNull('jefe_inmediato_id'))
-                        ->whereHas('direction', fn ($direction) => $direction->where('jefe_inmediato_id', $employee->id));
-                });
-        });
+        return $query->paraBandejaJefe($employee);
     }
 
     /**
@@ -87,6 +87,12 @@ class PapeletaAdminController extends Controller
             'myEmployee' => $employee,
             'reasons'    => EntryExitReason::active()->get(['id', 'nombre', 'tipo']),
             'certificate' => $this->certificatePublicData($this->certificateForDni($employee?->dni)),
+            // Acceso a la bandeja de jefe: está designado en Direcciones/
+            // Oficinas O fue elegido a mano en alguna papeleta puntual.
+            'puedeAprobarComoJefe' => $employee?->participaEnEtapaJefe() ?? false,
+            // Sugerencia precargada en el buscador de "Nueva Papeleta":
+            // titular de su unidad, o si no hay, el primer suplente vigente.
+            'jefeSugeridoId' => $employee?->aprobadores_papeleta->first()?->id,
         ]);
     }
 
@@ -103,7 +109,7 @@ class PapeletaAdminController extends Controller
         }
 
         $papeletas = PapeletaRequest::where('employee_id', $employee->id)
-            ->with(['reason', 'aprobadorJefe.person', 'aprobadorRrhh.person', 'signatures'])
+            ->with(['reason', 'aprobadorJefe.person', 'aprobadorRrhh.person', 'jefeAsignado.person', 'signatures'])
             ->orderBy('created_at', 'desc')
             ->get();
 
@@ -122,20 +128,29 @@ class PapeletaAdminController extends Controller
             return response()->json(['message' => 'No tiene un empleado asociado a su cuenta.'], 422);
         }
 
-        if (!$employee->jefe_inmediato) {
-            return response()->json(['message' => 'RR. HH. debe asignarle un jefe inmediato antes de solicitar una papeleta.'], 422);
-        }
-
         $validated = $request->validate([
             'destino'                 => 'required|string|max:250',
-            'motivo'                  => 'required|string|max:500',
+            'motivo'                  => 'nullable|string|max:500',
             'motivo_salida'           => 'required|in:comision,particular_compensable,por_salud',
+            'jefe_asignado_id'        => ['required', 'uuid', Rule::exists('employees', 'id')->where('estado', 'ACTIVO')],
             'signing_pin'             => 'required|string|min:6|max:20',
         ], [
             'destino.required'              => 'Indique el destino.',
-            'motivo.required'               => 'La justificación es obligatoria.',
             'motivo_salida.required'        => 'Seleccione el motivo de salida.',
+            'jefe_asignado_id.required'     => 'Seleccione al jefe que aprobará esta papeleta.',
+            'jefe_asignado_id.exists'       => 'El jefe seleccionado no está activo.',
         ]);
+
+        if ($validated['jefe_asignado_id'] === $employee->id) {
+            throw ValidationException::withMessages([
+                'jefe_asignado_id' => 'No puede designarse a usted mismo como jefe que aprueba su papeleta.',
+            ]);
+        }
+
+        $jefeAsignado = Employee::activos()->with('person')->find($validated['jefe_asignado_id']);
+        if (!$jefeAsignado) {
+            throw ValidationException::withMessages(['jefe_asignado_id' => 'El jefe seleccionado no está activo.']);
+        }
 
         // El formato institucional tiene tres causas fijas. El solicitante no
         // elige ni crea datos personales ni catálogos desde este formulario.
@@ -158,10 +173,15 @@ class PapeletaAdminController extends Controller
         $papeleta = PapeletaRequest::create([
             'numero_papeleta'      => PapeletaRequest::generateNumeroPapeleta(),
             'employee_id'          => $employee->id,
+            'jefe_asignado_id'     => $jefeAsignado->id,
+            'jefe_asignado_dni'    => $jefeAsignado->dni,
+            'jefe_asignado_nombre' => $jefeAsignado->full_name,
             'entry_exit_reason_id' => $reason->id,
             'motivo_salida'        => $validated['motivo_salida'],
             'destino'              => $validated['destino'],
-            'motivo'               => $validated['motivo'],
+            // Columna NOT NULL en BD; "opcional" en el formulario significa
+            // que puede quedar vacía, no ausente.
+            'motivo'               => $validated['motivo'] ?? '',
             'fecha_salida'         => $registeredAt->toDateString(),
             'hora_salida_estimada' => $registeredAt->format('H:i'),
             'hora_retorno_estimada'=> null,
@@ -180,9 +200,52 @@ class PapeletaAdminController extends Controller
         }
 
         return response()->json(
-            $papeleta->load(['reason', 'aprobadorJefe.person', 'aprobadorRrhh.person', 'signatures']),
+            $papeleta->load(['reason', 'aprobadorJefe.person', 'aprobadorRrhh.person', 'jefeAsignado.person', 'signatures']),
             201
         );
+    }
+
+    /**
+     * Lista liviana de empleados activos para el buscador de "quién debe
+     * firmar como jefe inmediato" al crear una papeleta. Universo general
+     * (no restringido a titulares/suplentes designados).
+     */
+    public function getPosiblesJefes()
+    {
+        $employee = $this->getEmployee();
+        if (!$employee) {
+            return response()->json([]);
+        }
+
+        $dnisConCertificado = DigitalCertificate::where('is_active', true)
+            ->where('valid_to', '>', now())
+            ->pluck('signer_dni')
+            ->unique();
+
+        $empleados = Employee::activos()
+            ->whereHas('person')
+            ->with('person:id,dni,nombres,apellidos')
+            ->where('id', '!=', $employee->id)
+            ->get()
+            ->sortBy('apellidos', SORT_NATURAL | SORT_FLAG_CASE)
+            ->values()
+            ->map(fn (Employee $emp) => [
+                'id' => $emp->id,
+                'dni' => $emp->dni,
+                'nombres' => $emp->nombres,
+                'apellidos' => $emp->apellidos,
+                'tiene_certificado' => $emp->dni && $dnisConCertificado->contains($emp->dni),
+            ]);
+
+        return response()->json($empleados);
+    }
+
+    private function mensajeNoAutorizadoJefe(PapeletaRequest $papeleta): string
+    {
+        if ($papeleta->jefe_asignado_nombre) {
+            return "Esta papeleta fue dirigida a {$papeleta->jefe_asignado_nombre}. Solo esa persona puede firmarla.";
+        }
+        return 'Solo el jefe inmediato o un suplente autorizado puede firmar esta papeleta.';
     }
 
     private function turnoForTime(\DateTimeInterface $dateTime): string
@@ -206,21 +269,30 @@ class PapeletaAdminController extends Controller
     public function getPendientes(Request $request)
     {
         $role = Auth::user()->rol_id;
-        $states = match ($role) {
-            // El jefe inmediato solo procesa solicitudes que aún requieren
-            // su firma. Una vez remitidas a RR.HH. ya no deben aparecerle.
-            'ROL011' => ['PENDIENTE'],
-            // RR.HH. recibe únicamente las solicitudes firmadas por el jefe.
-            'ROL009' => ['PENDIENTE_RRHH'],
-            // El administrador conserva visibilidad de ambas etapas.
-            'ROL001' => ['PENDIENTE', 'PENDIENTE_RRHH'],
-            default => [],
-        };
+        $employee = $this->getEmployee();
+        $isHr = in_array($role, ['ROL009', 'ROL001'], true);
 
-        $papeletas = $this->baseQuery()
-            ->whereIn('estado', $states)
-            ->orderBy('created_at', 'desc')
-            ->get();
+        // Etapa jefe: quien está dirigido a mano en alguna papeleta, o
+        // designado en Direcciones/Oficinas (papeletas legadas). Se arma
+        // con una query PROPIA (no baseQuery()) para que RR.HH. sin
+        // designación propia siga sin ver la etapa del jefe de otros —
+        // baseQuery() devuelve todo sin scope para ROL009/ROL001.
+        $etapaJefe = collect();
+        if ($role === 'ROL001') {
+            $etapaJefe = $this->baseQuery()->where('estado', 'PENDIENTE')->get();
+        } elseif ($employee && $employee->participaEnEtapaJefe()) {
+            $etapaJefe = PapeletaRequest::with($this->papeletaEagerLoads())
+                ->paraBandejaJefe($employee)
+                ->where('estado', 'PENDIENTE')
+                ->get();
+        }
+
+        // Etapa RR.HH.: sin cambios respecto a hoy.
+        $etapaRrhh = $isHr
+            ? $this->baseQuery()->where('estado', 'PENDIENTE_RRHH')->get()
+            : collect();
+
+        $papeletas = $etapaJefe->concat($etapaRrhh)->sortByDesc('created_at')->values();
 
         return response()->json($papeletas);
     }
@@ -275,9 +347,10 @@ class PapeletaAdminController extends Controller
         }
 
         if ($papeleta->estado === 'PENDIENTE') {
-            $expectedBoss = $papeleta->employee?->jefe_inmediato;
-            if (Auth::user()->rol_id !== 'ROL001' && (!$expectedBoss || $expectedBoss->id !== $employee->id)) {
-                return response()->json(['message' => 'Solo el jefe inmediato asignado puede firmar esta papeleta.'], 403);
+            $rol = Auth::user()->rol_id;
+            $autorizado = $rol === 'ROL001' || $papeleta->puedeSerAprobadaPor($employee);
+            if (!$autorizado) {
+                return response()->json(['message' => $this->mensajeNoAutorizadoJefe($papeleta)], 403);
             }
             $this->signingService->sign($papeleta, $employee, 'JEFE_INMEDIATO', $this->requiredCertificate($employee), $validated['signing_pin']);
             $papeleta->update([
@@ -333,9 +406,9 @@ class PapeletaAdminController extends Controller
         }
 
         if ($papeleta->estado === 'PENDIENTE') {
-            $expectedBoss = $papeleta->employee?->jefe_inmediato;
-            if ($role !== 'ROL001' && (!$expectedBoss || $expectedBoss->id !== $employee?->id)) {
-                return response()->json(['message' => 'Solo el jefe inmediato asignado puede desaprobar esta papeleta.'], 403);
+            $autorizado = $role === 'ROL001' || $papeleta->puedeSerAprobadaPor($employee);
+            if (!$autorizado) {
+                return response()->json(['message' => $this->mensajeNoAutorizadoJefe($papeleta)], 403);
             }
 
             $papeleta->update([
@@ -355,6 +428,8 @@ class PapeletaAdminController extends Controller
                 'fecha_aprobacion_rrhh' => now(),
                 'comentario_aprobacion' => $request->comentario,
             ]);
+        } else {
+            return response()->json(['message' => 'Estado no válido para desaprobar.'], 422);
         }
 
         return response()->json([
@@ -371,17 +446,28 @@ class PapeletaAdminController extends Controller
         $query = $this->baseQuery();
 
         $total = (clone $query)->count();
-        $pendientes = (clone $query)->where('estado', 'PENDIENTE')->count();
         $pendientesRrhh = (clone $query)->where('estado', 'PENDIENTE_RRHH')->count();
 
+        $rol = Auth::user()->rol_id;
         // Los jefes inmediatos no gestionan la segunda etapa ni deben recibir
         // su contador. RR.HH. y el administrador sí la visualizan.
-        if (!in_array(Auth::user()->rol_id, ['ROL009', 'ROL001'], true)) {
+        if (!in_array($rol, ['ROL009', 'ROL001'], true)) {
             $pendientesRrhh = 0;
         }
-        if (!in_array(Auth::user()->rol_id, ['ROL011', 'ROL001'], true)) {
+
+        // El contador de la etapa del jefe usa la misma regla estricta que
+        // getPendientes(): para que el badge de la pestaña nunca desincronice
+        // del listado, no se cuenta sobre baseQuery() (que para RR.HH.
+        // devuelve todo sin scope).
+        $employeeActual = $this->getEmployee();
+        if ($rol === 'ROL001') {
+            $pendientes = (clone $query)->where('estado', 'PENDIENTE')->count();
+        } elseif ($employeeActual && $employeeActual->participaEnEtapaJefe()) {
+            $pendientes = PapeletaRequest::paraBandejaJefe($employeeActual)->where('estado', 'PENDIENTE')->count();
+        } else {
             $pendientes = 0;
         }
+
         $aprobadas = (clone $query)->aprobado()->count();
         $desaprobadas = (clone $query)->desaprobado()->count();
 
@@ -404,7 +490,11 @@ class PapeletaAdminController extends Controller
 
         $currentEmployee = $this->getEmployee();
         $isOwner = $currentEmployee?->id === $papeleta->employee_id;
-        $isAssignedBoss = $currentEmployee?->id === $papeleta->employee?->jefe_inmediato?->id;
+        // Puede ser el jefe esperado (elegido o, en filas legadas, por
+        // designación), o quien ya firmó realmente la etapa jefe — este
+        // último conserva acceso aunque la designación cambie después.
+        $isAssignedBoss = $papeleta->puedeSerAprobadaPor($currentEmployee)
+            || ($currentEmployee && $papeleta->aprobado_por_jefe === $currentEmployee->id);
         $isInstitutionalReviewer = in_array(Auth::user()->rol_id, ['ROL001', 'ROL009'], true);
 
         if (!$isOwner && !$isAssignedBoss && !$isInstitutionalReviewer) {
