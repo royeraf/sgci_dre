@@ -46,6 +46,21 @@ class DigitalCertificateController extends Controller
         ], 201);
     }
 
+    public function showMine(): JsonResponse
+    {
+        $dni = (string) auth()->user()?->dni;
+        if (!preg_match('/^\d{8}$/', $dni)) {
+            return response()->json(['certificate' => null]);
+        }
+
+        $certificate = DigitalCertificate::where('signer_dni', $dni)
+            ->where('is_active', true)
+            ->where('valid_to', '>', now())
+            ->first();
+
+        return response()->json(['certificate' => $this->publicData($certificate)]);
+    }
+
     public function storeMine(Request $request): JsonResponse
     {
         $dni = (string) auth()->user()?->dni;
@@ -83,8 +98,11 @@ class DigitalCertificateController extends Controller
         ], 201);
     }
 
-    private function publicData(DigitalCertificate $certificate): array
+    private function publicData(?DigitalCertificate $certificate): ?array
     {
+        if (!$certificate) {
+            return null;
+        }
         return [
             'id' => $certificate->id,
             'signer_dni' => $certificate->signer_dni,

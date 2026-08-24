@@ -50,6 +50,15 @@
                                     <Lock class="h-4 w-4 inline mr-2" />
                                     Cambiar Contraseña
                                 </button>
+                                <button @click="activeTab = 'certificate'" :class="[
+                                    'px-6 py-3 text-sm font-semibold transition-all duration-200 border-b-2',
+                                    activeTab === 'certificate'
+                                        ? 'border-blue-600 text-blue-600'
+                                        : 'border-transparent text-gray-500 hover:text-gray-700'
+                                ]">
+                                    <ShieldCheck class="h-4 w-4 inline mr-2" />
+                                    Certificado RENIEC
+                                </button>
                             </div>
                         </div>
 
@@ -205,6 +214,79 @@
                                     </div>
                                 </form>
                             </div>
+
+                            <!-- Certificado RENIEC Tab -->
+                            <div v-if="activeTab === 'certificate'" class="space-y-4">
+                                <div v-if="certificateLoading" class="text-center py-8 text-gray-400">
+                                    <svg class="animate-spin h-6 w-6 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                </div>
+
+                                <template v-else>
+                                    <div class="rounded-xl border p-4 flex items-start gap-3"
+                                        :class="registeredCertificate ? 'border-emerald-200 bg-emerald-50' : 'border-amber-200 bg-amber-50'">
+                                        <ShieldCheck class="h-6 w-6 mt-0.5 shrink-0" :class="registeredCertificate ? 'text-emerald-600' : 'text-amber-600'" />
+                                        <div>
+                                            <p class="font-bold" :class="registeredCertificate ? 'text-emerald-900' : 'text-amber-900'">
+                                                {{ registeredCertificate ? 'Certificado RENIEC vinculado' : 'Aún no ha vinculado su certificado RENIEC' }}
+                                            </p>
+                                            <p class="text-xs mt-0.5" :class="registeredCertificate ? 'text-emerald-700' : 'text-amber-700'">
+                                                {{ registeredCertificate ? `Vigente hasta ${formatCertDate(registeredCertificate.valid_to)}` : 'Es obligatorio para firmar y enviar documentos digitalmente (por ejemplo, papeletas de salida).' }}
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <form @submit.prevent="uploadCertificate" class="space-y-4">
+                                        <div>
+                                            <label class="block text-sm font-semibold text-gray-700 mb-2">Archivo .pfx o .p12</label>
+                                            <input ref="certificateFileInput" type="file" accept=".pfx,.p12" @change="handleCertificateFileChange"
+                                                class="block w-full text-sm border rounded-lg p-2"
+                                                :class="certificateErrors.pfx_file ? 'border-red-500' : 'border-gray-300'" />
+                                            <p v-if="certificateErrors.pfx_file" class="text-sm text-red-600 mt-1">{{ certificateErrors.pfx_file }}</p>
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-semibold text-gray-700 mb-2">Contraseña original del PFX</label>
+                                            <input v-model="pfxPassword" v-bind="pfxPasswordProps" type="password" autocomplete="off"
+                                                class="w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                                                :class="certificateErrors.pfx_password ? 'border-red-500' : 'border-gray-300'" />
+                                            <p v-if="certificateErrors.pfx_password" class="text-sm text-red-600 mt-1">{{ certificateErrors.pfx_password }}</p>
+                                        </div>
+                                        <div class="grid sm:grid-cols-2 gap-4">
+                                            <div>
+                                                <label class="block text-sm font-semibold text-gray-700 mb-2">Crear clave de firma</label>
+                                                <input v-model="signingPin" v-bind="signingPinProps" type="password" autocomplete="new-password"
+                                                    class="w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                                                    :class="certificateErrors.signing_pin ? 'border-red-500' : 'border-gray-300'" />
+                                                <p v-if="certificateErrors.signing_pin" class="text-sm text-red-600 mt-1">{{ certificateErrors.signing_pin }}</p>
+                                            </div>
+                                            <div>
+                                                <label class="block text-sm font-semibold text-gray-700 mb-2">Confirmar clave</label>
+                                                <input v-model="signingPinConfirmation" v-bind="signingPinConfirmationProps" type="password" autocomplete="new-password"
+                                                    class="w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                                                    :class="certificateErrors.signing_pin_confirmation ? 'border-red-500' : 'border-gray-300'" />
+                                                <p v-if="certificateErrors.signing_pin_confirmation" class="text-sm text-red-600 mt-1">{{ certificateErrors.signing_pin_confirmation }}</p>
+                                            </div>
+                                        </div>
+                                        <p class="text-xs text-gray-500">La nueva clave debe contener letras y números. Se solicitará en cada firma y no se almacena.</p>
+                                        <div>
+                                            <label class="flex items-start gap-2 rounded-lg border p-3 text-sm text-gray-700"
+                                                :class="certificateErrors.consent ? 'border-red-500 bg-red-50' : 'border-gray-200 bg-gray-50'">
+                                                <input v-model="consent" v-bind="consentProps" type="checkbox" class="mt-1 rounded border-gray-300" />
+                                                <span>Autorizo voluntariamente el uso de este certificado para firmar mis documentos. Confirmo que soy su titular y que conozco que cada firma requerirá mi clave personal.</span>
+                                            </label>
+                                            <p v-if="certificateErrors.consent" class="text-sm text-red-600 mt-1">{{ certificateErrors.consent }}</p>
+                                        </div>
+                                        <div class="flex justify-end gap-3 pt-2">
+                                            <button type="submit" :disabled="certificateUploading"
+                                                class="px-6 py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl">
+                                                {{ certificateUploading ? 'Validando...' : (registeredCertificate ? 'Renovar certificado' : 'Vincular certificado') }}
+                                            </button>
+                                        </div>
+                                    </form>
+                                </template>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -216,7 +298,11 @@
 <script setup>
 import { ref, watch } from 'vue';
 import { usePage, router } from '@inertiajs/vue3';
-import { X, User, Lock, Eye, EyeOff } from 'lucide-vue-next';
+import { useForm } from 'vee-validate';
+import { toTypedSchema } from '@vee-validate/yup';
+import * as yup from 'yup';
+import axios from 'axios';
+import { X, User, Lock, Eye, EyeOff, ShieldCheck } from 'lucide-vue-next';
 
 const props = defineProps({
     show: {
@@ -270,7 +356,12 @@ const closeModal = () => {
 const handleAfterLeave = () => {
     activeTab.value = 'info';
     resetPasswordForm();
+    resetCertificateFormState();
 };
+
+watch(() => props.show, (isOpen) => {
+    if (isOpen) fetchCertificate();
+});
 
 const resetPasswordForm = () => {
     passwordForm.value = {
@@ -283,6 +374,98 @@ const resetPasswordForm = () => {
     showNewPassword.value = false;
     showConfirmPassword.value = false;
 };
+
+// ===== Certificado RENIEC =====
+const registeredCertificate = ref(null);
+const certificateLoading = ref(false);
+const certificateUploading = ref(false);
+const certificateFileInput = ref(null);
+
+const MAX_PFX_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB, igual al límite del backend (10240 KB)
+const PFX_EXTENSIONS = ['pfx', 'p12'];
+
+const certificateSchema = toTypedSchema(yup.object({
+    pfx_file: yup.mixed()
+        .required('Seleccione el archivo .pfx o .p12.')
+        .test('extension', 'El archivo debe tener extensión .pfx o .p12.', (file) => {
+            if (!file) return false;
+            const ext = file.name?.split('.').pop()?.toLowerCase();
+            return PFX_EXTENSIONS.includes(ext);
+        })
+        .test('size', 'El archivo no debe superar los 10 MB.', (file) => !file || file.size <= MAX_PFX_SIZE_BYTES),
+    pfx_password: yup.string().required('Ingrese la contraseña original del PFX.'),
+    signing_pin: yup.string()
+        .required('Cree una clave de firma.')
+        .min(6, 'La clave debe tener al menos 6 caracteres.')
+        .max(20, 'La clave no debe superar los 20 caracteres.')
+        .matches(/^(?=.*[A-Za-z])(?=.*\d).+$/, 'La nueva clave debe contener letras y números.'),
+    signing_pin_confirmation: yup.string()
+        .required('Confirme la clave de firma.')
+        .oneOf([yup.ref('signing_pin')], 'La confirmación de la nueva clave no coincide.'),
+    consent: yup.boolean().oneOf([true], 'Debe autorizar el uso de su certificado.'),
+}));
+
+const {
+    errors: certificateErrors,
+    defineField: defineCertificateField,
+    handleSubmit: handleCertificateSubmit,
+    resetForm: resetCertificateForm,
+} = useForm({
+    validationSchema: certificateSchema,
+    initialValues: { pfx_file: null, pfx_password: '', signing_pin: '', signing_pin_confirmation: '', consent: false },
+});
+
+const [pfxFile] = defineCertificateField('pfx_file');
+const [pfxPassword, pfxPasswordProps] = defineCertificateField('pfx_password');
+const [signingPin, signingPinProps] = defineCertificateField('signing_pin');
+const [signingPinConfirmation, signingPinConfirmationProps] = defineCertificateField('signing_pin_confirmation');
+const [consent, consentProps] = defineCertificateField('consent');
+
+const handleCertificateFileChange = (e) => {
+    pfxFile.value = e.target.files?.[0] || null;
+};
+
+const formatCertDate = (date) => {
+    if (!date) return '-';
+    return new Date(date).toLocaleDateString('es-PE', { day: '2-digit', month: '2-digit', year: 'numeric' });
+};
+
+const fetchCertificate = async () => {
+    certificateLoading.value = true;
+    try {
+        const res = await axios.get('/profile/certificado');
+        registeredCertificate.value = res.data.certificate;
+    } finally {
+        certificateLoading.value = false;
+    }
+};
+
+const resetCertificateFormState = () => {
+    resetCertificateForm({ values: { pfx_file: null, pfx_password: '', signing_pin: '', signing_pin_confirmation: '', consent: false } });
+    if (certificateFileInput.value) certificateFileInput.value.value = '';
+};
+
+const uploadCertificate = handleCertificateSubmit(async (values) => {
+    certificateUploading.value = true;
+    const data = new FormData();
+    data.append('pfx_file', values.pfx_file);
+    data.append('pfx_password', values.pfx_password);
+    data.append('signing_pin', values.signing_pin);
+    data.append('signing_pin_confirmation', values.signing_pin_confirmation);
+    data.append('consent', values.consent ? '1' : '0');
+    try {
+        const response = await axios.post('/profile/certificado', data, { headers: { 'Content-Type': 'multipart/form-data' } });
+        registeredCertificate.value = response.data.certificate;
+        resetCertificateFormState();
+        window.Swal?.fire({ icon: 'success', title: 'Certificado vinculado', text: 'Ya puede firmar sus documentos con la nueva clave.' });
+    } catch (error) {
+        const serverErrors = error.response?.data?.errors;
+        const message = serverErrors ? Object.values(serverErrors).flat().join('\n') : (error.response?.data?.message || 'No se pudo registrar el certificado.');
+        window.Swal?.fire({ icon: 'error', title: 'Certificado no registrado', text: message });
+    } finally {
+        certificateUploading.value = false;
+    }
+});
 
 const submitPasswordChange = async () => {
     errors.value = {};

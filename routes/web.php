@@ -141,6 +141,8 @@ Route::middleware('auth')->group(function () {
 
     // Profile routes
     Route::post('/profile/password', [ProfileController::class, 'updatePassword'])->name('profile.password');
+    Route::get('/profile/certificado', [DigitalCertificateController::class, 'showMine'])->name('profile.certificate.show');
+    Route::post('/profile/certificado', [DigitalCertificateController::class, 'storeMine'])->name('profile.certificate.store');
     
     // Occurrences routes
     Route::middleware('role:ROL006,ROL007')->group(function () {
@@ -321,7 +323,6 @@ Route::middleware('auth')->group(function () {
         Route::get('/api/mis', [PapeletaAdminController::class, 'getMisPapeletas'])->name('mis');
         Route::post('/solicitar', [PapeletaAdminController::class, 'storeMiPapeleta'])->name('solicitar');
         Route::get('/api/posibles-jefes', [PapeletaAdminController::class, 'getPosiblesJefes'])->name('posibles-jefes');
-        Route::post('/mi-certificado', [DigitalCertificateController::class, 'storeMine'])->name('certificate.store');
 
         // Administración (Jefe + RRHH)
         Route::get('/api/pendientes', [PapeletaAdminController::class, 'getPendientes'])->name('pendientes');
