@@ -118,7 +118,8 @@
             <tr style="border: none;">
                 <td style="width: 20%; border: none; text-align: center;">
                     @php
-                        $logoPath = public_path('images/logo.png');
+                        // Copia reducida dedicada a los PDF (se muestra a 50px).
+                        $logoPath = public_path('images/pdf/logo-papeleta.png');
                         $logoData = file_exists($logoPath) ? base64_encode(file_get_contents($logoPath)) : null;
                     @endphp
                     @if($logoData)

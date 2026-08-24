@@ -8,6 +8,7 @@ use App\Services\PapeletaExecutionPdfService;
 use App\Services\ReniecService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Inertia\Inertia;
 
 class PapeletaQrControlController extends Controller
 {
@@ -22,7 +23,22 @@ class PapeletaQrControlController extends Controller
 
     public function show(string $token)
     {
-        return view('papeletas.qr-control', ['papeleta' => $this->papeleta($token), 'token' => $token]);
+        $papeleta = $this->papeleta($token);
+
+        return Inertia::render('Papeletas/QrControl', [
+            'token' => $token,
+            'papeleta' => [
+                'numero_papeleta' => $papeleta->numero_papeleta,
+                'empleado_nombre' => $papeleta->employee?->full_name,
+                'motivo_nombre' => $papeleta->reason?->nombre,
+                'motivo_tipo' => $papeleta->reason?->tipo,
+                'salida_real_at' => $papeleta->salida_real_at?->format('d/m/Y H:i'),
+                'retorno_real_at' => $papeleta->retorno_real_at?->format('d/m/Y H:i'),
+                'destino_firmado_at' => $papeleta->destino_firmado_at?->format('d/m/Y H:i'),
+                'destino_firmante_nombre' => $papeleta->destino_firmante_nombre,
+                'destino_firmante_cargo' => $papeleta->destino_firmante_cargo,
+            ],
+        ]);
     }
 
     /** Public, token-scoped DNI lookup used only by the destination QR screen. */

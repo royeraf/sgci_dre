@@ -139,6 +139,8 @@ class PapeletaAdminController extends Controller
             'motivo_salida.required'        => 'Seleccione el motivo de salida.',
             'jefe_asignado_id.required'     => 'Seleccione al jefe que aprobará esta papeleta.',
             'jefe_asignado_id.exists'       => 'El jefe seleccionado no está activo.',
+            'signing_pin.required'          => 'Ingrese su clave de firma.',
+            'signing_pin.min'               => 'La clave de firma debe tener al menos 6 caracteres.',
         ]);
 
         if ($validated['jefe_asignado_id'] === $employee->id) {
@@ -334,7 +336,13 @@ class PapeletaAdminController extends Controller
      */
     public function aprobar(Request $request, string $papeletaId)
     {
-        $validated = $request->validate(['signing_pin' => 'required|string|min:6|max:20']);
+        $validated = $request->validate([
+            'signing_pin' => 'required|string|min:6|max:20',
+        ], [
+            'signing_pin.required' => 'Ingrese su clave de firma.',
+            'signing_pin.min'      => 'La clave de firma debe tener al menos 6 caracteres.',
+            'signing_pin.max'      => 'La clave de firma no debe superar los 20 caracteres.',
+        ]);
         $papeleta = PapeletaRequest::findOrFail($papeletaId);
         $employee = $this->getEmployee();
 

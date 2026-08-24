@@ -52,8 +52,10 @@
 </head>
 <body>
     @php
-        $logoPath = public_path('images/logo.png');
-        $goreLogoPath = public_path('images/logo-goreh.png');
+        // Copias reducidas dedicadas a este PDF (los originales en
+        // public/images/ se usan a tamaño completo en el resto de la app).
+        $logoPath = public_path('images/pdf/logo-papeleta.png');
+        $goreLogoPath = public_path('images/pdf/logo-goreh-papeleta.png');
         // DomPDF needs GD to decode embedded PNGs. On environments without GD
         // (for example a developer machine) the official logo is omitted only
         // from the preview instead of preventing the PDF from being generated.

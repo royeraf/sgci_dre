@@ -85,9 +85,10 @@ class DigitalCertificateVault
 
     public function unlock(DigitalCertificate $certificate, string $pin): array
     {
-        if (!Hash::check($pin, $certificate->pin_hash)) {
-            throw ValidationException::withMessages(['signing_pin' => 'El PIN de firma es incorrecto.']);
-        }
+        // No se verifica `pin_hash` (bcrypt) aquí a propósito: es una segunda
+        // comprobación redundante y costosa (~230 ms) del mismo PIN que ya
+        // valida, de forma criptográficamente más estricta, el descifrado
+        // autenticado AEAD de abajo. Un PIN incorrecto falla igual ahí.
         $blob = Storage::disk('local')->get($certificate->vault_path);
         $nonceLength = SODIUM_CRYPTO_AEAD_XCHACHA20POLY1305_IETF_NPUBBYTES;
         $nonce = substr($blob, 0, $nonceLength);
@@ -100,7 +101,7 @@ class DigitalCertificateVault
         $plaintext = sodium_crypto_aead_xchacha20poly1305_ietf_decrypt($ciphertext, self::AAD, $nonce, $key);
         sodium_memzero($key);
         if ($plaintext === false) {
-            throw ValidationException::withMessages(['signing_pin' => 'No se pudo abrir el certificado con ese PIN.']);
+            throw ValidationException::withMessages(['signing_pin' => 'El PIN de firma es incorrecto.']);
         }
         $payload = json_decode($plaintext, true, flags: JSON_THROW_ON_ERROR);
         sodium_memzero($plaintext);

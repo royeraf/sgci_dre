@@ -106,7 +106,7 @@ class PapeletaRequestSigningService
                 'signed_at' => now(),
             ]);
 
-            return $signature->fresh();
+            return $signature;
         } catch (\Throwable $exception) {
             $signature->delete();
             throw $exception;
