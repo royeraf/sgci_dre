@@ -5,11 +5,11 @@ export function useCommissionApproval() {
     const processing = ref(false);
     const error = ref<string | null>(null);
 
-    const autorizar = async (commissionId: string, comentario: string = '') => {
+    const autorizar = async (commissionId: string, comentario: string = '', signingPin: string = '') => {
         processing.value = true;
         error.value = null;
         try {
-            const { data } = await axios.patch(`/vehicles/commissions/${commissionId}/authorize`, { comentario });
+            const { data } = await axios.patch(`/vehicles/commissions/${commissionId}/authorize`, { comentario, signing_pin: signingPin });
             return data;
         } catch (err: any) {
             error.value = err.response?.data?.message || 'Error al autorizar la salida vehicular';
@@ -33,11 +33,11 @@ export function useCommissionApproval() {
         }
     };
 
-    const confirmar = async (commissionId: string) => {
+    const confirmar = async (commissionId: string, signingPin: string = '') => {
         processing.value = true;
         error.value = null;
         try {
-            const { data } = await axios.patch(`/vehicles/commissions/${commissionId}/confirm-conductor`, {});
+            const { data } = await axios.patch(`/vehicles/commissions/${commissionId}/confirm-conductor`, { signing_pin: signingPin });
             return data;
         } catch (err: any) {
             error.value = err.response?.data?.message || 'Error al confirmar la salida';

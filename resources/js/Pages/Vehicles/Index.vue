@@ -212,7 +212,7 @@
                                                 <td class="px-3 py-3 whitespace-nowrap">
                                                     <span class="px-2.5 py-0.5 text-[10px] font-bold rounded-full inline-block"
                                                         :class="getStatusClass(commission.estado)">
-                                                        {{ commission.estado }}
+                                                        {{ getStatusLabel(commission.estado) }}
                                                     </span>
                                                 </td>
                                                 <td class="px-3 py-3 whitespace-nowrap text-xs font-medium">
@@ -232,7 +232,7 @@
                                                             <Pencil class="w-3.5 h-3.5" />
                                                             Gestionar
                                                         </button>
-                                                        <button v-if="commission.can_authorize" @click="handleAuthorize(commission)"
+                                                        <button v-if="commission.can_authorize" @click="openSigningModal('autorizar', commission)"
                                                             :disabled="approvalProcessing"
                                                             class="cursor-pointer text-indigo-600 hover:text-indigo-900 bg-indigo-50 hover:bg-indigo-100 px-2 py-1 rounded-xl font-bold transition-all flex items-center gap-1 text-xs whitespace-nowrap disabled:opacity-50">
                                                             <CheckCircle class="w-3.5 h-3.5" />
@@ -244,11 +244,21 @@
                                                             <XCircle class="w-3.5 h-3.5" />
                                                             Rechazar
                                                         </button>
-                                                        <button v-if="commission.can_confirm" @click="handleConfirmConductor(commission)"
+                                                        <button v-if="commission.can_confirm" @click="openSigningModal('confirmar', commission)"
                                                             :disabled="approvalProcessing"
                                                             class="cursor-pointer text-cyan-600 hover:text-cyan-900 bg-cyan-50 hover:bg-cyan-100 px-2 py-1 rounded-xl font-bold transition-all flex items-center gap-1 text-xs whitespace-nowrap disabled:opacity-50">
                                                             <CheckCircle class="w-3.5 h-3.5" />
                                                             Confirmar
+                                                        </button>
+                                                        <button v-if="commission.estado === 'CONFIRMADA'" @click="openControlModal(commission)"
+                                                            class="cursor-pointer text-blue-600 hover:text-blue-900 bg-blue-50 hover:bg-blue-100 px-2 py-1 rounded-xl font-bold transition-all flex items-center gap-1 text-xs whitespace-nowrap">
+                                                            <Truck class="w-3.5 h-3.5" />
+                                                            Registrar Salida
+                                                        </button>
+                                                        <button v-if="commission.estado === 'EN_COMISION'" @click="openControlModal(commission)"
+                                                            class="cursor-pointer text-emerald-600 hover:text-emerald-900 bg-emerald-50 hover:bg-emerald-100 px-2 py-1 rounded-xl font-bold transition-all flex items-center gap-1 text-xs whitespace-nowrap">
+                                                            <Truck class="w-3.5 h-3.5" />
+                                                            Registrar Retorno
                                                         </button>
                                                     </div>
                                                 </td>
@@ -711,6 +721,13 @@
             <DriverLicenseModal v-if="showDriverLicenseModal" :driver="selectedDriver"
                 @close="showDriverLicenseModal = false" @saved="onDriverLicenseSaved" />
 
+            <CommissionSigningModal v-if="showSigningModal" ref="signingModalRef" :mode="signingMode"
+                :commission="signingTargetCommission" :processing="approvalProcessing"
+                @close="showSigningModal = false" @submit="handleSigningSubmit" />
+
+            <CommissionControlModal v-if="showControlModal" :commission="controlTargetCommission"
+                @close="showControlModal = false" @saved="onControlSaved" />
+
             <!-- Reject commission modal -->
             <Teleport to="body">
                 <div v-if="showRejectModal" class="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -755,11 +772,13 @@ export default { layout: MainLayout }
 <script setup>
 import { ref, computed, onMounted, nextTick, watch } from 'vue';
 import { useTabPermission } from '@/composables/useTabPermission';
-import { ArrowLeft, Plus, FilePlus, MapPin, Car, Wrench, FileText, Settings, Search, Printer, Pencil, Calendar, Clock, Eye, SlidersHorizontal, ChevronDown, CheckCircle, XCircle, Loader2, IdCard } from 'lucide-vue-next';
+import { ArrowLeft, Plus, FilePlus, MapPin, Car, Wrench, FileText, Settings, Search, Printer, Pencil, Calendar, Clock, Eye, SlidersHorizontal, ChevronDown, CheckCircle, XCircle, Loader2, IdCard, Truck } from 'lucide-vue-next';
 import BaseTableCard from '@/Components/Common/BaseTableCard.vue';
 import VehicleModal from '@/Components/Vehicles/Inventory/VehicleModal.vue';
 import CommissionModal from '@/Components/Vehicles/Commissions/CommissionModal.vue';
 import CommissionDetailModal from '@/Components/Vehicles/Commissions/CommissionDetailModal.vue';
+import CommissionSigningModal from '@/Components/Vehicles/Commissions/CommissionSigningModal.vue';
+import CommissionControlModal from '@/Components/Vehicles/Commissions/CommissionControlModal.vue';
 import MaintenanceModal from '@/Components/Vehicles/Maintenance/MaintenanceModal.vue';
 import HandoverModal from '@/Components/Vehicles/Handovers/HandoverModal.vue';
 import ServiceReqModal from '@/Components/Vehicles/ServiceRequirements/ServiceReqModal.vue';
@@ -1058,6 +1077,33 @@ const getStatusClass = (estado) => {
     }
 };
 
+const getStatusLabel = (estado) => {
+    switch (estado) {
+        case 'PENDIENTE': return 'Pendiente';
+        case 'AUTORIZADA': return 'Autorizada';
+        case 'CONFIRMADA': return 'Confirmada';
+        case 'EN_COMISION': return 'En Comisión';
+        case 'COMPLETADA': return 'Completada';
+        case 'RECHAZADA': return 'Rechazada';
+        case 'CANCELADA': return 'Cancelada';
+        default: return estado;
+    }
+};
+
+// Control de salida/retorno (Components/Vehicles/Commissions/CommissionControlModal.vue).
+const showControlModal = ref(false);
+const controlTargetCommission = ref(null);
+
+const openControlModal = (commission) => {
+    controlTargetCommission.value = commission;
+    showControlModal.value = true;
+};
+
+const onControlSaved = () => {
+    showControlModal.value = false;
+    fetchCommissions();
+};
+
 // Autorización de salida vehicular
 const { processing: approvalProcessing, autorizar, rechazar, confirmar } = useCommissionApproval();
 const { openPdf } = usePdfViewer();
@@ -1066,12 +1112,35 @@ const rejectTargetCommission = ref(null);
 const rejectComentario = ref('');
 const rejectError = ref('');
 
-const handleAuthorize = async (commission) => {
+// Modal único "Autorizar / Confirmar" (Components/Vehicles/Commissions/CommissionSigningModal.vue).
+const showSigningModal = ref(false);
+const signingMode = ref('autorizar');
+const signingTargetCommission = ref(null);
+const signingModalRef = ref(null);
+
+const openSigningModal = (mode, commission) => {
+    signingMode.value = mode;
+    signingTargetCommission.value = commission;
+    showSigningModal.value = true;
+};
+
+const handleSigningSubmit = async (values) => {
     try {
-        await autorizar(commission.id);
+        if (signingMode.value === 'autorizar') {
+            await autorizar(signingTargetCommission.value.id, values.comentario, values.signing_pin);
+        } else {
+            await confirmar(signingTargetCommission.value.id, values.signing_pin);
+        }
+        showSigningModal.value = false;
         await fetchCommissions();
     } catch (e) {
-        alert(e.response?.data?.message || 'Error al autorizar la salida vehicular');
+        const errors = e.response?.data?.errors;
+        if (errors?.signing_pin) {
+            signingModalRef.value?.setFieldError('signing_pin', Array.isArray(errors.signing_pin) ? errors.signing_pin[0] : errors.signing_pin);
+            return;
+        }
+        const message = errors ? Object.values(errors).flat().join('\n') : (e.response?.data?.message || 'No se pudo firmar la acción.');
+        alert(message);
     }
 };
 
@@ -1093,15 +1162,6 @@ const handleReject = async () => {
         await fetchCommissions();
     } catch (e) {
         rejectError.value = e.response?.data?.message || 'Error al rechazar la salida vehicular';
-    }
-};
-
-const handleConfirmConductor = async (commission) => {
-    try {
-        await confirmar(commission.id);
-        await fetchCommissions();
-    } catch (e) {
-        alert(e.response?.data?.message || 'Error al confirmar la salida');
     }
 };
 

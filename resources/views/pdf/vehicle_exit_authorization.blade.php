@@ -52,8 +52,9 @@
         .signature-area { margin-top: 26px; }
         .signature-area td {
             border: none;
-            padding-top: 18px;
+            padding-top: 50px;
             text-align: center;
+            vertical-align: top;
             width: 33.33%;
         }
         .signature-line {
@@ -137,7 +138,7 @@
         <tr>
             <td style="width: 50%;">
                 <span class="field-label">Hora de Salida:</span>
-                <span class="field-value" style="width: 40%;">{{ substr($commission->hora_salida ?? $commission->hora ?? '', 0, 5) }}</span>
+                <span class="field-value" style="width: 40%;">{{ ($reservingFields ?? false) ? '' : substr($commission->hora_salida ?? $commission->hora ?? '', 0, 5) }}</span>
             </td>
             <td style="width: 50%;">
                 <span class="field-label">Hora de retorno:</span>
@@ -157,11 +158,15 @@
         <tr>
             <td>
                 <span class="field-label">Combustible:</span>
-                <span class="field-value" style="width: 40%;">{{ $commission->combustible ?? '' }}</span>
+                <span class="field-value" style="width: 40%;">{{ ($reservingFields ?? false) ? '' : ($commission->combustible ?? '') }}</span>
             </td>
             <td>
                 <span class="field-label">P/Nº:</span>
-                <span class="field-value" style="width: 40%;">{{ $commission->pnro ?? '' }}</span>
+                {{-- Monoespaciada a propósito: es el único de estos valores que
+                     se pinta directo por HTML (la placa ya se conoce desde el
+                     inicio), pero debe verse igual que sus vecinos rellenados
+                     después vía campo reservado (todos en fuente Courier). --}}
+                <span class="field-value" style="width: 40%; font-family: 'Courier New', Courier, monospace;">{{ $commission->vehicle?->placa ?? '' }}</span>
             </td>
         </tr>
         <tr>
@@ -182,16 +187,17 @@
             <td>
                 <span class="signature-line"></span>
                 <span class="signature-label">Servidor o funcionario que solicita</span>
+                @if($commission->solicitante_nombre)
+                    <br><span style="font-size: 8px;">{{ $commission->solicitante_nombre }}</span>
+                    <br><span style="font-size: 8px;">DNI: {{ $commission->solicitanteEmployee?->dni ?? '-' }}</span>
+                @endif
             </td>
             <td>
                 <span class="signature-line"></span>
                 <span class="signature-label">Funcionario que autoriza</span>
-                @if($commission->autorizado_por_nombre)
-                    <br><span style="font-size: 8px;">{{ $commission->autorizado_por_nombre }}</span>
-                    @if($commission->fecha_autorizacion)
-                        <br><span style="font-size: 8px;">{{ $commission->fecha_autorizacion->format('d/m/Y H:i') }}</span>
-                    @endif
-                @endif
+                {{-- El nombre y DNI del autorizador se llenan después, como
+                     campo reservado: al renderizar esta página por primera
+                     vez (para la firma del SOLICITANTE) todavía no existen. --}}
             </td>
             <td>
                 <span class="signature-line"></span>

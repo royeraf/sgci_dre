@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\ResolvesDigitalCertificate;
+use App\Models\DigitalCertificate;
 use App\Models\Vehicle;
 use App\Models\VehicleCommission;
 use App\Models\VehicleMaintenance;
@@ -9,14 +11,25 @@ use App\Models\VehicleHandover;
 use App\Models\VehicleServiceRequirement;
 use App\Models\Employee;
 use App\Models\DriverLicense;
+use App\Services\VehicleCommissionExecutionPdfService;
+use App\Services\VehicleCommissionSigningService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Carbon\Carbon;
 use Barryvdh\DomPDF\Facade\Pdf;
 
 class VehicleController extends Controller
 {
+    use ResolvesDigitalCertificate;
+
+    public function __construct(
+        private readonly VehicleCommissionSigningService $signingService,
+        private readonly VehicleCommissionExecutionPdfService $executionPdf,
+    ) {
+    }
+
     /**
      * Empleados activos, con datos de persona completos. Base compartida por
      * driversQuery() y getEmployees().
@@ -94,6 +107,7 @@ class VehicleController extends Controller
                 ->get()->map(fn ($emp) => $this->mapDriver($emp))->sortBy('nombre_completo')->values(),
             'canAuthorize' => $user->puedeAutorizarSalidaVehicular(),
             'currentEmployeeId' => $user->employee?->id,
+            'certificate' => $this->certificatePublicData(DigitalCertificate::activeForDni($user->employee?->dni)),
         ]);
     }
 
@@ -202,13 +216,29 @@ class VehicleController extends Controller
         $canAuthorize = $user->puedeAutorizarSalidaVehicular();
         $currentEmployeeId = $user->employee?->id;
 
-        $commissions = VehicleCommission::with([
-                'vehicle',
-                'solicitanteEmployee.person',
-                'conductorEmployee.person',
-                'autorizadorEmployee.person',
-                'passengers.person',
-            ])
+        $query = VehicleCommission::with([
+            'vehicle',
+            'solicitanteEmployee.person',
+            'conductorEmployee.person',
+            'autorizadorEmployee.person',
+            'passengers.person',
+            'signatures',
+        ]);
+
+        // Quien no tiene permiso de autorizar solo ve lo suyo: lo que
+        // solicitó, o lo que le toca conducir (para poder confirmarlo).
+        // Quien autoriza necesita ver todas las solicitudes de la entidad.
+        if (!$canAuthorize) {
+            if (!$currentEmployeeId) {
+                return response()->json([]);
+            }
+            $query->where(function ($q) use ($currentEmployeeId) {
+                $q->where('solicitante_employee_id', $currentEmployeeId)
+                    ->orWhere('conductor_employee_id', $currentEmployeeId);
+            });
+        }
+
+        $commissions = $query
             ->orderBy('dia', 'desc')
             ->orderBy('hora', 'desc')
             ->get()
@@ -234,6 +264,11 @@ class VehicleController extends Controller
                     'placa' => $commission->vehicle?->placa ?? 'N/A',
                     'marca' => $commission->vehicle?->marca ?? '',
                     'modelo' => $commission->vehicle?->modelo ?? '',
+                    // Datos del inventario del vehículo: sirven como valor por
+                    // defecto al registrar salida/retorno, para no volver a
+                    // pedir un dato que el sistema ya tiene.
+                    'vehicle_combustible' => $commission->vehicle?->combustible,
+                    'vehicle_kilometraje' => $commission->vehicle?->kilometraje,
                     'conductor_employee_id' => $commission->conductor_employee_id,
                     'conductor' => $commission->conductor_nombre,
                     'autorizado_por' => $commission->autorizado_por,
@@ -249,9 +284,12 @@ class VehicleController extends Controller
                     'km_retorno' => $commission->km_retorno,
                     'total_km_recorrido' => $commission->total_km_recorrido,
                     'combustible' => $commission->combustible,
-                    'pnro' => $commission->pnro,
                     'estado' => $commission->estado,
                     'created_at' => $commission->created_at->format('Y-m-d H:i:s'),
+                    'firmed_roles' => $commission->signatures
+                        ->filter(fn ($s) => $s->signed_document_path !== 'pending')
+                        ->pluck('signer_role')
+                        ->values(),
                     'can_authorize' => $canAuthorize && $commission->necesitaAutorizacion(),
                     'can_confirm' => $currentEmployeeId
                         && $currentEmployeeId === $commission->conductor_employee_id
@@ -267,9 +305,9 @@ class VehicleController extends Controller
      */
     public function storeCommission(Request $request)
     {
-        $solicitanteEmployeeId = Auth::user()->employee?->id;
+        $solicitante = Auth::user()->employee;
 
-        if (!$solicitanteEmployeeId) {
+        if (!$solicitante) {
             return response()->json([
                 'message' => 'Su usuario no está vinculado a un empleado y no puede solicitar una salida vehicular.',
             ], 422);
@@ -287,19 +325,47 @@ class VehicleController extends Controller
             'vehicle_id' => 'nullable|uuid|exists:vehicles,id',
             'conductor_employee_id' => 'required|uuid|exists:employees,id',
             'combustible' => 'nullable|string|in:Gasolina,Diesel,GLP,GNV',
-            'pnro' => 'nullable|string|max:100',
+            'signing_pin' => 'required|string|min:6|max:20',
+        ], [
+            'signing_pin.required' => 'Ingrese su clave de firma.',
+            'signing_pin.min' => 'La clave de firma debe tener al menos 6 caracteres.',
         ]);
+
+        $certificate = $this->requiredCertificate($solicitante);
+        $signingPin = $validated['signing_pin'];
+        unset($validated['signing_pin']);
 
         $pasajeroIds = $validated['pasajero_ids'] ?? [];
         unset($validated['pasajero_ids']);
 
-        $validated['solicitante_employee_id'] = $solicitanteEmployeeId;
+        $validated['solicitante_employee_id'] = $solicitante->id;
         $validated['estado'] = 'PENDIENTE';
         $validated['anio'] = (int) date('Y', strtotime($validated['dia']));
         $validated['numero'] = VehicleCommission::nextNumero($validated['anio']);
 
+        // El combustible parte del que ya tiene registrado el vehículo en
+        // Inventario; el solicitante no debería tener que volver a indicarlo
+        // (y "Gestionar" ya no lo pide al crear, solo al editar).
+        if (empty($validated['combustible']) && !empty($validated['vehicle_id'])) {
+            $validated['combustible'] = Vehicle::find($validated['vehicle_id'])?->combustible;
+        }
+
         $commission = VehicleCommission::create($validated);
         $commission->passengers()->sync($pasajeroIds);
+
+        try {
+            $this->signingService->sign($commission, $solicitante, 'SOLICITANTE', $certificate, $signingPin);
+        } catch (\Throwable $exception) {
+            $commission->passengers()->detach();
+            $commission->delete();
+            throw $exception;
+        }
+
+        // Inyecta ese combustible heredado en el PDF recién firmado, sin
+        // esperar a que alguien lo vuelva a guardar a mano desde "Gestionar".
+        if ($commission->combustible) {
+            $this->executionPdf->refresh($commission->fresh());
+        }
 
         return response()->json([
             'message' => 'Autorización de salida registrada correctamente',
@@ -351,7 +417,6 @@ class VehicleController extends Controller
                 }
             ],
             'combustible' => 'nullable|string|in:Gasolina,Diesel,GLP,GNV',
-            'pnro' => 'nullable|string|max:100',
             // Solo la cancelación se hace por esta vía; autorizar/rechazar/confirmar
             // tienen sus propios endpoints para no saltarse el flujo de aprobación.
             'estado' => 'nullable|string|in:CANCELADA',
@@ -380,15 +445,32 @@ class VehicleController extends Controller
         $pasajeroIds = $validated['pasajero_ids'] ?? [];
         unset($validated['pasajero_ids']);
 
+        // These fields are only known after all 3 signatures are already
+        // done (the driver confirms before the trip can even start), so
+        // they never make it into the signed PDF's original render. They
+        // must be injected into fields reserved for this before signing.
+        $executionFields = ['hora_salida', 'hora_regreso', 'km_salida', 'km_retorno', 'combustible'];
+        $touchesExecutionData = (bool) array_intersect($executionFields, array_keys($validated));
+
         $commission->update($validated);
 
         if ($pasajeroIdsProvided) {
             $commission->passengers()->sync($pasajeroIds);
         }
 
+        // The vehicle's own odometer stays current for the next trip's
+        // default, instead of only living inside this one commission.
+        if (!empty($validated['km_retorno']) && $commission->vehicle_id) {
+            $commission->vehicle()->update(['kilometraje' => (string) $validated['km_retorno']]);
+        }
+
+        if ($touchesExecutionData) {
+            $this->executionPdf->refresh($commission->fresh());
+        }
+
         return response()->json([
             'message' => 'Autorización de salida actualizada correctamente',
-            'commission' => $commission
+            'commission' => $commission->fresh()
         ]);
     }
 
@@ -401,18 +483,39 @@ class VehicleController extends Controller
             return response()->json(['message' => 'No tiene permisos para autorizar salidas vehiculares.'], 403);
         }
 
+        $autorizador = Auth::user()->employee;
+        if (!$autorizador) {
+            return response()->json(['message' => 'Su usuario no está vinculado a un empleado.'], 422);
+        }
+
+        $validated = $request->validate([
+            'comentario' => 'nullable|string|max:500',
+            'signing_pin' => 'required|string|min:6|max:20',
+        ], [
+            'signing_pin.required' => 'Ingrese su clave de firma.',
+            'signing_pin.min' => 'La clave de firma debe tener al menos 6 caracteres.',
+        ]);
+
         $commission = VehicleCommission::findOrFail($id);
 
         if (!$commission->necesitaAutorizacion()) {
             return response()->json(['message' => 'La solicitud ya fue procesada.'], 422);
         }
 
+        $certificate = $this->requiredCertificate($autorizador);
+        $this->signingService->sign($commission, $autorizador, 'AUTORIZADOR', $certificate, $validated['signing_pin']);
+
         $commission->update([
             'estado' => 'AUTORIZADA',
-            'autorizado_por' => Auth::user()->employee?->id,
+            'autorizado_por' => $autorizador->id,
             'fecha_autorizacion' => now(),
-            'comentario_autorizacion' => $request->input('comentario'),
+            'comentario_autorizacion' => $validated['comentario'] ?? null,
         ]);
+
+        // El nombre y DNI de quien autoriza recién se conocen en este
+        // instante (la página se renderizó una sola vez, para la firma del
+        // solicitante); se inyectan ahora en el campo reservado para eso.
+        $this->executionPdf->refresh($commission->fresh());
 
         return response()->json([
             'message' => 'Salida vehicular autorizada correctamente.',
@@ -457,18 +560,28 @@ class VehicleController extends Controller
     /**
      * Driver confirmation of an authorized commission (Autorización Salida de Vehículos).
      */
-    public function confirmCommissionByConductor(string $id)
+    public function confirmCommissionByConductor(Request $request, string $id)
     {
         $commission = VehicleCommission::findOrFail($id);
-        $employeeId = Auth::user()->employee?->id;
+        $conductor = Auth::user()->employee;
 
-        if (!$employeeId || $employeeId !== $commission->conductor_employee_id) {
+        if (!$conductor || $conductor->id !== $commission->conductor_employee_id) {
             return response()->json(['message' => 'Solo el conductor asignado puede confirmar esta salida.'], 403);
         }
 
         if (!$commission->necesitaConfirmacionConductor()) {
             return response()->json(['message' => 'La solicitud no está pendiente de confirmación del conductor.'], 422);
         }
+
+        $validated = $request->validate([
+            'signing_pin' => 'required|string|min:6|max:20',
+        ], [
+            'signing_pin.required' => 'Ingrese su clave de firma.',
+            'signing_pin.min' => 'La clave de firma debe tener al menos 6 caracteres.',
+        ]);
+
+        $certificate = $this->requiredCertificate($conductor);
+        $this->signingService->sign($commission, $conductor, 'CONDUCTOR', $certificate, $validated['signing_pin']);
 
         $commission->update([
             'estado' => 'CONFIRMADA',
@@ -486,13 +599,28 @@ class VehicleController extends Controller
      */
     public function commissionPdf(string $id)
     {
-        $commission = VehicleCommission::with(['vehicle', 'solicitanteEmployee.person', 'conductorEmployee.person', 'conductorEmployee.driverLicense', 'autorizadorEmployee.person'])->findOrFail($id);
+        $commission = VehicleCommission::with(['vehicle', 'solicitanteEmployee.person', 'conductorEmployee.person', 'conductorEmployee.driverLicense', 'autorizadorEmployee.person', 'signatures'])->findOrFail($id);
+
+        $filename = "autorizacion_salida_{$commission->numero}_{$commission->anio}.pdf";
+
+        // Whichever revision is genuinely the newest — a signature or an
+        // executed (departure/return data filled) revision — is the most
+        // complete document. Once any signer has completed a PAdES
+        // signature, only ever serve a signed binary — re-rendering a
+        // preview would lose its ByteRange and make a PDF reader correctly
+        // report it as unsigned.
+        if ($latest = $commission->latestDocumentPath()) {
+            return response()->file(Storage::disk('local')->path($latest), [
+                'Content-Type' => 'application/pdf',
+                'Content-Disposition' => 'inline; filename="'.$filename.'"',
+            ]);
+        }
 
         $pdf = Pdf::loadView('pdf.vehicle_exit_authorization', [
             'commission' => $commission,
         ]);
 
-        return $pdf->stream("autorizacion_salida_{$commission->numero}_{$commission->anio}.pdf");
+        return $pdf->stream($filename);
     }
 
     // ========================================

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\ResolvesDigitalCertificate;
 use App\Models\Employee;
 use App\Models\EntryExitReason;
 use App\Models\DigitalCertificate;
@@ -20,6 +21,8 @@ use Endroid\QrCode\Writer\SvgWriter;
 
 class PapeletaAdminController extends Controller
 {
+    use ResolvesDigitalCertificate;
+
     public function __construct(private readonly PapeletaRequestSigningService $signingService)
     {
     }
@@ -86,7 +89,7 @@ class PapeletaAdminController extends Controller
             'userRole'   => $user->rol_id,
             'myEmployee' => $employee,
             'reasons'    => EntryExitReason::active()->get(['id', 'nombre', 'tipo']),
-            'certificate' => $this->certificatePublicData($this->certificateForDni($employee?->dni)),
+            'certificate' => $this->certificatePublicData(DigitalCertificate::activeForDni($employee?->dni)),
             // Acceso a la bandeja de jefe: está designado en Direcciones/
             // Oficinas O fue elegido a mano en alguna papeleta puntual.
             'puedeAprobarComoJefe' => $employee?->participaEnEtapaJefe() ?? false,
@@ -563,35 +566,6 @@ class PapeletaAdminController extends Controller
         abort_unless($employee?->id === $papeleta->employee_id || in_array(Auth::user()->rol_id, ['ROL001', 'ROL009', 'ROL011'], true), 403);
         return Pdf::loadView('pdf.papeleta_qr_constancia', compact('papeleta'))->setPaper('a5', 'portrait')
             ->stream('constancia_qr_papeleta_'.$papeleta->numero_papeleta.'.pdf');
-    }
-
-    private function certificateForDni(?string $dni): ?DigitalCertificate
-    {
-        if (!$dni) return null;
-        return DigitalCertificate::where('signer_dni', $dni)
-            ->where('is_active', true)
-            ->where('valid_to', '>', now())
-            ->first();
-    }
-
-    private function requiredCertificate(Employee $employee): DigitalCertificate
-    {
-        $certificate = $this->certificateForDni($employee->dni);
-        if (!$certificate) {
-            throw ValidationException::withMessages(['certificate' => 'Primero debe registrar su certificado RENIEC (.pfx) en su cuenta.']);
-        }
-        return $certificate;
-    }
-
-    private function certificatePublicData(?DigitalCertificate $certificate): ?array
-    {
-        if (!$certificate) return null;
-        return [
-            'id' => $certificate->id,
-            'subject' => $certificate->certificate_subject,
-            'thumbprint' => $certificate->certificate_thumbprint,
-            'valid_to' => $certificate->valid_to?->toIso8601String(),
-        ];
     }
 
     /**

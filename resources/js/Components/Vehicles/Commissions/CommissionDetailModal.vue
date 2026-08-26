@@ -92,7 +92,7 @@
                                 <span class="block text-xs font-semibold text-slate-400 uppercase">Estado</span>
                                 <span class="inline-block px-3 py-1 text-xs font-bold rounded-full mt-1"
                                     :class="getStatusClass(commission.estado)">
-                                    {{ commission.estado }}
+                                    {{ getStatusLabel(commission.estado) }}
                                 </span>
                             </div>
 
@@ -184,8 +184,8 @@
                                 <span class="text-sm font-bold text-slate-800 mt-0.5 block">{{ commission.combustible || 'No registrado' }}</span>
                             </div>
                             <div>
-                                <span class="block text-xs font-semibold text-blue-600 uppercase">P/Nº</span>
-                                <span class="text-sm font-bold text-slate-800 mt-0.5 block">{{ commission.pnro || '--' }}</span>
+                                <span class="block text-xs font-semibold text-blue-600 uppercase">P/Nº (Placa)</span>
+                                <span class="text-sm font-bold text-slate-800 mt-0.5 block">{{ commission.placa || '--' }}</span>
                             </div>
                             
                             <div class="col-span-2 bg-blue-100/60 border border-blue-200 rounded-xl p-3 flex justify-between items-center">
@@ -294,6 +294,19 @@ const getStatusClass = (status) => {
             return 'bg-yellow-100 text-yellow-800 border border-yellow-200';
         default:
             return 'bg-slate-100 text-slate-800 border border-slate-200';
+    }
+};
+
+const getStatusLabel = (status) => {
+    switch (status) {
+        case 'PENDIENTE': return 'Pendiente';
+        case 'AUTORIZADA': return 'Autorizada';
+        case 'CONFIRMADA': return 'Confirmada';
+        case 'EN_COMISION': return 'En Comisión';
+        case 'COMPLETADA': return 'Completada';
+        case 'RECHAZADA': return 'Rechazada';
+        case 'CANCELADA': return 'Cancelada';
+        default: return status;
     }
 };
 </script>

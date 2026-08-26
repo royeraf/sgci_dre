@@ -108,6 +108,12 @@ def main() -> int:
         action="store_true",
         help="Certify the first signature and permit only AcroForm filling afterwards.",
     )
+    parser.add_argument(
+        "--box",
+        required=False,
+        default="",
+        help="Override POSITIONS: 'x1,y1,x2,y2' in PDF points, for documents with a different layout.",
+    )
     args = parser.parse_args()
 
     password = os.environ.get("DREH_PFX_PASSWORD", "").encode("utf-8")
@@ -127,10 +133,14 @@ def main() -> int:
         certify=args.certify,
         docmdp_permissions=MDPPerm.FILL_FORMS,
     )
+    if args.box:
+        box = tuple(int(v) for v in args.box.split(","))
+    else:
+        box = POSITIONS.get(args.role, (42, 130, 136, 190))
     field = None if args.existing_field else SigFieldSpec(
         sig_field_name=args.field,
         on_page=0,
-        box=POSITIONS.get(args.role, (42, 130, 136, 190)),
+        box=box,
     )
     stamp_style = StaticStampStyle(
         border_width=0,

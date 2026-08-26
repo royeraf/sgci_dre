@@ -186,57 +186,21 @@
                         </div>
                     </div>
 
-                    <!-- Sección 3: Control de Salida y Retorno (solo tras la confirmación del conductor) -->
-                    <div v-if="showControlSalida" class="bg-blue-50/50 border border-blue-100 rounded-2xl p-4 space-y-4">
-                        <h4 class="font-bold text-blue-800 flex items-center gap-2 border-b border-blue-100/50 pb-2 text-sm uppercase tracking-wide">
-                            <svg class="w-5 h-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    <!-- Sección 3: Combustible (solo al gestionar; no en el registro de salida/retorno).
+                         P/Nº ya no se pide aquí: es la placa del vehículo asignado y se
+                         muestra automáticamente en el PDF (ver pdf.vehicle_exit_authorization). -->
+                    <div v-if="isEditing" class="space-y-4 pt-2">
+                        <h4 class="font-bold text-slate-800 flex items-center gap-2 border-b border-slate-100 pb-2 text-sm uppercase tracking-wide">
+                            <svg class="w-5 h-5 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.25 6.087c0-.355.186-.676.401-.959.221-.29.349-.634.349-1.003 0-1.036-1.007-1.875-2.25-1.875s-2.25.84-2.25 1.875c0 .369.128.713.349 1.003.215.283.401.604.401.959v0a.64.64 0 01-.657.643 48.39 48.39 0 01-4.163-.3c.186 1.613.293 3.25.315 4.907a.656.656 0 01-.658.663v0c-.355 0-.676-.186-.959-.401a1.647 1.647 0 00-1.003-.349c-1.036 0-1.875 1.007-1.875 2.25s.84 2.25 1.875 2.25c.369 0 .713-.128 1.003-.349.283-.215.604-.401.959-.401v0c.31 0 .555.26.532.57a48.039 48.039 0 01-.642 5.056c1.518.19 3.058.309 4.616.354a.64.64 0 00.657-.643v0c0-.355-.186-.676-.401-.959a1.647 1.647 0 01-.349-1.003c0-1.035 1.008-1.875 2.25-1.875 1.243 0 2.25.84 2.25 1.875 0 .369-.128.713-.349 1.003-.215.283-.4.604-.4.959v0c0 .333.277.599.61.58a48.1 48.1 0 005.427-.63 48.05 48.05 0 00.582-4.717.532.532 0 00-.533-.57v0c-.355 0-.676.186-.959.401-.29.221-.634.349-1.003.349-1.035 0-1.875-1.007-1.875-2.25s.84-2.25 1.875-2.25c.37 0 .713.128 1.003.349.283.215.604.401.96.401v0a.656.656 0 00.658-.663 48.422 48.422 0 00-.37-5.36c-1.886.342-3.81.574-5.766.689a.578.578 0 01-.61-.58v0z" />
                             </svg>
-                            Control de Salida y Retorno
+                            Combustible
                         </h4>
-
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                                <label class="block text-sm font-bold text-blue-700 mb-2">Fecha de Salida</label>
-                                <input type="date" v-model="fechaSalida" v-bind="fechaSalidaProps"
-                                    class="w-full px-4 py-2.5 border border-blue-200 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none bg-white">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-bold text-blue-700 mb-2">Hora de Salida</label>
-                                <input type="time" v-model="horaSalida" v-bind="horaSalidaProps"
-                                    class="w-full px-4 py-2.5 border border-blue-200 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none bg-white">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-bold text-blue-700 mb-2">Fecha de Retorno</label>
-                                <input type="date" v-model="fechaRetorno" v-bind="fechaRetornoProps"
-                                    class="w-full px-4 py-2.5 border-2 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none bg-white transition-colors"
-                                    :class="formErrors.fecha_retorno ? 'border-red-400' : 'border-blue-200'">
-                                <p v-if="formErrors.fecha_retorno" class="mt-1 text-sm text-red-600">{{ formErrors.fecha_retorno }}</p>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-bold text-blue-700 mb-2">Hora de Regreso</label>
-                                <input type="time" v-model="horaRegreso" v-bind="horaRegresoProps"
-                                    class="w-full px-4 py-2.5 border border-blue-200 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none bg-white">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-bold text-blue-700 mb-2">Km de Salida</label>
-                                <input type="text" v-model="kmSalida" v-bind="kmSalidaProps"
-                                    class="w-full px-4 py-2.5 border-2 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none bg-white transition-colors"
-                                    :class="formErrors.km_salida ? 'border-red-400' : 'border-blue-200'">
-                                <p v-if="formErrors.km_salida" class="mt-1 text-sm text-red-600">{{ formErrors.km_salida }}</p>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-bold text-blue-700 mb-2">Km de Retorno</label>
-                                <input type="text" v-model="kmRetorno" v-bind="kmRetornoProps"
-                                    class="w-full px-4 py-2.5 border-2 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none bg-white transition-colors"
-                                    :class="formErrors.km_retorno ? 'border-red-400' : 'border-blue-200'">
-                                <p v-if="formErrors.km_retorno" class="mt-1 text-sm text-red-600">{{ formErrors.km_retorno }}</p>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-bold text-blue-700 mb-2">Combustible</label>
+                                <label class="block text-sm font-bold text-slate-700 mb-2">Combustible</label>
                                 <select v-model="combustible" v-bind="combustibleProps"
-                                    class="w-full px-4 py-2.5 border border-blue-200 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none bg-white">
+                                    class="w-full px-4 py-2.5 border-2 border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none bg-white">
                                     <option value="">Seleccionar combustible</option>
                                     <option value="Gasolina">Gasolina</option>
                                     <option value="Diesel">Diesel</option>
@@ -244,18 +208,17 @@
                                     <option value="GNV">GNV</option>
                                 </select>
                             </div>
-                            <div>
-                                <label class="block text-sm font-bold text-blue-700 mb-2">P/Nº</label>
-                                <input type="text" v-model="pnro" v-bind="pnroProps"
-                                    class="w-full px-4 py-2.5 border border-blue-200 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none bg-white">
-                            </div>
-                            <div class="col-span-1 md:col-span-2 bg-blue-100/60 border border-blue-200 rounded-xl p-3.5 flex justify-between items-center mt-1">
-                                <span class="text-sm font-bold text-blue-800">Total Kilómetros Recorridos</span>
-                                <span class="text-lg font-black text-blue-900 bg-white/80 px-3 py-1 rounded-lg border border-blue-200 shadow-sm">
-                                    {{ totalKmRecorrido !== null ? `${totalKmRecorrido} km` : '—' }}
-                                </span>
-                            </div>
                         </div>
+                    </div>
+
+                    <!-- Firma digital: solo al crear la solicitud (el solicitante firma con su PFX RENIEC) -->
+                    <div v-if="!isEditing" class="rounded-xl border border-indigo-200 bg-indigo-50 p-4">
+                        <label class="mb-1.5 block text-sm font-bold text-indigo-900">Clave de firma digital <span class="text-red-500">*</span></label>
+                        <input type="password" autocomplete="off" v-model="signingPin" v-bind="signingPinProps"
+                            class="w-full rounded-xl border px-3 py-2.5 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500"
+                            :class="formErrors.signing_pin ? 'border-red-400' : 'border-indigo-200'" placeholder="Clave de su certificado RENIEC" />
+                        <p class="mt-1 text-xs text-indigo-700">La solicitud continuará únicamente si se genera su firma digital.</p>
+                        <p v-if="formErrors.signing_pin" class="mt-1 text-xs text-red-600">{{ formErrors.signing_pin }}</p>
                     </div>
 
                     <!-- Actions -->
@@ -306,16 +269,21 @@ const currentUserName = computed(() => page.props.auth?.user?.full_name || page.
 const isEditing = computed(() => !!props.commission?.id);
 const isSubmitting = ref(false);
 
-// Salida/retorno solo se registran una vez que el conductor confirmó la autorización.
-const showControlSalida = computed(() => ['CONFIRMADA', 'EN_COMISION', 'COMPLETADA'].includes(props.commission?.estado));
-
 // Current date and time
 const currentDate = new Date().toISOString().split('T')[0];
 const currentTime = new Date().toTimeString().slice(0, 5);
 
-// Validation Schema
+// Validation Schema. signing_pin solo se exige al crear: el solicitante
+// firma con su certificado RENIEC (VehicleController::storeCommission).
+// Editar una comisión existente no re-firma nada.
 const commissionSchema = toTypedSchema(
     yup.object({
+        signing_pin: isEditing.value
+            ? yup.string().transform(() => undefined).nullable()
+            : yup.string()
+                .required('Ingrese su clave de firma.')
+                .min(6, 'La clave de firma debe tener al menos 6 caracteres.')
+                .max(20, 'La clave de firma no debe superar los 20 caracteres.'),
         lugar: yup.string()
             .required('El lugar de destino es obligatorio')
             .min(3, 'El lugar debe tener al menos 3 caracteres'),
@@ -328,44 +296,14 @@ const commissionSchema = toTypedSchema(
             .required('Debe seleccionar el conductor'),
         pasajero_ids: yup.array().of(yup.string()).default([]),
         motivo: yup.string().nullable(),
-        fecha_salida: yup.string().nullable(),
-        hora_salida: yup.string().nullable(),
-        fecha_retorno: yup.string()
-            .nullable()
-            .test('after-or-equal-salida', 'La fecha de retorno debe ser igual o posterior a la de salida', function(value) {
-                const { fecha_salida } = this.parent;
-                if (!value || !fecha_salida) return true;
-                return new Date(value) >= new Date(fecha_salida);
-            }),
-        hora_regreso: yup.string().nullable(),
-        km_salida: yup.string()
-            .nullable()
-            .test('is-numeric', 'El kilometraje de salida debe ser un número entero no negativo', value => {
-                if (!value) return true;
-                return /^\d+$/.test(value);
-            }),
-        km_retorno: yup.string()
-            .nullable()
-            .test('is-numeric', 'El kilometraje de retorno debe ser un número entero no negativo', value => {
-                if (!value) return true;
-                return /^\d+$/.test(value);
-            })
-            .test('greater-than-salida', 'El kilometraje de retorno debe ser mayor o igual al de salida', function(value) {
-                const { km_salida } = this.parent;
-                if (!value || !km_salida) return true;
-                const salidaNum = parseInt(km_salida, 10);
-                const retornoNum = parseInt(value, 10);
-                if (isNaN(salidaNum) || isNaN(retornoNum)) return true;
-                return retornoNum >= salidaNum;
-            }),
         combustible: yup.string().nullable(),
-        pnro: yup.string().nullable(),
     })
 );
 
-const { errors: formErrors, defineField, handleSubmit: validateForm, resetForm, setValues } = useForm({
+const { errors: formErrors, defineField, handleSubmit: validateForm, resetForm, setValues, setFieldError } = useForm({
     validationSchema: commissionSchema,
     initialValues: {
+        signing_pin: '',
         lugar: '',
         ambito_destino: '',
         referencia: '',
@@ -375,17 +313,11 @@ const { errors: formErrors, defineField, handleSubmit: validateForm, resetForm, 
         conductor_employee_id: '',
         pasajero_ids: [],
         motivo: '',
-        fecha_salida: '',
-        hora_salida: '',
-        fecha_retorno: '',
-        hora_regreso: '',
-        km_salida: '',
-        km_retorno: '',
         combustible: '',
-        pnro: '',
     }
 });
 
+const [signingPin, signingPinProps] = defineField('signing_pin');
 const [lugar, lugarProps] = defineField('lugar');
 const [ambitoDestino, ambitoDestinoProps] = defineField('ambito_destino');
 const [referencia, referenciaProps] = defineField('referencia');
@@ -395,24 +327,7 @@ const [vehicleId, vehicleIdProps] = defineField('vehicle_id');
 const [conductorEmployeeId, conductorEmployeeIdProps] = defineField('conductor_employee_id');
 const [pasajeroIds] = defineField('pasajero_ids');
 const [motivo, motivoProps] = defineField('motivo');
-const [fechaSalida, fechaSalidaProps] = defineField('fecha_salida');
-const [horaSalida, horaSalidaProps] = defineField('hora_salida');
-const [fechaRetorno, fechaRetornoProps] = defineField('fecha_retorno');
-const [horaRegreso, horaRegresoProps] = defineField('hora_regreso');
-const [kmSalida, kmSalidaProps] = defineField('km_salida');
-const [kmRetorno, kmRetornoProps] = defineField('km_retorno');
 const [combustible, combustibleProps] = defineField('combustible');
-const [pnro, pnroProps] = defineField('pnro');
-
-const totalKmRecorrido = computed(() => {
-    const salida = parseInt(kmSalida.value, 10);
-    const retorno = parseInt(kmRetorno.value, 10);
-    if (isNaN(salida) || isNaN(retorno)) {
-        return null;
-    }
-    const diff = retorno - salida;
-    return diff >= 0 ? diff : null;
-});
 
 // Pasajeros: selector múltiple con búsqueda + chips
 const selectedPassengers = ref([]);
@@ -455,21 +370,6 @@ watch(conductorEmployeeId, (newConductorId) => {
     }
 });
 
-// Auto-fill fuel type based on selected vehicle
-watch(vehicleId, (newVehicleId) => {
-    if (newVehicleId) {
-        const vehicle = props.vehicles.find(v => String(v.id) === String(newVehicleId));
-        if (vehicle && vehicle.combustible) {
-            const fuelUpper = String(vehicle.combustible).trim().toLowerCase();
-            const options = ['Gasolina', 'Diesel', 'GLP', 'GNV'];
-            const matchedOption = options.find(opt => opt.toLowerCase() === fuelUpper);
-            if (matchedOption) {
-                combustible.value = matchedOption;
-            }
-        }
-    }
-});
-
 // Load existing commission data if editing
 onMounted(() => {
     if (props.commission) {
@@ -484,14 +384,9 @@ onMounted(() => {
             conductor_employee_id: props.commission.conductor_employee_id || '',
             pasajero_ids: selectedPassengers.value.map(p => p.id),
             motivo: props.commission.motivo || '',
-            fecha_salida: props.commission.fecha_salida || '',
-            hora_salida: props.commission.hora_salida || '',
-            fecha_retorno: props.commission.fecha_retorno || '',
-            hora_regreso: props.commission.hora_regreso || '',
-            km_salida: props.commission.km_salida || '',
-            km_retorno: props.commission.km_retorno || '',
-            combustible: props.commission.combustible || '',
-            pnro: props.commission.pnro || '',
+            // El combustible parte del que ya tiene registrado el vehículo en
+            // Inventario, en vez de pedirlo de nuevo cada vez.
+            combustible: props.commission.combustible || props.commission.vehicle_combustible || '',
         });
     }
 });
@@ -506,7 +401,12 @@ const onSubmitForm = validateForm(async (values) => {
         }
         emit('saved');
     } catch (e) {
-        alert('Error al guardar: ' + (e.response?.data?.message || e.message));
+        const errors = e.response?.data?.errors;
+        if (errors?.signing_pin) {
+            setFieldError('signing_pin', Array.isArray(errors.signing_pin) ? errors.signing_pin[0] : errors.signing_pin);
+        } else {
+            alert('Error al guardar: ' + (e.response?.data?.message || e.message));
+        }
     } finally {
         isSubmitting.value = false;
     }
