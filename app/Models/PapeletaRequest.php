@@ -5,6 +5,8 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Collection;
 
 class PapeletaRequest extends Model
 {
@@ -13,13 +15,32 @@ class PapeletaRequest extends Model
     protected $fillable = [
         'numero_papeleta',
         'employee_id',
+        'jefe_asignado_id',
+        'jefe_asignado_dni',
+        'jefe_asignado_nombre',
         'entry_exit_reason_id',
+        'motivo_salida',
+        'destino',
         'motivo',
         'fecha_salida',
         'hora_salida_estimada',
         'hora_retorno_estimada',
         'turno',
         'estado',
+        'qr_token',
+        'qr_form_enabled',
+        'executed_document_path',
+        'salida_real_at',
+        'retorno_real_at',
+        'destino_firmante_dni',
+        'destino_firmante_nombre',
+        'destino_firmante_cargo',
+        'destino_latitude',
+        'destino_longitude',
+        'destino_gps_accuracy_m',
+        'destino_gps_at',
+        'destino_firma_path',
+        'destino_firmado_at',
         'aprobado_por',
         'fecha_aprobacion',
         'comentario_aprobacion',
@@ -34,6 +55,11 @@ class PapeletaRequest extends Model
         'fecha_aprobacion' => 'datetime',
         'fecha_aprobacion_jefe' => 'datetime',
         'fecha_aprobacion_rrhh' => 'datetime',
+        'salida_real_at' => 'datetime',
+        'retorno_real_at' => 'datetime',
+        'destino_firmado_at' => 'datetime',
+        'destino_gps_at' => 'datetime',
+        'qr_form_enabled' => 'boolean',
     ];
 
     protected $appends = [
@@ -59,6 +85,18 @@ class PapeletaRequest extends Model
         return $this->belongsTo(Employee::class, 'aprobado_por_jefe');
     }
 
+    /**
+     * El empleado ELEGIDO por el solicitante para firmar como jefe
+     * inmediato (distinto de aprobadorJefe(), que es quien REALMENTE
+     * firmó). Puede ser null en papeletas creadas antes de este cambio,
+     * en cuyo caso se resuelven por la designación de oficina/dirección
+     * (ver aprobadoresEsperados()).
+     */
+    public function jefeAsignado(): BelongsTo
+    {
+        return $this->belongsTo(Employee::class, 'jefe_asignado_id');
+    }
+
     public function aprobadorRrhh(): BelongsTo
     {
         return $this->belongsTo(Employee::class, 'aprobado_por_rrhh');
@@ -67,6 +105,11 @@ class PapeletaRequest extends Model
     public function reason(): BelongsTo
     {
         return $this->belongsTo(EntryExitReason::class, 'entry_exit_reason_id');
+    }
+
+    public function signatures(): HasMany
+    {
+        return $this->hasMany(PapeletaRequestSignature::class, 'papeleta_request_id');
     }
 
     // Accessors
@@ -123,6 +166,37 @@ class PapeletaRequest extends Model
     }
 
     /**
+     * Papeletas en la bandeja de la etapa "jefe" de $employee: las que le
+     * fueron dirigidas explícitamente (jefe_asignado_id), más -para las
+     * papeletas legadas sin esa elección guardada- las que le corresponden
+     * por ser titular/suplente de la oficina o dirección del solicitante.
+     */
+    public function scopeParaBandejaJefe($query, Employee $employee)
+    {
+        $officeIds = $employee->officeIdsLideradas();
+        $directionIds = $employee->directionIdsLideradas();
+
+        return $query->where(function ($q) use ($employee, $officeIds, $directionIds) {
+            $q->where('jefe_asignado_id', $employee->id)
+                ->orWhere(function ($legacy) use ($officeIds, $directionIds) {
+                    $legacy->whereNull('jefe_asignado_id')
+                        ->whereHas('employee', function ($employeeQuery) use ($officeIds, $directionIds) {
+                            $employeeQuery
+                                ->whereIn('office_id', $officeIds)
+                                ->orWhere(function ($fallback) use ($directionIds) {
+                                    $fallback
+                                        ->whereDoesntHave('office', function ($office) {
+                                            $office->whereNotNull('jefe_inmediato_id')
+                                                ->orWhereHas('suplentes', fn ($s) => $s->vigente());
+                                        })
+                                        ->whereIn('direction_id', $directionIds);
+                                });
+                        });
+                });
+        });
+    }
+
+    /**
      * Generate next papeleta number (sequential 6-digit).
      */
     public static function generateNumeroPapeleta(): string
@@ -149,6 +223,28 @@ class PapeletaRequest extends Model
     public function estaAprobadaPorJefe(): bool
     {
         return !is_null($this->aprobado_por_jefe);
+    }
+
+    /**
+     * Quién(es) están habilitados para firmar la etapa "jefe" de esta
+     * papeleta: si el solicitante eligió a alguien explícitamente, solo esa
+     * persona; si no (papeleta legada), el titular/suplente vigente de su
+     * oficina o dirección.
+     *
+     * @return Collection<int, Employee>
+     */
+    public function aprobadoresEsperados(): Collection
+    {
+        if ($this->jefe_asignado_id) {
+            return collect([$this->jefeAsignado])->filter();
+        }
+
+        return $this->employee?->aprobadores_papeleta ?? collect();
+    }
+
+    public function puedeSerAprobadaPor(?Employee $employee): bool
+    {
+        return $employee !== null && $this->aprobadoresEsperados()->contains('id', $employee->id);
     }
 
     public function estaAprobadaPorRrhh(): bool

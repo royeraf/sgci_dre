@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Support\Collection;
 
 class Employee extends Model
 {
@@ -146,6 +147,121 @@ class Employee extends Model
             return $this->direction->jefeInmediato;
         }
         return null;
+    }
+
+    /**
+     * Relación inversa: oficinas donde este empleado es el jefe titular.
+     */
+    public function officesLideradas(): HasMany
+    {
+        return $this->hasMany(HrOffice::class, 'jefe_inmediato_id');
+    }
+
+    /**
+     * Relación inversa: direcciones donde este empleado es el jefe titular.
+     */
+    public function directionsLideradas(): HasMany
+    {
+        return $this->hasMany(HrDirection::class, 'jefe_inmediato_id');
+    }
+
+    /**
+     * Designaciones de suplencia de este empleado (como suplente de otros).
+     */
+    public function suplencias(): HasMany
+    {
+        return $this->hasMany(JefeSuplente::class, 'employee_id');
+    }
+
+    /**
+     * La unidad (oficina u oficina de respaldo dirección) que resuelve quién
+     * puede aprobar las papeletas de este empleado: oficina primero, y solo
+     * si esta no tiene ningún aprobador (ni titular ni suplente vigente) cae
+     * a la dirección.
+     */
+    public function unidadAprobadora(): HrOffice|HrDirection|null
+    {
+        if ($this->office && $this->office->tieneAprobadores()) {
+            return $this->office;
+        }
+        if ($this->direction && $this->direction->tieneAprobadores()) {
+            return $this->direction;
+        }
+        return null;
+    }
+
+    /**
+     * Todos los que pueden aprobar las papeletas de este empleado: el jefe
+     * titular de su unidad más los suplentes vigentes.
+     */
+    public function getAprobadoresPapeletaAttribute(): Collection
+    {
+        return $this->unidadAprobadora()?->aprobadores() ?? collect();
+    }
+
+    /**
+     * ¿Este empleado ($this) puede aprobar las papeletas de $solicitante?
+     * Mecanismo LEGADO: solo se consulta para papeletas sin un
+     * jefe_asignado_id explícito (ver PapeletaRequest::aprobadoresEsperados()).
+     */
+    public function puedeAprobarPapeletasDe(Employee $solicitante): bool
+    {
+        return $solicitante->aprobadores_papeleta->contains('id', $this->id);
+    }
+
+    /**
+     * ¿Este empleado es aprobador de papeletas de alguien? (titular de
+     * alguna oficina/dirección, o suplente vigente de alguna). Es un hecho
+     * de la designación de RR.HH., independiente de si además fue elegido a
+     * mano en alguna papeleta puntual (ver participaEnEtapaJefe()).
+     */
+    public function esAprobadorDeAlguien(): bool
+    {
+        return $this->officesLideradas()->exists()
+            || $this->directionsLideradas()->exists()
+            || $this->suplencias()->vigente()->exists();
+    }
+
+    /**
+     * Ids de oficinas donde este empleado puede firmar la etapa "jefe":
+     * las que lidera como titular, más las que suple vigentemente.
+     */
+    public function officeIdsLideradas(): Collection
+    {
+        return $this->officesLideradas()->pluck('id')
+            ->merge($this->suplencias()->vigente()->where('suplentable_type', HrOffice::class)->pluck('suplentable_id'))
+            ->unique();
+    }
+
+    /**
+     * Ids de direcciones donde este empleado puede firmar la etapa "jefe":
+     * las que lidera como titular, más las que suple vigentemente.
+     */
+    public function directionIdsLideradas(): Collection
+    {
+        return $this->directionsLideradas()->pluck('id')
+            ->merge($this->suplencias()->vigente()->where('suplentable_type', HrDirection::class)->pluck('suplentable_id'))
+            ->unique();
+    }
+
+    /**
+     * ¿Alguna papeleta fue dirigida explícitamente a este empleado como
+     * jefe inmediato elegido por el solicitante?
+     */
+    public function tienePapeletasAsignadas(): bool
+    {
+        return PapeletaRequest::where('jefe_asignado_id', $this->id)->exists();
+    }
+
+    /**
+     * Gate real de acceso a la bandeja/menú de la etapa "jefe": está
+     * designado en Direcciones/Oficinas, O fue elegido a mano en alguna
+     * papeleta puntual (cualquier empleado activo puede serlo, sin ser
+     * titular/suplente de nada).
+     */
+    public function participaEnEtapaJefe(): bool
+    {
+        return $this->esAprobadorDeAlguien() || $this->tienePapeletasAsignadas();
     }
 
     // ===== ACCESSORS para compatibilidad =====

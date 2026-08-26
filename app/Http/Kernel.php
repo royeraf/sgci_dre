@@ -67,5 +67,6 @@ class Kernel extends HttpKernel
         'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
         'admin' => \App\Http\Middleware\CheckAdminRole::class,
         'role' => \App\Http\Middleware\RoleAccessMiddleware::class,
+        'papeleta.access' => \App\Http\Middleware\PapeletaAccessMiddleware::class,
     ];
 }

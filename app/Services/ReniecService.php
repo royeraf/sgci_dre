@@ -46,7 +46,7 @@ class ReniecService
                 'Content-Type' => 'application/json',
                 'Authorization' => 'Bearer ' . $this->token,
             ])
-            ->timeout(10)
+            ->timeout(4)
             ->get($this->apiUrl, [
                 'numero' => $dni
             ]);
@@ -145,7 +145,7 @@ class ReniecService
         }
 
         try {
-            $response = Http::timeout(10)->get($this->contingencyUrl1, [
+            $response = Http::timeout(4)->get($this->contingencyUrl1, [
                 'document' => $dni,
                 'key' => $this->contingencyToken1
             ]);
@@ -186,7 +186,7 @@ class ReniecService
                 'Content-Type' => 'application/json',
                 'Authorization' => 'Bearer ' . $this->contingencyToken2,
             ])
-            ->timeout(10)
+            ->timeout(4)
             ->post($this->contingencyUrl2, [
                 'dni' => $dni
             ]);

@@ -241,12 +241,13 @@
 
             <!-- Direction Modal -->
             <DirectionModal v-if="showDirectionModal" :direction="selectedDirection" :is-editing="isEditingDirection"
-                :submitting="isSubmitting" :offices="offices" @close="showDirectionModal = false"
-                @submit="saveDirection" />
+                :submitting="isSubmitting" :offices="offices" :employees="employees"
+                @close="showDirectionModal = false" @submit="saveDirection" />
 
             <!-- Office Modal NEW -->
             <OfficeModal v-if="showOfficeModal" :office="selectedOffice" :is-editing="isEditingOffice"
-                :submitting="isSubmitting" @close="showOfficeModal = false" @submit="saveOffice" />
+                :submitting="isSubmitting" :employees="employees" @close="showOfficeModal = false"
+                @submit="saveOffice" />
 
             <!-- Position Modal -->
             <PositionModal v-if="showPositionModal" :position="selectedPosition" :is-editing="isEditingPosition"

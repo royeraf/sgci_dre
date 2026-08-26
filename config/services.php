@@ -2,6 +2,15 @@
 
 return [
 
+    'server_signing' => [
+        'python' => env('SERVER_SIGNING_PYTHON', base_path('storage/app/signing-venv/bin/python')),
+        'script' => env('SERVER_SIGNING_SCRIPT', base_path('tools/server_sign_pdf.py')),
+    ],
+
+    'reniec_agent' => [
+        'token' => env('RENIEC_AGENT_TOKEN'),
+    ],
+
     /*
     |--------------------------------------------------------------------------
     | Third Party Services
@@ -44,6 +53,16 @@ return [
     'apiperu' => [
         'url' => env('APIPERU_DNI_URL', 'https://apiperu.dev/api/dni'),
         'token' => env('APIPERU_DNI_TOKEN'),
+    ],
+
+    'firma_peru' => [
+        'enabled' => env('FIRMA_PERU_ENABLED', false),
+        'client_id' => env('FIRMA_PERU_CLIENT_ID'),
+        'client_secret' => env('FIRMA_PERU_CLIENT_SECRET'),
+        'token_url' => env('FIRMA_PERU_TOKEN_URL'),
+        'tsa_url' => env('FIRMA_PERU_TSA_URL', ''),
+        'local_port' => (int) env('FIRMA_PERU_LOCAL_PORT', 48596),
+        'script_url' => env('FIRMA_PERU_SCRIPT_URL', 'https://apps.firmaperu.gob.pe/web/clienteweb/firmaperu.min.js'),
     ],
 
 ];

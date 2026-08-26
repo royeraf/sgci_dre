@@ -5,11 +5,11 @@ export function usePapeletaApproval() {
     const processing = ref(false);
     const error = ref<string | null>(null);
 
-    const aprobar = async (papeletaId: string, comentario: string = '') => {
+    const aprobar = async (papeletaId: string, comentario: string = '', signingPin: string = '') => {
         processing.value = true;
         error.value = null;
         try {
-            const { data } = await axios.patch(`/papeletas/${papeletaId}/aprobar`, { comentario });
+            const { data } = await axios.patch(`/papeletas/${papeletaId}/aprobar`, { comentario, signing_pin: signingPin });
             return data;
         } catch (err: any) {
             error.value = err.response?.data?.message || 'Error al aprobar la papeleta';
