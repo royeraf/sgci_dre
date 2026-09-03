@@ -587,7 +587,14 @@ const props = defineProps({
 
 const page = usePage();
 const userRole = computed(() => page.props.auth?.user?.rol_id);
-const isEmployeeOnly = computed(() => userRole.value === 'ROL012');
+// ROL012 ve solo "Mis Bienes" por defecto, salvo que se le haya otorgado
+// el módulo 'patrimonio' explícitamente vía modulos_json (ver comentario
+// de esa columna: reemplaza la visibilidad basada en rol).
+const isEmployeeOnly = computed(() => {
+    if (userRole.value !== 'ROL012') return false;
+    const modulos = page.props.auth?.user?.modulos_json;
+    return !(modulos && modulos.includes('patrimonio'));
+});
 
 const { canViewTab, firstAllowedTab } = useTabPermission('patrimonio', ['list', 'movements', 'barcodes', 'reports', 'patrimonio', 'inventarios']);
 const activeTab = ref(props.myEmployee && isEmployeeOnly.value ? 'mis_bienes' : firstAllowedTab.value);
