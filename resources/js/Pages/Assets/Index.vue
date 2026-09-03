@@ -323,6 +323,11 @@
                                             </td>
                                             <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                                 <div class="flex items-center gap-1 justify-end">
+                                                    <button @click="printAssetLabel(asset)"
+                                                        class="cursor-pointer text-slate-400 hover:text-emerald-600 transition-colors duration-200 p-2 hover:bg-emerald-50 rounded-lg"
+                                                        title="Imprimir Etiqueta Térmica TD-402S">
+                                                        <Printer class="h-5 w-5" />
+                                                    </button>
                                                     <button @click="openEditModal(asset)"
                                                         class="text-slate-400 hover:text-blue-600 transition-colors duration-200 p-2 hover:bg-blue-50 rounded-lg"
                                                         title="Editar">
@@ -549,6 +554,7 @@ import {
     XCircle,
     Settings,
     Barcode,
+    Printer,
     ScanBarcode,
     Pencil,
     Trash2,
@@ -739,6 +745,36 @@ const getStateClass = (nombre) => {
         'MALO': 'bg-gradient-to-r from-red-500 to-red-600 text-white',
     };
     return classes[nombre] || 'bg-gradient-to-r from-gray-500 to-gray-600 text-white';
+};
+
+// Imprimir etiqueta térmica individual con configuración TD-402S guardada
+const printAssetLabel = (asset) => {
+    let params = new URLSearchParams();
+    params.append('ids', asset.id);
+
+    try {
+        const saved = localStorage.getItem('dre_td402s_label_config');
+        if (saved) {
+            const cfg = JSON.parse(saved);
+            params.append('mode', cfg.mode || 'thermal');
+            params.append('code_type', cfg.codeType || 'barcode');
+            params.append('columns', String(cfg.columns || 1));
+            params.append('width', String(cfg.labelWidth || 50.8));
+            params.append('height', String(cfg.labelHeight || 25.4));
+            params.append('gap', String(cfg.gap || 2.0));
+            params.append('qr_layout', cfg.qrLayout || 'horizontal');
+            params.append('show_entity', cfg.showEntity ? '1' : '0');
+            params.append('show_subtitle', cfg.showSubtitle ? '1' : '0');
+            params.append('show_code', cfg.showCode ? '1' : '0');
+            params.append('show_name', cfg.showName ? '1' : '0');
+            params.append('show_series', cfg.showSeries ? '1' : '0');
+            params.append('show_office', cfg.showOffice ? '1' : '0');
+        }
+    } catch (e) {
+        console.warn('Error reading saved TD-402S config:', e);
+    }
+
+    window.open(`/assets/barcodes/pdf?${params.toString()}`, '_blank');
 };
 
 // Edit

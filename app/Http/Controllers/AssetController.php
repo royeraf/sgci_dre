@@ -22,6 +22,7 @@ use Inertia\Inertia;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use Picqer\Barcode\BarcodeGeneratorPNG;
 use Barryvdh\DomPDF\Facade\Pdf;
+use App\Services\BarcodeLabelService;
 
 class AssetController extends Controller
 {
@@ -342,41 +343,145 @@ class AssetController extends Controller
     }
 
     /**
-     * Generar PDF con etiquetas de códigos de barra
-     * Soporta individual (?ids=1) y lote (?ids=1,2,3)
+     * Generar PDF con etiquetas de códigos de barra o códigos QR
+     * Soporta impresora térmica TD-402S (1 o 2 columnas por rollo, medidas exactas en mm) y A4
      */
-    public function generateBarcodePdf(Request $request)
+    public function generateBarcodePdf(Request $request, BarcodeLabelService $labelService)
     {
-        $ids = explode(',', $request->query('ids', ''));
-        $size = $request->query('size', 'medium');
+        $idsParam = $request->query('ids', '');
+        $isSample = $request->boolean('sample') || $idsParam === 'samples';
 
-        $assets = Asset::whereIn('id', $ids)->get();
+        $mode = $request->query('mode', 'thermal'); // 'thermal' o 'a4'
+        $codeType = $request->query('code_type', 'barcode'); // 'barcode' o 'qr'
+        $columns = (int) $request->query('columns', 1); // 1 o 2
+        $labelWidth = (float) $request->query('width', 50.8);
+        $labelHeight = (float) $request->query('height', 25.4);
+        $gap = (float) $request->query('gap', 2.0);
+        $sideMargins = (float) $request->query('side_margins', 2.0);
+        $qrLayout = $request->query('qr_layout', 'horizontal'); // 'horizontal' o 'vertical'
 
-        if ($assets->isEmpty()) {
-            abort(404, 'No se encontraron activos');
-        }
+        $entityText = $request->query('entity_text', 'DRE HUÁNUCO');
+        $subtitleText = $request->query('subtitle_text', 'INVENTARIO 2026');
 
-        // Generar codigo_barras si no existe y generar PNG base64 para cada activo
-        $generator = new BarcodeGeneratorPNG();
-        $barcodes = [];
+        $showEntity = $request->query('show_entity', '1') === '1' || $request->query('show_entity') === 'true';
+        $showSubtitle = $request->query('show_subtitle', '1') === '1' || $request->query('show_subtitle') === 'true';
+        $showCode = $request->query('show_code', '1') === '1' || $request->query('show_code') === 'true';
+        $showName = $request->query('show_name', '1') === '1' || $request->query('show_name') === 'true';
+        $showSeries = $request->query('show_series', '1') === '1' || $request->query('show_series') === 'true';
+        $showOffice = $request->query('show_office', '0') === '1' || $request->query('show_office') === 'true';
 
-        foreach ($assets as $asset) {
-            if (!$asset->codigo_barras) {
-                $asset->update(['codigo_barras' => $asset->codigo_completo]);
+        if ($isSample) {
+            $rawAssets = $labelService->getSampleAssets();
+        } else {
+            $ids = array_filter(explode(',', $idsParam));
+            if (empty($ids)) {
+                abort(400, 'No se especificaron activos para generar etiquetas');
+            }
+            $assets = Asset::with(['brand', 'office'])->whereIn('id', $ids)->get();
+            if ($assets->isEmpty()) {
+                abort(404, 'No se encontraron activos');
             }
 
-            $code = $asset->codigo_barras;
-            $png = $generator->getBarcode($code, $generator::TYPE_CODE_128, 4, 100);
-            $barcodes[$asset->id] = 'data:image/png;base64,' . base64_encode($png);
+            // Asegurar que tengan código de barras guardado
+            foreach ($assets as $asset) {
+                if (!$asset->codigo_barras) {
+                    $asset->update(['codigo_barras' => $asset->codigo_completo ?: $asset->codigo_patrimonio]);
+                }
+            }
+            $rawAssets = $assets;
         }
 
-        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.etiquetas_codigos_barra', [
-            'assets' => $assets,
-            'barcodes' => $barcodes,
-            'size' => $size,
-        ])->setPaper('a4', 'portrait');
+        // Modo clásico de Hoja A4
+        if ($mode === 'a4') {
+            $size = $request->query('size', 'medium');
+            $barcodes = [];
 
-        return $pdf->stream('etiquetas_codigos_barra.pdf');
+            foreach ($rawAssets as $asset) {
+                $assetObj = is_array($asset) ? (object) $asset : $asset;
+                $code = $assetObj->codigo_barras ?: ($assetObj->codigo_completo ?? $assetObj->codigo_patrimonio);
+                $barcodes[$assetObj->id] = ($codeType === 'qr')
+                    ? $labelService->generateQrBase64($code, 200, 2)
+                    : $labelService->generateBarcodeBase64($code, 4, 100);
+            }
+
+            $pdf = Pdf::loadView('pdf.etiquetas_codigos_barra', [
+                'assets' => collect($rawAssets)->map(fn($a) => is_array($a) ? (object) $a : $a),
+                'barcodes' => $barcodes,
+                'size' => $size,
+            ])->setPaper('a4', 'portrait');
+
+            return $pdf->stream('etiquetas_a4.pdf');
+        }
+
+        // Modo Rollo Térmico TD-402S (1 o 2 columnas)
+        $items = [];
+        foreach ($rawAssets as $asset) {
+            $assetArr = is_array($asset) ? $asset : $asset->toArray();
+            $code = !empty($assetArr['codigo_barras'])
+                ? $assetArr['codigo_barras']
+                : (!empty($assetArr['codigo_completo']) ? $assetArr['codigo_completo'] : ($assetArr['codigo_patrimonio'] ?? ''));
+
+            if ($codeType === 'qr') {
+                $image = $labelService->generateQrBase64($code, 200, 1);
+            } else {
+                $image = $labelService->generateBarcodeBase64($code, 2, 50);
+            }
+
+            $items[] = [
+                'asset' => $assetArr,
+                'code' => $code,
+                'image' => $image,
+            ];
+        }
+
+        $paper = $labelService->calculatePaperDimensions(
+            'thermal',
+            $columns,
+            $labelWidth,
+            $labelHeight,
+            $gap,
+            $sideMargins
+        );
+
+        // Límite de caracteres en denominación según el número de columnas y tamaño de etiqueta
+        $nameLimit = ($columns === 2)
+            ? (($labelWidth <= 55) ? 28 : 45)
+            : (($labelWidth <= 35) ? 22 : (($labelWidth <= 55) ? 36 : 65));
+
+        $pdf = Pdf::loadView('pdf.etiquetas_termicas', [
+            'items' => $items,
+            'columns' => $columns,
+            'codeType' => $codeType,
+            'labelWidth' => $labelWidth,
+            'labelHeight' => $labelHeight,
+            'gap' => $gap,
+            'sideMargins' => $sideMargins,
+            'paperWidthMm' => $paper['width_mm'],
+            'paperWidthPt' => $paper['width_pt'],
+            'paperHeightPt' => $paper['height_pt'],
+            'qrLayout' => $qrLayout,
+            'entityText' => $entityText,
+            'subtitleText' => $subtitleText,
+            'showEntity' => $showEntity,
+            'showSubtitle' => $showSubtitle,
+            'showCode' => $showCode,
+            'showName' => $showName,
+            'showSeries' => $showSeries,
+            'showOffice' => $showOffice,
+            'nameLimit' => $nameLimit,
+        ])->setPaper($paper['paper'], $paper['orientation']);
+
+        $filename = 'etiquetas_td402s_' . ($columns === 2 ? '2col_' : '1col_') . $codeType . '.pdf';
+
+        return $pdf->stream($filename);
+    }
+
+    /**
+     * Retornar bienes de ejemplo en formato JSON para pruebas
+     */
+    public function getSampleAssetsJson(BarcodeLabelService $labelService)
+    {
+        return response()->json($labelService->getSampleAssets());
     }
 
     /**

@@ -345,8 +345,9 @@ Route::middleware('auth')->group(function () {
         Route::get('/lookup-sbn', [App\Http\Controllers\AssetController::class, 'lookupSbnCatalog'])->name('lookup-sbn');
         Route::post('/', [App\Http\Controllers\AssetController::class, 'store'])->name('store');
 
-        // Códigos de barra - PDF
+        // Códigos de barra y QR - PDF y Ejemplos
         Route::get('/barcodes/pdf', [App\Http\Controllers\AssetController::class, 'generateBarcodePdf'])->name('barcodes.pdf');
+        Route::get('/barcodes/samples', [App\Http\Controllers\AssetController::class, 'getSampleAssetsJson'])->name('barcodes.samples');
 
         // Reportes
         Route::get('/reports/responsible/{id}', [App\Http\Controllers\AssetController::class, 'reportByResponsible'])->name('reports.responsible');
