@@ -19,8 +19,8 @@ class PatrimonioInventarioController extends Controller
         $query = PatrimonioInventario::with([
                 'creadoPor:id,name',
                 'cerradoPor:id,name',
-                'responsableSaliente:id',
-                'responsableSaliente.person:id,nombres,apellido_paterno',
+                'responsableSaliente:id,person_id',
+                'responsableSaliente.person:id,dni,nombres,apellidos',
             ])
             ->withCount('items')
             ->orderBy('anio', 'desc')
@@ -68,8 +68,8 @@ class PatrimonioInventarioController extends Controller
         return response()->json(
             $inventario->load([
                 'creadoPor:id,name',
-                'responsableSaliente:id',
-                'responsableSaliente.person:id,nombres,apellido_paterno',
+                'responsableSaliente:id,person_id',
+                'responsableSaliente.person:id,dni,nombres,apellidos',
             ]),
             201
         );
@@ -78,6 +78,7 @@ class PatrimonioInventarioController extends Controller
     public function update(Request $request, PatrimonioInventario $inventario)
     {
         $validated = $request->validate([
+            'anio'                    => 'sometimes|required|integer|min:2000|max:2100',
             'nombre'                  => 'sometimes|required|string|max:200',
             'tipo'                    => 'sometimes|required|in:ANUAL,ROTACION,EXTRAORDINARIO',
             'descripcion'             => 'nullable|string',
@@ -112,8 +113,8 @@ class PatrimonioInventarioController extends Controller
             $inventario->fresh()->load([
                 'creadoPor:id,name',
                 'cerradoPor:id,name',
-                'responsableSaliente:id',
-                'responsableSaliente.person:id,nombres,apellido_paterno',
+                'responsableSaliente:id,person_id',
+                'responsableSaliente.person:id,dni,nombres,apellidos',
             ])
         );
     }
@@ -170,11 +171,11 @@ class PatrimonioInventarioController extends Controller
                 'estado:id,nombre',
                 'oficina:id,nombre',
                 'responsableAnterior:id,nombre_original,employee_id',
-                'responsableAnterior.employee:id,dni',
-                'responsableAnterior.employee.person:id,nombres,apellido_paterno',
+                'responsableAnterior.employee:id,person_id',
+                'responsableAnterior.employee.person:id,dni,nombres,apellidos',
                 'responsable:id,nombre_original,employee_id',
-                'responsable.employee:id,dni',
-                'responsable.employee.person:id,nombres,apellido_paterno',
+                'responsable.employee:id,person_id',
+                'responsable.employee.person:id,dni,nombres,apellidos',
                 'inventariador:id,name',
             ])
             ->orderBy('fecha_verificacion', 'desc')
@@ -273,9 +274,11 @@ class PatrimonioInventarioController extends Controller
                 'estado:id,nombre',
                 'oficina:id,nombre',
                 'responsableAnterior:id,nombre_original,employee_id',
-                'responsableAnterior.employee.person:id,nombres,apellido_paterno',
+                'responsableAnterior.employee:id,person_id',
+                'responsableAnterior.employee.person:id,dni,nombres,apellidos',
                 'responsable:id,nombre_original,employee_id',
-                'responsable.employee.person:id,nombres,apellido_paterno',
+                'responsable.employee:id,person_id',
+                'responsable.employee.person:id,dni,nombres,apellidos',
                 'inventariador:id,name',
             ]),
             201

@@ -302,7 +302,12 @@
                                 <ClipboardList class="h-12 w-12 text-slate-400" />
                             </div>
                             <h3 class="text-lg font-bold text-slate-900 mb-1">No hay inventarios registrados</h3>
-                            <p class="text-sm text-slate-500">Crea el primer inventario para comenzar.</p>
+                            <p class="text-sm text-slate-500 mb-4">Crea el primer inventario para comenzar el proceso de verificación física.</p>
+                            <button @click="openCreateModal"
+                                class="cursor-pointer inline-flex items-center px-4 py-2 text-sm font-bold rounded-xl text-white bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 shadow-md transition-all">
+                                <Plus class="w-4 h-4 mr-1.5" />
+                                Nuevo Inventario
+                            </button>
                         </div>
                     </div>
                 </template>
@@ -415,112 +420,11 @@
         </template>
 
         <!-- ===== MODAL INVENTARIO (crear/editar) ===== -->
-        <div v-if="showInvModal" class="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" @click="closeInvModal"></div>
-            <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg">
-                <div class="flex items-center justify-between p-6 bg-gradient-to-r from-purple-600 to-indigo-600 rounded-t-2xl">
-                    <h2 class="text-lg font-bold text-white">
-                        {{ editingInvId ? 'Editar Inventario' : 'Nuevo Inventario' }}
-                    </h2>
-                    <button @click="closeInvModal" class="text-white/70 hover:text-white transition-colors">
-                        <X class="w-5 h-5" />
-                    </button>
-                </div>
-
-                <form @submit.prevent="saveInventario" class="p-6 space-y-4">
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Año *</label>
-                            <input v-model.number="invForm.anio" type="number" min="2000" max="2100" required
-                                class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-purple-500 text-sm transition-all" />
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Estado</label>
-                            <select v-if="editingInvId" v-model="invForm.estado"
-                                class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-purple-500 text-sm bg-white transition-all">
-                                <option value="PENDIENTE">Pendiente</option>
-                                <option value="EN_PROCESO">En Proceso</option>
-                                <option value="CERRADO">Cerrado</option>
-                            </select>
-                            <div v-else class="px-4 py-2.5 border border-slate-100 rounded-xl bg-slate-50 text-sm text-slate-500">
-                                Pendiente (inicial)
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Tipo de inventario -->
-                    <div>
-                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Tipo de inventario *</label>
-                        <div class="grid grid-cols-3 gap-2">
-                            <label v-for="opt in tipoOpciones" :key="opt.value"
-                                class="flex flex-col items-center gap-1 p-3 border-2 rounded-xl cursor-pointer transition-all text-center"
-                                :class="invForm.tipo === opt.value
-                                    ? 'border-purple-500 bg-purple-50'
-                                    : 'border-slate-200 hover:border-slate-300'">
-                                <input type="radio" v-model="invForm.tipo" :value="opt.value" class="sr-only" />
-                                <component :is="opt.icon" class="w-5 h-5" :class="invForm.tipo === opt.value ? 'text-purple-600' : 'text-slate-400'" />
-                                <span class="text-xs font-bold" :class="invForm.tipo === opt.value ? 'text-purple-700' : 'text-slate-500'">{{ opt.label }}</span>
-                            </label>
-                        </div>
-                    </div>
-
-                    <!-- Empleado saliente (solo ROTACION) -->
-                    <div v-if="invForm.tipo === 'ROTACION'"
-                        class="p-4 border border-orange-200 rounded-xl bg-orange-50 space-y-2">
-                        <label class="block text-xs font-bold text-orange-700 uppercase tracking-wider">
-                            Empleado saliente / Rotación
-                        </label>
-                        <select v-model="invForm.responsable_saliente_id"
-                            class="w-full px-4 py-2.5 border border-orange-200 rounded-xl focus:ring-2 focus:ring-orange-400 text-sm bg-white transition-all">
-                            <option value="">Sin especificar</option>
-                            <option v-for="emp in employees" :key="emp.id" :value="emp.id">
-                                {{ emp.nombre_completo }}
-                            </option>
-                        </select>
-                        <p class="text-xs text-orange-600">Empleado cuyos bienes serán reasignados durante este inventario.</p>
-                    </div>
-
-                    <div>
-                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Nombre *</label>
-                        <input v-model="invForm.nombre" type="text" required maxlength="200"
-                            placeholder="Ej: Inventario Anual 2025"
-                            class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-purple-500 text-sm transition-all" />
-                    </div>
-
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Fecha Inicio *</label>
-                            <input v-model="invForm.fecha_inicio" type="date" required
-                                class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-purple-500 text-sm transition-all" />
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Fecha Fin</label>
-                            <input v-model="invForm.fecha_fin" type="date" :min="invForm.fecha_inicio"
-                                class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-purple-500 text-sm transition-all" />
-                        </div>
-                    </div>
-
-                    <div>
-                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Descripción</label>
-                        <textarea v-model="invForm.descripcion" rows="3"
-                            placeholder="Observaciones sobre este inventario..."
-                            class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-purple-500 text-sm transition-all resize-none"></textarea>
-                    </div>
-
-                    <div class="flex items-center justify-end gap-3 pt-2">
-                        <button type="button" @click="closeInvModal"
-                            class="px-5 py-2.5 text-sm font-semibold text-slate-600 border border-slate-200 rounded-xl hover:bg-slate-50 transition-all">
-                            Cancelar
-                        </button>
-                        <button type="submit" :disabled="invSaving"
-                            class="inline-flex items-center px-6 py-2.5 text-sm font-bold rounded-xl shadow-lg text-white bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 focus:ring-4 focus:ring-purple-300 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
-                            <Loader2 v-if="invSaving" class="w-4 h-4 mr-2 animate-spin" />
-                            {{ invSaving ? 'Guardando...' : (editingInvId ? 'Guardar cambios' : 'Crear inventario') }}
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
+        <InventarioModal
+            ref="inventarioModalRef"
+            :employees="employees"
+            @saved="handleInventarioSaved"
+        />
 
         <!-- ===== MODAL VERIFICACIÓN (item) ===== -->
         <div v-if="showItemModal" class="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -653,6 +557,7 @@ import {
 } from 'lucide-vue-next';
 import BaseTableCard from '@/Components/Common/BaseTableCard.vue';
 import ClientPagination from '@/Components/Common/ClientPagination.vue';
+import InventarioModal from '@/Components/Assets/InventarioModal.vue';
 import axios from 'axios';
 import Swal from 'sweetalert2';
 
@@ -756,66 +661,29 @@ const changeEstado = async (inv, nuevoEstado) => {
 };
 
 // ===== MODAL INVENTARIO =====
-const showInvModal  = ref(false);
-const editingInvId  = ref(null);
-const invSaving     = ref(false);
+const inventarioModalRef = ref(null);
 
-const tipoOpciones = [
-    { value: 'ANUAL',         label: 'Anual',       icon: CalendarDays },
-    { value: 'ROTACION',      label: 'Rotación',    icon: UserMinus },
-    { value: 'EXTRAORDINARIO', label: 'Extraordinario', icon: Zap },
-];
-
-const emptyInvForm = () => ({
-    anio:                    currentYear,
-    tipo:                    'ANUAL',
-    nombre:                  `Inventario Anual ${currentYear}`,
-    descripcion:             '',
-    fecha_inicio:            new Date().toISOString().split('T')[0],
-    fecha_fin:               '',
-    estado:                  'PENDIENTE',
-    responsable_saliente_id: '',
-});
-
-const invForm = ref(emptyInvForm());
-
-const openCreateModal = () => { editingInvId.value = null; invForm.value = emptyInvForm(); showInvModal.value = true; };
-const openEditModal   = (inv) => {
-    editingInvId.value = inv.id;
-    invForm.value = {
-        anio:                    inv.anio,
-        tipo:                    inv.tipo,
-        nombre:                  inv.nombre,
-        descripcion:             inv.descripcion || '',
-        fecha_inicio:            inv.fecha_inicio,
-        fecha_fin:               inv.fecha_fin || '',
-        estado:                  inv.estado,
-        responsable_saliente_id: inv.responsable_saliente_id || '',
-    };
-    showInvModal.value = true;
+const openCreateModal = () => {
+    inventarioModalRef.value?.open();
 };
-const closeInvModal = () => { showInvModal.value = false; editingInvId.value = null; };
 
-const saveInventario = async () => {
-    invSaving.value = true;
-    try {
-        const payload = { ...invForm.value };
-        if (!payload.fecha_fin)               delete payload.fecha_fin;
-        if (!payload.descripcion)             delete payload.descripcion;
-        if (!payload.responsable_saliente_id) delete payload.responsable_saliente_id;
+const openEditModal = (inv) => {
+    inventarioModalRef.value?.open(inv);
+};
 
-        if (editingInvId.value) {
-            await axios.put(`/assets/inventarios/${editingInvId.value}`, payload);
-        } else {
-            await axios.post('/assets/inventarios', payload);
+const handleInventarioSaved = (savedData, isEdit) => {
+    if (isEdit) {
+        const idx = inventarios.value.findIndex(i => i.id === savedData.id);
+        if (idx >= 0) {
+            inventarios.value[idx] = { ...inventarios.value[idx], ...savedData };
         }
-        Swal.fire({ icon: 'success', title: editingInvId.value ? 'Inventario actualizado' : 'Inventario creado', toast: true, position: 'top-end', showConfirmButton: false, timer: 2500 });
-        closeInvModal();
-        fetchInventarios(currentPage.value);
-        fetchStats();
-    } catch (e) {
-        Swal.fire({ icon: 'error', title: 'Error', text: e.response?.data?.message || 'Ocurrió un error.' });
-    } finally { invSaving.value = false; }
+        if (selectedInventario.value?.id === savedData.id) {
+            selectedInventario.value = { ...selectedInventario.value, ...savedData };
+        }
+    } else {
+        fetchInventarios(1);
+    }
+    fetchStats();
 };
 
 const confirmDelete = async (inv) => {
@@ -1021,7 +889,7 @@ const tipoClass = (t) => ({
 const nombreEmpleado = (emp) => {
     if (!emp) return null;
     const p = emp.person;
-    if (p) return `${p.nombres ?? ''} ${p.apellido_paterno ?? ''}`.trim();
+    if (p) return `${p.nombres ?? ''} ${p.apellidos ?? ''}`.trim();
     return emp.nombre_completo ?? null;
 };
 const estadoItemClass = (nombre) => {
@@ -1036,8 +904,8 @@ const estadoCountClass = (nombre) => {
 const responsableNombre = (responsable) => {
     if (!responsable) return null;
     const p = responsable.employee?.person;
-    if (p) return `${p.nombres} ${p.apellido_paterno}`.trim();
-    return responsable.nombre_original;
+    if (p) return `${p.nombres ?? ''} ${p.apellidos ?? ''}`.trim();
+    return responsable.nombre_completo || responsable.nombre_original || null;
 };
 
 onMounted(() => {
