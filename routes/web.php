@@ -50,6 +50,11 @@ Route::middleware('guest')->group(function () {
     Route::post('/login', [AuthController::class, 'login']);
 });
 
+// Fallback for non-GET/POST methods on /login (e.g. if a browser follows a redirect with PATCH/PUT/DELETE)
+Route::match(['patch', 'put', 'delete'], '/login', function () {
+    return redirect()->route('login');
+});
+
 // Portal de Empleados (Papeletas)
 Route::prefix('portal')->group(function () {
     Route::middleware('guest')->group(function () {

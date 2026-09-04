@@ -54,6 +54,12 @@ class Handler extends ExceptionHandler
                 ]);
             }
 
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' => 'Tu sesión o token de seguridad expiró por inactividad. Por favor, ingresa nuevamente.'
+                ], 419);
+            }
+
             return redirect($loginRoute)
                 ->with('error', 'Tu sesión o token de seguridad expiró por inactividad. Por favor, ingresa nuevamente.');
         }

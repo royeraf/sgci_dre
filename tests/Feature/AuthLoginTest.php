@@ -125,4 +125,35 @@ class AuthLoginTest extends TestCase
         $this->assertContains('portal/login', $except);
         $this->assertContains('portal/logout', $except);
     }
+
+    public function test_patch_on_login_does_not_throw_method_not_allowed(): void
+    {
+        $response = $this->patch('/login');
+        $response->assertRedirect('/login');
+    }
+
+    public function test_unauthenticated_json_request_to_users_password_returns_401(): void
+    {
+        $response = $this->patchJson('/users/1/password', [
+            'password' => 'newpassword123',
+            'password_confirmation' => 'newpassword123',
+        ]);
+
+        $response->assertStatus(401);
+    }
+
+    public function test_admin_can_update_user_password(): void
+    {
+        $admin = User::where('rol_id', 'ROL001')->first();
+        $targetUser = User::where('id', '!=', $admin->id)->first();
+
+        $response = $this->actingAs($admin)->patchJson("/users/{$targetUser->id}/password", [
+            'password' => 'nuevopassword123',
+            'password_confirmation' => 'nuevopassword123',
+        ]);
+
+        $response->assertStatus(200);
+        $response->assertJson(['message' => 'Contraseña actualizada exitosamente']);
+        $this->assertTrue(Hash::check('nuevopassword123', $targetUser->fresh()->password));
+    }
 }

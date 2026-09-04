@@ -4,12 +4,11 @@ import { createInertiaApp, router } from '@inertiajs/vue3';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import '../css/app.css';
 
-// Redirect to login when the CSRF token expires (419 = token mismatch);
-// a redirect avoids re-submitting a failed POST or reload loops
+// Redirect to login when the session or CSRF token expires (419 = token mismatch, 401 = unauthenticated)
 window.axios.interceptors.response.use(
     response => response,
     error => {
-        if (error.response?.status === 419) {
+        if (error.response?.status === 419 || error.response?.status === 401) {
             window.location.href = '/login';
         }
         return Promise.reject(error);

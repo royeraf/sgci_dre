@@ -16,6 +16,11 @@ class CheckAdminRole
     public function handle(Request $request, Closure $next): Response
     {
         if (!auth()->check()) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' => 'No autenticado. Por favor, inicia sesión nuevamente.'
+                ], 401);
+            }
             return redirect()->route('login');
         }
 
