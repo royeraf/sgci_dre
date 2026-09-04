@@ -50,30 +50,28 @@ class AuthLoginTest extends TestCase
         $this->assertAuthenticatedAs($user);
     }
 
-    public function test_user_can_login_with_username(): void
+    public function test_dni_must_be_exactly_8_digits(): void
     {
-        $user = User::where('dni', '12345678')->first();
-
-        $response = $this->post('/login', [
-            'dni' => $user->username,
+        // 7 digits
+        $response1 = $this->from('/login')->post('/login', [
+            'dni' => '1234567',
             'password' => 'admin123',
         ]);
+        $response1->assertSessionHasErrors('dni');
 
-        $response->assertRedirect('/dashboard');
-        $this->assertAuthenticatedAs($user);
-    }
-
-    public function test_user_can_login_with_email(): void
-    {
-        $user = User::where('dni', '12345678')->first();
-
-        $response = $this->post('/login', [
-            'dni' => $user->email,
+        // Letters
+        $response2 = $this->from('/login')->post('/login', [
+            'dni' => 'abcdefgh',
             'password' => 'admin123',
         ]);
+        $response2->assertSessionHasErrors('dni');
 
-        $response->assertRedirect('/dashboard');
-        $this->assertAuthenticatedAs($user);
+        // 9 digits
+        $response3 = $this->from('/login')->post('/login', [
+            'dni' => '123456789',
+            'password' => 'admin123',
+        ]);
+        $response3->assertSessionHasErrors('dni');
     }
 
     public function test_invalid_credentials_returns_error(): void
@@ -87,12 +85,21 @@ class AuthLoginTest extends TestCase
         $this->assertGuest();
     }
 
-    public function test_portal_employee_redirects_to_portal_papeletas(): void
+    public function test_employee_rol012_redirects_to_dashboard(): void
     {
         $employeeUser = User::where('rol_id', 'ROL012')->first();
         if ($employeeUser) {
             $response = $this->actingAs($employeeUser)->get('/');
-            $response->assertRedirect('/portal/papeletas');
+            $response->assertRedirect('/dashboard');
+        }
+    }
+
+    public function test_jefe_rol011_redirects_to_papeletas(): void
+    {
+        $jefeUser = User::where('rol_id', 'ROL011')->first();
+        if ($jefeUser) {
+            $response = $this->actingAs($jefeUser)->get('/');
+            $response->assertRedirect('/papeletas');
         }
     }
 }

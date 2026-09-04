@@ -32,7 +32,6 @@ use Inertia\Inertia;
 Route::get('/', function () {
     if (auth()->check()) {
         $user = auth()->user();
-        if ($user->rol_id === 'ROL012') return redirect('/portal/papeletas');
         if ($user->rol_id === 'ROL011') return redirect('/papeletas');
         if ($user->rol_id === 'ROL010') return redirect('/citas');
         if ($user->rol_id === 'ROL009') return redirect('/hr');

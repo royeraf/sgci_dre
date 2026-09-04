@@ -29,15 +29,17 @@ class AuthController extends Controller
     public function login(Request $request)
     {
         $request->validate([
-            'dni' => ['required', 'string', 'max:100'],
+            'dni' => ['required', 'string', 'size:8', 'regex:/^[0-9]{8}$/'],
             'password' => ['required', 'string'],
         ], [
-            'dni.required' => 'El DNI, usuario o correo es obligatorio.',
+            'dni.required' => 'El DNI es obligatorio.',
+            'dni.size' => 'El DNI debe tener exactamente 8 dígitos.',
+            'dni.regex' => 'El DNI solo debe contener números.',
             'password.required' => 'La contraseña es obligatoria.',
         ]);
 
-        $identifier = trim($request->input('dni'));
-        $throttleKey = Str::transliterate(Str::lower($identifier) . '|' . $request->ip());
+        $dni = trim($request->input('dni'));
+        $throttleKey = Str::transliterate($dni . '|' . $request->ip());
 
         if (RateLimiter::tooManyAttempts($throttleKey, 5)) {
             $seconds = RateLimiter::availableIn($throttleKey);
@@ -46,11 +48,8 @@ class AuthController extends Controller
             ]);
         }
 
-        // Find user by DNI, username, or email
-        $user = User::where('dni', $identifier)
-            ->orWhere('username', $identifier)
-            ->orWhere('email', $identifier)
-            ->first();
+        // Find user strictly by DNI
+        $user = User::where('dni', $dni)->first();
 
         if (!$user || !Hash::check($request->password, $user->password)) {
             RateLimiter::hit($throttleKey, 300);
@@ -97,10 +96,6 @@ class AuthController extends Controller
 
         if ($user->rol_id === 'ROL011') {
             return redirect()->intended('/papeletas');
-        }
-
-        if ($user->rol_id === 'ROL012') {
-            return redirect()->intended('/portal/papeletas');
         }
 
         return redirect()->intended('/dashboard');

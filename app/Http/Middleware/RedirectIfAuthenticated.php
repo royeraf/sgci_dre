@@ -22,9 +22,6 @@ class RedirectIfAuthenticated
         foreach ($guards as $guard) {
             if (Auth::guard($guard)->check()) {
                 $user = Auth::guard($guard)->user();
-                if ($user->rol_id === 'ROL012') {
-                    return redirect('/portal/papeletas');
-                }
                 if ($user->rol_id === 'ROL011') {
                     return redirect('/papeletas');
                 }
