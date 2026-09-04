@@ -41,6 +41,9 @@ Route::get('/', function () {
     return redirect('/login');
 });
 
+// Legacy /home redirect
+Route::redirect('/home', '/dashboard');
+
 // Public routes
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'showLogin'])->name('login');

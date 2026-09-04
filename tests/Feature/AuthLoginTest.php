@@ -102,4 +102,17 @@ class AuthLoginTest extends TestCase
             $response->assertRedirect('/papeletas');
         }
     }
+
+    public function test_home_route_redirects_to_dashboard(): void
+    {
+        $response = $this->get('/home');
+        $response->assertRedirect('/dashboard');
+    }
+
+    public function test_authenticated_user_accessing_login_redirects_to_dashboard(): void
+    {
+        $adminUser = User::where('rol_id', 'ROL001')->first();
+        $response = $this->actingAs($adminUser)->get('/login');
+        $response->assertRedirect('/dashboard');
+    }
 }
