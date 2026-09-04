@@ -25,14 +25,14 @@
                         {{ $page.props.flash.error }}
                     </div>
 
-                    <!-- DNI -->
+                    <!-- DNI or Username -->
                     <div>
-                        <label for="dni" class="block text-sm font-semibold text-slate-700 mb-1.5 cursor-pointer">DNI</label>
+                        <label for="dni" class="block text-sm font-semibold text-slate-700 mb-1.5 cursor-pointer">DNI o Usuario</label>
                         <div class="relative">
                             <CreditCard class="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
-                            <input id="dni" v-model="form.dni" type="text" maxlength="8" inputmode="numeric" autocomplete="username"
+                            <input id="dni" v-model="form.dni" type="text" maxlength="100" autocomplete="username"
                                 class="pl-10 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm focus:outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-500/20 transition-all cursor-pointer"
-                                placeholder="Ingrese su DNI (8 dígitos)" :class="{ 'border-red-300 bg-red-50 focus:border-red-500 focus:ring-red-500/20': form.errors.dni }" />
+                                placeholder="Ingrese su DNI o usuario" :class="{ 'border-red-300 bg-red-50 focus:border-red-500 focus:ring-red-500/20': form.errors.dni }" />
                         </div>
                         <p v-if="form.errors.dni" class="mt-1 text-xs text-red-500">{{ form.errors.dni }}</p>
                     </div>
@@ -52,6 +52,18 @@
                             </button>
                         </div>
                         <p v-if="form.errors.password" class="mt-1 text-xs text-red-500">{{ form.errors.password }}</p>
+                    </div>
+
+                    <!-- Remember Me & Main System Link -->
+                    <div class="flex items-center justify-between">
+                        <label class="flex items-center gap-2 cursor-pointer select-none">
+                            <input v-model="form.remember" type="checkbox"
+                                class="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500 cursor-pointer" />
+                            <span class="text-xs sm:text-sm font-medium text-slate-600 hover:text-slate-900">Recordar sesión</span>
+                        </label>
+                        <a href="/login" class="text-xs sm:text-sm font-medium text-blue-700 hover:text-blue-900 hover:underline">
+                            Sistema Principal &rarr;
+                        </a>
                     </div>
 
                     <!-- Submit -->
@@ -85,6 +97,7 @@ const form = useForm({
 });
 
 const submit = () => {
+    form.dni = (form.dni || '').trim();
     form.post('/portal/login', {
         onFinish: () => form.reset('password'),
     });

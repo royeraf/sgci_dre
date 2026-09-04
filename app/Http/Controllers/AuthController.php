@@ -10,6 +10,9 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Str;
+
 class AuthController extends Controller
 {
     /**
@@ -26,23 +29,37 @@ class AuthController extends Controller
     public function login(Request $request)
     {
         $request->validate([
-            'dni' => ['required', 'string', 'size:8', 'regex:/^[0-9]+$/'],
+            'dni' => ['required', 'string', 'max:100'],
             'password' => ['required', 'string'],
         ], [
-            'dni.required' => 'El DNI es obligatorio.',
-            'dni.size' => 'El DNI debe tener exactamente 8 dígitos.',
-            'dni.regex' => 'El DNI solo debe contener números.',
+            'dni.required' => 'El DNI, usuario o correo es obligatorio.',
             'password.required' => 'La contraseña es obligatoria.',
         ]);
 
-        // Find user by DNI
-        $user = User::where('dni', $request->dni)->first();
+        $identifier = trim($request->input('dni'));
+        $throttleKey = Str::transliterate(Str::lower($identifier) . '|' . $request->ip());
+
+        if (RateLimiter::tooManyAttempts($throttleKey, 5)) {
+            $seconds = RateLimiter::availableIn($throttleKey);
+            throw ValidationException::withMessages([
+                'credentials' => "Demasiados intentos fallidos. Por favor espere {$seconds} segundos antes de volver a intentar.",
+            ]);
+        }
+
+        // Find user by DNI, username, or email
+        $user = User::where('dni', $identifier)
+            ->orWhere('username', $identifier)
+            ->orWhere('email', $identifier)
+            ->first();
 
         if (!$user || !Hash::check($request->password, $user->password)) {
+            RateLimiter::hit($throttleKey, 300);
             throw ValidationException::withMessages([
                 'credentials' => 'Las credenciales proporcionadas son incorrectas.',
             ]);
         }
+
+        RateLimiter::clear($throttleKey);
 
         if (!$user->is_active) {
             throw ValidationException::withMessages([
@@ -50,7 +67,7 @@ class AuthController extends Controller
             ]);
         }
 
-        // Login the user
+        // Login the user with optional remember me
         Auth::login($user, $request->boolean('remember'));
 
         // Update last access
@@ -80,6 +97,10 @@ class AuthController extends Controller
 
         if ($user->rol_id === 'ROL011') {
             return redirect()->intended('/papeletas');
+        }
+
+        if ($user->rol_id === 'ROL012') {
+            return redirect()->intended('/portal/papeletas');
         }
 
         return redirect()->intended('/dashboard');
