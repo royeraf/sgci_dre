@@ -115,4 +115,18 @@ class AuthLoginTest extends TestCase
         $response = $this->actingAs($adminUser)->get('/login');
         $response->assertRedirect('/dashboard');
     }
+
+    public function test_csrf_middleware_excludes_login_and_logout(): void
+    {
+        $middleware = new \App\Http\Middleware\VerifyCsrfToken(app(), app('encrypter'));
+        $reflection = new \ReflectionClass($middleware);
+        $property = $reflection->getProperty('except');
+        $property->setAccessible(true);
+        $except = $property->getValue($middleware);
+
+        $this->assertContains('login', $except);
+        $this->assertContains('logout', $except);
+        $this->assertContains('portal/login', $except);
+        $this->assertContains('portal/logout', $except);
+    }
 }

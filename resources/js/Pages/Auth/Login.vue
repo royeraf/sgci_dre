@@ -35,13 +35,16 @@
         </div>
 
         <!-- Error Alert -->
-        <div v-if="form.errors.credentials || flashError" class="mb-6 bg-red-50 border-2 border-red-200 rounded-xl p-4">
-          <div class="flex items-start gap-3">
-            <div class="flex-shrink-0">
+        <div v-if="form.errors.credentials || flashError" class="mb-6 bg-red-50 border-2 border-red-200 rounded-xl p-4 flex items-start justify-between gap-3">
+          <div class="flex items-start gap-3 flex-1">
+            <div class="flex-shrink-0 mt-0.5">
               <AlertCircle class="h-5 w-5 text-red-600" />
             </div>
             <p class="text-sm font-semibold text-red-800">{{ form.errors.credentials || flashError }}</p>
           </div>
+          <button v-if="flashError && !form.errors.credentials" @click="flashDismissed = true" type="button" class="text-red-400 hover:text-red-700 cursor-pointer p-0.5" title="Cerrar aviso">
+            <X class="w-4 h-4" />
+          </button>
         </div>
 
         <!-- Login Form Card -->
@@ -57,7 +60,7 @@
                   <IdCard class="h-5 w-5 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
                 </div>
                 <input v-model="form.dni" type="text" id="dni" maxlength="8" inputmode="numeric" autocomplete="username"
-                  @input="form.dni = $event.target.value.replace(/\D/g, ''); dniError = ''" :class="[
+                  @input="form.dni = $event.target.value.replace(/\D/g, ''); dniError = ''; flashDismissed = true" :class="[
                     'block w-full pl-10 pr-4 py-3 text-sm sm:text-base border-2 rounded-xl transition-all duration-200 ease-in-out focus:outline-none focus:ring-4 cursor-pointer',
                     dniError || form.errors.dni
                       ? 'border-red-300 bg-red-50 focus:border-red-500 focus:ring-red-500/20'
@@ -80,7 +83,7 @@
                   <Lock class="h-5 w-5 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
                 </div>
                 <input v-model="form.password" :type="showPassword ? 'text' : 'password'" id="password" autocomplete="current-password"
-                  @input="passwordError = ''" :class="[
+                  @input="passwordError = ''; flashDismissed = true" :class="[
                   'block w-full pl-10 pr-12 py-3 text-sm sm:text-base border-2 rounded-xl transition-all duration-200 ease-in-out focus:outline-none focus:ring-4 cursor-pointer',
                   passwordError || form.errors.password
                     ? 'border-red-300 bg-red-50 focus:border-red-500 focus:ring-red-500/20'
@@ -139,11 +142,16 @@ import {
   Eye,
   EyeOff,
   LogIn,
-  Loader2
+  Loader2,
+  X
 } from 'lucide-vue-next';
 
 const page = usePage();
-const flashError = computed(() => page.props.flash?.error);
+const flashDismissed = ref(false);
+const flashError = computed(() => {
+  if (flashDismissed.value) return null;
+  return page.props.flash?.error;
+});
 
 const bgImages = [
   '/images/login-bg.png',
@@ -202,6 +210,7 @@ const form = useForm({
 });
 
 const handleLogin = () => {
+  flashDismissed.value = true;
   dniError.value = '';
   passwordError.value = '';
 
