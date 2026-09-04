@@ -50,28 +50,24 @@ class AuthLoginTest extends TestCase
         $this->assertAuthenticatedAs($user);
     }
 
-    public function test_dni_must_be_exactly_8_digits(): void
+    public function test_user_can_login_with_username(): void
     {
-        // 7 digits
-        $response1 = $this->from('/login')->post('/login', [
-            'dni' => '1234567',
+        $response = $this->post('/login', [
+            'dni' => 'admin',
             'password' => 'admin123',
         ]);
-        $response1->assertSessionHasErrors('dni');
 
-        // Letters
-        $response2 = $this->from('/login')->post('/login', [
-            'dni' => 'abcdefgh',
-            'password' => 'admin123',
-        ]);
-        $response2->assertSessionHasErrors('dni');
+        $response->assertRedirect('/dashboard');
+        $this->assertAuthenticated();
+    }
 
-        // 9 digits
-        $response3 = $this->from('/login')->post('/login', [
-            'dni' => '123456789',
-            'password' => 'admin123',
+    public function test_empty_fields_fail_validation(): void
+    {
+        $response = $this->from('/login')->post('/login', [
+            'dni' => '',
+            'password' => '',
         ]);
-        $response3->assertSessionHasErrors('dni');
+        $response->assertSessionHasErrors(['dni', 'password']);
     }
 
     public function test_invalid_credentials_returns_error(): void

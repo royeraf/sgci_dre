@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Models\Employee;
 use App\Models\AuditLog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -29,17 +30,15 @@ class AuthController extends Controller
     public function login(Request $request)
     {
         $request->validate([
-            'dni' => ['required', 'string', 'size:8', 'regex:/^[0-9]{8}$/'],
+            'dni' => ['required', 'string', 'max:100'],
             'password' => ['required', 'string'],
         ], [
-            'dni.required' => 'El DNI es obligatorio.',
-            'dni.size' => 'El DNI debe tener exactamente 8 dígitos.',
-            'dni.regex' => 'El DNI solo debe contener números.',
+            'dni.required' => 'El DNI o usuario es obligatorio.',
             'password.required' => 'La contraseña es obligatoria.',
         ]);
 
-        $dni = trim($request->input('dni'));
-        $throttleKey = Str::transliterate($dni . '|' . $request->ip());
+        $identifier = trim($request->input('dni'));
+        $throttleKey = Str::transliterate(Str::lower($identifier) . '|' . $request->ip());
 
         if (RateLimiter::tooManyAttempts($throttleKey, 5)) {
             $seconds = RateLimiter::availableIn($throttleKey);
@@ -48,8 +47,29 @@ class AuthController extends Controller
             ]);
         }
 
-        // Find user strictly by DNI
-        $user = User::where('dni', $dni)->first();
+        // Find user by DNI, username, or email
+        $user = User::where('dni', $identifier)
+            ->orWhere('username', $identifier)
+            ->orWhere('email', $identifier)
+            ->first();
+
+        // Auto-provision if active employee exists and logging in with DNI as initial password
+        if (!$user && preg_match('/^[0-9]{8}$/', $identifier)) {
+            $employee = Employee::activos()
+                ->whereHas('person', fn ($q) => $q->where('dni', $identifier))
+                ->first();
+
+            if ($employee && $request->password === $identifier) {
+                $user = User::create([
+                    'person_id' => $employee->person_id,
+                    'username'  => $identifier,
+                    'dni'       => $identifier,
+                    'password'  => Hash::make($request->password),
+                    'rol_id'    => 'ROL012',
+                    'is_active' => true,
+                ]);
+            }
+        }
 
         if (!$user || !Hash::check($request->password, $user->password)) {
             RateLimiter::hit($throttleKey, 300);

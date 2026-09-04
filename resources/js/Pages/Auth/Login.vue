@@ -50,22 +50,22 @@
         <!-- Login Form Card -->
         <div class="bg-white rounded-2xl shadow-xl shadow-blue-950/5 border-2 border-slate-200 p-6 sm:p-8">
           <form class="space-y-6 sm:space-y-8" @submit.prevent="handleLogin">
-            <!-- DNI Field -->
+            <!-- Identifier Field (DNI o Usuario) -->
             <div class="group relative">
               <label for="dni" class="block text-sm font-semibold text-slate-700 mb-2 cursor-pointer">
-                DNI <span class="text-red-500">*</span>
+                DNI o Usuario <span class="text-red-500">*</span>
               </label>
               <div class="relative">
                 <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <IdCard class="h-5 w-5 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
                 </div>
-                <input v-model="form.dni" type="text" id="dni" maxlength="8" inputmode="numeric" autocomplete="username"
-                  @input="form.dni = $event.target.value.replace(/\D/g, ''); dniError = ''; flashDismissed = true" :class="[
+                <input v-model="form.dni" type="text" id="dni" maxlength="100" autocomplete="username"
+                  @input="dniError = ''; flashDismissed = true" :class="[
                     'block w-full pl-10 pr-4 py-3 text-sm sm:text-base border-2 rounded-xl transition-all duration-200 ease-in-out focus:outline-none focus:ring-4 cursor-pointer',
                     dniError || form.errors.dni
                       ? 'border-red-300 bg-red-50 focus:border-red-500 focus:ring-red-500/20'
                       : 'border-slate-200 bg-white hover:border-blue-400 focus:border-blue-600 focus:ring-blue-500/20'
-                  ]" placeholder="DNI (8 dígitos)">
+                  ]" placeholder="DNI (8 dígitos) o usuario">
               </div>
               <p v-if="dniError || form.errors.dni" class="mt-1 text-xs sm:text-sm text-red-600 flex items-center gap-1">
                 <AlertCircle class="w-4 h-4" />
@@ -214,11 +214,9 @@ const handleLogin = () => {
   dniError.value = '';
   passwordError.value = '';
 
-  const dni = (form.dni || '').trim();
-  if (!dni) {
-    dniError.value = 'El DNI es obligatorio';
-  } else if (dni.length !== 8) {
-    dniError.value = 'El DNI debe tener exactamente 8 dígitos';
+  const identifier = (form.dni || '').trim();
+  if (!identifier) {
+    dniError.value = 'El DNI o usuario es obligatorio';
   }
 
   if (!form.password) {
@@ -227,7 +225,7 @@ const handleLogin = () => {
 
   if (dniError.value || passwordError.value) return;
 
-  form.dni = dni;
+  form.dni = identifier;
   form.post('/login', {
     onFinish: () => form.reset('password'),
   });
