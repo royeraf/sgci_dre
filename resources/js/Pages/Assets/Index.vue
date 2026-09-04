@@ -763,6 +763,8 @@ const printAssetLabel = (asset) => {
             params.append('height', String(cfg.labelHeight || 25.4));
             params.append('gap', String(cfg.gap || 2.0));
             params.append('qr_layout', cfg.qrLayout || 'horizontal');
+            params.append('entity_text', cfg.entityText || 'DIRECCIÓN REGIONAL DE EDUCACIÓN DE HUÁNUCO');
+            params.append('subtitle_text', cfg.subtitleText || 'INVENTARIO 2026');
             params.append('show_entity', cfg.showEntity ? '1' : '0');
             params.append('show_subtitle', cfg.showSubtitle ? '1' : '0');
             params.append('show_code', cfg.showCode ? '1' : '0');

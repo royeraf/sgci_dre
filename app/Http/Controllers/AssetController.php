@@ -360,7 +360,7 @@ class AssetController extends Controller
         $sideMargins = (float) $request->query('side_margins', 2.0);
         $qrLayout = $request->query('qr_layout', 'horizontal'); // 'horizontal' o 'vertical'
 
-        $entityText = $request->query('entity_text', 'DRE HUÁNUCO');
+        $entityText = $request->query('entity_text', 'DIRECCIÓN REGIONAL DE EDUCACIÓN DE HUÁNUCO');
         $subtitleText = $request->query('subtitle_text', 'INVENTARIO 2026');
 
         $showEntity = $request->query('show_entity', '1') === '1' || $request->query('show_entity') === 'true';
@@ -372,12 +372,23 @@ class AssetController extends Controller
 
         if ($isSample) {
             $rawAssets = $labelService->getSampleAssets();
+
+            $sampleIds = array_filter(explode(',', $idsParam), fn($id) => $id !== '' && $id !== 'samples');
+            if (!empty($sampleIds)) {
+                $rawAssets = array_values(array_filter(
+                    $rawAssets,
+                    fn($asset) => in_array($asset['id'], $sampleIds, true)
+                ));
+                if (empty($rawAssets)) {
+                    abort(404, 'No se encontraron activos de ejemplo');
+                }
+            }
         } else {
             $ids = array_filter(explode(',', $idsParam));
             if (empty($ids)) {
                 abort(400, 'No se especificaron activos para generar etiquetas');
             }
-            $assets = Asset::with(['brand', 'office'])->whereIn('id', $ids)->get();
+            $assets = Asset::with(['brand', 'origin', 'latestMovement.office'])->whereIn('id', $ids)->get();
             if ($assets->isEmpty()) {
                 abort(404, 'No se encontraron activos');
             }
@@ -420,6 +431,11 @@ class AssetController extends Controller
             $code = !empty($assetArr['codigo_barras'])
                 ? $assetArr['codigo_barras']
                 : (!empty($assetArr['codigo_completo']) ? $assetArr['codigo_completo'] : ($assetArr['codigo_patrimonio'] ?? ''));
+
+            if (!array_key_exists('es_sobrante', $assetArr)) {
+                $originNombre = $assetArr['origin']['nombre'] ?? ($assetArr['tipo_origen'] ?? '');
+                $assetArr['es_sobrante'] = strtoupper(trim((string) $originNombre)) === 'SOBRANTE';
+            }
 
             if ($codeType === 'qr') {
                 $image = $labelService->generateQrBase64($code, 200, 1);

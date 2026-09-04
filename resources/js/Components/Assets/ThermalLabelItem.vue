@@ -33,7 +33,7 @@ const props = defineProps({
             showName: true,
             showSeries: true,
             showOffice: false,
-            entityText: 'DRE HUÁNUCO',
+            entityText: 'DIRECCIÓN REGIONAL DE EDUCACIÓN DE HUÁNUCO',
             subtitleText: 'INVENTARIO 2026',
         }),
     },
@@ -61,15 +61,17 @@ const assetName = computed(() => {
     return props.asset.denominacion || 'BIEN PATRIMONIAL';
 });
 
-const assetSeries = computed(() => {
-    return props.asset.numero_serie || '';
-});
-
 const assetOffice = computed(() => {
     if (typeof props.asset.oficina_actual === 'object' && props.asset.oficina_actual) {
         return props.asset.oficina_actual.nombre || '';
     }
     return props.asset.oficina_actual || '';
+});
+
+const esSobrante = computed(() => {
+    if (props.asset.es_sobrante) return true;
+    const origenNombre = props.asset.origin?.nombre || props.asset.origen?.nombre || '';
+    return String(origenNombre).trim().toUpperCase() === 'SOBRANTE';
 });
 
 // Renderizar códigos según el tipo
@@ -144,6 +146,9 @@ const fontSizes = computed(() => {
         qrSize: isSmall
             ? (props.isPrintMode ? '16mm' : `${Math.round(16 * 3.78 * props.scale)}px`)
             : (props.isPrintMode ? '19mm' : `${Math.round(19 * 3.78 * props.scale)}px`),
+        logoSize: isSmall
+            ? (props.isPrintMode ? '3mm' : `${Math.round(3 * 3.78 * props.scale)}px`)
+            : (props.isPrintMode ? '4.5mm' : `${Math.round(4.5 * 3.78 * props.scale)}px`),
     };
 });
 </script>
@@ -172,9 +177,9 @@ const fontSizes = computed(() => {
                     <div
                         v-if="options.showEntity"
                         :style="{ fontSize: fontSizes.entity }"
-                        class="font-black text-slate-900 leading-tight uppercase truncate"
+                        class="font-black text-slate-900 leading-tight uppercase"
                     >
-                        {{ options.entityText || 'DRE HUÁNUCO' }}
+                        {{ options.entityText || 'DIRECCIÓN REGIONAL DE EDUCACIÓN DE HUÁNUCO' }}
                     </div>
 
                     <div
@@ -203,14 +208,6 @@ const fontSizes = computed(() => {
                     </div>
 
                     <div
-                        v-if="options.showSeries && assetSeries"
-                        :style="{ fontSize: fontSizes.extra }"
-                        class="font-mono text-slate-500 truncate leading-none mt-0.5"
-                    >
-                        S/N: {{ assetSeries }}
-                    </div>
-
-                    <div
                         v-if="options.showOffice && assetOffice"
                         :style="{ fontSize: fontSizes.extra }"
                         class="text-slate-500 truncate leading-none mt-0.5"
@@ -225,18 +222,19 @@ const fontSizes = computed(() => {
         <template v-else-if="codeType === 'qr'">
             <div class="w-full flex flex-col items-center">
                 <div
-                    v-if="options.showEntity"
-                    :style="{ fontSize: fontSizes.entity }"
-                    class="font-black text-slate-900 leading-tight uppercase truncate w-full"
-                >
-                    {{ options.entityText || 'DRE HUÁNUCO' }}
-                </div>
-                <div
                     v-if="options.showSubtitle"
                     :style="{ fontSize: fontSizes.sub }"
                     class="font-semibold text-slate-500 leading-none uppercase truncate w-full"
                 >
                     {{ options.subtitleText || 'INVENTARIO 2026' }}
+                </div>
+                <div
+                    v-if="options.showName"
+                    :style="{ fontSize: fontSizes.name }"
+                    class="font-semibold text-slate-700 leading-tight truncate w-full mt-0.5"
+                    :title="assetName"
+                >
+                    {{ assetName }}
                 </div>
             </div>
 
@@ -249,30 +247,12 @@ const fontSizes = computed(() => {
                     class="object-contain"
                 />
             </div>
-
-            <div class="w-full flex flex-col items-center">
-                <div
-                    v-if="options.showCode"
-                    :style="{ fontSize: fontSizes.code }"
-                    class="font-mono font-bold text-black tracking-wider leading-tight"
-                >
-                    {{ assetCode }}
-                </div>
-                <div
-                    v-if="options.showName"
-                    :style="{ fontSize: fontSizes.name }"
-                    class="font-semibold text-slate-700 leading-tight truncate w-full"
-                    :title="assetName"
-                >
-                    {{ assetName }}
-                </div>
-                <div
-                    v-if="options.showSeries && assetSeries"
-                    :style="{ fontSize: fontSizes.extra }"
-                    class="font-mono text-slate-500 truncate w-full leading-none"
-                >
-                    S/N: {{ assetSeries }}
-                </div>
+            <div
+                v-if="options.showCode"
+                :style="{ fontSize: fontSizes.code }"
+                class="font-mono font-bold text-black tracking-wider leading-tight"
+            >
+                {{ assetCode }}
             </div>
         </template>
 
@@ -280,18 +260,19 @@ const fontSizes = computed(() => {
         <template v-else>
             <div class="w-full flex flex-col items-center">
                 <div
-                    v-if="options.showEntity"
-                    :style="{ fontSize: fontSizes.entity }"
-                    class="font-black text-slate-900 leading-tight uppercase truncate w-full"
-                >
-                    {{ options.entityText || 'DRE HUÁNUCO' }}
-                </div>
-                <div
                     v-if="options.showSubtitle"
                     :style="{ fontSize: fontSizes.sub }"
                     class="font-semibold text-slate-500 leading-none uppercase truncate w-full"
                 >
                     {{ options.subtitleText || 'INVENTARIO 2026' }}
+                </div>
+                <div
+                    v-if="options.showName"
+                    :style="{ fontSize: fontSizes.name }"
+                    class="font-semibold text-slate-700 leading-tight truncate w-full mt-0.5"
+                    :title="assetName"
+                >
+                    {{ assetName }}
                 </div>
             </div>
 
@@ -299,44 +280,37 @@ const fontSizes = computed(() => {
             <div class="w-full my-0.5 flex-1 flex items-center justify-center overflow-hidden">
                 <svg ref="barcodeSvgRef" class="w-full max-h-full"></svg>
             </div>
-
-            <div class="w-full flex flex-col items-center">
-                <div
-                    v-if="options.showCode"
-                    :style="{ fontSize: fontSizes.code }"
-                    class="font-mono font-bold text-black tracking-wider leading-tight"
-                >
-                    {{ assetCode }}
-                </div>
-                <div
-                    v-if="options.showName"
-                    :style="{ fontSize: fontSizes.name }"
-                    class="font-semibold text-slate-700 leading-tight truncate w-full"
-                    :title="assetName"
-                >
-                    {{ assetName }}
-                </div>
-                <div
-                    v-if="options.showSeries && assetSeries"
-                    :style="{ fontSize: fontSizes.extra }"
-                    class="font-mono text-slate-500 truncate w-full leading-none"
-                >
-                    S/N: {{ assetSeries }}
-                </div>
-                <div
-                    v-if="options.showOffice && assetOffice"
-                    :style="{ fontSize: fontSizes.extra }"
-                    class="text-slate-500 truncate w-full leading-none"
-                >
-                    Of: {{ assetOffice }}
-                </div>
+            <div
+                v-if="options.showCode"
+                :style="{ fontSize: fontSizes.code }"
+                class="font-mono font-bold text-black tracking-wider leading-tight"
+            >
+                {{ assetCode }}
             </div>
         </template>
+
+        <!-- Logo institucional (esquina inferior izquierda) -->
+        <img
+            src="/images/logo.png"
+            alt="Logo"
+            class="absolute left-0.5 bottom-0.5 object-contain"
+            :style="{ width: fontSizes.logoSize, height: fontSizes.logoSize }"
+        />
+
+        <!-- Indicador de bien sobrante (esquina inferior derecha) -->
+        <div
+            v-if="esSobrante"
+            :style="{ fontSize: fontSizes.extra }"
+            class="absolute right-0.5 bottom-0.5 font-bold text-red-700 border border-red-700 rounded-sm px-0.5 leading-none"
+        >
+            SOBRANTE
+        </div>
     </div>
 </template>
 
 <style scoped>
 .thermal-label {
+    position: relative;
     box-sizing: border-box;
     break-inside: avoid;
     page-break-inside: avoid;

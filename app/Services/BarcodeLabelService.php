@@ -121,6 +121,7 @@ class BarcodeLabelService
                 'oficina_actual' => ['nombre' => 'DIRECCION REGIONAL'],
                 'responsable_actual' => ['nombre_completo' => 'MG. WILLIAM ELEAZAR INGA V.'],
                 'estado_actual' => 'BUENO',
+                'es_sobrante' => true,
             ],
             [
                 'id' => 'sample-2',

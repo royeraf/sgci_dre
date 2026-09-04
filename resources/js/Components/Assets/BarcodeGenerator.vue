@@ -49,7 +49,7 @@ const config = ref({
     showName: true,
     showSeries: true,
     showOffice: false,
-    entityText: 'DRE HUÁNUCO',
+    entityText: 'DIRECCIÓN REGIONAL DE EDUCACIÓN DE HUÁNUCO',
     subtitleText: 'INVENTARIO 2026',
     previewZoom: 1.25,
 });
@@ -144,6 +144,10 @@ const loadSavedConfig = () => {
         const saved = localStorage.getItem('dre_td402s_label_config');
         if (saved) {
             const parsed = JSON.parse(saved);
+            // Migrar el texto de entidad corto guardado antes de usar el nombre completo
+            if (parsed.entityText === 'DRE HUÁNUCO' || parsed.entityText === 'DRE HUANUCO') {
+                parsed.entityText = 'DIRECCIÓN REGIONAL DE EDUCACIÓN DE HUÁNUCO';
+            }
             config.value = { ...config.value, ...parsed };
         }
     } catch (e) {
@@ -294,8 +298,11 @@ const previewAssetPairs = computed(() => {
 const buildPdfUrl = (idsString = '') => {
     const params = new URLSearchParams();
 
-    if (isSampleMode.value || idsString === 'samples') {
+    if (isSampleMode.value) {
         params.append('sample', '1');
+        if (idsString && idsString !== 'samples') {
+            params.append('ids', String(idsString));
+        }
     } else {
         params.append('ids', idsString);
     }
