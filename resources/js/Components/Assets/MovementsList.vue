@@ -323,6 +323,8 @@
             :offices="offices"
             :employees="employees"
             :movement-types="movementTypes"
+            :initial-asset="movementInitialAsset"
+            :lock-asset="!!movementInitialAsset"
             @close="showMovementModal = false"
             @success="handleMovementSuccess"
         />
@@ -384,6 +386,7 @@ const perPage = ref(15);
 
 // ===== MOVEMENT MODAL =====
 const showMovementModal = ref(false);
+const movementInitialAsset = ref(null);
 
 const handleMovementSuccess = () => {
     fetchMovements(1);
@@ -509,6 +512,12 @@ const getStateClass = (nombre) => {
 
 // ===== EXPOSE =====
 const openModal = () => {
+    movementInitialAsset.value = null;
+    showMovementModal.value = true;
+};
+
+const openModalForAsset = (asset) => {
+    movementInitialAsset.value = asset;
     showMovementModal.value = true;
 };
 
@@ -517,7 +526,7 @@ const setSearch = (code) => {
     fetchMovements(1);
 };
 
-defineExpose({ openModal, setSearch });
+defineExpose({ openModal, openModalForAsset, setSearch });
 </script>
 
 <style scoped>

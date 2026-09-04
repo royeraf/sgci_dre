@@ -25,6 +25,8 @@ const props = defineProps({
     employees:     { type: Array, default: () => [] },
     movementTypes: { type: Array, default: () => [] },
     initialMode:   { type: String, default: 'individual' },
+    initialAsset:  { type: Object, default: null },
+    lockAsset:     { type: Boolean, default: false },
 });
 
 const emit = defineEmits(['close', 'success']);
@@ -43,6 +45,10 @@ const form = ref({
 });
 const formErrors    = ref({});
 const isSubmitting  = shallowRef(false);
+
+// Valores originales del bien al precargar desde "Editar Bien", para detectar
+// si el usuario envía el movimiento sin cambiar nada (ver submit()).
+const originalValues = ref(null);
 
 // ===== EMPLOYEE SEARCH =====
 const empQuery        = shallowRef('');
@@ -63,12 +69,6 @@ const filteredEmployees = computed(() => {
     }).slice(0, 10);
 });
 
-const onEmpInput = () => {
-    showEmpDropdown.value   = true;
-    selectedEmployee.value  = null;
-    form.value.responsable_id = '';
-};
-
 const selectEmployee = async (emp) => {
     selectedEmployee.value  = emp;
     empQuery.value          = emp.nombre_completo;
@@ -79,6 +79,42 @@ const selectEmployee = async (emp) => {
     } catch {
         form.value.responsable_id = '';
     }
+};
+
+const clearSelectedEmployee = () => {
+    selectedEmployee.value    = null;
+    empQuery.value            = '';
+    form.value.responsable_id = '';
+};
+
+// ===== OFICINA SEARCH =====
+const officeQuery         = shallowRef('');
+const showOfficeDropdown  = shallowRef(false);
+const selectedOffice      = ref(null);
+const officeDropdownRef   = ref(null);
+
+const filteredOffices = computed(() => {
+    const q = officeQuery.value.trim();
+    if (!q) return props.offices.slice(0, 10);
+    const norm = q.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    return props.offices.filter(office => {
+        const nombre    = (office.nombre || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        const direccion = (office.direction?.nombre || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        return nombre.includes(norm) || direccion.includes(norm);
+    }).slice(0, 10);
+});
+
+const selectOffice = (office) => {
+    selectedOffice.value     = office;
+    form.value.oficina_id    = office.id;
+    officeQuery.value        = office.nombre;
+    showOfficeDropdown.value = false;
+};
+
+const clearOffice = () => {
+    selectedOffice.value  = null;
+    officeQuery.value     = '';
+    form.value.oficina_id = '';
 };
 
 // ===== INDIVIDUAL: ASSET SEARCH =====
@@ -117,6 +153,45 @@ const selectAsset = (asset) => {
         form.value.estado_id = asset.latest_movement.state.id;
     }
 };
+
+// Pre-seleccionar el bien y sus datos actuales cuando se pasa via prop
+// (p. ej. desde el botón "Registrar cambio de estado o ubicación" en Editar Bien).
+const prefillFromAsset = (asset) => {
+    selectAsset(asset);
+
+    const lm = asset.latest_movement;
+    const oficinaId     = lm?.oficina_id ?? '';
+    const responsableId = lm?.responsable_id ?? '';
+    form.value.oficina_id     = oficinaId;
+    form.value.responsable_id = responsableId;
+
+    if (oficinaId) {
+        selectedOffice.value = lm.office || props.offices.find(o => o.id === oficinaId) || null;
+        if (selectedOffice.value) officeQuery.value = selectedOffice.value.nombre;
+    }
+
+    if (lm?.responsible) {
+        const emp = props.employees.find(e => e.id === lm.responsible.employee_id);
+        selectedEmployee.value = emp || {
+            id: null,
+            nombre_completo: lm.responsible.nombre_completo || lm.responsible.nombre_original || '',
+            dni: '',
+        };
+        empQuery.value = selectedEmployee.value.nombre_completo;
+    }
+
+    originalValues.value = {
+        estado_id:      form.value.estado_id,
+        oficina_id:     oficinaId,
+        responsable_id: responsableId,
+    };
+};
+
+onMounted(() => {
+    if (props.initialAsset) {
+        prefillFromAsset(props.initialAsset);
+    }
+});
 
 const clearSelectedAsset = () => {
     selectedAsset.value      = null;
@@ -191,8 +266,31 @@ const validate = () => {
     return Object.keys(errors).length === 0;
 };
 
+// Si el bien fue precargado desde "Editar Bien" y el usuario no cambió estado,
+// ubicación ni responsable, confirma antes de registrar un movimiento idéntico.
+const isUnchangedFromOriginal = () => {
+    const orig = originalValues.value;
+    if (!orig) return false;
+    return String(form.value.estado_id) === String(orig.estado_id)
+        && String(form.value.oficina_id || '') === String(orig.oficina_id || '')
+        && String(form.value.responsable_id || '') === String(orig.responsable_id || '');
+};
+
 const submit = async () => {
     if (!validate() || isSubmitting.value) return;
+
+    if (mode.value === 'individual' && isUnchangedFromOriginal()) {
+        const { isConfirmed } = await Swal.fire({
+            icon: 'question',
+            title: 'Sin cambios',
+            text: 'No cambió el estado, la ubicación ni el responsable. ¿Registrar el movimiento igualmente?',
+            showCancelButton: true,
+            confirmButtonText: 'Registrar igual',
+            cancelButtonText: 'Cancelar',
+        });
+        if (!isConfirmed) return;
+    }
+
     isSubmitting.value = true;
     try {
         if (mode.value === 'individual') {
@@ -254,6 +352,8 @@ const handleClickOutside = (e) => {
         showAssetDropdown.value = false;
     if (empDropdownRef.value && !empDropdownRef.value.contains(e.target))
         showEmpDropdown.value = false;
+    if (officeDropdownRef.value && !officeDropdownRef.value.contains(e.target))
+        showOfficeDropdown.value = false;
 };
 
 onMounted(() => document.addEventListener('click', handleClickOutside));
@@ -276,9 +376,13 @@ onUnmounted(() => {
                     <div>
                         <h3 class="text-xl font-bold text-white flex items-center gap-2">
                             <ArrowRightLeft class="w-6 h-6" />
-                            Registrar Movimiento
+                            {{ lockAsset ? 'Cambio de Estado / Ubicación' : 'Registrar Movimiento' }}
                         </h3>
-                        <p class="text-blue-100 text-sm mt-0.5">Complete los datos y seleccione los bienes</p>
+                        <p class="text-blue-100 text-sm mt-0.5">
+                            {{ lockAsset
+                                ? `Se muestran los datos actuales de ${initialAsset?.codigo_patrimonio}. Modifique solo lo que cambia.`
+                                : 'Complete los datos y seleccione los bienes' }}
+                        </p>
                     </div>
                     <button @click="$emit('close')" class="text-blue-100 hover:text-white transition-colors p-1">
                         <X class="w-6 h-6" />
@@ -327,7 +431,7 @@ onUnmounted(() => {
                                 <label class="block text-sm font-bold text-slate-700 mb-1.5">
                                     Tipo <span class="text-red-500">*</span>
                                 </label>
-                                <select v-model="form.tipo_movimiento_id"
+                                <select v-model="form.tipo_movimiento_id" :autofocus="lockAsset"
                                     class="w-full px-3 py-2.5 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white outline-none text-sm transition-colors"
                                     :class="formErrors.tipo_movimiento_id ? 'border-red-400' : 'border-slate-200'">
                                     <option value="">Seleccione tipo</option>
@@ -364,48 +468,76 @@ onUnmounted(() => {
                             </div>
 
                             <!-- Oficina -->
-                            <div>
+                            <div class="relative" ref="officeDropdownRef">
                                 <label class="block text-sm font-bold text-slate-700 mb-1.5">Ubicación / Oficina</label>
-                                <select v-model="form.oficina_id"
-                                    class="w-full px-3 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white outline-none text-sm transition-colors">
-                                    <option value="">Sin especificar</option>
-                                    <option v-for="office in offices" :key="office.id" :value="office.id">
-                                        {{ office.nombre }}{{ office.direction ? ` (${office.direction.nombre})` : '' }}
-                                    </option>
-                                </select>
+
+                                <!-- Chip seleccionado -->
+                                <div v-if="selectedOffice"
+                                    class="flex items-center gap-2 px-3 py-2.5 border border-blue-300 bg-blue-50 rounded-xl">
+                                    <Check class="w-4 h-4 text-blue-600 shrink-0" />
+                                    <div class="flex-1 min-w-0">
+                                        <p class="text-sm font-semibold text-blue-900 truncate">{{ selectedOffice.nombre }}</p>
+                                        <p v-if="selectedOffice.direction?.nombre" class="text-xs text-blue-500 truncate">{{ selectedOffice.direction.nombre }}</p>
+                                    </div>
+                                    <button type="button" @click="clearOffice"
+                                        class="shrink-0 p-0.5 rounded-full hover:bg-blue-200 transition-colors text-blue-500 hover:text-blue-700">
+                                        <X class="w-4 h-4" />
+                                    </button>
+                                </div>
+
+                                <!-- Buscador -->
+                                <div v-else class="relative">
+                                    <input type="text" v-model="officeQuery" @focus="showOfficeDropdown = true"
+                                        placeholder="Buscar oficina..."
+                                        class="w-full px-3 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm transition-colors pr-9" />
+                                    <ChevronDown class="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                                    <div v-if="showOfficeDropdown && filteredOffices.length > 0"
+                                        class="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl max-h-48 overflow-y-auto">
+                                        <button type="button" v-for="office in filteredOffices" :key="office.id"
+                                            @click="selectOffice(office)"
+                                            class="w-full text-left px-4 py-2 hover:bg-blue-50 transition-colors flex flex-col group border-b border-slate-50 last:border-0">
+                                            <span class="text-sm font-medium text-slate-700 group-hover:text-slate-900">{{ office.nombre }}</span>
+                                            <span v-if="office.direction?.nombre" class="text-xs text-slate-400">{{ office.direction.nombre }}</span>
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
 
                             <!-- Responsable -->
-                            <div class="sm:col-span-2 relative" ref="empDropdown">
+                            <div class="sm:col-span-2 relative" ref="empDropdownRef">
                                 <label class="block text-sm font-bold text-slate-700 mb-1.5">Responsable</label>
-                                <div class="relative">
+
+                                <!-- Chip seleccionado -->
+                                <div v-if="selectedEmployee"
+                                    class="flex items-center gap-2 px-3 py-2.5 border border-blue-300 bg-blue-50 rounded-xl">
+                                    <Check class="w-4 h-4 text-blue-600 shrink-0" />
+                                    <div class="flex-1 min-w-0">
+                                        <p class="text-sm font-semibold text-blue-900 truncate">{{ selectedEmployee.nombre_completo }}</p>
+                                        <p v-if="selectedEmployee.dni" class="text-xs text-blue-500 truncate">DNI: {{ selectedEmployee.dni }}</p>
+                                    </div>
+                                    <button type="button" @click="clearSelectedEmployee"
+                                        class="shrink-0 p-0.5 rounded-full hover:bg-blue-200 transition-colors text-blue-500 hover:text-blue-700">
+                                        <X class="w-4 h-4" />
+                                    </button>
+                                </div>
+
+                                <!-- Buscador -->
+                                <div v-else class="relative">
                                     <input type="text" v-model="empQuery"
                                         @focus="showEmpDropdown = true"
-                                        @input="onEmpInput"
                                         placeholder="Buscar por nombre o DNI..."
                                         class="w-full px-3 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm transition-colors pr-9" />
                                     <ChevronDown class="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                                </div>
-                                <div v-if="showEmpDropdown && filteredEmployees.length > 0"
-                                    class="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl max-h-48 overflow-y-auto">
-                                    <button type="button" v-for="emp in filteredEmployees" :key="emp.id"
-                                        @click="selectEmployee(emp)"
-                                        class="w-full text-left px-4 py-2 hover:bg-blue-50 transition-colors flex items-center justify-between group border-b border-slate-50 last:border-0">
-                                        <div>
-                                            <p class="font-medium text-slate-700 group-hover:text-slate-900 text-sm">{{ emp.nombre_completo }}</p>
-                                            <p class="text-xs text-slate-400">{{ emp.dni }}</p>
-                                        </div>
-                                        <Check v-if="selectedEmployee?.id === emp.id" class="w-4 h-4 text-blue-600 shrink-0" />
-                                    </button>
-                                </div>
-                                <div v-if="selectedEmployee"
-                                    class="mt-2 flex items-center gap-2 px-3 py-2 bg-blue-50 border border-blue-100 rounded-xl">
-                                    <div class="w-7 h-7 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-xs font-bold text-white shrink-0">
-                                        {{ (selectedEmployee.nombre_completo || '?').charAt(0) }}
-                                    </div>
-                                    <div>
-                                        <p class="text-sm font-semibold text-blue-800">{{ selectedEmployee.nombre_completo }}</p>
-                                        <p class="text-xs text-blue-500">DNI: {{ selectedEmployee.dni }}</p>
+                                    <div v-if="showEmpDropdown && filteredEmployees.length > 0"
+                                        class="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl max-h-48 overflow-y-auto">
+                                        <button type="button" v-for="emp in filteredEmployees" :key="emp.id"
+                                            @click="selectEmployee(emp)"
+                                            class="w-full text-left px-4 py-2 hover:bg-blue-50 transition-colors flex items-center justify-between group border-b border-slate-50 last:border-0">
+                                            <div>
+                                                <p class="font-medium text-slate-700 group-hover:text-slate-900 text-sm">{{ emp.nombre_completo }}</p>
+                                                <p class="text-xs text-slate-400">{{ emp.dni }}</p>
+                                            </div>
+                                        </button>
                                     </div>
                                 </div>
                             </div>
@@ -430,7 +562,7 @@ onUnmounted(() => {
                             Bien Patrimonial
                         </p>
 
-                        <div class="relative" ref="assetDropdown">
+                        <div v-if="!lockAsset" class="relative" ref="assetDropdownRef">
                             <label class="block text-sm font-bold text-slate-700 mb-1.5">
                                 Seleccionar Bien <span class="text-red-500">*</span>
                             </label>
@@ -486,7 +618,7 @@ onUnmounted(() => {
                                     {{ selectedAsset.brand.nombre }}{{ selectedAsset.modelo ? ` — ${selectedAsset.modelo}` : '' }}
                                 </p>
                             </div>
-                            <button type="button" @click="clearSelectedAsset"
+                            <button v-if="!lockAsset" type="button" @click="clearSelectedAsset"
                                 class="text-blue-400 hover:text-blue-600 transition-colors p-1 shrink-0">
                                 <X class="w-4 h-4" />
                             </button>
@@ -507,7 +639,7 @@ onUnmounted(() => {
                                 Código de Barras
                             </label>
                             <div class="relative">
-                                <input ref="barcodeInput" v-model="barcodeValue" type="text"
+                                <input ref="barcodeInputRef" v-model="barcodeValue" type="text"
                                     @keydown.enter.prevent="handleScan"
                                     placeholder="Apunte el lector al código de barras del bien..."
                                     class="w-full px-4 py-3 border-2 rounded-xl font-mono font-bold text-slate-800 text-sm outline-none transition-all duration-200 placeholder:font-normal placeholder:text-slate-400"

@@ -376,10 +376,22 @@
                                 <div class="mt-4 pt-3 border-t border-slate-200/60 flex items-start gap-2">
                                     <AlertCircle class="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
                                     <p class="text-[11px] leading-relaxed text-slate-500">
-                                        La asignación del bien no puede modificarse desde aquí. Para realizar un cambio
-                                        de responsable o ubicación, por favor utilice la pestaña de
-                                        <span class="font-bold">Movimientos</span> en el panel principal.
+                                        La asignación del bien no puede modificarse desde aquí.
+                                        <span v-if="canManageMovements">
+                                            Use el botón de abajo para registrar un cambio de responsable, ubicación o estado.
+                                        </span>
+                                        <span v-else>
+                                            Para realizar un cambio de responsable o ubicación, por favor utilice la
+                                            pestaña de <span class="font-bold">Movimientos</span> en el panel principal.
+                                        </span>
                                     </p>
+                                </div>
+                                <div v-if="canManageMovements" class="mt-3">
+                                    <button type="button" @click="goToMovements"
+                                        class="w-full flex items-center justify-center gap-2 px-4 py-2.5 border-2 border-blue-200 text-blue-700 font-bold rounded-xl hover:bg-blue-50 transition-colors text-sm">
+                                        <ArrowRightLeft class="w-4 h-4" />
+                                        Registrar cambio de estado o ubicación
+                                    </button>
                                 </div>
                             </template>
                         </div>
@@ -411,7 +423,7 @@ import { useForm } from 'vee-validate';
 import { toTypedSchema } from '@vee-validate/yup';
 import * as yup from 'yup';
 import { router } from '@inertiajs/vue3';
-import { Plus, Pencil, X, Loader2, AlertCircle, ChevronDown, Check } from 'lucide-vue-next';
+import { Plus, Pencil, X, Loader2, AlertCircle, ChevronDown, Check, ArrowRightLeft } from 'lucide-vue-next';
 import axios from 'axios';
 import { useEmployeeSearch } from '@/Composables/useEmployeeSearch';
 
@@ -433,11 +445,12 @@ const props = defineProps({
     areas: { type: Array, default: () => [] },
     offices: { type: Array, default: () => [] },
     employees: { type: Array, default: () => [] },
+    canManageMovements: { type: Boolean, default: false },
 });
 
 const isEditing = !!props.asset;
 
-const emit = defineEmits(['close', 'success']);
+const emit = defineEmits(['close', 'success', 'change-state']);
 
 const isSubmitting = ref(false);
 const today = new Date().toISOString().split('T')[0];
@@ -708,5 +721,9 @@ const onSubmitForm = validateForm(async (values) => {
 
 const handleSubmit = () => {
     onSubmitForm();
+};
+
+const goToMovements = () => {
+    emit('change-state', props.asset);
 };
 </script>

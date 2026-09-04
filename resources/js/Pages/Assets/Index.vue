@@ -518,7 +518,9 @@
                 @close="showCreateModal = false" @success="handleAssetCreated" />
             <AssetModal v-if="showEditModal" :asset="editingAsset" :categories="categories" :brands="brands"
                 :colors="colors" :states="states" :origins="origins" :areas="areas" :offices="offices"
-                :employees="employees" @close="showEditModal = false" @success="handleAssetUpdated" />
+                :employees="employees" :can-manage-movements="!isEmployeeOnly && canViewTab('movements')"
+                @close="showEditModal = false" @success="handleAssetUpdated"
+                @change-state="handleChangeState" />
             <BarcodeScannerModal v-if="showBarcodeScanner" @close="showBarcodeScanner = false"
                 @found="handleBarcodeFound" />
         </div>
@@ -761,6 +763,31 @@ const handleAssetUpdated = () => {
         timer: 2500,
     });
 };
+
+// Bien pendiente de abrir en el modal de Movimientos tras "Editar Bien". Se
+// resuelve tanto si MovementsList ya está montado (misma pestaña) como si
+// recién se monta al cambiar de pestaña (ver watch(movementsListRef) abajo).
+const pendingMovementAsset = ref(null);
+
+const handleChangeState = (asset) => {
+    showEditModal.value = false;
+    editingAsset.value = null;
+    pendingMovementAsset.value = asset;
+    activeTab.value = 'movements';
+    nextTick(() => {
+        if (movementsListRef.value && pendingMovementAsset.value) {
+            movementsListRef.value.openModalForAsset(pendingMovementAsset.value);
+            pendingMovementAsset.value = null;
+        }
+    });
+};
+
+watch(movementsListRef, (list) => {
+    if (list && pendingMovementAsset.value) {
+        list.openModalForAsset(pendingMovementAsset.value);
+        pendingMovementAsset.value = null;
+    }
+}, { flush: 'post' });
 
 // Delete con SweetAlert2
 const confirmDelete = async (asset) => {
