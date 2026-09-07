@@ -83,71 +83,6 @@
             <Transition name="fade-slide" mode="out-in">
                 <div :key="activeTab">
 
-                    <!-- Stats Overview -->
-                    <div v-if="!isEmployeeOnly && activeTab === 'list'"
-                        class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                        <div
-                            class="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm hover:shadow-md transition-all group relative overflow-hidden">
-                            <div
-                                class="absolute right-0 top-0 w-24 h-24 bg-slate-50 rounded-bl-[100px] -mr-4 -mt-4 transition-transform group-hover:scale-110">
-                            </div>
-                            <div class="relative">
-                                <div
-                                    class="w-12 h-12 bg-slate-100 rounded-xl flex items-center justify-center text-slate-700 mb-4 group-hover:scale-110 transition-transform">
-                                    <Box class="w-6 h-6" />
-                                </div>
-                                <p class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Total Bienes
-                                </p>
-                                <h3 class="text-3xl font-black text-slate-900 mt-1">{{ stats.total }}</h3>
-                            </div>
-                        </div>
-
-                        <div
-                            class="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm hover:shadow-md transition-all group relative overflow-hidden">
-                            <div
-                                class="absolute right-0 top-0 w-24 h-24 bg-emerald-50 rounded-bl-[100px] -mr-4 -mt-4 transition-transform group-hover:scale-110">
-                            </div>
-                            <div class="relative">
-                                <div
-                                    class="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center text-slate-700 mb-4 group-hover:scale-110 transition-transform">
-                                    <CheckCircle class="w-6 h-6" />
-                                </div>
-                                <p class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Buenos</p>
-                                <h3 class="text-3xl font-black text-slate-700 mt-1">{{ stats.buenos }}</h3>
-                            </div>
-                        </div>
-
-                        <div
-                            class="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm hover:shadow-md transition-all group relative overflow-hidden">
-                            <div
-                                class="absolute right-0 top-0 w-24 h-24 bg-yellow-50 rounded-bl-[100px] -mr-4 -mt-4 transition-transform group-hover:scale-110">
-                            </div>
-                            <div class="relative">
-                                <div
-                                    class="w-12 h-12 bg-yellow-100 rounded-xl flex items-center justify-center text-yellow-600 mb-4 group-hover:scale-110 transition-transform">
-                                    <AlertTriangle class="w-6 h-6" />
-                                </div>
-                                <p class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Regulares</p>
-                                <h3 class="text-3xl font-black text-yellow-600 mt-1">{{ stats.regulares }}</h3>
-                            </div>
-                        </div>
-
-                        <div
-                            class="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm hover:shadow-md transition-all group relative overflow-hidden">
-                            <div
-                                class="absolute right-0 top-0 w-24 h-24 bg-red-50 rounded-bl-[100px] -mr-4 -mt-4 transition-transform group-hover:scale-110">
-                            </div>
-                            <div class="relative">
-                                <div
-                                    class="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center text-red-600 mb-4 group-hover:scale-110 transition-transform">
-                                    <XCircle class="w-6 h-6" />
-                                </div>
-                                <p class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Malos</p>
-                                <h3 class="text-3xl font-black text-red-600 mt-1">{{ stats.malos }}</h3>
-                            </div>
-                        </div>
-                    </div>
-
                     <!-- List Content -->
                     <div v-if="!isEmployeeOnly && activeTab === 'list'" class="space-y-6">
                         <BaseTableCard title="Inventario de Bienes"
@@ -545,10 +480,7 @@ import {
     Search,
     FileDown,
     Box,
-    CheckCircle,
     ArrowRightLeft,
-    AlertTriangle,
-    XCircle,
     Settings,
     Barcode,
     ScanBarcode,
@@ -671,18 +603,6 @@ const handleBarcodeFound = (code) => {
     }
 };
 
-// Stats
-const stats = ref({ total: 0, buenos: 0, regulares: 0, malos: 0 });
-
-const fetchStats = async () => {
-    try {
-        const response = await axios.get('/assets/summary');
-        stats.value = response.data;
-    } catch (error) {
-        console.error('Error fetching stats:', error);
-    }
-};
-
 // List data
 const listAssets = ref([]);
 const listLoading = ref(false);
@@ -753,7 +673,6 @@ const handleAssetUpdated = () => {
     showEditModal.value = false;
     editingAsset.value = null;
     fetchListAssets(listCurrentPage.value);
-    fetchStats();
     Swal.fire({
         icon: 'success',
         title: 'Bien actualizado',
@@ -807,7 +726,6 @@ const confirmDelete = async (asset) => {
         try {
             await axios.delete(`/assets/${asset.id}`);
             fetchListAssets(listCurrentPage.value);
-            fetchStats();
             Swal.fire({
                 icon: 'success',
                 title: 'Bien eliminado',
@@ -830,7 +748,6 @@ const confirmDelete = async (asset) => {
 const handleAssetCreated = () => {
     showCreateModal.value = false;
     fetchListAssets(1);
-    fetchStats();
     Swal.fire({
         icon: 'success',
         title: 'Bien registrado',
@@ -881,7 +798,6 @@ watch(misBienesPerPage, () => fetchMisBienes(1));
 onMounted(() => {
     if (props.myEmployee) fetchMisBienes(1);
     if (!isEmployeeOnly.value) {
-        fetchStats();
         fetchListAssets(1);
     }
     nextTick(updateIndicator);
