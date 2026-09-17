@@ -281,6 +281,11 @@ Route::middleware('auth')->group(function () {
         Route::get('/{papeleta}/pdf', [PapeletaAdminController::class, 'generatePdf'])->name('pdf');
     });
 
+    // Planillas y Remuneraciones
+    Route::middleware('role:ROL001,ROL009')->prefix('planillas')->name('planillas.')->group(function () {
+        Route::get('/', [App\Http\Controllers\PlanillaController::class, 'index'])->name('index');
+    });
+
     // Asistencia - Marcas de entrada/salida
     Route::middleware('role:ROL009,ROL012')->prefix('asistencia')->name('asistencia.')->group(function () {
         Route::get('/', [App\Http\Controllers\AsistenciaController::class, 'index'])->name('index');

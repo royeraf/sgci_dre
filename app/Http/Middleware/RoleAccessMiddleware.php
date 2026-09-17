@@ -30,6 +30,7 @@ class RoleAccessMiddleware
         'papeletas'   => 'papeletas',
         'asistencia'  => 'asistencia',
         'utilitarios' => 'utilitarios',
+        'planillas'   => 'planillas',
     ];
 
     public function handle(Request $request, Closure $next, ...$roles): Response

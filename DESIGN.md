@@ -29,6 +29,7 @@ colors:
   module-citas: "#db2777"
   module-papeletas: "#d97706"
   module-patrimonio: "#334155"
+  module-planillas: "#0d9488"
 typography:
   display:
     fontFamily: Inter
@@ -152,6 +153,7 @@ Cada módulo usa un par de colores para su ítem activo en sidebar, el borde lat
 | Citas | module-citas | `#db2777` (pink-600) |
 | Papeletas de Salida | module-papeletas | `#d97706` (amber-600) |
 | Patrimonio / Activos | module-patrimonio | `#334155` (slate-700) |
+| Planillas / Remuneraciones | module-planillas | `#0d9488` (teal-600) |
 | Dashboard / Ocurrencias | primary → primary-strong | `#2563eb` → `#4f46e5` |
 | Bienestar Social | module-visitas → primary-strong | `#9333ea` → `#4f46e5` |
 | Usuarios (Admin) | primary-strong → module-visitas | `#4f46e5` → `#9333ea` |

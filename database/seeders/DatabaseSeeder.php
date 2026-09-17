@@ -44,6 +44,7 @@ class DatabaseSeeder extends Seeder
                     'vehiculos' => ['crear', 'leer', 'editar', 'eliminar'],
                     'patrimonio' => ['crear', 'leer', 'editar', 'eliminar'],
                     'licencias' => ['crear', 'leer', 'editar', 'eliminar', 'aprobar'],
+                    'planillas' => ['crear', 'leer', 'editar', 'eliminar'],
                     'reportes' => ['ver', 'exportar'],
                     'configuracion' => ['leer', 'editar'],
                 ],
@@ -96,6 +97,7 @@ class DatabaseSeeder extends Seeder
                 'permisos_json' => [
                     'personal' => ['crear', 'leer', 'editar', 'eliminar'],
                     'recursos_humanos' => ['crear', 'leer', 'editar', 'eliminar'],
+                    'planillas' => ['crear', 'leer', 'editar', 'eliminar'],
                     'vacaciones' => ['crear', 'leer', 'editar', 'eliminar', 'aprobar'],
                     'areas' => ['crear', 'leer', 'editar', 'eliminar'],
                     'cargos' => ['crear', 'leer', 'editar', 'eliminar'],
