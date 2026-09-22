@@ -46,26 +46,27 @@ export default {
 </script>
 
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
+import axios from 'axios';
 import { useTabPermission } from '@/composables/useTabPermission';
 import { PLANILLA_TABS, PLANILLA_TAB_KEYS } from '@/Composables/usePlanillaTabs';
 
 import SummaryCards from '@/Components/Planillas/SummaryCards.vue';
-import PlanillasTable from '@/Components/Planillas/PlanillasTable.vue';
+import PlanillasView from '@/Components/Planillas/PlanillasView.vue';
 import BoletasTable from '@/Components/Planillas/BoletasTable.vue';
-import ConceptosTable from '@/Components/Planillas/ConceptosTable.vue';
-import DescuentosTable from '@/Components/Planillas/DescuentosTable.vue';
-import AportacionesTable from '@/Components/Planillas/AportacionesTable.vue';
+import RemuneracionesView from '@/Components/Planillas/RemuneracionesView.vue';
+import DescuentosView from '@/Components/Planillas/DescuentosView.vue';
+import AportacionesView from '@/Components/Planillas/AportacionesView.vue';
 import TardanzasTable from '@/Components/Planillas/TardanzasTable.vue';
 
 const { canViewTab, firstAllowedTab } = useTabPermission('planillas', PLANILLA_TAB_KEYS);
 
 const tabComponents = {
-    planillas: PlanillasTable,
+    planillas: PlanillasView,
     boletas: BoletasTable,
-    conceptos: ConceptosTable,
-    descuentos: DescuentosTable,
-    aportaciones: AportacionesTable,
+    conceptos: RemuneracionesView,
+    descuentos: DescuentosView,
+    aportaciones: AportacionesView,
     tardanzas: TardanzasTable,
 };
 
@@ -73,5 +74,33 @@ const summary = ref({});
 const activeTab = ref(firstAllowedTab.value);
 
 const visibleTabs = computed(() => PLANILLA_TABS.filter((tab) => canViewTab(tab.key)));
-const activeComponent = computed(() => tabComponents[activeTab.value] ?? PlanillasTable);
+const activeComponent = computed(() => tabComponents[activeTab.value] ?? PlanillasView);
+
+const fetchSummary = async () => {
+    try {
+        const { data } = await axios.get('/planillas/summary');
+        summary.value = data;
+    } catch (error) {
+        console.warn('No se pudo cargar el resumen de planillas', error);
+    }
+};
+
+onMounted(fetchSummary);
 </script>
+
+<style scoped>
+.fade-slide-enter-active,
+.fade-slide-leave-active {
+    transition: all 0.3s ease;
+}
+
+.fade-slide-enter-from {
+    opacity: 0;
+    transform: translateX(10px);
+}
+
+.fade-slide-leave-to {
+    opacity: 0;
+    transform: translateX(-10px);
+}
+</style>

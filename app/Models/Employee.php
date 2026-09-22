@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Employee extends Model
 {
@@ -113,6 +114,43 @@ class Employee extends Model
     public function papeletaRequests(): HasMany
     {
         return $this->hasMany(PapeletaRequest::class, 'employee_id');
+    }
+
+    /**
+     * Historial de remuneraciones base con vigencia
+     */
+    public function remunerations(): HasMany
+    {
+        return $this->hasMany(EmployeeRemuneration::class, 'employee_id');
+    }
+
+    /**
+     * Perfil de planilla (pensión, CUSPP, cuenta de abono)
+     */
+    public function payrollProfile(): HasOne
+    {
+        return $this->hasOne(EmployeePayrollProfile::class, 'employee_id');
+    }
+
+    /**
+     * Conceptos de planilla asignados directamente al empleado
+     */
+    public function conceptoAsignaciones(): HasMany
+    {
+        return $this->hasMany(PlanillaConceptoAsignacion::class, 'employee_id');
+    }
+
+    /**
+     * Remuneración base vigente en una fecha (por defecto hoy).
+     */
+    public function remuneracionVigente($fecha = null): ?EmployeeRemuneration
+    {
+        $fecha = $fecha ?: now();
+
+        return $this->remunerations()
+            ->vigenteEn($fecha)
+            ->orderByDesc('desde')
+            ->first();
     }
 
     /**

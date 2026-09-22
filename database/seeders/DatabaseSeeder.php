@@ -24,6 +24,7 @@ class DatabaseSeeder extends Seeder
         $this->seedPersonnel();
         $this->call(HrDirectionSeeder::class);
         $this->call(HrOfficeSeeder::class);
+        $this->call(PlanillaCatalogSeeder::class);
     }
 
     private function seedRoles(): void

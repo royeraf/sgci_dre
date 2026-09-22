@@ -284,6 +284,43 @@ Route::middleware('auth')->group(function () {
     // Planillas y Remuneraciones
     Route::middleware('role:ROL001,ROL009')->prefix('planillas')->name('planillas.')->group(function () {
         Route::get('/', [App\Http\Controllers\PlanillaController::class, 'index'])->name('index');
+
+        // Remuneraciones base
+        Route::get('/remuneraciones', [App\Http\Controllers\PlanillaController::class, 'getRemuneraciones'])->name('remuneraciones.list');
+        Route::post('/remuneraciones', [App\Http\Controllers\PlanillaController::class, 'storeRemuneracion'])->name('remuneraciones.store');
+        Route::put('/remuneraciones/{id}', [App\Http\Controllers\PlanillaController::class, 'updateRemuneracion'])->name('remuneraciones.update');
+        Route::delete('/remuneraciones/{id}', [App\Http\Controllers\PlanillaController::class, 'deleteRemuneracion'])->name('remuneraciones.delete');
+
+        // Perfil de planilla por empleado
+        Route::put('/empleados/{employeeId}/perfil', [App\Http\Controllers\PlanillaController::class, 'updatePerfil'])->name('perfil.update');
+
+        // Catálogos
+        Route::get('/conceptos', [App\Http\Controllers\PlanillaController::class, 'getConceptos'])->name('conceptos.list');
+        Route::post('/conceptos', [App\Http\Controllers\PlanillaController::class, 'storeConcepto'])->name('conceptos.store');
+        Route::put('/conceptos/{id}', [App\Http\Controllers\PlanillaController::class, 'updateConcepto'])->name('conceptos.update');
+        Route::delete('/conceptos/{id}', [App\Http\Controllers\PlanillaController::class, 'deleteConcepto'])->name('conceptos.destroy');
+        Route::get('/regimenes-pensionarios', [App\Http\Controllers\PlanillaController::class, 'getRegimenes'])->name('regimenes.list');
+
+        // Asignaciones de conceptos (por régimen o por empleado)
+        Route::get('/asignaciones', [App\Http\Controllers\PlanillaController::class, 'getAsignaciones'])->name('asignaciones.list');
+        Route::get('/asignaciones/parametros', [App\Http\Controllers\PlanillaController::class, 'getAsignacionParametros'])->name('asignaciones.parametros');
+        Route::post('/asignaciones', [App\Http\Controllers\PlanillaController::class, 'storeAsignacion'])->name('asignaciones.store');
+        Route::put('/asignaciones/{id}', [App\Http\Controllers\PlanillaController::class, 'updateAsignacion'])->name('asignaciones.update');
+        Route::delete('/asignaciones/{id}', [App\Http\Controllers\PlanillaController::class, 'deleteAsignacion'])->name('asignaciones.destroy');
+
+        // Bancos (catálogo administrable)
+        Route::get('/bancos', [App\Http\Controllers\PlanillaController::class, 'getBancos'])->name('bancos.list');
+        Route::post('/bancos', [App\Http\Controllers\PlanillaController::class, 'storeBanco'])->name('bancos.store');
+        Route::put('/bancos/{id}', [App\Http\Controllers\PlanillaController::class, 'updateBanco'])->name('bancos.update');
+        Route::delete('/bancos/{id}', [App\Http\Controllers\PlanillaController::class, 'deleteBanco'])->name('bancos.destroy');
+
+        // Periodos y generación de planilla
+        Route::get('/summary', [App\Http\Controllers\PlanillaController::class, 'getSummary'])->name('summary');
+        Route::get('/periodos', [App\Http\Controllers\PlanillaController::class, 'getPeriodos'])->name('periodos.list');
+        Route::post('/periodos', [App\Http\Controllers\PlanillaController::class, 'storePeriodo'])->name('periodos.store');
+        Route::post('/periodos/{id}/generar', [App\Http\Controllers\PlanillaController::class, 'generarPeriodo'])->name('periodos.generar');
+        Route::get('/periodos/{id}/detalle', [App\Http\Controllers\PlanillaController::class, 'getPeriodoDetalle'])->name('periodos.detalle');
+        Route::delete('/periodos/{id}', [App\Http\Controllers\PlanillaController::class, 'deletePeriodo'])->name('periodos.destroy');
     });
 
     // Asistencia - Marcas de entrada/salida
