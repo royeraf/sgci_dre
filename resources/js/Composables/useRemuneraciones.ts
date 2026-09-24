@@ -11,6 +11,9 @@ export interface RemuneracionRow {
     cargo: string | null;
     direction: string | null;
     regimen: string | null;
+    fecha_ingreso: string | null;
+    fecha_inicio_contrato: string | null;
+    fecha_fin_contrato: string | null;
     remuneracion_base: number | null;
     remuneracion_id: string | null;
     remuneracion_desde: string | null;
@@ -57,6 +60,11 @@ export interface PerfilPayload {
     cuenta_ahorro: string | null;
 }
 
+export interface ContratoPayload {
+    fecha_inicio_contrato: string;
+    fecha_fin_contrato: string | null;
+}
+
 export function useRemuneraciones() {
     const rows = ref<RemuneracionRow[]>([]);
     const regimenes = ref<RegimenPensionario[]>([]);
@@ -97,6 +105,16 @@ export function useRemuneraciones() {
         }
     };
 
+    const actualizarContrato = async (employeeId: string, payload: ContratoPayload): Promise<void> => {
+        saving.value = true;
+        try {
+            await axios.put(`/planillas/empleados/${employeeId}/contrato`, payload);
+            await fetchAll();
+        } finally {
+            saving.value = false;
+        }
+    };
+
     return {
         rows,
         regimenes,
@@ -105,5 +123,6 @@ export function useRemuneraciones() {
         fetchAll,
         crearRemuneracion,
         actualizarPerfil,
+        actualizarContrato,
     };
 }

@@ -293,6 +293,7 @@ Route::middleware('auth')->group(function () {
 
         // Perfil de planilla por empleado
         Route::put('/empleados/{employeeId}/perfil', [App\Http\Controllers\PlanillaController::class, 'updatePerfil'])->name('perfil.update');
+        Route::put('/empleados/{employeeId}/contrato', [App\Http\Controllers\PlanillaController::class, 'updateContrato'])->name('empleados.contrato');
 
         // Catálogos
         Route::get('/conceptos', [App\Http\Controllers\PlanillaController::class, 'getConceptos'])->name('conceptos.list');
@@ -300,6 +301,9 @@ Route::middleware('auth')->group(function () {
         Route::put('/conceptos/{id}', [App\Http\Controllers\PlanillaController::class, 'updateConcepto'])->name('conceptos.update');
         Route::delete('/conceptos/{id}', [App\Http\Controllers\PlanillaController::class, 'deleteConcepto'])->name('conceptos.destroy');
         Route::get('/regimenes-pensionarios', [App\Http\Controllers\PlanillaController::class, 'getRegimenes'])->name('regimenes.list');
+        Route::post('/regimenes-pensionarios', [App\Http\Controllers\PlanillaController::class, 'storeRegimen'])->name('regimenes.store');
+        Route::put('/regimenes-pensionarios/{id}', [App\Http\Controllers\PlanillaController::class, 'updateRegimen'])->name('regimenes.update');
+        Route::delete('/regimenes-pensionarios/{id}', [App\Http\Controllers\PlanillaController::class, 'deleteRegimen'])->name('regimenes.destroy');
 
         // Asignaciones de conceptos (por régimen o por empleado)
         Route::get('/asignaciones', [App\Http\Controllers\PlanillaController::class, 'getAsignaciones'])->name('asignaciones.list');
@@ -313,6 +317,12 @@ Route::middleware('auth')->group(function () {
         Route::post('/bancos', [App\Http\Controllers\PlanillaController::class, 'storeBanco'])->name('bancos.store');
         Route::put('/bancos/{id}', [App\Http\Controllers\PlanillaController::class, 'updateBanco'])->name('bancos.update');
         Route::delete('/bancos/{id}', [App\Http\Controllers\PlanillaController::class, 'deleteBanco'])->name('bancos.destroy');
+
+        // Tardanzas (hoja «Dscto. Tard.»: registro manual por empleado/día)
+        Route::get('/tardanzas', [App\Http\Controllers\PlanillaController::class, 'getTardanzas'])->name('tardanzas.list');
+        Route::post('/tardanzas', [App\Http\Controllers\PlanillaController::class, 'storeTardanza'])->name('tardanzas.store');
+        Route::put('/tardanzas/{id}', [App\Http\Controllers\PlanillaController::class, 'updateTardanza'])->name('tardanzas.update');
+        Route::delete('/tardanzas/{id}', [App\Http\Controllers\PlanillaController::class, 'deleteTardanza'])->name('tardanzas.destroy');
 
         // Periodos y generación de planilla
         Route::get('/summary', [App\Http\Controllers\PlanillaController::class, 'getSummary'])->name('summary');

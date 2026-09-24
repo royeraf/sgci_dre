@@ -126,7 +126,14 @@ class PlanillaCatalogSeeder extends Seeder
             ['AFP_COMISION', 'AFP Comisión', 'DESCUENTO', 'AFP', true, null, $this->sinAfectacion(), 2],
             ['AFP_SEGURO', 'AFP Seguro', 'DESCUENTO', 'AFP', true, 0.01370, $this->sinAfectacion(), 3],
             ['ONP_19990', 'Ley 19990 (ONP)', 'DESCUENTO', 'ONP', true, 0.13000, $this->sinAfectacion(), 4],
-            ['FALTAS_TARDANZAS', 'Faltas / Tardanzas', 'DESCUENTO', 'TARDANZA', false, null, $this->sinAfectacion(), 5],
+            // N = E - L en la hoja «Dscto. Tard.»: las faltas/tardanzas reducen
+            // la base imponible de EsSalud, AFP y ONP (como en el Excel).
+            ['FALTAS_TARDANZAS', 'Faltas / Tardanzas', 'DESCUENTO', 'TARDANZA', false, null, [
+                'afecto_renta5' => false,
+                'afecto_essalud' => true,
+                'afecto_onp' => true,
+                'afecto_afp' => true,
+            ], 5],
             ['RENTA_4TA', 'Retención Renta 4ta', 'DESCUENTO', 'RENTA', true, 0.08000, $this->sinAfectacion(), 6],
             ['LIC_ESSALUD', 'Licencia a cta. Essalud', 'DESCUENTO', 'OTROS', false, null, $this->sinAfectacion(), 7],
             ['PAGO_INDEBIDO', 'Pago Indebido', 'DESCUENTO', 'OTROS', false, null, $this->sinAfectacion(), 8],

@@ -6,6 +6,7 @@ use App\Models\Employee;
 use App\Models\PlanillaConcepto;
 use App\Models\PlanillaConceptoAsignacion;
 use App\Models\PlanillaPeriodo;
+use App\Models\PlanillaTardanza;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -70,9 +71,7 @@ class PlanillaGenerador
         // La remuneración/asignaciones vigentes se resuelven al cierre del periodo
         // (último día del mes). Usar el primer día falla cuando una remuneración
         // se registra a mitad de mes (p. ej. una base con `desde` posterior al día 1).
-        $fecha = ($periodo->fecha_fin ?? Carbon::create($periodo->anio, $periodo->mes, 1)->endOfMonth())
-            ->copy()
-            ->startOfDay();
+        $fecha = $periodo->fechaCierre();
 
         return DB::transaction(function () use ($periodo, $fecha) {
             $this->limpiarDetalle($periodo);
@@ -80,6 +79,13 @@ class PlanillaGenerador
             $conceptosActivos = PlanillaConcepto::where('activo', true)->get();
             $conceptos = $conceptosActivos->keyBy('codigo');
             $conceptosPorId = $conceptosActivos->keyBy('id');
+
+            // Tardanzas no justificadas del periodo, agrupadas por empleado
+            // (hoja «Dscto. Tard.»): descuentan y reducen la base imponible.
+            $tardanzas = PlanillaTardanza::where('periodo_id', $periodo->id)
+                ->noJustificadas()
+                ->get()
+                ->groupBy('employee_id');
 
             $empleados = Employee::with([
                 'person',
@@ -100,7 +106,12 @@ class PlanillaGenerador
 
             foreach ($empleados as $empleado) {
                 $base = $this->remuneracionVigente($empleado, $fecha);
-                $registros = $this->construirRegistros($empleado, $base, $fecha, $conceptos, $conceptosPorId);
+
+                if ($base <= 0) {
+                    continue;
+                }
+
+                $registros = $this->construirRegistros($empleado, $base, $fecha, $conceptos, $conceptosPorId, $tardanzas);
 
                 $totalIngresos = $this->sumar($registros, 'INGRESO');
                 $totalDescuentos = $this->sumar($registros, 'DESCUENTO');
@@ -145,7 +156,7 @@ class PlanillaGenerador
         $periodo->detalles()->delete();
     }
 
-    private function remuneracionVigente(Employee $empleado, Carbon $fecha): float
+    public function remuneracionVigente(Employee $empleado, Carbon $fecha): float
     {
         $vigente = $empleado->remunerations
             ->filter(fn ($r) => $r->desde <= $fecha && (is_null($r->hasta) || $r->hasta >= $fecha))
@@ -156,14 +167,22 @@ class PlanillaGenerador
     }
 
     /**
-     * Registros del empleado: base, conceptos aplicables y descuentos/aportes de ley.
+     * Registros del empleado: base, conceptos aplicables, tardanzas y
+     * descuentos/aportes de ley.
      *
      * @param Collection<string, PlanillaConcepto> $conceptos
      * @param Collection<string, PlanillaConcepto> $conceptosPorId
+     * @param Collection<int, Collection<int, PlanillaTardanza>> $tardanzas No justificadas, por empleado.
      * @return array<int, array<string, mixed>>
      */
-    private function construirRegistros(Employee $empleado, float $base, Carbon $fecha, Collection $conceptos, Collection $conceptosPorId): array
-    {
+    private function construirRegistros(
+        Employee $empleado,
+        float $base,
+        Carbon $fecha,
+        Collection $conceptos,
+        Collection $conceptosPorId,
+        Collection $tardanzas = new Collection()
+    ): array {
         $registros = [];
 
         $conceptoBase = $conceptos->get(self::CODIGO_BASE);
@@ -194,6 +213,12 @@ class PlanillaGenerador
             );
         }
 
+        // Faltas y tardanzas: se agregan ANTES de las retenciones para que
+        // reduzcan la base imponible, igual que N = E - L en el Excel.
+        if ($registroTardanza = $this->registroTardanzas($empleado, $conceptos, $tardanzas, $registros)) {
+            $registros[] = $registroTardanza;
+        }
+
         // Descuentos de ley (Fase 3)
         foreach ($this->retencionesPension($registros, $empleado, $conceptos) as $registro) {
             $registros[] = $registro;
@@ -205,6 +230,70 @@ class PlanillaGenerador
         usort($registros, fn ($a, $b) => $a['orden'] <=> $b['orden']);
 
         return $registros;
+    }
+
+    /**
+     * E de la hoja Excel: remuneración base vigente + conceptos INGRESO
+     * aplicables (asignaciones y catálogo) resueltos en la fecha dada.
+     */
+    public function ingresosVigentes(Employee $empleado, Carbon $fecha, ?Collection $conceptosPorId = null): float
+    {
+        $base = $this->remuneracionVigente($empleado, $fecha);
+        $conceptosPorId ??= PlanillaConcepto::where('activo', true)->get()->keyBy('id');
+
+        $total = $base;
+
+        foreach ($this->resolverConceptos($empleado, $fecha, $conceptosPorId) as $aplicable) {
+            $concepto = $aplicable['concepto'];
+
+            if ($concepto->tipo !== 'INGRESO') {
+                continue;
+            }
+
+            $asignacion = $aplicable['asignacion'];
+            $total += $asignacion
+                ? $this->calcularMonto($asignacion, $base, $concepto)
+                : $this->montoCatalogo($concepto, $base);
+        }
+
+        return round($total, 2);
+    }
+
+    /**
+     * Línea Faltas/Tardanzas (L) a partir de los registros no justificados del
+     * periodo. La base guardada es N = E - L, la base imponible del Excel.
+     *
+     * @param array<int, array<string, mixed>> $registros
+     * @param Collection<int, Collection<int, PlanillaTardanza>> $tardanzas
+     * @return array<string, mixed>|null
+     */
+    private function registroTardanzas(
+        Employee $empleado,
+        Collection $conceptos,
+        Collection $tardanzas,
+        array $registros
+    ): ?array {
+        $grupo = $tardanzas->get($empleado->id);
+
+        if (!$grupo) {
+            return null;
+        }
+
+        $total = round((float) $grupo->sum('total'), 2);
+
+        if ($total <= 0) {
+            return null;
+        }
+
+        $concepto = $conceptos->get('FALTAS_TARDANZAS');
+
+        if (!$concepto) {
+            return null;
+        }
+
+        $baseImponible = round($this->sumar($registros, 'INGRESO') - $total, 2);
+
+        return $this->registro($concepto, 'DESCUENTO', $total, $baseImponible, null);
     }
 
     /**
@@ -229,7 +318,9 @@ class PlanillaGenerador
             $concepto = $conceptos->get('ONP_19990');
             if ($concepto && $base > 0) {
                 $tasa = (float) $regimen->aporte_obligatorio;
-                $items[] = $this->registro($concepto, 'DESCUENTO', $base * $tasa, $base, $tasa);
+                $ajuste = $base < 2000 ? 0.01 : 0.02;
+                $monto = round($base * $tasa, 2) + $ajuste;
+                $items[] = $this->registro($concepto, 'DESCUENTO', round($monto, 2), $base, $tasa);
             }
 
             return $items;

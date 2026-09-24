@@ -11,7 +11,9 @@ use App\Models\PlanillaConcepto;
 use App\Models\PlanillaConceptoAsignacion;
 use App\Models\PlanillaPeriodo;
 use App\Models\PlanillaRegimenPensionario;
+use App\Models\PlanillaTardanza;
 use App\Services\Planilla\PlanillaGenerador;
+use App\Services\Planilla\TardanzaService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -71,6 +73,9 @@ class PlanillaController extends Controller
                     'cargo' => $employee->cargo,
                     'direction' => $employee->direction_nombre,
                     'regimen' => $employee->tipo_contrato,
+                    'fecha_ingreso' => $employee->fecha_ingreso?->format('Y-m-d'),
+                    'fecha_inicio_contrato' => $employee->fecha_inicio_contrato?->format('Y-m-d'),
+                    'fecha_fin_contrato' => $employee->fecha_fin_contrato?->format('Y-m-d'),
                     'remuneracion_base' => $vigente ? (float) $vigente->monto : null,
                     'remuneracion_id' => $vigente?->id,
                     'remuneracion_desde' => $vigente?->desde?->format('Y-m-d'),
@@ -325,6 +330,34 @@ class PlanillaController extends Controller
         ]);
     }
 
+    /**
+     * Administra las fechas de contrato del empleado. Fin nulo = indeterminado.
+     */
+    public function updateContrato(Request $request, string $employeeId)
+    {
+        $employee = Employee::find($employeeId);
+
+        if (!$employee) {
+            return response()->json(['message' => 'Empleado no encontrado'], 404);
+        }
+
+        $validated = $request->validate([
+            'fecha_inicio_contrato' => 'required|date',
+            'fecha_fin_contrato' => 'nullable|date|after_or_equal:fecha_inicio_contrato',
+        ]);
+
+        $employee->update([
+            'fecha_inicio_contrato' => $validated['fecha_inicio_contrato'],
+            'fecha_fin_contrato' => $validated['fecha_fin_contrato'] ?? null,
+        ]);
+
+        return response()->json([
+            'message' => 'Fechas de contrato actualizadas correctamente',
+            'fecha_inicio_contrato' => $employee->fecha_inicio_contrato?->format('Y-m-d'),
+            'fecha_fin_contrato' => $employee->fecha_fin_contrato?->format('Y-m-d'),
+        ]);
+    }
+
     // ========== CATÁLOGOS ==========
 
     public function getConceptos()
@@ -412,14 +445,75 @@ class PlanillaController extends Controller
         ]);
     }
 
-    public function getRegimenes()
+    public function getRegimenes(Request $request)
     {
-        $regimenes = PlanillaRegimenPensionario::activos()
-            ->orderBy('tipo')
-            ->orderBy('nombre')
-            ->get();
+        $query = PlanillaRegimenPensionario::orderBy('tipo')->orderBy('nombre');
 
-        return response()->json($regimenes);
+        // El select del perfil pide solo activos; el catálogo administrable pide todos.
+        if (!$request->boolean('todos')) {
+            $query->activos();
+        }
+
+        return response()->json($query->get());
+    }
+
+    public function storeRegimen(Request $request)
+    {
+        $regimen = PlanillaRegimenPensionario::create($this->validateRegimen($request));
+
+        return response()->json([
+            'message' => 'Régimen registrado correctamente',
+            'regimen' => $regimen,
+        ], 201);
+    }
+
+    public function updateRegimen(Request $request, string $id)
+    {
+        $regimen = PlanillaRegimenPensionario::find($id);
+
+        if (!$regimen) {
+            return response()->json(['message' => 'Régimen no encontrado'], 404);
+        }
+
+        $regimen->update($this->validateRegimen($request, $id));
+
+        return response()->json([
+            'message' => 'Régimen actualizado correctamente',
+            'regimen' => $regimen,
+        ]);
+    }
+
+    public function deleteRegimen(string $id)
+    {
+        $regimen = PlanillaRegimenPensionario::find($id);
+
+        if (!$regimen) {
+            return response()->json(['message' => 'Régimen no encontrado'], 404);
+        }
+
+        if ($regimen->payrollProfiles()->exists()) {
+            return response()->json([
+                'message' => 'No se puede eliminar: el régimen está asignado a uno o más empleados',
+            ], 422);
+        }
+
+        $regimen->delete();
+
+        return response()->json(['message' => 'Régimen eliminado correctamente']);
+    }
+
+    private function validateRegimen(Request $request, ?string $id = null): array
+    {
+        return $request->validate([
+            'nombre' => 'required|string|max:100|unique:planilla_regimenes_pensionarios,nombre' . ($id ? ',' . $id : ''),
+            'tipo' => 'required|in:AFP,ONP',
+            'aporte_obligatorio' => 'required|numeric|between:0,1',
+            'prima_seguro' => 'nullable|numeric|between:0,1',
+            'comision_fija' => 'nullable|numeric|between:0,1',
+            'comision_mixta' => 'nullable|numeric|between:0,1',
+            'comision_flujo' => 'nullable|numeric|between:0,1',
+            'activo' => 'boolean',
+        ]);
     }
 
     // ========== BANCOS ==========
@@ -486,6 +580,223 @@ class PlanillaController extends Controller
             'codigo' => 'nullable|string|max:20',
             'activo' => 'boolean',
         ]);
+    }
+
+    // ========== TARDANZAS (hoja «Dscto. Tard.») ==========
+
+    /**
+     * Filas del periodo al estilo del Excel: una por empleado CAS, con los
+     * importes de la hoja (E, F, G, H, I, J, K, L, N) y sus registros diarios.
+     */
+    public function getTardanzas(Request $request, PlanillaGenerador $generador)
+    {
+        $validated = $request->validate([
+            'periodo_id' => 'required|string|exists:planilla_periodos,id',
+        ]);
+
+        $periodo = PlanillaPeriodo::findOrFail($validated['periodo_id']);
+        $cierre = $periodo->fechaCierre();
+
+        $registros = PlanillaTardanza::with('employee.person')
+            ->where('periodo_id', $periodo->id)
+            ->orderBy('fecha')
+            ->get()
+            ->groupBy('employee_id');
+
+        $conceptos = PlanillaConcepto::where('activo', true)->get()->keyBy('id');
+
+        $empleados = Employee::with('person', 'remunerations')
+            ->where('estado', 'ACTIVO')
+            ->whereHas('contractType', function ($query) {
+                $query->whereRaw('UPPER(nombre) = ?', [self::REGIMEN_PLANILLA]);
+            })
+            ->get()
+            ->filter(fn (Employee $empleado) => $generador->remuneracionVigente($empleado, $cierre) > 0)
+            ->sortBy('apellidos', SORT_NATURAL | SORT_FLAG_CASE)
+            ->values();
+
+        $filas = $empleados->map(function (Employee $empleado) use ($registros, $generador, $cierre, $conceptos) {
+            $items = $registros->get($empleado->id) ?? collect();
+            $vigentes = $items->where('justificado', false);
+
+            // E = REMUNERACIONES (ingresos vigentes al cierre)
+            $ingresos = $generador->ingresosVigentes($empleado, $cierre, $conceptos);
+
+            // F / G: snapshot del primer registro; si no hay, previsualización.
+            $valorDia = $items->first()
+                ? (float) $items->first()->valor_dia
+                : round($ingresos / 30, 2);
+            $valorMinuto = $items->first()
+                ? (float) $items->first()->valor_minuto
+                : round($valorDia / 480, 2);
+
+            $dias = (int) $vigentes->sum('dias');
+            $minutos = (int) $vigentes->sum('minutos');
+            $montoDias = round((float) $vigentes->sum('monto_dias'), 2);
+            $montoMinutos = round((float) $vigentes->sum('monto_minutos'), 2);
+            $total = round($montoDias + $montoMinutos, 2);
+
+            return [
+                'employee_id' => $empleado->id,
+                'dni' => $empleado->dni,
+                'nombre_completo' => $empleado->full_name,
+                'remuneraciones' => $ingresos,
+                'valor_dia' => $valorDia,
+                'valor_minuto' => $valorMinuto,
+                'dias' => $dias,
+                'minutos' => $minutos,
+                'monto_dias' => $montoDias,
+                'monto_minutos' => $montoMinutos,
+                'total' => $total,
+                'base_imponible' => round($ingresos - $total, 2),
+                'con_registros' => $items->isNotEmpty(),
+                'registros' => $items->map(fn ($r) => [
+                    'id' => $r->id,
+                    'fecha' => $r->fecha->toDateString(),
+                    'dias' => (int) $r->dias,
+                    'minutos' => (int) $r->minutos,
+                    'monto_dias' => (float) $r->monto_dias,
+                    'monto_minutos' => (float) $r->monto_minutos,
+                    'total' => (float) $r->total,
+                    'justificado' => (bool) $r->justificado,
+                    'observacion' => $r->observacion,
+                    'origen' => $r->origen,
+                ])->values(),
+            ];
+        });
+
+        return response()->json([
+            'periodo' => [
+                'id' => $periodo->id,
+                'nombre_periodo' => $periodo->nombre_periodo,
+                'estado' => $periodo->estado,
+                'editable' => $periodo->editable,
+                'fecha_inicio' => $periodo->fecha_inicio?->toDateString(),
+                'fecha_fin' => $periodo->fecha_fin?->toDateString(),
+            ],
+            'filas' => $filas,
+        ]);
+    }
+
+    public function storeTardanza(Request $request, TardanzaService $service)
+    {
+        $validated = $this->validateTardanza($request);
+
+        $periodo = PlanillaPeriodo::findOrFail($validated['periodo_id']);
+
+        if (!$periodo->editable) {
+            return response()->json([
+                'message' => "La planilla está en estado {$periodo->estado} y no admite cambios",
+            ], 422);
+        }
+
+        $tardanza = $service->registrar(
+            $periodo,
+            Employee::findOrFail($validated['employee_id']),
+            Carbon::parse($validated['fecha']),
+            $validated['dias'],
+            $validated['minutos'],
+            $validated['observacion'] ?? null
+        );
+
+        return response()->json([
+            'message' => 'Tardanza registrada correctamente',
+            'tardanza' => $tardanza,
+        ], 201);
+    }
+
+    public function updateTardanza(Request $request, string $id, TardanzaService $service)
+    {
+        $tardanza = PlanillaTardanza::find($id);
+
+        if (!$tardanza) {
+            return response()->json(['message' => 'Registro de tardanza no encontrado'], 404);
+        }
+
+        if (!$tardanza->periodo->editable) {
+            return response()->json([
+                'message' => "La planilla está en estado {$tardanza->periodo->estado} y no admite cambios",
+            ], 422);
+        }
+
+        $validated = $request->validate([
+            'dias' => 'sometimes|integer|min:0|max:31',
+            'minutos' => 'sometimes|integer|min:0|max:1440',
+            'observacion' => 'nullable|string|max:255',
+            'justificado' => 'sometimes|boolean',
+        ]);
+
+        $cambioImportes = array_key_exists('dias', $validated) || array_key_exists('minutos', $validated);
+
+        $campos = [];
+        if (array_key_exists('observacion', $validated)) {
+            $campos['observacion'] = $validated['observacion'];
+        }
+        if (array_key_exists('justificado', $validated)) {
+            $campos['justificado'] = $validated['justificado'];
+        }
+        if ($cambioImportes) {
+            foreach (['dias', 'minutos'] as $campo) {
+                if (array_key_exists($campo, $validated)) {
+                    $campos[$campo] = $validated[$campo];
+                }
+            }
+        }
+
+        $tardanza->update($campos);
+
+        if ($cambioImportes) {
+            $service->recalcular($tardanza);
+        }
+
+        return response()->json([
+            'message' => 'Registro actualizado correctamente',
+            'tardanza' => $tardanza->fresh(),
+        ]);
+    }
+
+    public function deleteTardanza(string $id)
+    {
+        $tardanza = PlanillaTardanza::find($id);
+
+        if (!$tardanza) {
+            return response()->json(['message' => 'Registro de tardanza no encontrado'], 404);
+        }
+
+        if (!$tardanza->periodo->editable) {
+            return response()->json([
+                'message' => "La planilla está en estado {$tardanza->periodo->estado} y no admite cambios",
+            ], 422);
+        }
+
+        $tardanza->delete();
+
+        return response()->json(['message' => 'Registro eliminado correctamente']);
+    }
+
+    private function validateTardanza(Request $request): array
+    {
+        $validated = $request->validate([
+            'periodo_id' => 'required|string|exists:planilla_periodos,id',
+            'employee_id' => 'required|string|exists:employees,id',
+            'fecha' => 'required|date',
+            'dias' => 'required|integer|min:0|max:31',
+            'minutos' => 'required|integer|min:0|max:1440',
+            'observacion' => 'nullable|string|max:255',
+        ]);
+
+        if ($validated['dias'] === 0 && $validated['minutos'] === 0) {
+            abort(response()->json(['message' => 'Ingrese días o minutos de tardanza'], 422));
+        }
+
+        $periodo = PlanillaPeriodo::findOrFail($validated['periodo_id']);
+        $fecha = Carbon::parse($validated['fecha'])->toDateString();
+
+        if ($fecha < $periodo->fecha_inicio?->toDateString() || $fecha > $periodo->fecha_fin?->toDateString()) {
+            abort(response()->json(['message' => 'La fecha debe estar dentro del periodo'], 422));
+        }
+
+        return $validated;
     }
 
     // ========== PERIODOS ==========
@@ -586,6 +897,8 @@ class PlanillaController extends Controller
                 'nombre_periodo' => $periodo->nombre_periodo,
                 'estado' => $periodo->estado,
                 'editable' => $periodo->editable,
+                'fecha_inicio' => $periodo->fecha_inicio?->toDateString(),
+                'fecha_fin' => $periodo->fecha_fin?->toDateString(),
                 'total_empleados' => $periodo->total_empleados,
                 'total_neto' => (float) $periodo->total_neto,
             ],
@@ -614,13 +927,21 @@ class PlanillaController extends Controller
 
     public function getSummary()
     {
+        $ultimo = PlanillaPeriodo::orderByDesc('anio')->orderByDesc('mes')->first();
+        $fecha = $ultimo?->fechaCierre() ?? Carbon::now();
+
         $personal = Employee::where('estado', 'ACTIVO')
             ->whereHas('contractType', function ($query) {
                 $query->whereRaw('UPPER(nombre) = ?', [self::REGIMEN_PLANILLA]);
             })
+            ->whereHas('remunerations', function ($query) use ($fecha) {
+                $query->where('monto', '>', 0)
+                    ->where('desde', '<=', $fecha)
+                    ->where(function ($sub) use ($fecha) {
+                        $sub->whereNull('hasta')->orWhere('hasta', '>=', $fecha);
+                    });
+            })
             ->count();
-
-        $ultimo = PlanillaPeriodo::orderByDesc('anio')->orderByDesc('mes')->first();
 
         return response()->json([
             'periodo_actual' => $ultimo?->nombre_periodo,

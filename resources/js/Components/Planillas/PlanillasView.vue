@@ -78,7 +78,7 @@
             @submit="submitPeriodo" />
 
         <PeriodoDetalleModal v-if="showDetalleModal && detalle" :detalle="detalle"
-            @close="showDetalleModal = false" />
+            @close="showDetalleModal = false" @refresh="onRefreshDetalle" />
     </div>
 </template>
 
@@ -173,6 +173,15 @@ const onVer = async (periodo) => {
         showDetalleModal.value = true;
     } catch (error) {
         notify('error', 'No se pudo cargar el detalle');
+    }
+};
+
+const onRefreshDetalle = async (id) => {
+    try {
+        await fetchDetalle(id);
+        await fetchPeriodos();
+    } catch (error) {
+        notify('error', 'No se pudo actualizar el detalle');
     }
 };
 

@@ -44,6 +44,8 @@ export interface PeriodoDetalleData {
         nombre_periodo: string;
         estado: EstadoPeriodo;
         editable: boolean;
+        fecha_inicio: string | null;
+        fecha_fin: string | null;
         total_empleados: number;
         total_neto: number;
     };

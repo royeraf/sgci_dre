@@ -29,6 +29,7 @@
                             <th class="text-left font-bold uppercase text-[11px] tracking-widest px-5 py-3">Empleado</th>
                             <th class="text-left font-bold uppercase text-[11px] tracking-widest px-5 py-3">Cargo</th>
                             <th class="text-left font-bold uppercase text-[11px] tracking-widest px-5 py-3">Régimen</th>
+                            <th class="text-left font-bold uppercase text-[11px] tracking-widest px-5 py-3">Contrato</th>
                             <th class="text-right font-bold uppercase text-[11px] tracking-widest px-5 py-3">Base (DL 1057)</th>
                             <th class="text-left font-bold uppercase text-[11px] tracking-widest px-5 py-3">Pensión</th>
                             <th class="text-center font-bold uppercase text-[11px] tracking-widest px-5 py-3">Acciones</th>
@@ -36,12 +37,12 @@
                     </thead>
                     <tbody class="divide-y divide-slate-100">
                         <tr v-if="loading">
-                            <td colspan="8" class="py-16 text-center">
+                            <td colspan="9" class="py-16 text-center">
                                 <Loader2 class="w-7 h-7 text-teal-500 animate-spin mx-auto" />
                             </td>
                         </tr>
                         <tr v-else-if="filteredRows.length === 0">
-                            <td colspan="8" class="py-16 text-center text-slate-500 font-medium">
+                            <td colspan="9" class="py-16 text-center text-slate-500 font-medium">
                                 No se encontraron empleados.
                             </td>
                         </tr>
@@ -55,6 +56,15 @@
                                     <span class="inline-block text-xs font-bold px-2.5 py-1 rounded-full bg-slate-100 text-slate-600">
                                         {{ row.regimen || '—' }}
                                     </span>
+                                </td>
+                                <td class="px-5 py-3">
+                                    <span v-if="row.fecha_inicio_contrato" class="text-xs font-semibold text-slate-600">
+                                        {{ formatDate(row.fecha_inicio_contrato) }}
+                                        →
+                                        <span v-if="row.fecha_fin_contrato">{{ formatDate(row.fecha_fin_contrato) }}</span>
+                                        <span v-else class="inline-block px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 font-bold">Indeterminado</span>
+                                    </span>
+                                    <span v-else class="text-xs font-semibold text-slate-400">Sin registrar</span>
                                 </td>
                                 <td class="px-5 py-3 text-right font-bold"
                                     :class="row.remuneracion_base === null ? 'text-slate-400' : 'text-slate-800'">
@@ -80,6 +90,10 @@
                                             class="cursor-pointer p-2 rounded-lg bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition-all">
                                             <Landmark class="w-4 h-4" />
                                         </button>
+                                        <button @click="openContrato(row)" title="Administrar fechas de contrato"
+                                            class="cursor-pointer p-2 rounded-lg bg-sky-50 text-sky-600 hover:bg-sky-100 transition-all">
+                                            <CalendarRange class="w-4 h-4" />
+                                        </button>
                                     </div>
                                 </td>
                             </tr>
@@ -98,26 +112,31 @@
             :saving="saving" @close="closeRemuneracion" @submit="submitRemuneracion" />
 
         <PerfilPensionModal v-if="showPerfilModal && selectedRow" :row="selectedRow" :regimenes="regimenes"
-            :saving="saving" @close="closePerfil" @submit="submitPerfil" />
+            :saving="saving" @close="closePerfil" @submit="submitPerfil" @changed="fetchAll" />
+
+        <ContratoModal v-if="showContratoModal && selectedRow" :row="selectedRow" :saving="saving"
+            @close="closeContrato" @submit="submitContrato" />
     </div>
 </template>
 
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue';
-import { Plus, Wallet, Landmark, Loader2, Coins } from 'lucide-vue-next';
+import { Plus, Wallet, Landmark, Loader2, Coins, CalendarRange } from 'lucide-vue-next';
 
 import BaseTableCard from '@/Components/Common/BaseTableCard.vue';
 import ClientPagination from '@/Components/Common/ClientPagination.vue';
 import ConceptosModal from '@/Components/Planillas/Conceptos/ConceptosModal.vue';
 import RemuneracionModal from '@/Components/Planillas/Remuneraciones/RemuneracionModal.vue';
 import PerfilPensionModal from '@/Components/Planillas/Remuneraciones/PerfilPensionModal.vue';
+import ContratoModal from '@/Components/Planillas/Remuneraciones/ContratoModal.vue';
 import { useRemuneraciones } from '@/Composables/useRemuneraciones';
 
-const { rows, regimenes, loading, saving, fetchAll, crearRemuneracion, actualizarPerfil } = useRemuneraciones();
+const { rows, regimenes, loading, saving, fetchAll, crearRemuneracion, actualizarPerfil, actualizarContrato } = useRemuneraciones();
 
 const search = ref('');
 const showRemuneracionModal = ref(false);
 const showPerfilModal = ref(false);
+const showContratoModal = ref(false);
 const showConceptosModal = ref(false);
 const selectedRow = ref(null);
 const presetEmployeeId = ref(null);
@@ -151,6 +170,15 @@ watch(search, () => {
 const formatMoney = (value) => {
     if (value === null || value === undefined) return 'Sin registrar';
     return `S/ ${Number(value).toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+};
+
+const formatDate = (value) => {
+    if (!value) return null;
+    return new Date(`${value}T00:00:00`).toLocaleDateString('es-PE', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+    });
 };
 
 const notify = (icon, title) => {
@@ -202,6 +230,26 @@ const submitPerfil = async (payload) => {
         notify('success', 'Perfil de planilla actualizado');
     } catch (error) {
         notify('error', error.response?.data?.message || 'No se pudo actualizar el perfil');
+    }
+};
+
+const openContrato = (row) => {
+    selectedRow.value = row;
+    showContratoModal.value = true;
+};
+
+const closeContrato = () => {
+    showContratoModal.value = false;
+    selectedRow.value = null;
+};
+
+const submitContrato = async (payload) => {
+    try {
+        await actualizarContrato(selectedRow.value.id, payload);
+        closeContrato();
+        notify('success', 'Fechas de contrato actualizadas');
+    } catch (error) {
+        notify('error', error.response?.data?.message || 'No se pudieron actualizar las fechas de contrato');
     }
 };
 

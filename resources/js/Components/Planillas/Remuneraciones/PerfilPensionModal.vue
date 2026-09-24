@@ -20,13 +20,19 @@
                 <form @submit.prevent="onSubmit" class="p-6 space-y-5">
                     <div>
                         <label class="block text-sm font-bold text-slate-700 mb-2">Sistema de Pensiones</label>
-                        <select v-model="regimen_pensionario_id"
-                            class="w-full px-4 py-2.5 border-2 border-slate-200 rounded-xl bg-white text-slate-900 focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none">
-                            <option value="">Sin asignar</option>
-                            <option v-for="reg in regimenes" :key="reg.id" :value="reg.id">
-                                {{ reg.nombre }}
-                            </option>
-                        </select>
+                        <div class="flex gap-2">
+                            <select v-model="regimen_pensionario_id"
+                                class="flex-1 px-4 py-2.5 border-2 border-slate-200 rounded-xl bg-white text-slate-900 focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none">
+                                <option value="">Sin asignar</option>
+                                <option v-for="reg in regimenes" :key="reg.id" :value="reg.id">
+                                    {{ reg.nombre }}
+                                </option>
+                            </select>
+                            <button type="button" @click="showRegimenesModal = true" title="Administrar regímenes y tasas"
+                                class="cursor-pointer p-2.5 rounded-xl bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition-all">
+                                <Settings class="w-5 h-5" />
+                            </button>
+                        </div>
                     </div>
 
                     <div>
@@ -35,29 +41,27 @@
                             class="w-full px-4 py-2.5 border-2 border-slate-200 rounded-xl text-slate-900 placeholder:text-slate-400 focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none" />
                     </div>
 
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-sm font-bold text-slate-700 mb-2">Banco</label>
-                            <div class="flex gap-2">
-                                <select v-model="banco_id"
-                                    class="flex-1 px-4 py-2.5 border-2 border-slate-200 rounded-xl bg-white text-slate-900 focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none">
-                                    <option value="">Sin asignar</option>
-                                    <option v-for="banco in bancos" :key="banco.id" :value="banco.id">
-                                        {{ banco.nombre }}{{ banco.activo ? '' : ' (inactivo)' }}
-                                    </option>
-                                </select>
-                                <button type="button" @click="showBancosModal = true" title="Administrar bancos"
-                                    class="cursor-pointer p-2.5 rounded-xl bg-sky-50 text-sky-600 hover:bg-sky-100 transition-all">
-                                    <Settings class="w-5 h-5" />
-                                </button>
-                            </div>
+                    <div>
+                        <label class="block text-sm font-bold text-slate-700 mb-2">Banco</label>
+                        <div class="flex gap-2">
+                            <select v-model="banco_id"
+                                class="flex-1 px-4 py-2.5 border-2 border-slate-200 rounded-xl bg-white text-slate-900 focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none">
+                                <option value="">Sin asignar</option>
+                                <option v-for="banco in bancos" :key="banco.id" :value="banco.id">
+                                    {{ banco.nombre }}{{ banco.activo ? '' : ' (inactivo)' }}
+                                </option>
+                            </select>
+                            <button type="button" @click="showBancosModal = true" title="Administrar bancos"
+                                class="cursor-pointer p-2.5 rounded-xl bg-sky-50 text-sky-600 hover:bg-sky-100 transition-all">
+                                <Settings class="w-5 h-5" />
+                            </button>
                         </div>
+                    </div>
 
-                        <div>
-                            <label class="block text-sm font-bold text-slate-700 mb-2">Cuenta de abono</label>
-                            <input v-model="cuenta_ahorro" type="text" placeholder="Ej. 04-481-563467"
-                                class="w-full px-4 py-2.5 border-2 border-slate-200 rounded-xl text-slate-900 placeholder:text-slate-400 focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none" />
-                        </div>
+                    <div>
+                        <label class="block text-sm font-bold text-slate-700 mb-2">Cuenta de abono</label>
+                        <input v-model="cuenta_ahorro" type="text" placeholder="Ej. 04-481-563467"
+                            class="w-full px-4 py-2.5 border-2 border-slate-200 rounded-xl text-slate-900 placeholder:text-slate-400 focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none" />
                     </div>
 
                     <div class="flex justify-end gap-3 pt-4 border-t border-slate-200 font-bold">
@@ -74,6 +78,9 @@
         </div>
 
         <BancosManagerModal v-if="showBancosModal" @close="showBancosModal = false" @changed="fetchBancos" />
+
+        <RegimenesManagerModal v-if="showRegimenesModal" @close="showRegimenesModal = false"
+            @changed="emit('changed')" />
     </div>
 </template>
 
@@ -84,10 +91,12 @@ import { toTypedSchema } from '@vee-validate/yup';
 import * as yup from 'yup';
 import { Landmark, X, Loader2, Settings } from 'lucide-vue-next';
 import BancosManagerModal from '@/Components/Planillas/Remuneraciones/BancosManagerModal.vue';
+import RegimenesManagerModal from '@/Components/Planillas/Remuneraciones/RegimenesManagerModal.vue';
 import { usePlanillaBancos } from '@/Composables/usePlanillaBancos';
 
 const { bancos, fetchBancos } = usePlanillaBancos();
 const showBancosModal = ref(false);
+const showRegimenesModal = ref(false);
 
 const props = defineProps({
     row: { type: Object, required: true },
@@ -95,7 +104,7 @@ const props = defineProps({
     saving: { type: Boolean, default: false },
 });
 
-const emit = defineEmits(['close', 'submit']);
+const emit = defineEmits(['close', 'submit', 'changed']);
 
 const schema = toTypedSchema(yup.object({
     regimen_pensionario_id: yup.string().nullable(),

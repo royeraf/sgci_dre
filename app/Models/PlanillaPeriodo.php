@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -51,6 +52,23 @@ class PlanillaPeriodo extends Model
     public function detalles(): HasMany
     {
         return $this->hasMany(PlanillaDetalle::class, 'periodo_id');
+    }
+
+    public function tardanzas(): HasMany
+    {
+        return $this->hasMany(PlanillaTardanza::class, 'periodo_id');
+    }
+
+    /**
+     * Fecha a la que se resuelven las vigencias (remuneraciones, asignaciones,
+     * importes de tardanzas): el cierre del periodo, no su inicio.
+     */
+    public function fechaCierre(): Carbon
+    {
+        $cierre = $this->fecha_fin
+            ?? Carbon::create($this->anio, $this->mes, 1)->endOfMonth();
+
+        return $cierre->copy()->startOfDay();
     }
 
     public function getNombrePeriodoAttribute(): string

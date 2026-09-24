@@ -19,6 +19,8 @@ class Employee extends Model
         'office_id',
         'contract_type_id',
         'fecha_ingreso',
+        'fecha_inicio_contrato',
+        'fecha_fin_contrato',
         'estado',
         'observaciones',
         'licencias_totales',
@@ -27,6 +29,8 @@ class Employee extends Model
 
     protected $casts = [
         'fecha_ingreso' => 'date',
+        'fecha_inicio_contrato' => 'date',
+        'fecha_fin_contrato' => 'date',
     ];
 
     /**
