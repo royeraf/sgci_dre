@@ -305,6 +305,15 @@ Route::middleware('auth')->group(function () {
         Route::put('/regimenes-pensionarios/{id}', [App\Http\Controllers\PlanillaController::class, 'updateRegimen'])->name('regimenes.update');
         Route::delete('/regimenes-pensionarios/{id}', [App\Http\Controllers\PlanillaController::class, 'deleteRegimen'])->name('regimenes.destroy');
 
+        // Parámetros de planilla (UIT, % tope EsSalud, RMV, tasa)
+        Route::get('/parametros', [App\Http\Controllers\PlanillaController::class, 'getParametros'])->name('parametros.list');
+        Route::put('/parametros/{id}', [App\Http\Controllers\PlanillaController::class, 'updateParametro'])->name('parametros.update');
+
+        // Parámetros SBS AFP (aporte, prima, RMA y comisiones por mes de devengue)
+        Route::get('/parametros-afp', [App\Http\Controllers\PlanillaController::class, 'getParametrosAfp'])->name('parametros-afp.list');
+        Route::put('/parametros-afp/{id}', [App\Http\Controllers\PlanillaController::class, 'updateParametroAfp'])->name('parametros-afp.update');
+        Route::put('/comisiones-afp/{id}', [App\Http\Controllers\PlanillaController::class, 'updateComisionAfp'])->name('comisiones-afp.update');
+
         // Asignaciones de conceptos (por régimen o por empleado)
         Route::get('/asignaciones', [App\Http\Controllers\PlanillaController::class, 'getAsignaciones'])->name('asignaciones.list');
         Route::get('/asignaciones/parametros', [App\Http\Controllers\PlanillaController::class, 'getAsignacionParametros'])->name('asignaciones.parametros');
@@ -324,6 +333,13 @@ Route::middleware('auth')->group(function () {
         Route::put('/tardanzas/{id}', [App\Http\Controllers\PlanillaController::class, 'updateTardanza'])->name('tardanzas.update');
         Route::delete('/tardanzas/{id}', [App\Http\Controllers\PlanillaController::class, 'deleteTardanza'])->name('tardanzas.destroy');
 
+        // Gratificaciones CAS (Ley 32563 / DS 142-2026-EF)
+        Route::get('/gratificaciones', [App\Http\Controllers\GratificacionController::class, 'getGratificaciones'])->name('gratificaciones.list');
+        Route::post('/gratificaciones/preview', [App\Http\Controllers\GratificacionController::class, 'previsualizarGratificaciones'])->name('gratificaciones.preview');
+        Route::post('/gratificaciones/generar', [App\Http\Controllers\GratificacionController::class, 'generarGratificaciones'])->name('gratificaciones.generar');
+        Route::get('/gratificaciones/parametros', [App\Http\Controllers\GratificacionController::class, 'getParametros'])->name('gratificaciones.parametros');
+        Route::put('/gratificaciones/parametros/{id}', [App\Http\Controllers\GratificacionController::class, 'updateParametro'])->name('gratificaciones.parametros.update');
+
         // Periodos y generación de planilla
         Route::get('/summary', [App\Http\Controllers\PlanillaController::class, 'getSummary'])->name('summary');
         Route::get('/periodos', [App\Http\Controllers\PlanillaController::class, 'getPeriodos'])->name('periodos.list');
@@ -331,6 +347,16 @@ Route::middleware('auth')->group(function () {
         Route::post('/periodos/{id}/generar', [App\Http\Controllers\PlanillaController::class, 'generarPeriodo'])->name('periodos.generar');
         Route::get('/periodos/{id}/detalle', [App\Http\Controllers\PlanillaController::class, 'getPeriodoDetalle'])->name('periodos.detalle');
         Route::delete('/periodos/{id}', [App\Http\Controllers\PlanillaController::class, 'deletePeriodo'])->name('periodos.destroy');
+
+        // Boletas de pago. El orden importa: `configuracion` y `periodo/...`
+        // deben declararse antes que `{detalle}` para no ser capturados por él.
+        Route::get('/boletas', [App\Http\Controllers\BoletaController::class, 'index'])->name('boletas.index');
+        Route::get('/boletas/configuracion', [App\Http\Controllers\BoletaController::class, 'getConfiguracion'])->name('boletas.configuracion');
+        Route::put('/boletas/configuracion', [App\Http\Controllers\BoletaController::class, 'updateConfiguracion'])->name('boletas.configuracion.update');
+        Route::get('/boletas/periodo/{periodoId}', [App\Http\Controllers\BoletaController::class, 'listar'])->name('boletas.listar');
+        Route::get('/boletas/periodo/{periodoId}/pdf-zip', [App\Http\Controllers\BoletaController::class, 'pdfZip'])->name('boletas.pdf-zip');
+        Route::get('/boletas/{detalle}', [App\Http\Controllers\BoletaController::class, 'show'])->name('boletas.show');
+        Route::get('/boletas/{detalle}/pdf', [App\Http\Controllers\BoletaController::class, 'pdf'])->name('boletas.pdf');
     });
 
     // Asistencia - Marcas de entrada/salida

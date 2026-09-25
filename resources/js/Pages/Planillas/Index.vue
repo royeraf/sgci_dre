@@ -55,6 +55,7 @@ import SummaryCards from '@/Components/Planillas/SummaryCards.vue';
 import PlanillasView from '@/Components/Planillas/PlanillasView.vue';
 import BoletasTable from '@/Components/Planillas/BoletasTable.vue';
 import RemuneracionesView from '@/Components/Planillas/RemuneracionesView.vue';
+import GratificacionesView from '@/Components/Planillas/GratificacionesView.vue';
 import DescuentosView from '@/Components/Planillas/DescuentosView.vue';
 import AportacionesView from '@/Components/Planillas/AportacionesView.vue';
 import TardanzasTable from '@/Components/Planillas/TardanzasTable.vue';
@@ -65,6 +66,7 @@ const tabComponents = {
     planillas: PlanillasView,
     boletas: BoletasTable,
     conceptos: RemuneracionesView,
+    gratificaciones: GratificacionesView,
     descuentos: DescuentosView,
     aportaciones: AportacionesView,
     tardanzas: TardanzasTable,

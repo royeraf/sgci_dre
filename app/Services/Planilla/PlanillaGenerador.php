@@ -3,9 +3,14 @@
 namespace App\Services\Planilla;
 
 use App\Models\Employee;
+use App\Models\Gratificacion;
+use App\Models\PlanillaComisionAfp;
 use App\Models\PlanillaConcepto;
 use App\Models\PlanillaConceptoAsignacion;
+use App\Models\PlanillaParametro;
+use App\Models\PlanillaParametroAfp;
 use App\Models\PlanillaPeriodo;
+use App\Models\PlanillaRegimenPensionario;
 use App\Models\PlanillaTardanza;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
@@ -27,10 +32,19 @@ class PlanillaGenerador
 {
     private const CODIGO_BASE = 'REM_DL1057';
 
-    /** Tope de base para EsSalud observado en la planilla CAS (Planilla 0042). */
+    private const CODIGO_GRATIFICACION = 'GRATIFICACION';
+
+    /** Fallback si no existe fila en `planilla_parametros` (tope = 45% UIT 2026). */
     private const ESSALUD_TOPE = 2475.0;
 
     private const ESSALUD_TASA = 0.09;
+
+    /** Fallback si no existe fila en `planilla_parametros_afp` (SBS 2026). */
+    private const AFP_APORTE = 0.10;
+
+    private const AFP_PRIMA = 0.0137;
+
+    private const AFP_RMA = 12672.65;
 
     private const CONCEPTOS_LEY = [
         'REM_DL1057',
@@ -55,7 +69,17 @@ class PlanillaGenerador
         'ESSALUD',
         'FALTAS_TARDANZAS',
         'RENTA_4TA',
+        'GRATIFICACION',
     ];
+
+    /** @var array<int, PlanillaParametro|null> */
+    private array $parametrosPlanilla = [];
+
+    /** @var array<string, PlanillaParametroAfp|null> */
+    private array $parametrosAfp = [];
+
+    /** @var array<string, PlanillaComisionAfp|null> */
+    private array $comisionesAfp = [];
 
     /**
      * (Re)genera la planilla del periodo. Solo en BORRADOR o CALCULADA.
@@ -74,6 +98,9 @@ class PlanillaGenerador
         $fecha = $periodo->fechaCierre();
 
         return DB::transaction(function () use ($periodo, $fecha) {
+            $this->parametrosPlanilla = [];
+            $this->parametrosAfp = [];
+            $this->comisionesAfp = [];
             $this->limpiarDetalle($periodo);
 
             $conceptosActivos = PlanillaConcepto::where('activo', true)->get();
@@ -213,6 +240,12 @@ class PlanillaGenerador
             );
         }
 
+        // Gratificación de julio/diciembre (Ley 32563): se agrega como ingreso
+        // con la misma fecha de corte del periodo.
+        if ($registroGratificacion = $this->registroGratificacion($empleado, $fecha, $conceptos)) {
+            $registros[] = $registroGratificacion;
+        }
+
         // Faltas y tardanzas: se agregan ANTES de las retenciones para que
         // reduzcan la base imponible, igual que N = E - L en el Excel.
         if ($registroTardanza = $this->registroTardanzas($empleado, $conceptos, $tardanzas, $registros)) {
@@ -220,10 +253,10 @@ class PlanillaGenerador
         }
 
         // Descuentos de ley (Fase 3)
-        foreach ($this->retencionesPension($registros, $empleado, $conceptos) as $registro) {
+        foreach ($this->retencionesPension($registros, $empleado, $conceptos, $fecha) as $registro) {
             $registros[] = $registro;
         }
-        foreach ($this->aporteEssalud($registros, $conceptos) as $registro) {
+        foreach ($this->aporteEssalud($registros, $conceptos, $fecha) as $registro) {
             $registros[] = $registro;
         }
 
@@ -257,6 +290,62 @@ class PlanillaGenerador
         }
 
         return round($total, 2);
+    }
+
+    /**
+     * Ingreso de gratificación (julio → Fiestas Patrias, diciembre → Navidad).
+     * Usa el registro guardado en la pestaña «Gratificaciones»; si no existe,
+     * calcula al vuelo con el mismo servicio para que la planilla siempre
+     * refleje el monto.
+     *
+     * @param Collection<string, PlanillaConcepto> $conceptos
+     * @return array<string, mixed>|null
+     */
+    private function registroGratificacion(Employee $empleado, Carbon $fecha, Collection $conceptos): ?array
+    {
+        $periodoGratificacion = match ((int) $fecha->month) {
+            7 => GratificacionCasService::PERIODO_JULIO,
+            12 => GratificacionCasService::PERIODO_DICIEMBRE,
+            default => null,
+        };
+
+        if ($periodoGratificacion === null) {
+            return null;
+        }
+
+        $concepto = $conceptos->get(self::CODIGO_GRATIFICACION);
+
+        if (!$concepto || !$concepto->activo) {
+            return null;
+        }
+
+        $gratificacion = Gratificacion::where('employee_id', $empleado->id)
+            ->where('anio', $fecha->year)
+            ->where('periodo', $periodoGratificacion)
+            ->first();
+
+        if ($gratificacion !== null) {
+            $monto = (float) $gratificacion->monto_final;
+            $base = (float) $gratificacion->base_semestral;
+            $porcentaje = (float) $gratificacion->porcentaje_aplicado;
+        } else {
+            $calculo = app(GratificacionCasService::class)
+                ->calcularParaEmpleado($empleado, $fecha->year, $periodoGratificacion);
+
+            if ($calculo === null) {
+                return null;
+            }
+
+            $monto = (float) $calculo['monto_final'];
+            $base = (float) $calculo['base_semestral'];
+            $porcentaje = (float) $calculo['porcentaje_aplicado'];
+        }
+
+        if ($monto <= 0) {
+            return null;
+        }
+
+        return $this->registro($concepto, 'INGRESO', $monto, $base, $porcentaje);
     }
 
     /**
@@ -299,11 +388,17 @@ class PlanillaGenerador
     /**
      * AFP u ONP según el perfil de pensión del empleado.
      *
+     * AFP: aporte obligatorio, prima y comisión se toman de los parámetros
+     * SBS vigentes por mes de devengue (`planilla_parametros_afp` /
+     * `planilla_comisiones_afp`), con tope de remuneración máxima asegurable.
+     * Solo el tipo de comisión FLUJO descuenta en planilla; MIXTA y SALDO no
+     * generan retención mensual.
+     *
      * @param array<int, array<string, mixed>> $registros
      * @param Collection<string, PlanillaConcepto> $conceptos
      * @return array<int, array<string, mixed>>
      */
-    private function retencionesPension(array $registros, Employee $empleado, Collection $conceptos): array
+    private function retencionesPension(array $registros, Employee $empleado, Collection $conceptos, Carbon $fecha): array
     {
         $regimen = $empleado->payrollProfile?->regimenPensionario;
 
@@ -319,45 +414,53 @@ class PlanillaGenerador
             if ($concepto && $base > 0) {
                 $tasa = (float) $regimen->aporte_obligatorio;
                 $ajuste = $base < 2000 ? 0.01 : 0.02;
-                $monto = round($base * $tasa, 2) + $ajuste;
-                $items[] = $this->registro($concepto, 'DESCUENTO', round($monto, 2), $base, $tasa);
+                $monto = $this->dinero($base * $tasa) + $ajuste;
+                $items[] = $this->registro($concepto, 'DESCUENTO', $monto, $base, $tasa);
             }
 
             return $items;
         }
 
-        // AFP: fondo + seguro + comisión
-        $base = $this->baseAfecta($registros, 'afecto_afp');
+        // AFP: fondo + seguro + comisión (con tope de remuneración máxima asegurable)
+        $parametro = $this->parametroAfp($fecha);
+        $rma = $parametro !== null ? (float) $parametro->remuneracion_maxima_asegurable : self::AFP_RMA;
+        $base = min($this->baseAfecta($registros, 'afecto_afp'), $rma);
         if ($base <= 0) {
             return $items;
         }
 
-        $tasaFondo = (float) $regimen->aporte_obligatorio;
+        $tasaFondo = $parametro !== null ? (float) $parametro->aporte_obligatorio : self::AFP_APORTE;
         if ($concepto = $conceptos->get('AFP_FONDO')) {
             $items[] = $this->registro($concepto, 'DESCUENTO', $base * $tasaFondo, $base, $tasaFondo);
         }
 
-        $tasaSeguro = (float) $regimen->prima_seguro;
+        $tasaSeguro = $parametro !== null ? (float) $parametro->prima_seguro : self::AFP_PRIMA;
         if ($concepto = $conceptos->get('AFP_SEGURO')) {
             $items[] = $this->registro($concepto, 'DESCUENTO', $base * $tasaSeguro, $base, $tasaSeguro);
         }
 
-        $comision = $regimen->comision_fija ?? $regimen->comision_mixta ?? $regimen->comision_flujo;
-        if ($comision !== null && (float) $comision > 0 && ($concepto = $conceptos->get('AFP_COMISION'))) {
-            $items[] = $this->registro($concepto, 'DESCUENTO', $base * (float) $comision, $base, (float) $comision);
+        $tasaComision = 0.0;
+        if ($empleado->payrollProfile?->tipo_comision === 'FLUJO') {
+            $comision = $this->comisionAfp($fecha, $regimen);
+            $tasaComision = $comision !== null ? (float) $comision->comision_flujo : 0.0;
+        }
+
+        if ($tasaComision > 0 && ($concepto = $conceptos->get('AFP_COMISION'))) {
+            $items[] = $this->registro($concepto, 'DESCUENTO', $base * $tasaComision, $base, $tasaComision);
         }
 
         return $items;
     }
 
     /**
-     * EsSalud 9% (aporte del empleador) con tope de base.
+     * EsSalud 9% (aporte del empleador) con tope de base según
+     * `planilla_parametros` del año: tope = UIT × %tope, mínimo = RMV.
      *
      * @param array<int, array<string, mixed>> $registros
      * @param Collection<string, PlanillaConcepto> $conceptos
      * @return array<int, array<string, mixed>>
      */
-    private function aporteEssalud(array $registros, Collection $conceptos): array
+    private function aporteEssalud(array $registros, Collection $conceptos, Carbon $fecha): array
     {
         $concepto = $conceptos->get('ESSALUD');
         if (!$concepto) {
@@ -369,11 +472,62 @@ class PlanillaGenerador
             return [];
         }
 
-        $baseCalculo = min($base, self::ESSALUD_TOPE);
+        $parametro = $this->parametroPlanilla((int) $fecha->year);
+        $tope = $parametro !== null ? $parametro->topeEssalud() : self::ESSALUD_TOPE;
+        $tasa = $parametro !== null ? (float) $parametro->tasa_essalud : self::ESSALUD_TASA;
+        $rmv = $parametro?->rmv !== null ? (float) $parametro->rmv : null;
+
+        $baseCalculo = min($base, $tope);
+        if ($rmv !== null) {
+            $baseCalculo = max($baseCalculo, min($rmv, $tope));
+        }
 
         return [
-            $this->registro($concepto, 'APORTACION', $baseCalculo * self::ESSALUD_TASA, $baseCalculo, self::ESSALUD_TASA),
+            $this->registro($concepto, 'APORTACION', $baseCalculo * $tasa, $baseCalculo, $tasa),
         ];
+    }
+
+    /**
+     * Parámetros de planilla del año (UIT, %tope, RMV, tasa), memorizados
+     * por año para no consultar por empleado.
+     */
+    private function parametroPlanilla(int $anio): ?PlanillaParametro
+    {
+        if (!array_key_exists($anio, $this->parametrosPlanilla)) {
+            $this->parametrosPlanilla[$anio] = PlanillaParametro::vigente($anio);
+        }
+
+        return $this->parametrosPlanilla[$anio];
+    }
+
+    /**
+     * Parámetros SBS del mes de devengue (aporte, prima, RMA), memorizados.
+     */
+    private function parametroAfp(Carbon $fecha): ?PlanillaParametroAfp
+    {
+        $clave = $fecha->format('Y-m');
+
+        if (!array_key_exists($clave, $this->parametrosAfp)) {
+            $this->parametrosAfp[$clave] = PlanillaParametroAfp::vigente($fecha);
+        }
+
+        return $this->parametrosAfp[$clave];
+    }
+
+    /**
+     * Comisión SBS de la AFP en el mes de devengue (flujo/saldo), memorizada.
+     */
+    private function comisionAfp(Carbon $fecha, PlanillaRegimenPensionario $regimen): ?PlanillaComisionAfp
+    {
+        $clave = $fecha->format('Y-m') . '|' . $regimen->id;
+
+        if (!array_key_exists($clave, $this->comisionesAfp)) {
+            $this->comisionesAfp[$clave] = PlanillaComisionAfp::where('mes', $fecha->copy()->startOfMonth())
+                ->where('regimen_pensionario_id', $regimen->id)
+                ->first();
+        }
+
+        return $this->comisionesAfp[$clave];
     }
 
     /**
@@ -488,6 +642,19 @@ class PlanillaGenerador
     }
 
     /**
+     * Redondeo a 2 decimales como el de Excel: normaliza a 15 dígitos
+     * significativos antes de redondear, para que productos exactos en
+     * decimal (p. ej. 1890 × 1.55% = 29.295) no caigan por debajo por
+     * el ruido del punto flotante (29.294999999999998 → 29.30, no 29.29).
+     */
+    private function dinero(float $valor): float
+    {
+        $decimales = max(0, 14 - (int) floor(log10(abs($valor) ?: 1e-9)));
+
+        return round(round($valor, $decimales), 2);
+    }
+
+    /**
      * @return array<string, mixed>
      */
     private function registro(PlanillaConcepto $concepto, string $tipo, float $monto, float $base, ?float $porcentaje): array
@@ -498,7 +665,7 @@ class PlanillaGenerador
             'descripcion' => $concepto->nombre,
             'base_calculo' => round($base, 2),
             'porcentaje' => $porcentaje,
-            'monto' => round($monto, 2),
+            'monto' => $this->dinero($monto),
             'orden' => $concepto->orden,
             'afecto_renta5' => (bool) $concepto->afecto_renta5,
             'afecto_essalud' => (bool) $concepto->afecto_essalud,

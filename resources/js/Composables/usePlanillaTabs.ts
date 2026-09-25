@@ -1,5 +1,5 @@
 import type { Component } from 'vue';
-import { Wallet, Receipt, Coins, Percent, PiggyBank, Clock } from 'lucide-vue-next';
+import { Wallet, Receipt, Coins, Gift, Percent, PiggyBank, Clock } from 'lucide-vue-next';
 
 export interface PlanillaTab {
     key: string;
@@ -35,6 +35,13 @@ export const PLANILLA_TABS: PlanillaTab[] = [
         icon: Coins,
         title: 'Remuneraciones y Conceptos',
         description: 'Haberes, bonificaciones y asignaciones por empleado.',
+    },
+    {
+        key: 'gratificaciones',
+        label: 'Gratificaciones',
+        icon: Gift,
+        title: 'Gratificaciones CAS',
+        description: 'Cálculo de gratificaciones de Fiestas Patrias y Navidad (Ley 32563).',
     },
     {
         key: 'descuentos',

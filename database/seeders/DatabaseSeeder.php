@@ -25,6 +25,11 @@ class DatabaseSeeder extends Seeder
         $this->call(HrDirectionSeeder::class);
         $this->call(HrOfficeSeeder::class);
         $this->call(PlanillaCatalogSeeder::class);
+        $this->call(GratificacionCasParametrosSeeder::class);
+        $this->call(PlanillaParametrosSeeder::class);
+        $this->call(PlanillaParametrosAfpSeeder::class);
+        $this->call(TipoComisionSeeder::class);
+        $this->call(DreConfiguracionSeeder::class);
     }
 
     private function seedRoles(): void

@@ -17,18 +17,12 @@ class PlanillaRegimenPensionario extends Model
         'tipo',
         'aporte_obligatorio',
         'prima_seguro',
-        'comision_flujo',
-        'comision_mixta',
-        'comision_fija',
         'activo',
     ];
 
     protected $casts = [
         'aporte_obligatorio' => 'decimal:5',
         'prima_seguro' => 'decimal:5',
-        'comision_flujo' => 'decimal:5',
-        'comision_mixta' => 'decimal:5',
-        'comision_fija' => 'decimal:5',
         'activo' => 'boolean',
     ];
 

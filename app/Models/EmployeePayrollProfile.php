@@ -16,6 +16,7 @@ class EmployeePayrollProfile extends Model
         'employee_id',
         'regimen_pensionario_id',
         'cuspp',
+        'tipo_comision',
         'banco_id',
         'cuenta_ahorro',
     ];

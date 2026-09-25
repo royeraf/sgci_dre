@@ -10,7 +10,7 @@
                             <Landmark class="w-6 h-6" />
                             Regímenes de Pensión
                         </h3>
-                        <p class="text-indigo-50 text-sm mt-1">Tasas de AFP y ONP usadas al calcular la planilla</p>
+                        <p class="text-indigo-50 text-sm mt-1">Fondo y seguro por régimen · las comisiones AFP se administan en «Parámetros SBS»</p>
                     </div>
                     <button @click="$emit('close')" class="text-indigo-100 hover:text-white transition-colors p-1">
                         <X class="w-6 h-6" />
@@ -59,14 +59,6 @@
                                     class="w-full px-4 py-2.5 border-2 border-slate-200 rounded-xl text-slate-900 focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none" />
                             </div>
 
-                            <div v-if="tipo === 'AFP'">
-                                <label class="block text-sm font-bold text-slate-700 mb-2">Comisión de gestión (%)</label>
-                                <input v-model.number="comision" type="number" step="0.01" min="0" max="100"
-                                    placeholder="Ej. 1.55"
-                                    class="w-full px-4 py-2.5 border-2 border-slate-200 rounded-xl text-slate-900 focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none" />
-                                <p class="mt-1 text-xs text-slate-400">Es la columna que genera el descuento «AFP Comisión».</p>
-                            </div>
-
                             <div class="flex items-end gap-2">
                                 <label class="flex items-center gap-2 cursor-pointer text-sm font-semibold text-slate-600 pb-2.5">
                                     <input type="checkbox" v-model="activo" class="w-4 h-4 rounded text-indigo-600 border-slate-300 focus:ring-indigo-500" />
@@ -101,7 +93,6 @@
                                     <th class="text-center font-bold uppercase text-[11px] tracking-widest px-4 py-3">Tipo</th>
                                     <th class="text-right font-bold uppercase text-[11px] tracking-widest px-4 py-3">Fondo / Aporte</th>
                                     <th class="text-right font-bold uppercase text-[11px] tracking-widest px-4 py-3">Seguro</th>
-                                    <th class="text-right font-bold uppercase text-[11px] tracking-widest px-4 py-3">Comisión</th>
                                     <th class="text-center font-bold uppercase text-[11px] tracking-widest px-4 py-3">Estado</th>
                                     <th class="text-center font-bold uppercase text-[11px] tracking-widest px-4 py-3">Acciones</th>
                                 </tr>
@@ -118,10 +109,6 @@
                                     </td>
                                     <td class="px-4 py-3 text-right tabular-nums">{{ pct(reg.aporte_obligatorio) }}%</td>
                                     <td class="px-4 py-3 text-right tabular-nums">{{ reg.tipo === 'ONP' ? '—' : pct(reg.prima_seguro) + '%' }}</td>
-                                    <td class="px-4 py-3 text-right tabular-nums font-semibold"
-                                        :class="Number(reg.comision_fija || 0) > 0 ? 'text-rose-600' : 'text-slate-400'">
-                                        {{ reg.tipo === 'ONP' ? '—' : pct(reg.comision_fija) + '%' }}
-                                    </td>
                                     <td class="px-4 py-3 text-center">
                                         <span class="text-xs font-bold px-2.5 py-1 rounded-full"
                                             :class="reg.activo ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'">
@@ -168,7 +155,6 @@ const nombre = ref('');
 const tipo = ref('AFP');
 const aporte = ref(10);
 const prima = ref(1.37);
-const comision = ref(0);
 const activo = ref(true);
 const editingId = ref(null);
 const error = ref('');
@@ -198,7 +184,6 @@ const payload = () => ({
     tipo: tipo.value,
     aporte_obligatorio: dePct(aporte.value),
     prima_seguro: tipo.value === 'ONP' ? 0 : dePct(prima.value),
-    comision_fija: tipo.value === 'ONP' ? 0 : dePct(comision.value),
     activo: activo.value,
 });
 
@@ -241,7 +226,6 @@ const startEdit = (reg) => {
     tipo.value = reg.tipo;
     aporte.value = pct(reg.aporte_obligatorio);
     prima.value = pct(reg.prima_seguro);
-    comision.value = pct(reg.comision_fija);
     activo.value = !!reg.activo;
     error.value = '';
 };
@@ -252,7 +236,6 @@ const reset = () => {
     tipo.value = 'AFP';
     aporte.value = 10;
     prima.value = 1.37;
-    comision.value = 0;
     activo.value = true;
     error.value = '';
 };
@@ -264,7 +247,6 @@ const toggleActivo = async (reg) => {
             tipo: reg.tipo,
             aporte_obligatorio: Number(reg.aporte_obligatorio),
             prima_seguro: Number(reg.prima_seguro),
-            comision_fija: reg.comision_fija === null ? null : Number(reg.comision_fija),
             activo: !reg.activo,
         });
         notify('success', `Régimen ${reg.activo ? 'desactivado' : 'activado'}`);

@@ -35,7 +35,7 @@ class PlanillaCatalogSeeder extends Seeder
         ];
 
         foreach ($bancos as $banco) {
-            PlanillaBanco::updateOrCreate(
+            PlanillaBanco::firstOrCreate(
                 ['nombre' => $banco['nombre']],
                 $banco + ['activo' => true]
             );
@@ -46,47 +46,42 @@ class PlanillaCatalogSeeder extends Seeder
 
     private function seedRegimenesPensionarios(): void
     {
-        // ONP (Ley 19990): 13%. AFP: fondo 10% + prima 1.37% + comisión propia.
+        // ONP (Ley 19990): 13%. AFP: fondo y prima según régimen; comisiones en parámetros SBS.
         $regimenes = [
             [
                 'nombre' => 'ONP (Ley 19990)',
                 'tipo' => 'ONP',
                 'aporte_obligatorio' => 0.13000,
                 'prima_seguro' => 0,
-                'comision_fija' => 0,
             ],
             [
                 'nombre' => 'AFP Habitat',
                 'tipo' => 'AFP',
                 'aporte_obligatorio' => 0.10000,
                 'prima_seguro' => 0.01370,
-                'comision_fija' => 0.01470,
             ],
             [
                 'nombre' => 'AFP Integra',
                 'tipo' => 'AFP',
                 'aporte_obligatorio' => 0.10000,
                 'prima_seguro' => 0.01370,
-                'comision_fija' => 0.01550,
             ],
             [
                 'nombre' => 'AFP Prima',
                 'tipo' => 'AFP',
                 'aporte_obligatorio' => 0.10000,
                 'prima_seguro' => 0.01370,
-                'comision_fija' => 0,
             ],
             [
                 'nombre' => 'AFP Profuturo',
                 'tipo' => 'AFP',
                 'aporte_obligatorio' => 0.10000,
                 'prima_seguro' => 0.01370,
-                'comision_fija' => 0,
             ],
         ];
 
         foreach ($regimenes as $regimen) {
-            PlanillaRegimenPensionario::updateOrCreate(
+            PlanillaRegimenPensionario::firstOrCreate(
                 ['nombre' => $regimen['nombre']],
                 $regimen + ['activo' => true]
             );
@@ -120,6 +115,12 @@ class PlanillaCatalogSeeder extends Seeder
                 'afecto_onp' => false,
                 'afecto_afp' => false,
             ], 9],
+            ['GRATIFICACION', 'Gratificación FP / Navidad (Ley 32563)', 'INGRESO', 'GRATIFICACION', false, null, [
+                'afecto_renta5' => false,
+                'afecto_essalud' => true,
+                'afecto_onp' => false,
+                'afecto_afp' => false,
+            ], 10],
 
             // ===== DESCUENTOS / RETENCIONES =====
             ['AFP_FONDO', 'AFP Fondo', 'DESCUENTO', 'AFP', true, 0.10000, $this->sinAfectacion(), 1],
@@ -143,7 +144,7 @@ class PlanillaCatalogSeeder extends Seeder
         ];
 
         foreach ($conceptos as [$codigo, $nombre, $tipo, $categoria, $esPorcentaje, $valor, $afectos, $orden]) {
-            PlanillaConcepto::updateOrCreate(
+            PlanillaConcepto::firstOrCreate(
                 ['codigo' => $codigo],
                 array_merge([
                     'nombre' => $nombre,

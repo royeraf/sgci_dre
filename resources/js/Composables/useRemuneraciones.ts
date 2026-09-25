@@ -3,6 +3,7 @@ import axios from 'axios';
 
 export type TipoConcepto = 'INGRESO' | 'DESCUENTO' | 'APORTACION';
 export type TipoPension = 'ONP' | 'AFP';
+export type TipoComision = 'FLUJO' | 'MIXTA' | 'SALDO';
 
 export interface RemuneracionRow {
     id: string;
@@ -21,6 +22,7 @@ export interface RemuneracionRow {
     regimen_pensionario: string | null;
     tipo_pension: TipoPension | null;
     cuspp: string | null;
+    tipo_comision: TipoComision | null;
     banco_id: string | null;
     banco: string | null;
     cuenta_ahorro: string | null;
@@ -56,6 +58,7 @@ export interface RemuneracionPayload {
 export interface PerfilPayload {
     regimen_pensionario_id: string | null;
     cuspp: string | null;
+    tipo_comision: TipoComision | null;
     banco_id: string | null;
     cuenta_ahorro: string | null;
 }

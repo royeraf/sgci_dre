@@ -9,6 +9,16 @@
             </template>
 
             <template #actions>
+                <button @click="showParametrosModal = true"
+                    class="cursor-pointer inline-flex items-center px-4 py-2.5 text-sm font-bold rounded-xl border-2 border-indigo-200 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 transition-all duration-200">
+                    <Landmark class="w-4 h-4 mr-2" />
+                    Parámetros
+                </button>
+                <button @click="showParametrosAfpModal = true"
+                    class="cursor-pointer inline-flex items-center px-4 py-2.5 text-sm font-bold rounded-xl border-2 border-sky-200 bg-sky-50 text-sky-700 hover:bg-sky-100 transition-all duration-200">
+                    <Percent class="w-4 h-4 mr-2" />
+                    Parámetros SBS
+                </button>
                 <button @click="showPeriodoModal = true"
                     class="cursor-pointer inline-flex items-center px-5 py-2.5 text-sm font-bold rounded-xl shadow-lg shadow-teal-500/30 text-white bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 transition-all duration-300 hover:-translate-y-0.5">
                     <Plus class="w-4 h-4 mr-2" />
@@ -79,16 +89,22 @@
 
         <PeriodoDetalleModal v-if="showDetalleModal && detalle" :detalle="detalle"
             @close="showDetalleModal = false" @refresh="onRefreshDetalle" />
+
+        <ParametrosPlanillaModal v-if="showParametrosModal" @close="showParametrosModal = false" />
+
+        <ParametrosAfpModal v-if="showParametrosAfpModal" @close="showParametrosAfpModal = false" />
     </div>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue';
-import { Wallet, Plus, Play, Eye, Trash2, Loader2 } from 'lucide-vue-next';
+import { Wallet, Plus, Play, Eye, Trash2, Loader2, Landmark, Percent } from 'lucide-vue-next';
 
 import BaseTableCard from '@/Components/Common/BaseTableCard.vue';
 import PeriodoModal from '@/Components/Planillas/Periodos/PeriodoModal.vue';
 import PeriodoDetalleModal from '@/Components/Planillas/Periodos/PeriodoDetalleModal.vue';
+import ParametrosPlanillaModal from '@/Components/Planillas/ParametrosPlanillaModal.vue';
+import ParametrosAfpModal from '@/Components/Planillas/ParametrosAfpModal.vue';
 import { usePlanillaPeriodos } from '@/Composables/usePlanillaPeriodos';
 
 const {
@@ -105,6 +121,8 @@ const {
 
 const showPeriodoModal = ref(false);
 const showDetalleModal = ref(false);
+const showParametrosModal = ref(false);
+const showParametrosAfpModal = ref(false);
 
 const notify = (icon, title) => {
     window.Swal?.fire({

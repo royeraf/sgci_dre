@@ -7,8 +7,12 @@ use App\Models\EmployeePayrollProfile;
 use App\Models\EmployeeRemuneration;
 use App\Models\HRContractType;
 use App\Models\PlanillaBanco;
+use App\Models\PlanillaComisionAfp;
 use App\Models\PlanillaConcepto;
 use App\Models\PlanillaConceptoAsignacion;
+use App\Models\PlanillaDetalle;
+use App\Models\PlanillaParametro;
+use App\Models\PlanillaParametroAfp;
 use App\Models\PlanillaPeriodo;
 use App\Models\PlanillaRegimenPensionario;
 use App\Models\PlanillaTardanza;
@@ -83,6 +87,7 @@ class PlanillaController extends Controller
                     'regimen_pensionario' => $perfil?->regimenPensionario?->nombre,
                     'tipo_pension' => $perfil?->regimenPensionario?->tipo,
                     'cuspp' => $perfil?->cuspp,
+                    'tipo_comision' => $perfil?->tipo_comision,
                     'banco_id' => $perfil?->banco_id,
                     'banco' => $perfil?->banco?->nombre,
                     'cuenta_ahorro' => $perfil?->cuenta_ahorro,
@@ -315,6 +320,7 @@ class PlanillaController extends Controller
         $validated = $request->validate([
             'regimen_pensionario_id' => 'nullable|exists:planilla_regimenes_pensionarios,id',
             'cuspp' => 'nullable|string|max:30',
+            'tipo_comision' => 'nullable|in:FLUJO,MIXTA,SALDO',
             'banco_id' => 'nullable|exists:planilla_bancos,id',
             'cuenta_ahorro' => 'nullable|string|max:50',
         ]);
@@ -509,11 +515,118 @@ class PlanillaController extends Controller
             'tipo' => 'required|in:AFP,ONP',
             'aporte_obligatorio' => 'required|numeric|between:0,1',
             'prima_seguro' => 'nullable|numeric|between:0,1',
-            'comision_fija' => 'nullable|numeric|between:0,1',
-            'comision_mixta' => 'nullable|numeric|between:0,1',
-            'comision_flujo' => 'nullable|numeric|between:0,1',
             'activo' => 'boolean',
         ]);
+    }
+
+    // ========== PARÁMETROS DE PLANILLA (UIT / tope EsSalud) ==========
+
+    public function getParametros()
+    {
+        $parametros = PlanillaParametro::orderBy('anio')->get()->map(fn ($p) => [
+            'id' => $p->id,
+            'anio' => $p->anio,
+            'uit' => (float) $p->uit,
+            'pct_tope_essalud' => (float) $p->pct_tope_essalud,
+            'rmv' => $p->rmv !== null ? (float) $p->rmv : null,
+            'tasa_essalud' => (float) $p->tasa_essalud,
+            'tope_essalud' => $p->topeEssalud(),
+            'activo' => $p->activo,
+        ]);
+
+        return response()->json($parametros);
+    }
+
+    public function updateParametro(Request $request, string $id)
+    {
+        $parametro = PlanillaParametro::find($id);
+
+        if (!$parametro) {
+            return response()->json(['message' => 'Parámetro no encontrado'], 404);
+        }
+
+        $validated = $request->validate([
+            'uit' => 'required|numeric|min:1',
+            'pct_tope_essalud' => 'required|numeric|min:0|max:1',
+            'rmv' => 'nullable|numeric|min:0',
+            'tasa_essalud' => 'required|numeric|min:0|max:1',
+            'activo' => 'required|boolean',
+        ]);
+
+        $parametro->update($validated);
+
+        return response()->json(['message' => 'Parámetro actualizado correctamente']);
+    }
+
+    // ========== PARÁMETROS SBS AFP (aporte / prima / RMA / comisiones) ==========
+
+    public function getParametrosAfp()
+    {
+        $parametros = PlanillaParametroAfp::orderBy('mes')->get()->map(fn ($p) => [
+            'id' => $p->id,
+            'mes' => $p->mes->format('Y-m-d'),
+            'aporte_obligatorio' => (float) $p->aporte_obligatorio,
+            'prima_seguro' => (float) $p->prima_seguro,
+            'remuneracion_maxima_asegurable' => (float) $p->remuneracion_maxima_asegurable,
+        ]);
+
+        $regimenes = PlanillaRegimenPensionario::where('tipo', 'AFP')->orderBy('nombre')->get();
+
+        $comisiones = PlanillaComisionAfp::orderBy('mes')->get()
+            ->map(fn ($c) => [
+                'id' => $c->id,
+                'mes' => $c->mes->format('Y-m-d'),
+                'regimen_pensionario_id' => $c->regimen_pensionario_id,
+                'regimen' => $regimenes->firstWhere('id', $c->regimen_pensionario_id)?->nombre,
+                'comision_flujo' => (float) $c->comision_flujo,
+                'comision_saldo' => (float) $c->comision_saldo,
+            ]);
+
+        return response()->json([
+            'parametros' => $parametros,
+            'comisiones' => $comisiones,
+            'regimenes' => $regimenes->map(fn ($r) => [
+                'id' => $r->id,
+                'nombre' => $r->nombre,
+            ]),
+        ]);
+    }
+
+    public function updateParametroAfp(Request $request, string $id)
+    {
+        $parametro = PlanillaParametroAfp::find($id);
+
+        if (!$parametro) {
+            return response()->json(['message' => 'Parámetro AFP no encontrado'], 404);
+        }
+
+        $validated = $request->validate([
+            'aporte_obligatorio' => 'required|numeric|between:0,1',
+            'prima_seguro' => 'required|numeric|between:0,1',
+            'remuneracion_maxima_asegurable' => 'required|numeric|min:0',
+        ]);
+
+        $parametro->update($validated);
+
+        return response()->json(['message' => 'Parámetro AFP actualizado correctamente']);
+    }
+
+    public function updateComisionAfp(Request $request, string $id)
+    {
+        $comision = PlanillaComisionAfp::find($id);
+
+        if (!$comision) {
+            return response()->json(['message' => 'Comisión AFP no encontrada'], 404);
+        }
+
+        $validated = $request->validate([
+            'comision_flujo' => 'required|numeric|between:0,1',
+            'comision_saldo' => 'required|numeric|between:0,1',
+        ]);
+
+        $comision->update($validated);
+
+        return response()->json(['message' => 'Comisión AFP actualizada correctamente']);
     }
 
     // ========== BANCOS ==========
@@ -945,7 +1058,10 @@ class PlanillaController extends Controller
 
         return response()->json([
             'periodo_actual' => $ultimo?->nombre_periodo,
-            'boletas_emitidas' => 0,
+            'boletas_emitidas' => PlanillaDetalle::whereHas(
+                'periodo',
+                fn ($query) => $query->where('estado', '!=', 'BORRADOR')
+            )->count(),
             'personal_en_planilla' => $personal,
             'pendientes' => PlanillaPeriodo::where('estado', 'BORRADOR')->count(),
         ]);

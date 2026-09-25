@@ -7,9 +7,6 @@ export interface PlanillaRegimen {
     tipo: 'AFP' | 'ONP';
     aporte_obligatorio: number;
     prima_seguro: number;
-    comision_fija: number | null;
-    comision_mixta: number | null;
-    comision_flujo: number | null;
     activo: boolean;
 }
 
@@ -18,7 +15,6 @@ export interface RegimenPayload {
     tipo: 'AFP' | 'ONP';
     aporte_obligatorio: number;
     prima_seguro: number;
-    comision_fija: number | null;
     activo: boolean;
 }
 
