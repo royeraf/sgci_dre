@@ -329,15 +329,19 @@ automatizará sin cambiar el modelo de `planilla_tardanzas`:
 > automáticamente en `PlanillaGenerador` (Fase 3). La base afecta surge de los
 > flags `afecto_onp`/`afecto_afp`/`afecto_essalud` de cada concepto.
 >
-> **No sujetos a descuento AFP/ONP** (`retencionesPension()` devuelve `[]`):
-> empleados con régimen `es_reja = true` (**AFP REJA**) y empleados **sin
-> régimen pensionario** (sin perfil o `regimen_pensionario_id = NULL`). EsSalud
-> sí se aporta en ambos casos. La condición se comunica en el modal «Perfil de
+> **No sujetos a descuento AFP/ONP**: empleados con régimen `es_reja = true`
+> (**AFP REJA**) y empleados **sin régimen pensionario** (sin perfil o
+> `regimen_pensionario_id = NULL`). EsSalud sí se aporta en ambos casos.
+> REJA imprime en descuentos la fila **`AFP <Administradora> REJA` = 0.00**
+> (concepto `AFP_REJA`, igual que el Excel: «AFP Integ. REJA»); sin régimen no
+> genera fila de pensión alguna. La condición se comunica en el modal «Perfil de
 > Planilla» (aviso + badge `REJA`).
 >
 > El **descuento por tardanzas** se registra **manualmente** (días/minutos) y el
-> sistema calcula el monto con las fórmulas de abajo. La automatización desde
-> Asistencias corresponde a la Fase 7.
+> sistema calcula el monto con las fórmulas de abajo; la fila se emite
+> **siempre**, con `0.00` cuando el empleado no tiene faltas (columna
+> «Falt/Tard.» del Excel). La automatización desde Asistencias corresponde a la
+> Fase 7.
 
 | Concepto | Fórmula |
 |---|---|
@@ -349,10 +353,12 @@ automatizará sin cambiar el modelo de `planilla_tardanzas`:
 | Valor por día | `remuneración / 30` |
 | Valor por minuto | `(remuneración / 30) / 480` (jornada 8 h) |
 | Base imponible | `remuneración − faltas/tardanzas` |
+| Faltas / Tardanzas | Suma de `planilla_tardanzas` no justificadas del periodo; **fila siempre presente** en descuentos (`0.00` si no hay), base guardada `N = E − L` |
 | AFP Fondo | `base × 10%` |
 | AFP Seguro | `base × 1.37%` |
 | AFP Comisión | `planilla_comisiones_afp.comision_flujo` (por `mes` + régimen), solo si `employee_payroll_profiles.tipo_comision = FLUJO` |
 | ONP | `base × 13%` |
+| AFP REJA (empleados `es_reja`) | `0.00`, etiqueta `AFP <Administradora> REJA` (concepto `AFP_REJA`, solo lo genera el motor) |
 | Renta 4ta | `base × 8%` |
 | EsSalud | `base × 9%` (tope de base 2475) |
 | Neto a pagar | `total ingresos − total descuentos` |

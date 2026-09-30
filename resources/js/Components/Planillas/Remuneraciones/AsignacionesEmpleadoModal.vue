@@ -26,13 +26,45 @@
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div class="sm:col-span-2">
                                 <label class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1.5">Concepto</label>
-                                <select v-model="conceptoId"
-                                    class="w-full px-3 py-2.5 border-2 border-slate-200 rounded-xl bg-white text-slate-900 text-sm focus:ring-4 focus:ring-rose-500/20 focus:border-rose-500 outline-none">
-                                    <option value="">Seleccione concepto</option>
-                                    <option v-for="c in disponibles" :key="c.id" :value="c.id">
-                                        {{ c.nombre }} ({{ c.tipo }})
-                                    </option>
-                                </select>
+                                <div class="relative" ref="conceptoContainer">
+                                    <div class="relative">
+                                        <Search class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                                        <input v-model="conceptoQuery" type="text" @focus="showConceptoDropdown = true"
+                                            @input="onConceptoInput" placeholder="Buscar concepto por nombre, código o tipo..."
+                                            autocomplete="off"
+                                            class="w-full pl-9 pr-9 py-2.5 border-2 border-slate-200 rounded-xl bg-white text-slate-900 text-sm placeholder:text-slate-400 focus:ring-4 focus:ring-rose-500/20 focus:border-rose-500 outline-none" />
+                                        <button v-if="conceptoId" type="button" @click="limpiarConcepto"
+                                            title="Quitar concepto seleccionado"
+                                            class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-rose-500 transition-colors p-0.5 rounded-full hover:bg-slate-100">
+                                            <X class="w-4 h-4" />
+                                        </button>
+                                        <ChevronDown v-else
+                                            class="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                                    </div>
+
+                                    <div v-if="showConceptoDropdown && conceptosFiltrados.length > 0"
+                                        class="absolute z-50 w-full mt-1.5 bg-white border border-slate-200 rounded-xl shadow-xl max-h-52 overflow-y-auto divide-y divide-slate-100">
+                                        <button type="button" v-for="c in conceptosFiltrados" :key="c.id"
+                                            @mousedown.prevent="seleccionarConcepto(c)"
+                                            class="w-full text-left px-4 py-2.5 hover:bg-rose-50/80 transition-colors flex items-center justify-between gap-2 group">
+                                            <div class="min-w-0">
+                                                <p class="font-bold text-slate-800 text-sm truncate group-hover:text-rose-800">
+                                                    {{ c.nombre }}
+                                                </p>
+                                                <p class="text-xs text-slate-500 mt-0.5">
+                                                    <span class="font-mono bg-slate-100 px-1.5 py-0.2 rounded text-[11px] text-slate-600">{{ c.codigo }}</span>
+                                                    · {{ c.tipo }}
+                                                </p>
+                                            </div>
+                                            <Check v-if="conceptoId === c.id" class="w-4 h-4 text-rose-600 shrink-0" />
+                                        </button>
+                                    </div>
+
+                                    <div v-if="showConceptoDropdown && conceptoQuery.trim().length >= 2 && conceptosFiltrados.length === 0"
+                                        class="absolute z-50 w-full mt-1.5 bg-white border border-slate-200 rounded-xl shadow-xl p-3 text-center text-xs text-slate-500">
+                                        No se encontraron conceptos para «{{ conceptoQuery }}».
+                                    </div>
+                                </div>
                             </div>
 
                             <div>
@@ -50,7 +82,7 @@
                                     class="w-full px-3 py-2.5 border-2 border-slate-200 rounded-xl bg-white text-slate-900 text-sm focus:ring-4 focus:ring-rose-500/20 focus:border-rose-500 outline-none">
                                     <option value="">Todos los meses (permanente)</option>
                                     <optgroup v-for="anio in anios" :key="anio" :label="anio">
-                                        <option v-for="(mes, i) in meses" :key="`${anio}-${i}`" :value="`${anio}-${i + 1}`">
+                                        <option v-for="(mes, i) in MESES" :key="`${anio}-${i}`" :value="`${anio}-${i + 1}`">
                                             {{ mes }} {{ anio }}
                                         </option>
                                     </optgroup>
@@ -133,9 +165,9 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
 import axios from 'axios';
-import { ListPlus, X, Plus, Trash2, Loader2, Power, RefreshCw } from 'lucide-vue-next';
+import { ListPlus, X, Plus, Trash2, Loader2, Power, RefreshCw, Search, ChevronDown, Check } from 'lucide-vue-next';
 
 const props = defineProps({
     row: { type: Object, required: true },
@@ -150,6 +182,7 @@ const GESTIONADOS = [
     'AFP_FONDO',
     'AFP_SEGURO',
     'AFP_COMISION',
+    'AFP_REJA',
     'ESSALUD',
     'FALTAS_TARDANZAS',
     'RENTA_4TA',
@@ -173,7 +206,8 @@ const desde = ref('');
 const hasta = ref('');
 
 const MESES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Setiembre', 'Octubre', 'Noviembre', 'Diciembre'];
-const anios = [2025, 2026, 2027];
+const anioActual = new Date().getFullYear();
+const anios = [anioActual - 1, anioActual, anioActual + 1];
 
 const conceptoSel = computed(() => conceptos.value.find((c) => c.id === conceptoId.value) || null);
 
@@ -181,6 +215,49 @@ const disponibles = computed(() => {
     const asignados = new Set(asignaciones.value.map((a) => a.concepto_id));
     return conceptos.value.filter((c) => c.activo && !GESTIONADOS.includes(c.codigo) && !asignados.has(c.id));
 });
+
+// ===== Buscador de concepto (combobox) =====
+const conceptoQuery = ref('');
+const showConceptoDropdown = ref(false);
+const conceptoContainer = ref(null);
+
+const conceptosFiltrados = computed(() => {
+    const q = conceptoQuery.value.trim();
+
+    if (!q) return disponibles.value.slice(0, 15);
+
+    const norm = (texto) => String(texto || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    const terminos = norm(q).split(' ').filter((t) => t.length > 0);
+
+    return disponibles.value.filter((c) => {
+        if (norm(c.codigo).includes(norm(q)) || norm(c.tipo).includes(norm(q))) return true;
+        const nombre = norm(c.nombre);
+        return terminos.every((t) => nombre.includes(t));
+    }).slice(0, 15);
+});
+
+const onConceptoInput = () => {
+    showConceptoDropdown.value = true;
+    conceptoId.value = '';
+};
+
+const seleccionarConcepto = (c) => {
+    conceptoId.value = c.id;
+    conceptoQuery.value = `${c.nombre} (${c.tipo})`;
+    showConceptoDropdown.value = false;
+};
+
+const limpiarConcepto = () => {
+    conceptoId.value = '';
+    conceptoQuery.value = '';
+    showConceptoDropdown.value = true;
+};
+
+const cerrarDropdownConcepto = (event) => {
+    if (conceptoContainer.value && !conceptoContainer.value.contains(event.target)) {
+        showConceptoDropdown.value = false;
+    }
+};
 
 const notify = (icon, title) => {
     window.Swal?.fire({
@@ -265,6 +342,8 @@ const agregar = async () => {
         });
 
         conceptoId.value = '';
+        conceptoQuery.value = '';
+        showConceptoDropdown.value = false;
         valor.value = '';
         periodo.value = '';
         desde.value = '';
@@ -317,5 +396,12 @@ const eliminar = async (asignacion) => {
     }
 };
 
-onMounted(fetchAll);
+onMounted(() => {
+    document.addEventListener('mousedown', cerrarDropdownConcepto);
+    fetchAll();
+});
+
+onBeforeUnmount(() => {
+    document.removeEventListener('mousedown', cerrarDropdownConcepto);
+});
 </script>

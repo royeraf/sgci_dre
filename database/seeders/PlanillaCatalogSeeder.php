@@ -159,6 +159,10 @@ class PlanillaCatalogSeeder extends Seeder
             ['AFP_COMISION', 'AFP Comisión', 'DESCUENTO', 'AFP', true, null, $this->sinAfectacion(), 2],
             ['AFP_SEGURO', 'AFP Seguro', 'DESCUENTO', 'AFP', true, 0.01370, $this->sinAfectacion(), 3],
             ['ONP_19990', 'Ley 19990 (ONP)', 'DESCUENTO', 'ONP', true, 0.13000, $this->sinAfectacion(), 4],
+            // Fila de la hoja Planilla para empleados con régimen REJA: existe
+            // en la columna de descuentos pero siempre en 0.00 («AFP Prima REJA»).
+            // valor = null: solo la genera el motor, nunca por catálogo.
+            ['AFP_REJA', 'AFP REJA (sin retención)', 'DESCUENTO', 'AFP', false, null, $this->sinAfectacion(), 4],
             // N = E - L en la hoja «Dscto. Tard.»: las faltas/tardanzas reducen
             // la base imponible de EsSalud, AFP y ONP (como en el Excel).
             ['FALTAS_TARDANZAS', 'Faltas / Tardanzas', 'DESCUENTO', 'TARDANZA', false, null, [

@@ -43,13 +43,44 @@
                                         {{ ct.nombre }}
                                     </option>
                                 </select>
-                                <select v-else v-model="employeeId"
-                                    class="w-full px-3 py-2.5 border-2 border-slate-200 rounded-xl bg-white text-slate-900 text-sm focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none">
-                                    <option value="">Seleccione empleado</option>
-                                    <option v-for="emp in parametros.employees" :key="emp.id" :value="emp.id">
-                                        {{ emp.dni }} - {{ emp.nombre_completo }}
-                                    </option>
-                                </select>
+                                <div v-else class="relative" ref="empContainer">
+                                    <div class="relative">
+                                        <Search class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                                        <input v-model="empQuery" type="text" @focus="showEmpDropdown = true"
+                                            @input="onEmpInput" placeholder="Buscar por DNI o nombre del empleado..."
+                                            autocomplete="off"
+                                            class="w-full pl-9 pr-9 py-2.5 border-2 border-slate-200 rounded-xl bg-white text-slate-900 text-sm placeholder:text-slate-400 focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none" />
+                                        <button v-if="employeeId" type="button" @click="limpiarEmpleado"
+                                            title="Quitar empleado seleccionado"
+                                            class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-rose-500 transition-colors p-0.5 rounded-full hover:bg-slate-100">
+                                            <X class="w-4 h-4" />
+                                        </button>
+                                        <ChevronDown v-else
+                                            class="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                                    </div>
+
+                                    <div v-if="showEmpDropdown && empleadosFiltrados.length > 0"
+                                        class="absolute z-50 w-full mt-1.5 bg-white border border-slate-200 rounded-xl shadow-xl max-h-52 overflow-y-auto divide-y divide-slate-100">
+                                        <button type="button" v-for="emp in empleadosFiltrados" :key="emp.id"
+                                            @mousedown.prevent="seleccionarEmpleado(emp)"
+                                            class="w-full text-left px-4 py-2.5 hover:bg-indigo-50/80 transition-colors flex items-center justify-between gap-2 group">
+                                            <div class="min-w-0">
+                                                <p class="font-bold text-slate-800 text-sm truncate group-hover:text-indigo-800">
+                                                    {{ emp.nombre_completo }}
+                                                </p>
+                                                <p class="text-xs text-slate-500 font-mono mt-0.5">
+                                                    DNI: {{ emp.dni || '—' }}
+                                                </p>
+                                            </div>
+                                            <Check v-if="employeeId === emp.id" class="w-4 h-4 text-indigo-600 shrink-0" />
+                                        </button>
+                                    </div>
+
+                                    <div v-if="showEmpDropdown && empQuery.trim().length >= 2 && empleadosFiltrados.length === 0"
+                                        class="absolute z-50 w-full mt-1.5 bg-white border border-slate-200 rounded-xl shadow-xl p-3 text-center text-xs text-slate-500">
+                                        No se encontraron empleados para «{{ empQuery }}».
+                                    </div>
+                                </div>
                             </div>
 
                             <div>
@@ -67,7 +98,7 @@
                                     class="w-full px-3 py-2.5 border-2 border-slate-200 rounded-xl bg-white text-slate-900 text-sm focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none">
                                     <option value="">Todos los meses (permanente)</option>
                                     <optgroup v-for="anio in anios" :key="anio" :label="anio">
-                                        <option v-for="(mes, i) in meses" :key="`${anio}-${i}`" :value="`${anio}-${i + 1}`">
+                                        <option v-for="(mes, i) in MESES" :key="`${anio}-${i}`" :value="`${anio}-${i + 1}`">
                                             {{ mes }} {{ anio }}
                                         </option>
                                     </optgroup>
@@ -135,8 +166,8 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
-import { Users, X, Plus, Trash2, Loader2 } from 'lucide-vue-next';
+import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue';
+import { Users, X, Plus, Trash2, Loader2, Search, ChevronDown, Check } from 'lucide-vue-next';
 import { usePlanillaAsignaciones } from '@/Composables/usePlanillaAsignaciones';
 
 const props = defineProps({
@@ -181,8 +212,57 @@ const periodo = ref('');
 const desde = ref('');
 const hasta = ref('');
 
+// ===== Buscador de empleado (combobox) =====
+const empQuery = ref('');
+const showEmpDropdown = ref(false);
+const empContainer = ref(null);
+
+const empleadosFiltrados = computed(() => {
+    const q = empQuery.value.trim();
+    const empleados = parametros.value?.employees || [];
+
+    if (!q) return empleados.slice(0, 15);
+
+    const norm = (texto) => String(texto || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    const terminos = norm(q).split(' ').filter((t) => t.length > 0);
+
+    return empleados.filter((emp) => {
+        if ((emp.dni || '').includes(q)) return true;
+        const nombre = norm(emp.nombre_completo);
+        return terminos.every((t) => nombre.includes(t));
+    }).slice(0, 15);
+});
+
+const onEmpInput = () => {
+    showEmpDropdown.value = true;
+    employeeId.value = '';
+};
+
+const seleccionarEmpleado = (emp) => {
+    employeeId.value = emp.id;
+    empQuery.value = `${emp.dni || ''} - ${emp.nombre_completo}`.replace(/^- -/, '').trim();
+    showEmpDropdown.value = false;
+};
+
+const limpiarEmpleado = () => {
+    employeeId.value = '';
+    empQuery.value = '';
+    showEmpDropdown.value = true;
+};
+
+const cerrarDropdownEmpleado = (event) => {
+    if (empContainer.value && !empContainer.value.contains(event.target)) {
+        showEmpDropdown.value = false;
+    }
+};
+
+watch(destino, () => {
+    showEmpDropdown.value = false;
+});
+
 const MESES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Setiembre', 'Octubre', 'Noviembre', 'Diciembre'];
-const anios = [2025, 2026, 2027];
+const anioActual = new Date().getFullYear();
+const anios = [anioActual - 1, anioActual, anioActual + 1];
 
 const notify = (icon, title) => {
     window.Swal?.fire({
@@ -250,6 +330,8 @@ const agregar = async () => {
         hasta.value = '';
         contractTypeId.value = '';
         employeeId.value = '';
+        empQuery.value = '';
+        showEmpDropdown.value = false;
         notify('success', 'Asignación registrada correctamente');
         emit('changed');
     } catch (error) {
@@ -280,6 +362,11 @@ const remove = async (asignacion) => {
 };
 
 onMounted(async () => {
+    document.addEventListener('mousedown', cerrarDropdownEmpleado);
     await Promise.all([fetchParametros(), fetchAsignaciones(props.concepto.id)]);
+});
+
+onBeforeUnmount(() => {
+    document.removeEventListener('mousedown', cerrarDropdownEmpleado);
 });
 </script>

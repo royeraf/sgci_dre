@@ -70,6 +70,7 @@ class PlanillaGenerador
         'AFP_FONDO',
         'AFP_SEGURO',
         'AFP_COMISION',
+        'AFP_REJA',
         'ESSALUD',
         'FALTAS_TARDANZAS',
         'RENTA_4TA',
@@ -470,6 +471,8 @@ class PlanillaGenerador
     /**
      * Línea Faltas/Tardanzas (L) a partir de los registros no justificados del
      * periodo. La base guardada es N = E - L, la base imponible del Excel.
+     * La fila se emite **siempre**, con 0.00 cuando no hay faltas, igual que la
+     * columna de descuentos del Excel.
      *
      * @param array<int, array<string, mixed>> $registros
      * @param Collection<int, Collection<int, PlanillaTardanza>> $tardanzas
@@ -483,15 +486,7 @@ class PlanillaGenerador
     ): ?array {
         $grupo = $tardanzas->get($empleado->id);
 
-        if (!$grupo) {
-            return null;
-        }
-
-        $total = round((float) $grupo->sum('total'), 2);
-
-        if ($total <= 0) {
-            return null;
-        }
+        $total = $grupo ? round((float) $grupo->sum('total'), 2) : 0.0;
 
         $concepto = $conceptos->get('FALTAS_TARDANZAS');
 
@@ -526,7 +521,14 @@ class PlanillaGenerador
         }
 
         if ($regimen->es_reja) {
-            return [];
+            // Excel: la fila de descuentos sí existe, pero en 0.00
+            // («AFP Integ. REJA», «AFP Prima REJA», …).
+            $concepto = $conceptos->get('AFP_REJA');
+            if ($concepto) {
+                $items[] = $this->registro($concepto, 'DESCUENTO', 0.0, 0.0, null, $this->etiquetaReja($regimen->nombre));
+            }
+
+            return $items;
         }
 
         $items = [];
@@ -786,12 +788,12 @@ class PlanillaGenerador
     /**
      * @return array<string, mixed>
      */
-    private function registro(PlanillaConcepto $concepto, string $tipo, float $monto, float $base, ?float $porcentaje): array
+    private function registro(PlanillaConcepto $concepto, string $tipo, float $monto, float $base, ?float $porcentaje, ?string $descripcion = null): array
     {
         return [
             'concepto_id' => $concepto->id,
             'tipo' => $tipo,
-            'descripcion' => $concepto->nombre,
+            'descripcion' => $descripcion ?? $concepto->nombre,
             'base_calculo' => round($base, 2),
             'porcentaje' => $porcentaje,
             'monto' => $this->dinero($monto),
@@ -822,6 +824,18 @@ class PlanillaGenerador
             'monto' => $registro['monto'],
             'orden' => $registro['orden'],
         ];
+    }
+
+    /**
+     * Etiqueta de la fila de descuentos de un empleado REJA, igual que el
+     * Excel: «AFP Integ. REJA» / «AFP Prima REJA» …, es decir el nombre del
+     * régimen sin el «(REJA)» del catálogo + « REJA».
+     */
+    private function etiquetaReja(string $nombreRegimen): string
+    {
+        $nombre = trim(preg_replace('/\s*\(\s*REJA\s*\)\s*$/iu', '', $nombreRegimen));
+
+        return preg_match('/REJA$/iu', $nombre) === 1 ? $nombre : $nombre.' REJA';
     }
 
     /**
