@@ -61,17 +61,28 @@
                                     class="w-full px-3 py-2.5 border-2 border-slate-200 rounded-xl text-slate-900 text-sm placeholder:text-slate-400 focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none" />
                             </div>
 
-                            <div class="grid grid-cols-2 gap-2">
-                                <div>
-                                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1.5">Desde</label>
-                                    <input v-model="desde" type="date"
-                                        class="w-full px-3 py-2.5 border-2 border-slate-200 rounded-xl text-slate-900 text-sm focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none" />
-                                </div>
-                                <div>
-                                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1.5">Hasta</label>
-                                    <input v-model="hasta" type="date"
-                                        class="w-full px-3 py-2.5 border-2 border-slate-200 rounded-xl text-slate-900 text-sm focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none" />
-                                </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1.5">Mes aplicable</label>
+                                <select v-model="periodo"
+                                    class="w-full px-3 py-2.5 border-2 border-slate-200 rounded-xl bg-white text-slate-900 text-sm focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none">
+                                    <option value="">Todos los meses (permanente)</option>
+                                    <optgroup v-for="anio in anios" :key="anio" :label="anio">
+                                        <option v-for="(mes, i) in meses" :key="`${anio}-${i}`" :value="`${anio}-${i + 1}`">
+                                            {{ mes }} {{ anio }}
+                                        </option>
+                                    </optgroup>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1.5">Desde</label>
+                                <input v-model="desde" type="date"
+                                    class="w-full px-3 py-2.5 border-2 border-slate-200 rounded-xl text-slate-900 text-sm focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none" />
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1.5">Hasta</label>
+                                <input v-model="hasta" type="date"
+                                    class="w-full px-3 py-2.5 border-2 border-slate-200 rounded-xl text-slate-900 text-sm focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none" />
                             </div>
                         </div>
 
@@ -100,12 +111,15 @@
                                     :class="asignacion.destino === 'REGIMEN' ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700'">
                                     {{ asignacion.destino === 'REGIMEN' ? 'RÉGIMEN' : 'EMPLEADO' }}
                                 </span>
-                                <div class="flex-1 min-w-0">
-                                    <p class="font-semibold text-slate-800 truncate">{{ asignacion.destino_nombre || '—' }}</p>
-                                    <p class="text-xs text-slate-400">
-                                        {{ vigencia(asignacion) }}
-                                    </p>
-                                </div>
+                                    <div class="flex-1 min-w-0">
+                                        <p class="font-semibold text-slate-800 truncate">{{ asignacion.destino_nombre || '—' }}</p>
+                                        <p class="text-xs text-slate-400">
+                                            {{ vigencia(asignacion) }}
+                                            <span v-if="asignacion.mes" class="font-semibold text-slate-500">
+                                                · {{ mesAplicable(asignacion) }}
+                                            </span>
+                                        </p>
+                                    </div>
                                 <span class="font-bold text-slate-700 text-sm shrink-0">{{ formatValor(asignacion) }}</span>
                                 <button @click="remove(asignacion)" title="Eliminar asignación"
                                     class="cursor-pointer p-2 rounded-lg bg-rose-50 text-rose-600 hover:bg-rose-100 transition-all shrink-0">
@@ -163,8 +177,12 @@ const destino = ref('REGIMEN');
 const contractTypeId = ref('');
 const employeeId = ref('');
 const valor = ref('');
+const periodo = ref('');
 const desde = ref('');
 const hasta = ref('');
+
+const MESES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Setiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+const anios = [2025, 2026, 2027];
 
 const notify = (icon, title) => {
     window.Swal?.fire({
@@ -195,6 +213,11 @@ const vigencia = (asignacion) => {
     return `${desde} → ${hasta}`;
 };
 
+const mesAplicable = (asignacion) => {
+    if (!asignacion.mes) return '';
+    return `${MESES[asignacion.mes - 1]} ${asignacion.anio}`;
+};
+
 const agregar = async () => {
     const target = destino.value === 'REGIMEN' ? contractTypeId.value : employeeId.value;
     if (!target) {
@@ -207,6 +230,7 @@ const agregar = async () => {
     }
 
     try {
+        const [anioSel, mesSel] = periodo.value ? periodo.value.split('-') : [null, null];
         await crearAsignacion({
             concepto_id: props.concepto.id,
             employee_id: destino.value === 'EMPLEADO' ? employeeId.value : null,
@@ -215,10 +239,13 @@ const agregar = async () => {
             porcentaje: props.concepto.es_porcentaje ? Number(valor.value) / 100 : null,
             desde: desde.value || null,
             hasta: hasta.value || null,
+            anio: anioSel ? Number(anioSel) : null,
+            mes: mesSel ? Number(mesSel) : null,
             activo: true,
         });
 
         valor.value = '';
+        periodo.value = '';
         desde.value = '';
         hasta.value = '';
         contractTypeId.value = '';

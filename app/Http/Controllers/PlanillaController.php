@@ -3,9 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Models\Employee;
+use App\Models\EmployeeNote;
 use App\Models\EmployeePayrollProfile;
 use App\Models\EmployeeRemuneration;
 use App\Models\HRContractType;
+use App\Models\HRPosition;
+use App\Models\HrDirection;
+use App\Models\HrOffice;
+use App\Models\Person;
 use App\Models\PlanillaBanco;
 use App\Models\PlanillaComisionAfp;
 use App\Models\PlanillaConcepto;
@@ -18,9 +23,14 @@ use App\Models\PlanillaRegimenPensionario;
 use App\Models\PlanillaTardanza;
 use App\Services\Planilla\PlanillaGenerador;
 use App\Services\Planilla\TardanzaService;
+use App\Services\ReniecService;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
+use PhpOffice\PhpSpreadsheet\IOFactory;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
 
 class PlanillaController extends Controller
 {
@@ -55,6 +65,7 @@ class PlanillaController extends Controller
             'payrollProfile.banco',
             'remunerations',
         ])
+            ->withCount(['conceptoAsignaciones as asignaciones_count'])
             ->where('estado', 'ACTIVO')
             ->whereHas('contractType', function ($query) {
                 $query->whereRaw('UPPER(nombre) = ?', [self::REGIMEN_PLANILLA]);
@@ -91,6 +102,10 @@ class PlanillaController extends Controller
                     'banco_id' => $perfil?->banco_id,
                     'banco' => $perfil?->banco?->nombre,
                     'cuenta_ahorro' => $perfil?->cuenta_ahorro,
+                    'fecha_nacimiento' => $employee->person?->fecha_nacimiento?->format('Y-m-d'),
+                    'modalidad_cas' => $employee->modalidad_cas,
+                    'modalidad_cas_efectiva' => $employee->modalidadCas(),
+                    'asignaciones_count' => (int) ($employee->asignaciones_count ?? 0),
                 ];
             });
 
@@ -181,7 +196,7 @@ class PlanillaController extends Controller
     // ========== ASIGNACIONES DE CONCEPTOS ==========
 
     /**
-     * Asignaciones de conceptos (opcionalmente filtradas por concepto).
+     * Asignaciones de conceptos (opcionalmente filtradas por concepto o empleado).
      */
     public function getAsignaciones(Request $request)
     {
@@ -189,6 +204,10 @@ class PlanillaController extends Controller
 
         if ($request->filled('concepto_id')) {
             $query->where('concepto_id', $request->concepto_id);
+        }
+
+        if ($request->filled('employee_id')) {
+            $query->where('employee_id', $request->employee_id);
         }
 
         $asignaciones = $query->orderByDesc('created_at')
@@ -210,6 +229,8 @@ class PlanillaController extends Controller
                     'porcentaje' => $asignacion->porcentaje !== null ? (float) $asignacion->porcentaje : null,
                     'desde' => $asignacion->desde?->format('Y-m-d'),
                     'hasta' => $asignacion->hasta?->format('Y-m-d'),
+                    'anio' => $asignacion->anio !== null ? (int) $asignacion->anio : null,
+                    'mes' => $asignacion->mes !== null ? (int) $asignacion->mes : null,
                     'activo' => (bool) $asignacion->activo,
                 ];
             });
@@ -269,6 +290,8 @@ class PlanillaController extends Controller
             'porcentaje' => 'nullable|numeric|min:0',
             'desde' => 'nullable|date',
             'hasta' => 'nullable|date|after_or_equal:desde',
+            'anio' => 'nullable|integer|min:2000|max:2100',
+            'mes' => 'nullable|integer|min:1|max:12',
             'activo' => 'boolean',
         ]);
 
@@ -300,6 +323,8 @@ class PlanillaController extends Controller
             'porcentaje' => 'nullable|numeric|min:0',
             'desde' => 'nullable|date',
             'hasta' => 'nullable|date|after_or_equal:desde',
+            'anio' => 'nullable|required_with:mes|integer|min:2000|max:2100',
+            'mes' => 'nullable|required_with:anio|integer|min:1|max:12',
             'activo' => 'boolean',
         ]);
     }
@@ -323,12 +348,20 @@ class PlanillaController extends Controller
             'tipo_comision' => 'nullable|in:FLUJO,MIXTA,SALDO',
             'banco_id' => 'nullable|exists:planilla_bancos,id',
             'cuenta_ahorro' => 'nullable|string|max:50',
+            'fecha_nacimiento' => 'nullable|date',
         ]);
+
+        $fechaNacimiento = $validated['fecha_nacimiento'] ?? null;
+        unset($validated['fecha_nacimiento']);
 
         $perfil = EmployeePayrollProfile::updateOrCreate(
             ['employee_id' => $employeeId],
             $validated
         );
+
+        if ($request->has('fecha_nacimiento')) {
+            $employee->person?->update(['fecha_nacimiento' => $fechaNacimiento]);
+        }
 
         return response()->json([
             'message' => 'Perfil de planilla actualizado correctamente',
@@ -350,18 +383,174 @@ class PlanillaController extends Controller
         $validated = $request->validate([
             'fecha_inicio_contrato' => 'required|date',
             'fecha_fin_contrato' => 'nullable|date|after_or_equal:fecha_inicio_contrato',
+            'modalidad_cas' => 'nullable|in:INDETERMINADO,TRANSITORIO',
         ]);
 
         $employee->update([
             'fecha_inicio_contrato' => $validated['fecha_inicio_contrato'],
             'fecha_fin_contrato' => $validated['fecha_fin_contrato'] ?? null,
+            'modalidad_cas' => $validated['modalidad_cas'] ?? $employee->modalidad_cas,
         ]);
 
         return response()->json([
             'message' => 'Fechas de contrato actualizadas correctamente',
             'fecha_inicio_contrato' => $employee->fecha_inicio_contrato?->format('Y-m-d'),
             'fecha_fin_contrato' => $employee->fecha_fin_contrato?->format('Y-m-d'),
+            'modalidad_cas' => $employee->modalidad_cas,
+            'modalidad_cas_efectiva' => $employee->modalidadCas(),
         ]);
+    }
+
+    /**
+     * Consulta de DNI para el alta de empleados: detecta si ya está registrado
+     * como empleado y, si no, resuelve nombres/apellidos (local o RENIEC).
+     */
+    public function consultarDniEmpleado(Request $request, ReniecService $reniecService)
+    {
+        $request->validate([
+            'dni' => 'required|string|size:8',
+        ], [
+            'dni.required' => 'El DNI es obligatorio.',
+            'dni.size' => 'El DNI debe tener exactamente 8 dígitos.',
+        ]);
+
+        $persona = Person::with('employee')->where('dni', $request->dni)->first();
+        $empleado = $persona?->employee;
+
+        if ($empleado) {
+            return response()->json([
+                'success' => false,
+                'registrado' => true,
+                'message' => 'El DNI ya está registrado como empleado.',
+                'empleado' => [
+                    'id' => $empleado->id,
+                    'nombre_completo' => $empleado->full_name,
+                    'estado' => $empleado->estado,
+                ],
+                'data' => null,
+            ]);
+        }
+
+        if ($persona && ($persona->nombres || $persona->apellidos)) {
+            return response()->json([
+                'success' => true,
+                'registrado' => false,
+                'message' => 'Datos encontrados en registro local',
+                'data' => [
+                    'dni' => $persona->dni,
+                    'nombres' => $persona->nombres,
+                    'apellido_paterno' => $persona->apellidos,
+                    'apellido_materno' => '',
+                    'nombre_completo' => trim($persona->nombres . ' ' . $persona->apellidos),
+                ],
+            ]);
+        }
+
+        $resultado = $reniecService->consultarDni($request->dni);
+
+        return response()->json([
+            'success' => $resultado['success'],
+            'registrado' => false,
+            'message' => $resultado['message'],
+            'data' => $resultado['data'],
+        ]);
+    }
+
+    /**
+     * Alta completa de un empleado CAS desde Remuneraciones:
+     * persona + empleado + remuneración base + (opcional) perfil de pensión.
+     */
+    public function storeEmpleado(Request $request)
+    {
+        $validated = $request->validate([
+            'dni' => 'required|string|size:8',
+            'nombres' => 'required|string|max:255',
+            'apellidos' => 'required|string|max:255',
+            'fecha_nacimiento' => 'nullable|date',
+            'genero' => 'nullable|in:M,F,Masculino,Femenino',
+            'direccion' => 'nullable|string|max:255',
+            'telefono' => 'nullable|string|max:20',
+            'correo' => 'nullable|email|max:255',
+            'cargo_id' => 'nullable|exists:hr_positions,id',
+            'direccion_id' => 'nullable|exists:hr_directions,id',
+            'office_id' => 'nullable|exists:hr_offices,id',
+            'contract_type_id' => 'required|exists:hr_contract_types,id',
+            'fecha_ingreso' => 'required|date',
+            'observaciones' => 'nullable|string',
+            'remuneracion' => 'required|numeric|min:0.01',
+            'remuneracion_desde' => 'required|date',
+            'modalidad_cas' => 'required|in:INDETERMINADO,TRANSITORIO',
+            'fecha_inicio_contrato' => 'required|date',
+            'fecha_fin_contrato' => 'nullable|date|after_or_equal:fecha_inicio_contrato',
+            'regimen_pensionario_id' => 'nullable|exists:planilla_regimenes_pensionarios,id',
+            'cuspp' => 'nullable|string|max:30',
+            'tipo_comision' => 'nullable|in:FLUJO,MIXTA,SALDO',
+            'banco_id' => 'nullable|exists:planilla_bancos,id',
+            'cuenta_ahorro' => 'nullable|string|max:50',
+        ]);
+
+        $persona = Person::firstOrNew(['dni' => $validated['dni']]);
+
+        if ($persona->exists && $persona->employee) {
+            return response()->json(['message' => 'Esta persona ya está registrada como empleado.'], 422);
+        }
+
+        $persona->nombres = $validated['nombres'];
+        $persona->apellidos = $validated['apellidos'];
+        $persona->fecha_nacimiento = $validated['fecha_nacimiento'] ?? $persona->fecha_nacimiento;
+        if (!empty($validated['genero'])) {
+            $persona->genero = in_array($validated['genero'], ['M', 'Masculino']) ? 'Masculino' : 'Femenino';
+        }
+        $persona->direccion = $validated['direccion'] ?? $persona->direccion;
+        $persona->telefono = $validated['telefono'] ?? $persona->telefono;
+        $persona->email = $validated['correo'] ?? $persona->email;
+        $persona->tipo = 'INTERNO';
+        $persona->is_active = true;
+
+        $empleado = DB::transaction(function () use ($validated, $persona) {
+            $persona->save();
+
+            $empleado = Employee::create([
+                'person_id' => $persona->id,
+                'position_id' => $validated['cargo_id'] ?? null,
+                'direction_id' => $validated['direccion_id'] ?? null,
+                'office_id' => $validated['office_id'] ?? null,
+                'contract_type_id' => $validated['contract_type_id'],
+                'fecha_ingreso' => $validated['fecha_ingreso'],
+                'fecha_inicio_contrato' => $validated['fecha_inicio_contrato'],
+                'fecha_fin_contrato' => $validated['fecha_fin_contrato'] ?? null,
+                'modalidad_cas' => $validated['modalidad_cas'],
+                'estado' => 'ACTIVO',
+                'observaciones' => $validated['observaciones'] ?? null,
+            ]);
+
+            EmployeeRemuneration::create([
+                'employee_id' => $empleado->id,
+                'monto' => $validated['remuneracion'],
+                'tipo' => 'BASICA',
+                'desde' => $validated['remuneracion_desde'],
+                'motivo' => 'Alta desde Remuneraciones',
+                'created_by' => auth()->id(),
+            ]);
+
+            if (!empty($validated['regimen_pensionario_id']) || !empty($validated['banco_id'])) {
+                EmployeePayrollProfile::create([
+                    'employee_id' => $empleado->id,
+                    'regimen_pensionario_id' => $validated['regimen_pensionario_id'] ?? null,
+                    'cuspp' => $validated['cuspp'] ?? null,
+                    'tipo_comision' => $validated['tipo_comision'] ?? null,
+                    'banco_id' => $validated['banco_id'] ?? null,
+                    'cuenta_ahorro' => $validated['cuenta_ahorro'] ?? null,
+                ]);
+            }
+
+            return $empleado;
+        });
+
+        return response()->json([
+            'message' => 'Empleado registrado correctamente. Vuelva a generar la planilla para incluirlo.',
+            'employee_id' => $empleado->id,
+        ], 201);
     }
 
     // ========== CATÁLOGOS ==========
@@ -629,6 +818,19 @@ class PlanillaController extends Controller
         return response()->json(['message' => 'Comisión AFP actualizada correctamente']);
     }
 
+    /**
+     * Catálogos para el alta de empleados desde Remuneraciones.
+     */
+    public function getCatalogosEmpleados()
+    {
+        return response()->json([
+            'cargos' => HRPosition::orderBy('nombre')->get(['id', 'nombre']),
+            'direcciones' => HrDirection::orderBy('nombre')->get(['id', 'nombre']),
+            'oficinas' => HrOffice::orderBy('nombre')->get(['id', 'nombre']),
+            'tipos_contrato' => HRContractType::orderBy('nombre')->get(['id', 'nombre']),
+        ]);
+    }
+
     // ========== BANCOS ==========
 
     public function getBancos()
@@ -724,7 +926,8 @@ class PlanillaController extends Controller
                 $query->whereRaw('UPPER(nombre) = ?', [self::REGIMEN_PLANILLA]);
             })
             ->get()
-            ->filter(fn (Employee $empleado) => $generador->remuneracionVigente($empleado, $cierre) > 0)
+            ->filter(fn (Employee $empleado) => $generador->remuneracionVigente($empleado, $cierre) > 0
+                && $generador->diasPagados($empleado, $periodo) > 0)
             ->sortBy('apellidos', SORT_NATURAL | SORT_FLAG_CASE)
             ->values();
 
@@ -912,6 +1115,82 @@ class PlanillaController extends Controller
         return $validated;
     }
 
+    // ========== NOTAS DE EMPLEADO (persisten entre planillas) ==========
+
+    public function getNotas(Request $request)
+    {
+        $validated = $request->validate([
+            'employee_id' => 'required|string|exists:employees,id',
+        ]);
+
+        $notas = EmployeeNote::with('autor')
+            ->where('employee_id', $validated['employee_id'])
+            ->orderByDesc('created_at')
+            ->get()
+            ->map(fn (EmployeeNote $nota) => [
+                'id' => $nota->id,
+                'texto' => $nota->texto,
+                'autor' => $nota->autor?->full_name,
+                'fecha' => $nota->created_at->toDateString(),
+                'hora' => $nota->created_at->format('H:i'),
+                'editado' => !$nota->created_at->eq($nota->updated_at),
+            ]);
+
+        return response()->json(['notas' => $notas]);
+    }
+
+    public function storeNota(Request $request)
+    {
+        $validated = $request->validate([
+            'employee_id' => 'required|string|exists:employees,id',
+            'texto' => 'required|string|max:1000',
+        ]);
+
+        $nota = EmployeeNote::create([
+            'employee_id' => $validated['employee_id'],
+            'texto' => trim($validated['texto']),
+            'registrado_por' => auth()->id(),
+        ]);
+
+        return response()->json([
+            'message' => 'Nota registrada correctamente',
+            'nota' => $nota,
+        ], 201);
+    }
+
+    public function updateNota(Request $request, string $id)
+    {
+        $nota = EmployeeNote::find($id);
+
+        if (!$nota) {
+            return response()->json(['message' => 'Nota no encontrada'], 404);
+        }
+
+        $validated = $request->validate([
+            'texto' => 'required|string|max:1000',
+        ]);
+
+        $nota->update(['texto' => trim($validated['texto'])]);
+
+        return response()->json([
+            'message' => 'Nota actualizada correctamente',
+            'nota' => $nota->fresh(),
+        ]);
+    }
+
+    public function deleteNota(string $id)
+    {
+        $nota = EmployeeNote::find($id);
+
+        if (!$nota) {
+            return response()->json(['message' => 'Nota no encontrada'], 404);
+        }
+
+        $nota->delete();
+
+        return response()->json(['message' => 'Nota eliminada correctamente']);
+    }
+
     // ========== PERIODOS ==========
 
     public function getPeriodos()
@@ -990,6 +1269,7 @@ class PlanillaController extends Controller
                 'dni' => $d->employee?->dni,
                 'nombre_completo' => $d->employee?->full_name,
                 'remuneracion_base' => (float) $d->remuneracion_base,
+                'dias_pagados' => (int) ($d->dias_pagados ?? 30),
                 'total_ingresos' => (float) $d->total_ingresos,
                 'total_descuentos' => (float) $d->total_descuentos,
                 'total_aportaciones' => (float) $d->total_aportaciones,
@@ -1001,8 +1281,51 @@ class PlanillaController extends Controller
                     'base_calculo' => (float) $item->base_calculo,
                     'porcentaje' => $item->porcentaje !== null ? (float) $item->porcentaje : null,
                     'monto' => (float) $item->monto,
+                    'clasificador_id' => $item->clasificador_id,
+                    'clasificador_gasto_codigo' => $item->clasificador_gasto_codigo,
+                    'anio_fiscal' => $item->anio_fiscal !== null ? (int) $item->anio_fiscal : null,
+                    'estado_clasificacion' => $item->estado_clasificacion,
                 ])->values(),
             ]);
+
+        $notasCounts = $detalles->isEmpty()
+            ? collect()
+            : EmployeeNote::whereIn('employee_id', $detalles->pluck('employee_id'))
+                ->selectRaw('employee_id, COUNT(*) as total')
+                ->groupBy('employee_id')
+                ->pluck('total', 'employee_id');
+
+        $asignacionesCounts = $detalles->isEmpty()
+            ? collect()
+            : PlanillaConceptoAsignacion::whereIn('employee_id', $detalles->pluck('employee_id'))
+                ->selectRaw('employee_id, COUNT(*) as total')
+                ->groupBy('employee_id')
+                ->pluck('total', 'employee_id');
+
+        $detalles = $detalles->map(fn ($d) => $d + [
+            'notas_count' => (int) ($notasCounts[$d['employee_id']] ?? 0),
+            'asignaciones_count' => (int) ($asignacionesCounts[$d['employee_id']] ?? 0),
+        ]);
+
+        $clasificacion = DB::table('planilla_detalle_items as i')
+            ->join('planilla_detalles as d', 'd.id', 'i.detalle_id')
+            ->where('d.periodo_id', $periodo->id)
+            ->selectRaw("COALESCE(i.estado_clasificacion, 'PENDIENTE') AS estado")
+            ->selectRaw('COUNT(*) AS total')
+            ->selectRaw('ROUND(SUM(i.monto), 2) AS monto')
+            ->groupBy('estado')
+            ->get()
+            ->mapWithKeys(fn ($fila) => [strtolower($fila->estado) => [
+                'total' => (int) $fila->total,
+                'monto' => (float) $fila->monto,
+            ]]);
+
+        $clasificacionResumen = [
+            'validado' => $clasificacion['validado'] ?? ['total' => 0, 'monto' => 0.0],
+            'pendiente' => $clasificacion['pendiente'] ?? ['total' => 0, 'monto' => 0.0],
+            'observado' => $clasificacion['observado'] ?? ['total' => 0, 'monto' => 0.0],
+        ];
+        $clasificacionResumen['total'] = array_sum(array_column($clasificacionResumen, 'total'));
 
         return response()->json([
             'periodo' => [
@@ -1014,6 +1337,7 @@ class PlanillaController extends Controller
                 'fecha_fin' => $periodo->fecha_fin?->toDateString(),
                 'total_empleados' => $periodo->total_empleados,
                 'total_neto' => (float) $periodo->total_neto,
+                'clasificacion_gasto' => $clasificacionResumen,
             ],
             'detalles' => $detalles,
         ]);
@@ -1036,6 +1360,519 @@ class PlanillaController extends Controller
         $periodo->delete();
 
         return response()->json(['message' => 'Periodo eliminado correctamente']);
+    }
+
+    public function getResumen(Request $request)
+    {
+        $periodo = $this->periodoParaResumen($request);
+
+        if (!$periodo) {
+            return response()->json(['message' => 'No hay periodos registrados'], 404);
+        }
+
+        $codigos = PlanillaConcepto::pluck('codigo', 'id');
+        $nombres = PlanillaConcepto::pluck('nombre', 'id');
+
+        $ingresos = ['i' => 0.0, 't' => 0.0];
+        $aguinaldo = 0.0;
+        $essalud = 0.0;
+        $afp = [
+            'HABITAT' => ['i' => 0.0, 't' => 0.0],
+            'INTEGRA' => ['i' => 0.0, 't' => 0.0],
+            'PRIMA' => ['i' => 0.0, 't' => 0.0],
+            'PROFUTURO' => ['i' => 0.0, 't' => 0.0],
+        ];
+        $afpOtra = ['i' => 0.0, 't' => 0.0];
+        $onp = ['i' => 0.0, 't' => 0.0];
+        $faltas = ['i' => 0.0, 't' => 0.0];
+        $subcafae = ['i' => 0.0, 't' => 0.0];
+        $otros = [];
+        $neto = ['i' => 0.0, 't' => 0.0];
+        $empleados = 0;
+
+        $detalles = $periodo->detalles()
+            ->with(['employee.payrollProfile.regimenPensionario', 'items'])
+            ->get();
+
+        foreach ($detalles as $detalle) {
+            $empleados++;
+            $columna = $detalle->employee?->modalidadCas() === 'TRANSITORIO' ? 't' : 'i';
+            $neto[$columna] += (float) $detalle->neto_pagar;
+
+            $administradora = strtoupper($detalle->employee?->payrollProfile?->regimenPensionario?->nombre ?? '');
+
+            foreach ($detalle->items as $item) {
+                $codigo = $codigos[$item->concepto_id] ?? null;
+                $monto = (float) $item->monto;
+
+                if ($codigo === 'AGUINALDO' || $codigo === 'GRATIFICACION') {
+                    $aguinaldo += $monto;
+                    continue;
+                }
+
+                if ($codigo === 'ESSALUD') {
+                    $essalud += $monto;
+                    continue;
+                }
+
+                if ($item->tipo === 'INGRESO') {
+                    $ingresos[$columna] += $monto;
+                    continue;
+                }
+
+                if (in_array($codigo, ['AFP_FONDO', 'AFP_SEGURO', 'AFP_COMISION'], true)) {
+                    $clave = null;
+                    foreach (array_keys($afp) as $nombre) {
+                        if (str_contains($administradora, $nombre)) {
+                            $clave = $nombre;
+                            break;
+                        }
+                    }
+
+                    if ($clave) {
+                        $afp[$clave][$columna] += $monto;
+                    } else {
+                        $afpOtra[$columna] += $monto;
+                    }
+                    continue;
+                }
+
+                if ($codigo === 'ONP_19990') {
+                    $onp[$columna] += $monto;
+                    continue;
+                }
+
+                if ($codigo === 'FALTAS_TARDANZAS') {
+                    $faltas[$columna] += $monto;
+                    continue;
+                }
+
+                if ($codigo === 'SUBCAFAE') {
+                    $subcafae[$columna] += $monto;
+                    continue;
+                }
+
+                if ($item->tipo === 'DESCUENTO' && $monto != 0.0) {
+                    $claveOtros = $codigo ?? 'SIN_CODIGO';
+                    if (!isset($otros[$claveOtros])) {
+                        $otros[$claveOtros] = [
+                            'nombre' => $nombres[$item->concepto_id] ?? 'Otro descuento',
+                            'i' => 0.0,
+                            't' => 0.0,
+                        ];
+                    }
+                    $otros[$claveOtros][$columna] += $monto;
+                }
+            }
+        }
+
+        $fila = fn (string $nombre, array $v): array => [
+            'nombre' => $nombre,
+            'c13_11' => round($v['i'], 2),
+            'c13_12' => round($v['t'], 2),
+            'total' => round($v['i'] + $v['t'], 2),
+        ];
+
+        $descuentos = [];
+        foreach ($afp as $nombre => $v) {
+            $descuentos[] = $fila('AFP '.$nombre, $v);
+        }
+        if ($afpOtra['i'] != 0.0 || $afpOtra['t'] != 0.0) {
+            $descuentos[] = $fila('AFP (otra)', $afpOtra);
+        }
+        $descuentos[] = $fila('ONP DL. 19990', $onp);
+        $descuentos[] = $fila('Dsctos/Tardanzas', $faltas);
+        $descuentos[] = $fila('Lic. Cta. Essalud', ['i' => 0.0, 't' => 0.0]);
+        $descuentos[] = $fila('Pagos Indebidos', ['i' => 0.0, 't' => 0.0]);
+        $descuentos[] = $fila('Sub CAFAE', $subcafae);
+        foreach ($otros as $v) {
+            if ($v['i'] != 0.0 || $v['t'] != 0.0) {
+                $descuentos[] = $fila($v['nombre'], $v);
+            }
+        }
+
+        $totalPlanillas = round(array_sum($ingresos) + $aguinaldo + $essalud, 2);
+        $totalDescuentos = round(array_sum(array_column($descuentos, 'total')), 2);
+        $totalLiquido = round($totalPlanillas - $totalDescuentos - $essalud, 2);
+
+        return response()->json([
+            'periodo' => [
+                'id' => $periodo->id,
+                'nombre_periodo' => $periodo->nombre_periodo,
+                'anio' => $periodo->anio,
+                'mes' => $periodo->mes,
+                'estado' => $periodo->estado,
+                'total_empleados' => $periodo->total_empleados,
+                'total_neto' => (float) $periodo->total_neto,
+            ],
+            'empleados' => $empleados,
+            'ingresos' => [
+                ['esp_gasto' => '2.1.1 13.11', 'nombre' => 'CAS Indeterminado (DL 1057, bonos DS, reintegros)', 'monto' => round($ingresos['i'], 2)],
+                ['esp_gasto' => '2.1.1 13.12', 'nombre' => 'CAS Transitorio (DL 1057, bonos DS, reintegros)', 'monto' => round($ingresos['t'], 2)],
+                ['esp_gasto' => '2.1.1 9.14', 'nombre' => 'Aguinaldo / Gratificación', 'monto' => round($aguinaldo, 2)],
+                ['esp_gasto' => '2.1.31.1 15', 'nombre' => 'Aporte Essalud (empleador)', 'monto' => round($essalud, 2)],
+            ],
+            'total_planillas' => $totalPlanillas,
+            'descuentos' => $descuentos,
+            'total_descuentos' => $totalDescuentos,
+            'abono' => [
+                'c13_11' => round($neto['i'], 2),
+                'c13_12' => round($neto['t'], 2),
+                'teleahorro' => round($neto['i'] + $neto['t'], 2),
+                'aporte_essalud' => round($essalud, 2),
+                'total_liquido' => $totalLiquido,
+            ],
+        ]);
+    }
+
+    private function periodoParaResumen(Request $request): ?PlanillaPeriodo
+    {
+        $datos = $request->validate([
+            'periodo_id' => 'nullable|string|max:36',
+        ]);
+
+        return !empty($datos['periodo_id'])
+            ? PlanillaPeriodo::find($datos['periodo_id'])
+            : PlanillaPeriodo::orderByDesc('anio')->orderByDesc('mes')->first();
+    }
+
+    /**
+     * Datos del «RESUMEN PLANILLA CAS» (bloques 2.1.1 13.11 / 2.1.1 13.12
+     * de la hoja Planilla), agrupados por modalidad CAS.
+     *
+     * @return array{bloques: array<string, array>, totales: array<string, float>}
+     */
+    private function resumenPlanillaData(PlanillaPeriodo $periodo): array
+    {
+        $genericas = [
+            '13.11' => ['modalidad' => Employee::MODALIDAD_INDETERMINADO, 'esp_gasto' => '2.1.1 13.11'],
+            '13.12' => ['modalidad' => Employee::MODALIDAD_TRANSITORIO, 'esp_gasto' => '2.1.1 13.12'],
+        ];
+
+        $etiquetasIngresos = [
+            'REM_DL1057' => 'D.L. 1057',
+            'DS311_2022' => 'DS 311-2022-EF',
+            'DS313_2023' => 'DS 313-2023',
+            'DS265_279_2024' => 'DS 265 y 279-2024',
+            'DS327_2025' => 'DS 327-2025',
+            'AGUINALDO' => 'Aguinaldo',
+            'REINTEGRO' => 'Reintegro',
+        ];
+        $ordenIngresos = array_keys($etiquetasIngresos);
+
+        // Los códigos de catálogo DS 265 / DS 279 (separados o combinados)
+        // se reportan en una sola fila «DS 265 y 279-2024».
+        $aliasIngresos = [
+            'DS_265_2024' => 'DS265_279_2024',
+            'DS_279_2024' => 'DS265_279_2024',
+        ];
+
+        $etiquetasDescuentos = [
+            'AFP:HABITAT' => 'AFP Habitat',
+            'AFP:INTEGRA' => 'AFP Integra',
+            'AFP:PRIMA' => 'AFP Prima',
+            'AFP:PROFUTURO' => 'AFP Profuturo',
+            'ONP_19990' => 'LEY 19990 (ONP)',
+            'FALTAS_TARDANZAS' => 'Dsctos/Tardanzas',
+            'RENTA_4TA' => 'Rta. 4ta. Cat.',
+            'PAGO_INDEBIDO' => 'Pagos Indebidos',
+            'LIC_ESSALUD' => 'Lic. Cta. Essalud',
+            'SUBCAFAE' => 'Sub CAFAE',
+        ];
+        $administradoras = ['HABITAT', 'INTEGRA', 'PRIMA', 'PROFUTURO'];
+
+        $codigos = PlanillaConcepto::pluck('codigo', 'id');
+        $nombresPorCodigo = PlanillaConcepto::pluck('nombre', 'codigo');
+
+        $acumulados = [];
+        foreach (array_keys($genericas) as $clave) {
+            $acumulados[$clave] = ['ingresos' => [], 'descuentos' => [], 'essalud' => 0.0, 'neto' => 0.0];
+        }
+
+        foreach ($periodo->detalles()->with(['employee.payrollProfile.regimenPensionario', 'items'])->get() as $detalle) {
+            $bloque = $detalle->employee?->modalidadCas() === Employee::MODALIDAD_TRANSITORIO ? '13.12' : '13.11';
+            $acumulados[$bloque]['neto'] += (float) $detalle->neto_pagar;
+
+            $administradora = strtoupper($detalle->employee?->payrollProfile?->regimenPensionario?->nombre ?? '');
+
+            foreach ($detalle->items as $item) {
+                $codigo = $codigos[$item->concepto_id] ?? null;
+                $monto = (float) $item->monto;
+
+                if ($codigo === 'ESSALUD') {
+                    $acumulados[$bloque]['essalud'] += $monto;
+                    continue;
+                }
+
+                if ($item->tipo === 'INGRESO') {
+                    $codigo = $aliasIngresos[$codigo] ?? $codigo;
+                    $llave = in_array($codigo, $ordenIngresos, true) ? $codigo : 'X:'.$codigo;
+                    $acumulados[$bloque]['ingresos'][$llave] = ($acumulados[$bloque]['ingresos'][$llave] ?? 0.0) + $monto;
+                    continue;
+                }
+
+                if (in_array($codigo, ['AFP_FONDO', 'AFP_SEGURO', 'AFP_COMISION'], true)) {
+                    $llave = 'AFP:OTRA';
+                    foreach ($administradoras as $nombre) {
+                        if (str_contains($administradora, $nombre)) {
+                            $llave = 'AFP:'.$nombre;
+                            break;
+                        }
+                    }
+                    $acumulados[$bloque]['descuentos'][$llave] = ($acumulados[$bloque]['descuentos'][$llave] ?? 0.0) + $monto;
+                    continue;
+                }
+
+                if ($item->tipo === 'DESCUENTO' && $monto != 0.0) {
+                    $llave = isset($etiquetasDescuentos[$codigo]) ? $codigo : 'X:'.$codigo;
+                    $acumulados[$bloque]['descuentos'][$llave] = ($acumulados[$bloque]['descuentos'][$llave] ?? 0.0) + $monto;
+                }
+            }
+        }
+
+        $bloques = [];
+        foreach ($genericas as $clave => $config) {
+            $acum = $acumulados[$clave];
+
+            $filasIngresos = [];
+            foreach ($ordenIngresos as $codigo) {
+                $filasIngresos[] = [
+                    'esp_gasto' => $codigo === 'AGUINALDO' ? '2.1.1 9.14' : $config['esp_gasto'],
+                    'nombre' => $etiquetasIngresos[$codigo],
+                    'monto' => round($acum['ingresos'][$codigo] ?? 0.0, 2),
+                ];
+            }
+            foreach ($acum['ingresos'] as $llave => $monto) {
+                if (str_starts_with($llave, 'X:')) {
+                    $codigo = substr($llave, 2);
+                    $filasIngresos[] = [
+                        'esp_gasto' => $config['esp_gasto'],
+                        'nombre' => $nombresPorCodigo[$codigo] ?? 'Otro ingreso',
+                        'monto' => round($monto, 2),
+                    ];
+                }
+            }
+
+            $filasDescuentos = [];
+            foreach ($etiquetasDescuentos as $llave => $nombre) {
+                $filasDescuentos[] = [
+                    'nombre' => $nombre,
+                    'monto' => round($acum['descuentos'][$llave] ?? 0.0, 2),
+                ];
+            }
+            foreach ($acum['descuentos'] as $llave => $monto) {
+                if (str_starts_with($llave, 'X:')) {
+                    $codigo = substr($llave, 2);
+                    $filasDescuentos[] = [
+                        'nombre' => $nombresPorCodigo[$codigo] ?? 'Otro descuento',
+                        'monto' => round($monto, 2),
+                    ];
+                } elseif ($llave === 'AFP:OTRA') {
+                    $filasDescuentos[] = ['nombre' => 'AFP (otra)', 'monto' => round($monto, 2)];
+                }
+            }
+
+            $bloques[$clave] = [
+                'generica' => $config['esp_gasto'],
+                'ingresos' => $filasIngresos,
+                'essalud' => round($acum['essalud'], 2),
+                'total_ingresos' => round(array_sum(array_column($filasIngresos, 'monto')), 2),
+                'descuentos' => $filasDescuentos,
+                'total_descuentos' => round(array_sum(array_column($filasDescuentos, 'monto')), 2),
+                'neto' => round($acum['neto'], 2),
+            ];
+        }
+
+        $aporte = round($bloques['13.11']['essalud'] + $bloques['13.12']['essalud'], 2);
+
+        return [
+            'bloques' => $bloques,
+            'totales' => [
+                'liquido' => round($bloques['13.11']['neto'] + $bloques['13.12']['neto'], 2),
+                'descuento' => round($bloques['13.11']['total_descuentos'] + $bloques['13.12']['total_descuentos'], 2),
+                'aporte' => $aporte,
+                'planilla' => round($bloques['13.11']['total_ingresos'] + $bloques['13.12']['total_ingresos'] + $aporte, 2),
+            ],
+        ];
+    }
+
+    public function getResumenPlanilla(Request $request)
+    {
+        $periodo = $this->periodoParaResumen($request);
+
+        if (!$periodo) {
+            return response()->json(['message' => 'No hay periodos registrados'], 404);
+        }
+
+        return response()->json(array_merge([
+            'periodo' => [
+                'id' => $periodo->id,
+                'nombre_periodo' => $periodo->nombre_periodo,
+                'anio' => $periodo->anio,
+                'mes' => $periodo->mes,
+                'estado' => $periodo->estado,
+                'total_empleados' => $periodo->total_empleados,
+                'total_neto' => (float) $periodo->total_neto,
+            ],
+        ], $this->resumenPlanillaData($periodo)));
+    }
+
+    public function exportResumenPlanilla(Request $request, string $format)
+    {
+        if (!in_array($format, ['xlsx', 'pdf'], true)) {
+            return response()->json(['message' => 'Formato no soportado'], 422);
+        }
+
+        $periodo = $this->periodoParaResumen($request);
+
+        if (!$periodo) {
+            return response()->json(['message' => 'No hay periodos registrados'], 404);
+        }
+
+        $datos = $this->resumenPlanillaData($periodo);
+
+        return $format === 'xlsx'
+            ? $this->descargarResumenPlanillaXlsx($periodo, $datos)
+            : $this->descargarResumenPlanillaPdf($periodo, $datos);
+    }
+
+    private function descargarResumenPlanillaXlsx(PlanillaPeriodo $periodo, array $datos)
+    {
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('Resumen Planilla CAS');
+        $sheet->getDefaultColumnDimension()->setWidth(14);
+        $sheet->getColumnDimension('A')->setWidth(18);
+        $sheet->getColumnDimension('B')->setWidth(34);
+        $sheet->getColumnDimension('C')->setWidth(16);
+        $sheet->getColumnDimension('D')->setWidth(3);
+        $sheet->getColumnDimension('E')->setWidth(18);
+        $sheet->getColumnDimension('F')->setWidth(16);
+
+        $tituloStyle = ['font' => ['bold' => true, 'size' => 14]];
+        $seccionStyle = ['font' => ['bold' => true, 'size' => 11]];
+        $filaStyle = [
+            'font' => ['size' => 10],
+            'borders' => ['allBorders' => ['borderStyle' => \PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN, 'color' => ['rgb' => 'CBD5E0']]],
+        ];
+        $filaTitularStyle = [
+            'font' => ['bold' => true, 'size' => 10],
+            'borders' => $filaStyle['borders'],
+        ];
+        $cabeceraStyle = [
+            'font' => ['bold' => true, 'size' => 9, 'color' => ['rgb' => 'FFFFFF']],
+            'fill' => ['fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID, 'startColor' => ['rgb' => '334155']],
+            'borders' => ['allBorders' => ['borderStyle' => \PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN, 'color' => ['rgb' => '000000']]],
+        ];
+        $moneda = '#,##0.00';
+
+        $fila = 1;
+        $sheet->mergeCells("A{$fila}:F{$fila}");
+        $sheet->setCellValue("A{$fila}", 'RESUMEN PLANILLA CAS')->getStyle("A{$fila}")->applyFromArray($tituloStyle);
+        $fila++;
+        $sheet->mergeCells("A{$fila}:F{$fila}");
+        $sheet->setCellValue("A{$fila}", $periodo->nombre_periodo);
+        $sheet->getStyle("A{$fila}")->applyFromArray(['font' => ['bold' => true, 'size' => 11], 'alignment' => ['horizontal' => 'center']]);
+        $fila += 2;
+
+        foreach ($datos['bloques'] as $clave => $bloque) {
+            $sheet->mergeCells("A{$fila}:C{$fila}");
+            $sheet->setCellValue("A{$fila}", 'Génerica de gasto '.$bloque['generica'])->getStyle("A{$fila}")->applyFromArray($seccionStyle);
+            $sheet->setCellValue("E{$fila}", 'Essalud');
+            $sheet->setCellValue("F{$fila}", $bloque['essalud']);
+            $sheet->getStyle("F{$fila}")->getNumberFormat()->setFormatCode($moneda);
+            $fila++;
+
+            $sheet->setCellValue("A{$fila}", 'Ingresos')->getStyle("A{$fila}")->applyFromArray($seccionStyle);
+            $fila++;
+
+            foreach ([['Esp. Gasto', 'A'], ['Concepto', 'B'], ['Monto', 'C']] as [$titulo, $columna]) {
+                $sheet->setCellValue("{$columna}{$fila}", $titulo);
+            }
+            $sheet->getStyle("A{$fila}:C{$fila}")->applyFromArray($cabeceraStyle);
+            $fila++;
+
+            foreach ($bloque['ingresos'] as $ingreso) {
+                $sheet->setCellValue("A{$fila}", $ingreso['esp_gasto']);
+                $sheet->setCellValue("B{$fila}", $ingreso['nombre']);
+                $sheet->setCellValue("C{$fila}", $ingreso['monto']);
+                $sheet->getStyle("A{$fila}:C{$fila}")->applyFromArray($filaStyle);
+                $sheet->getStyle("C{$fila}")->getNumberFormat()->setFormatCode($moneda);
+                $fila++;
+            }
+
+            $sheet->setCellValue("B{$fila}", 'Total Ingresos');
+            $sheet->setCellValue("C{$fila}", $bloque['total_ingresos']);
+            $sheet->getStyle("B{$fila}:C{$fila}")->applyFromArray($filaTitularStyle);
+            $sheet->getStyle("C{$fila}")->getNumberFormat()->setFormatCode($moneda);
+            $fila += 2;
+
+            $sheet->setCellValue("A{$fila}", 'Descuentos')->getStyle("A{$fila}")->applyFromArray($seccionStyle);
+            $fila++;
+
+            $sheet->setCellValue("A{$fila}", 'Concepto');
+            $sheet->setCellValue("C{$fila}", 'Monto');
+            $sheet->getStyle("A{$fila}:C{$fila}")->applyFromArray($cabeceraStyle);
+            $fila++;
+
+            foreach ($bloque['descuentos'] as $descuento) {
+                $sheet->mergeCells("A{$fila}:B{$fila}");
+                $sheet->setCellValue("A{$fila}", $descuento['nombre']);
+                $sheet->setCellValue("C{$fila}", $descuento['monto']);
+                $sheet->getStyle("A{$fila}:C{$fila}")->applyFromArray($filaStyle);
+                $sheet->getStyle("C{$fila}")->getNumberFormat()->setFormatCode($moneda);
+                $fila++;
+            }
+
+            $sheet->mergeCells("A{$fila}:B{$fila}");
+            $sheet->setCellValue("A{$fila}", 'Total Descuentos');
+            $sheet->setCellValue("C{$fila}", $bloque['total_descuentos']);
+            $sheet->getStyle("A{$fila}:C{$fila}")->applyFromArray($filaTitularStyle);
+            $sheet->getStyle("C{$fila}")->getNumberFormat()->setFormatCode($moneda);
+            $fila += 2;
+
+            $sheet->mergeCells("A{$fila}:B{$fila}");
+            $sheet->setCellValue("A{$fila}", 'Neto a Pagar');
+            $sheet->setCellValue("C{$fila}", $bloque['neto']);
+            $sheet->getStyle("A{$fila}:C{$fila}")->applyFromArray($filaTitularStyle);
+            $sheet->getStyle("C{$fila}")->getNumberFormat()->setFormatCode($moneda);
+            $fila += 3;
+        }
+
+        $totales = [
+            ['Total Líquido', $datos['totales']['liquido']],
+            ['Total Descuento', $datos['totales']['descuento']],
+            ['Total Aporte (Essalud)', $datos['totales']['aporte']],
+            ['Total Planilla', $datos['totales']['planilla']],
+        ];
+        foreach ($totales as [$etiqueta, $monto]) {
+            $sheet->mergeCells("A{$fila}:B{$fila}");
+            $sheet->setCellValue("A{$fila}", $etiqueta);
+            $sheet->setCellValue("C{$fila}", $monto);
+            $sheet->getStyle("A{$fila}:C{$fila}")->applyFromArray($filaTitularStyle);
+            $sheet->getStyle("C{$fila}")->getNumberFormat()->setFormatCode($moneda);
+            $fila++;
+        }
+
+        $nombre = sprintf('resumen_planilla_%d_%02d.xlsx', $periodo->anio, $periodo->mes);
+        $writer = IOFactory::createWriter($spreadsheet, 'Xlsx');
+
+        return response()->streamDownload(function () use ($writer) {
+            $writer->save('php://output');
+        }, $nombre, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        ]);
+    }
+
+    private function descargarResumenPlanillaPdf(PlanillaPeriodo $periodo, array $datos)
+    {
+        $pdf = Pdf::loadView('pdf.resumen_planilla', [
+            'periodo' => $periodo,
+            'bloques' => $datos['bloques'],
+            'totales' => $datos['totales'],
+        ]);
+
+        return $pdf->stream(sprintf('resumen_planilla_%d_%02d.pdf', $periodo->anio, $periodo->mes));
     }
 
     public function getSummary()

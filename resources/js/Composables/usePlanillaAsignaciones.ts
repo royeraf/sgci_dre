@@ -15,6 +15,8 @@ export interface Asignacion {
     porcentaje: number | null;
     desde: string | null;
     hasta: string | null;
+    anio: number | null;
+    mes: number | null;
     activo: boolean;
 }
 
@@ -26,6 +28,8 @@ export interface AsignacionPayload {
     porcentaje?: number | null;
     desde?: string | null;
     hasta?: string | null;
+    anio?: number | null;
+    mes?: number | null;
     activo?: boolean;
 }
 

@@ -20,8 +20,8 @@
                 <form @submit.prevent="onSubmit" class="p-6 space-y-5">
                     <div>
                         <label class="block text-sm font-bold text-slate-700 mb-2">Empleado <span class="text-red-500">*</span></label>
-                        <select v-model="employee_id" :disabled="!!registro"
-                            class="w-full px-4 py-2.5 border-2 rounded-xl bg-white text-slate-900 focus:ring-4 focus:ring-rose-500/20 focus:border-rose-500 outline-none disabled:bg-slate-100 disabled:text-slate-500"
+                        <select v-model="employee_id" :disabled="!!registro || !!presetEmployeeId"
+                            class="w-full px-4 py-2.5 border-2 rounded-xl bg-white text-slate-900 focus:ring-4 focus:ring-rose-500/20 focus:border-rose-500 outline-none disabled:bg-slate-100 disabled:text-slate-500 disabled:cursor-not-allowed"
                             :class="formErrors.employee_id ? 'border-red-400' : 'border-slate-200'">
                             <option value="">Seleccione empleado</option>
                             <option v-for="fila in empleados" :key="fila.employee_id" :value="fila.employee_id">

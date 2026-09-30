@@ -8,9 +8,9 @@
                     <div>
                         <h3 class="text-xl font-bold text-white flex items-center gap-2">
                             <CalendarRange class="w-6 h-6" />
-                            Fechas de Contrato
+                            Contrato y Modalidad CAS
                         </h3>
-                        <p class="text-teal-50 text-sm mt-1">Define el periodo vigente del contrato del empleado</p>
+                        <p class="text-teal-50 text-sm mt-1">Periodo del contrato y modalidad para el clasificador MEF</p>
                     </div>
                     <button @click="$emit('close')" class="text-teal-100 hover:text-white transition-colors p-1">
                         <X class="w-6 h-6" />
@@ -61,6 +61,22 @@
                         <span class="text-xs text-slate-400 ml-auto">Sin fecha de finalización</span>
                     </label>
 
+                    <div>
+                        <label class="block text-sm font-bold text-slate-700 mb-2">
+                            Modalidad CAS
+                            <span class="ml-2 text-[11px] font-bold uppercase tracking-widest text-indigo-500">Clasificador MEF</span>
+                        </label>
+                        <select v-model="modalidadCas"
+                            class="w-full px-4 py-2.5 border-2 border-slate-200 rounded-xl text-slate-900 focus:ring-4 focus:ring-teal-500/20 focus:border-teal-500 transition-all outline-none bg-white">
+                            <option value="">Sin explícita (derivar automáticamente)</option>
+                            <option value="INDETERMINADO">Indeterminado — 2.1.1.13.1.1</option>
+                            <option value="TRANSITORIO">Transitorio — 2.1.1.13.1.2</option>
+                        </select>
+                        <p class="mt-1 text-xs text-slate-400">
+                            Define a qué código del Clasificador Económico se clasifica la remuneración base.
+                        </p>
+                    </div>
+
                     <div class="flex justify-end gap-3 pt-4 border-t border-slate-200 font-bold">
                         <button type="button" @click="$emit('close')"
                             class="cursor-pointer px-6 py-2.5 border-2 border-slate-300 text-slate-600 rounded-xl hover:bg-slate-50">Cancelar</button>
@@ -77,7 +93,7 @@
 </template>
 
 <script setup>
-import { watch } from 'vue';
+import { ref, watch } from 'vue';
 import { useForm } from 'vee-validate';
 import { toTypedSchema } from '@vee-validate/yup';
 import * as yup from 'yup';
@@ -118,6 +134,8 @@ const [fechaInicio] = defineField('fecha_inicio_contrato');
 const [fechaFin] = defineField('fecha_fin_contrato');
 const [indeterminado] = defineField('indeterminado');
 
+const modalidadCas = ref('');
+
 watch(indeterminado, (on) => {
     if (on) fechaFin.value = '';
 });
@@ -125,6 +143,7 @@ watch(indeterminado, (on) => {
 watch(() => props.row, (row) => {
     const inicio = row.fecha_inicio_contrato || row.fecha_ingreso || '';
     const fin = row.fecha_fin_contrato || '';
+    modalidadCas.value = row.modalidad_cas || row.modalidad_cas_efectiva || '';
     setValues({
         fecha_inicio_contrato: inicio,
         fecha_fin_contrato: fin,
@@ -136,6 +155,7 @@ const onSubmit = validateForm((formValues) => {
     emit('submit', {
         fecha_inicio_contrato: formValues.fecha_inicio_contrato,
         fecha_fin_contrato: formValues.indeterminado ? null : (formValues.fecha_fin_contrato || null),
+        modalidad_cas: modalidadCas.value || null,
     });
 });
 </script>

@@ -12,6 +12,7 @@ use App\Models\PlanillaParametroAfp;
 use App\Models\PlanillaPeriodo;
 use App\Models\PlanillaRegimenPensionario;
 use App\Models\PlanillaTardanza;
+use App\Services\Mef\MefClasificadorGastoService;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -33,6 +34,9 @@ class PlanillaGenerador
     private const CODIGO_BASE = 'REM_DL1057';
 
     private const CODIGO_GRATIFICACION = 'GRATIFICACION';
+
+    /** Jornada de referencia del mes: la misma con la que se divide la base. */
+    private const DIAS_MES = 30;
 
     /** Fallback si no existe fila en `planilla_parametros` (tope = 45% UIT 2026). */
     private const ESSALUD_TOPE = 2475.0;
@@ -72,6 +76,20 @@ class PlanillaGenerador
         'GRATIFICACION',
     ];
 
+    /**
+     * Ingresos que NO se prorratean por días de contrato (el Excel tampoco
+     * los descuenta cuando el contrato termina a mitad de mes): gratificación,
+     * remuneración vacacional, vacaciones truncas y el reintegro, que es
+     * justo la compensación del día no pagado del mes anterior.
+     */
+    private const INGRESOS_SIN_PRORRATEO = [
+        'GRATIFICACION',
+        'REINTEGRO',
+        'AGUINALDO',
+        'REM_VACACIONAL',
+        'VAC_TRUNCAS',
+    ];
+
     /** @var array<int, PlanillaParametro|null> */
     private array $parametrosPlanilla = [];
 
@@ -80,6 +98,10 @@ class PlanillaGenerador
 
     /** @var array<string, PlanillaComisionAfp|null> */
     private array $comisionesAfp = [];
+
+    public function __construct(private readonly MefClasificadorGastoService $mefClasificador)
+    {
+    }
 
     /**
      * (Re)genera la planilla del periodo. Solo en BORRADOR o CALCULADA.
@@ -131,6 +153,10 @@ class PlanillaGenerador
             $totalNeto = 0.0;
             $procesados = 0;
 
+            $codigoPorConceptoId = $conceptosActivos
+                ->mapWithKeys(fn ($concepto) => [$concepto->id => $concepto->codigo])
+                ->all();
+
             foreach ($empleados as $empleado) {
                 $base = $this->remuneracionVigente($empleado, $fecha);
 
@@ -138,7 +164,15 @@ class PlanillaGenerador
                     continue;
                 }
 
-                $registros = $this->construirRegistros($empleado, $base, $fecha, $conceptos, $conceptosPorId, $tardanzas);
+                // Contrato que empieza o termina a mitad de mes: solo se pagan
+                // los días de solape (jornada 30). 0 días = fuera de la planilla.
+                $diasPagados = $this->diasPagados($empleado, $periodo);
+
+                if ($diasPagados <= 0) {
+                    continue;
+                }
+
+                $registros = $this->construirRegistros($empleado, $base, $diasPagados, $fecha, $conceptos, $conceptosPorId, $tardanzas);
 
                 $totalIngresos = $this->sumar($registros, 'INGRESO');
                 $totalDescuentos = $this->sumar($registros, 'DESCUENTO');
@@ -148,6 +182,7 @@ class PlanillaGenerador
                 $detalle = $periodo->detalles()->create([
                     'employee_id' => $empleado->id,
                     'remuneracion_base' => $base,
+                    'dias_pagados' => $diasPagados,
                     'total_ingresos' => $totalIngresos,
                     'total_descuentos' => $totalDescuentos,
                     'total_aportaciones' => $totalAportaciones,
@@ -155,7 +190,21 @@ class PlanillaGenerador
                 ]);
 
                 if (!empty($registros)) {
-                    $detalle->items()->createMany(array_map([$this, 'aItemDb'], $registros));
+                    $clasificaciones = $this->mefClasificador->clasificarRegistros(
+                        (int) $periodo->anio,
+                        'CAS',
+                        $empleado->modalidadCas(),
+                        $registros,
+                        $codigoPorConceptoId
+                    );
+
+                    $detalle->items()->createMany(array_map(
+                        fn (array $registro) => $this->aItemDb(
+                            $registro,
+                            $clasificaciones[$registro['concepto_id']] ?? null
+                        ),
+                        $registros
+                    ));
                 }
 
                 $totalNeto += $neto;
@@ -194,6 +243,64 @@ class PlanillaGenerador
     }
 
     /**
+     * Días a pagar del empleado en el periodo, en la jornada de 30 días:
+     * solape entre el periodo y la vigencia del contrato (ingreso/cese).
+     *
+     * - Mes completo → 30 (aunque el mes tenga 28/31 días reales).
+     * - Contrato que termina el día 15 de 30 → 15.
+     * - Sin solape (contrato vencido antes del periodo) → 0: se excluye.
+     */
+    public function diasPagados(Employee $empleado, PlanillaPeriodo $periodo): int
+    {
+        $inicioPeriodo = ($periodo->fecha_inicio
+            ?? Carbon::create($periodo->anio, $periodo->mes, 1)->startOfMonth())->copy()->startOfDay();
+        $finPeriodo = ($periodo->fecha_fin
+            ?? Carbon::create($periodo->anio, $periodo->mes, 1)->endOfMonth())->copy()->startOfDay();
+
+        $inicioContrato = $empleado->fecha_inicio_contrato ?? $empleado->fecha_ingreso;
+        $finContrato = $empleado->fecha_fin_contrato;
+
+        $inicio = ($inicioContrato && $inicioContrato->greaterThan($inicioPeriodo))
+            ? $inicioContrato->copy()->startOfDay()
+            : $inicioPeriodo;
+        $fin = ($finContrato && $finContrato->lessThan($finPeriodo))
+            ? $finContrato->copy()->startOfDay()
+            : $finPeriodo;
+
+        if ($inicio->greaterThan($fin)) {
+            return 0;
+        }
+
+        if ($inicio->equalTo($inicioPeriodo) && $fin->equalTo($finPeriodo)) {
+            return self::DIAS_MES;
+        }
+
+        // Convención del Excel (O = N / 30): se pagan los días reales
+        // trabajados en el mes, con tope de 30. Un contrato que termina el
+        // 29 de agosto paga 29/30 (no se escala por los 31 días del mes).
+        $diasReales = (int) $inicio->diffInDays($fin) + 1;
+
+        return max(1, min(self::DIAS_MES, $diasReales));
+    }
+
+    /**
+     * Importe proporcional de un concepto en convención de 30 días, idéntico
+     * al del Excel: resta los días no pagados al valor día (N/30) en lugar de
+     * multiplicar, p. ej. 2285 → 2285 - 76.17 = 2208.83 para 29 días.
+     */
+    private function montoProporcional(float $monto, int $diasPagados): float
+    {
+        if ($monto <= 0 || $diasPagados >= self::DIAS_MES) {
+            return $this->dinero($monto);
+        }
+
+        $valorDia = $this->dinero($monto / self::DIAS_MES);
+        $noPagados = max(0, self::DIAS_MES - $diasPagados);
+
+        return $this->dinero($monto - ($valorDia * $noPagados));
+    }
+
+    /**
      * Registros del empleado: base, conceptos aplicables, tardanzas y
      * descuentos/aportes de ley.
      *
@@ -205,6 +312,7 @@ class PlanillaGenerador
     private function construirRegistros(
         Employee $empleado,
         float $base,
+        int $diasPagados,
         Carbon $fecha,
         Collection $conceptos,
         Collection $conceptosPorId,
@@ -212,9 +320,13 @@ class PlanillaGenerador
     ): array {
         $registros = [];
 
+        // REM_DL1057: importe proporcional a los días pagados cuando el
+        // contrato empieza/termina a mitad de mes; íntegro el resto del mes.
         $conceptoBase = $conceptos->get(self::CODIGO_BASE);
         if ($conceptoBase && $base > 0) {
-            $registros[] = $this->registro($conceptoBase, 'INGRESO', $base, $base, null);
+            $basePagada = $this->montoProporcional($base, $diasPagados);
+
+            $registros[] = $this->registro($conceptoBase, 'INGRESO', $basePagada, $basePagada, null);
         }
 
         foreach ($this->resolverConceptos($empleado, $fecha, $conceptosPorId) as $aplicable) {
@@ -228,6 +340,13 @@ class PlanillaGenerador
             $monto = $asignacion
                 ? $this->calcularMonto($asignacion, $base, $concepto)
                 : $this->montoCatalogo($concepto, $base);
+
+            // Como el Excel: los ingresos fijos también se descuentan por los
+            // días no pagados (DS 311-2022, DS 313-2023, etc.), salvo los que
+            // tienen cálculo propio (gratificación, vacaciones, reintegro).
+            if ($concepto->tipo === 'INGRESO' && !in_array($concepto->codigo, self::INGRESOS_SIN_PRORRATEO, true)) {
+                $monto = $this->montoProporcional($monto, $diasPagados);
+            }
 
             $registros[] = $this->registro(
                 $concepto,
@@ -403,6 +522,10 @@ class PlanillaGenerador
         $regimen = $empleado->payrollProfile?->regimenPensionario;
 
         if (!$regimen) {
+            return [];
+        }
+
+        if ($regimen->es_reja) {
             return [];
         }
 
@@ -584,6 +707,12 @@ class PlanillaGenerador
             ->where(function ($query) use ($fecha) {
                 $query->whereNull('hasta')->orWhere('hasta', '>=', $fecha);
             })
+            ->where(function ($query) use ($fecha) {
+                $query->whereNull('anio')->orWhere('anio', $fecha->year);
+            })
+            ->where(function ($query) use ($fecha) {
+                $query->whereNull('mes')->orWhere('mes', $fecha->month);
+            })
             ->get()
             ->filter(fn ($asignacion) => $asignacion->concepto
                 && !in_array($asignacion->concepto->codigo, self::CONCEPTOS_GESTIONADOS, true))
@@ -678,10 +807,14 @@ class PlanillaGenerador
      * @param array<string, mixed> $registro
      * @return array<string, mixed>
      */
-    private function aItemDb(array $registro): array
+    private function aItemDb(array $registro, ?array $clasificacion = null): array
     {
         return [
             'concepto_id' => $registro['concepto_id'],
+            'clasificador_id' => $clasificacion['clasificador_id'] ?? null,
+            'clasificador_gasto_codigo' => $clasificacion['codigo'] ?? null,
+            'anio_fiscal' => $clasificacion['anio_fiscal'] ?? null,
+            'estado_clasificacion' => $clasificacion['estado'] ?? 'PENDIENTE',
             'tipo' => $registro['tipo'],
             'descripcion' => $registro['descripcion'],
             'base_calculo' => $registro['base_calculo'],

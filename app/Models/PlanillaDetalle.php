@@ -17,6 +17,7 @@ class PlanillaDetalle extends Model
         'periodo_id',
         'employee_id',
         'remuneracion_base',
+        'dias_pagados',
         'total_ingresos',
         'total_descuentos',
         'total_aportaciones',
@@ -25,6 +26,7 @@ class PlanillaDetalle extends Model
 
     protected $casts = [
         'remuneracion_base' => 'decimal:2',
+        'dias_pagados' => 'integer',
         'total_ingresos' => 'decimal:2',
         'total_descuentos' => 'decimal:2',
         'total_aportaciones' => 'decimal:2',

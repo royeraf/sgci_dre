@@ -26,6 +26,9 @@ export interface RemuneracionRow {
     banco_id: string | null;
     banco: string | null;
     cuenta_ahorro: string | null;
+    fecha_nacimiento: string | null;
+    modalidad_cas: string | null;
+    modalidad_cas_efectiva: string;
 }
 
 export interface PlanillaConcepto {
@@ -45,6 +48,8 @@ export interface RegimenPensionario {
     id: string;
     nombre: string;
     tipo: TipoPension;
+    /** Régimen REJA: sin descuentos AFP/ONP en planilla. */
+    es_reja?: boolean;
 }
 
 export interface RemuneracionPayload {
@@ -61,11 +66,37 @@ export interface PerfilPayload {
     tipo_comision: TipoComision | null;
     banco_id: string | null;
     cuenta_ahorro: string | null;
+    fecha_nacimiento: string | null;
 }
 
 export interface ContratoPayload {
     fecha_inicio_contrato: string;
     fecha_fin_contrato: string | null;
+    modalidad_cas?: 'INDETERMINADO' | 'TRANSITORIO' | null;
+}
+
+export interface NuevoEmpleadoPayload {
+    dni: string;
+    nombres: string;
+    apellidos: string;
+    fecha_nacimiento: string | null;
+    cargo_id: string | null;
+    direccion_id: string | null;
+    office_id: string | null;
+    fecha_ingreso: string;
+    telefono: string | null;
+    correo: string | null;
+    contract_type_id: string;
+    remuneracion: number;
+    remuneracion_desde: string;
+    modalidad_cas: 'INDETERMINADO' | 'TRANSITORIO';
+    fecha_inicio_contrato: string;
+    fecha_fin_contrato: string | null;
+    regimen_pensionario_id: string | null;
+    cuspp: string | null;
+    tipo_comision: TipoComision | null;
+    banco_id: string | null;
+    cuenta_ahorro: string | null;
 }
 
 export function useRemuneraciones() {
@@ -85,6 +116,16 @@ export function useRemuneraciones() {
             regimenes.value = reg.data;
         } finally {
             loading.value = false;
+        }
+    };
+
+    const crearEmpleado = async (payload: NuevoEmpleadoPayload): Promise<void> => {
+        saving.value = true;
+        try {
+            await axios.post('/planillas/empleados', payload);
+            await fetchAll();
+        } finally {
+            saving.value = false;
         }
     };
 
@@ -124,6 +165,7 @@ export function useRemuneraciones() {
         loading,
         saving,
         fetchAll,
+        crearEmpleado,
         crearRemuneracion,
         actualizarPerfil,
         actualizarContrato,

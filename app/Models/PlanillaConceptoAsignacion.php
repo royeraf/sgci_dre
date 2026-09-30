@@ -20,6 +20,8 @@ class PlanillaConceptoAsignacion extends Model
         'porcentaje',
         'desde',
         'hasta',
+        'anio',
+        'mes',
         'activo',
     ];
 

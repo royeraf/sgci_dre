@@ -151,15 +151,18 @@ Catálogo de regímenes pensionarios con sus tasas.
 | `id` | char(36) | No | — | PK |
 | `nombre` | varchar(191) | No | — | UK |
 | `tipo` | enum | No | `AFP` | `ONP` · `AFP` |
+| `es_reja` | tinyint(1) | No | 0 | **AFP REJA**: el empleado no está sujeto a descuentos AFP/ONP (solo EsSalud). Se marca en el modal «Perfil de Planilla» por el régimen elegido |
 | `aporte_obligatorio` | decimal(8,5) | No | 0.10000 | ONP = 0.13000 |
 | `prima_seguro` | decimal(8,5) | No | 0.01370 | 1.37% |
-| `comision_flujo` | decimal(8,5) | Sí | NULL | Comisión por flujo |
-| `comision_mixta` | decimal(8,5) | Sí | NULL | Comisión mixta |
-| `comision_fija` | decimal(8,5) | Sí | NULL | Habitat 1.47%, Integra 1.55%, Prima 0% |
 | `activo` | tinyint(1) | No | 1 | |
 | `created_at` / `updated_at` | timestamp | Sí | NULL | |
 
 **Índices:** `nombre` (UNIQUE).
+
+> **Comisiones AFP:** no viven aquí (se eliminaron las columnas `comision_flujo` /
+> `comision_mixta` / `comision_fija`); están en `planilla_comisiones_afp`, por
+> `(mes, regimen_pensionario_id)` y según `employee_payroll_profiles.tipo_comision`
+> (solo `FLUJO` descuenta en planilla).
 
 ---
 
@@ -214,6 +217,7 @@ Una fila por empleado dentro de un periodo (snapshots del cálculo).
 | `periodo_id` | char(36) | No | — | → `planilla_periodos.id` |
 | `employee_id` | char(36) | No | — | → `employees.id` |
 | `remuneracion_base` | decimal(10,2) | No | 0 | Snapshot de la base vigente |
+| `dias_pagados` | tinyint unsigned | No | 30 | Días a pagar (base 30); < 30 = contrato a mitad de mes, 0 ⇒ excluido |
 | `total_ingresos` | decimal(10,2) | No | 0 | Σ items `INGRESO` |
 | `total_descuentos` | decimal(10,2) | No | 0 | Σ items `DESCUENTO` |
 | `total_aportaciones` | decimal(10,2) | No | 0 | Σ items `APORTACION` |
@@ -325,6 +329,12 @@ automatizará sin cambiar el modelo de `planilla_tardanzas`:
 > automáticamente en `PlanillaGenerador` (Fase 3). La base afecta surge de los
 > flags `afecto_onp`/`afecto_afp`/`afecto_essalud` de cada concepto.
 >
+> **No sujetos a descuento AFP/ONP** (`retencionesPension()` devuelve `[]`):
+> empleados con régimen `es_reja = true` (**AFP REJA**) y empleados **sin
+> régimen pensionario** (sin perfil o `regimen_pensionario_id = NULL`). EsSalud
+> sí se aporta en ambos casos. La condición se comunica en el modal «Perfil de
+> Planilla» (aviso + badge `REJA`).
+>
 > El **descuento por tardanzas** se registra **manualmente** (días/minutos) y el
 > sistema calcula el monto con las fórmulas de abajo. La automatización desde
 > Asistencias corresponde a la Fase 7.
@@ -332,12 +342,16 @@ automatizará sin cambiar el modelo de `planilla_tardanzas`:
 | Concepto | Fórmula |
 |---|---|
 | Remuneración base | `employee_remunerations` vigente |
+| Días pagados | Solape periodo ∩ contrato, en convención de 30: mes completo ⇒ 30; a mitad de mes ⇒ días reales trabajados con tope 30 (cese el 29 ⇒ 29); `0` ⇒ empleado excluido |
+| Importe proporcional | `monto − (monto / 30 × días no pagados)`, fórmula del Excel (2285 − 76.17 = 2208.83 para 29 días). Se aplica a **todos** los ingresos fijos: `REM_DL1057`, `DS311_2022`, `DS313_2023`, `DS_265_2024`, `DS265_279_2024`, `DS_279_2024`, `DS327_2025` |
+| Ingresos sin prorratear | `GRATIFICACION`, `AGUINALDO`, `REM_VACACIONAL`, `VAC_TRUNCAS` y `REINTEGRO` (constante `INGRESOS_SIN_PRORRATEO`) |
+| Reintegro | Concepto `REINTEGRO` (INGRESO, afecto AFP/ONP/EsSalud) que devuelve el día no pagado del mes anterior; se asigna **manualmente** por empleado desde «Asignar conceptos» con su observación, y entra íntegro (nunca se proporcionaliza) |
 | Valor por día | `remuneración / 30` |
 | Valor por minuto | `(remuneración / 30) / 480` (jornada 8 h) |
 | Base imponible | `remuneración − faltas/tardanzas` |
 | AFP Fondo | `base × 10%` |
 | AFP Seguro | `base × 1.37%` |
-| AFP Comisión | según `planilla_regimenes_pensionarios.comision_fija` |
+| AFP Comisión | `planilla_comisiones_afp.comision_flujo` (por `mes` + régimen), solo si `employee_payroll_profiles.tipo_comision = FLUJO` |
 | ONP | `base × 13%` |
 | Renta 4ta | `base × 8%` |
 | EsSalud | `base × 9%` (tope de base 2475) |

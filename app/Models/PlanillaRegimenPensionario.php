@@ -15,12 +15,14 @@ class PlanillaRegimenPensionario extends Model
     protected $fillable = [
         'nombre',
         'tipo',
+        'es_reja',
         'aporte_obligatorio',
         'prima_seguro',
         'activo',
     ];
 
     protected $casts = [
+        'es_reja' => 'boolean',
         'aporte_obligatorio' => 'decimal:5',
         'prima_seguro' => 'decimal:5',
         'activo' => 'boolean',

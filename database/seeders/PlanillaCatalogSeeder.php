@@ -78,6 +78,34 @@ class PlanillaCatalogSeeder extends Seeder
                 'aporte_obligatorio' => 0.10000,
                 'prima_seguro' => 0.01370,
             ],
+            [
+                'nombre' => 'AFP Habitat (REJA)',
+                'tipo' => 'AFP',
+                'es_reja' => true,
+                'aporte_obligatorio' => 0.10000,
+                'prima_seguro' => 0.01370,
+            ],
+            [
+                'nombre' => 'AFP Integra (REJA)',
+                'tipo' => 'AFP',
+                'es_reja' => true,
+                'aporte_obligatorio' => 0.10000,
+                'prima_seguro' => 0.01370,
+            ],
+            [
+                'nombre' => 'AFP Prima (REJA)',
+                'tipo' => 'AFP',
+                'es_reja' => true,
+                'aporte_obligatorio' => 0.10000,
+                'prima_seguro' => 0.01370,
+            ],
+            [
+                'nombre' => 'AFP Profuturo (REJA)',
+                'tipo' => 'AFP',
+                'es_reja' => true,
+                'aporte_obligatorio' => 0.10000,
+                'prima_seguro' => 0.01370,
+            ],
         ];
 
         foreach ($regimenes as $regimen) {
@@ -109,7 +137,11 @@ class PlanillaCatalogSeeder extends Seeder
             ['AGUINALDO', 'Aguinaldo Julio/Diciembre', 'INGRESO', 'BONIFICACION', false, null, $afectosRemunerativos, 6],
             ['REM_VACACIONAL', 'Remuneración Vacacional', 'INGRESO', 'BONIFICACION', false, null, $afectosRemunerativos, 7],
             ['VAC_TRUNCAS', 'Vacaciones Truncas', 'INGRESO', 'BONIFICACION', false, null, $afectosRemunerativos, 8],
-            ['SUBCAFAE', 'Sub CAFAE', 'INGRESO', 'NO_REMUNERATIVO', false, null, [
+            // Día no pagado del mes anterior que el mes entrante devuelve
+            // (fila «Reintegro» de la hoja Planilla del Excel). Se asigna
+            // manualmente desde «Asignar conceptos» con su observación.
+            ['REINTEGRO', 'Reintegro', 'INGRESO', 'REINTEGRO', false, null, $afectosRemunerativos, 11],
+            ['SUBCAFAE', 'Sub CAFAE', 'DESCUENTO', 'NO_REMUNERATIVO', false, null, [
                 'afecto_renta5' => false,
                 'afecto_essalud' => false,
                 'afecto_onp' => false,

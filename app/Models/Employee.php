@@ -12,6 +12,10 @@ class Employee extends Model
 {
     use HasUuids;
 
+    public const MODALIDAD_INDETERMINADO = 'INDETERMINADO';
+
+    public const MODALIDAD_TRANSITORIO = 'TRANSITORIO';
+
     protected $fillable = [
         'person_id',
         'direction_id',
@@ -21,6 +25,7 @@ class Employee extends Model
         'fecha_ingreso',
         'fecha_inicio_contrato',
         'fecha_fin_contrato',
+        'modalidad_cas',
         'estado',
         'observaciones',
         'licencias_totales',
@@ -235,6 +240,23 @@ class Employee extends Model
     public function getTipoContratoAttribute(): ?string
     {
         return $this->contractType?->nombre;
+    }
+
+    /**
+     * Modalidad CAS para la clasificación económica del gasto: usa el valor
+     * explícito si existe; si no, la deriva de la fecha fin del contrato.
+     */
+    public function modalidadCas(): string
+    {
+        $explicita = $this->modalidad_cas ? strtoupper(trim($this->modalidad_cas)) : null;
+
+        if (in_array($explicita, [self::MODALIDAD_INDETERMINADO, self::MODALIDAD_TRANSITORIO], true)) {
+            return $explicita;
+        }
+
+        return $this->fecha_fin_contrato
+            ? self::MODALIDAD_TRANSITORIO
+            : self::MODALIDAD_INDETERMINADO;
     }
 
     /**

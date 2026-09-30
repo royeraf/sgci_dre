@@ -15,6 +15,10 @@ class PlanillaDetalleItem extends Model
     protected $fillable = [
         'detalle_id',
         'concepto_id',
+        'clasificador_id',
+        'clasificador_gasto_codigo',
+        'anio_fiscal',
+        'estado_clasificacion',
         'tipo',
         'descripcion',
         'base_calculo',
@@ -24,6 +28,7 @@ class PlanillaDetalleItem extends Model
     ];
 
     protected $casts = [
+        'anio_fiscal' => 'integer',
         'base_calculo' => 'decimal:2',
         'porcentaje' => 'decimal:5',
         'monto' => 'decimal:2',
@@ -38,5 +43,10 @@ class PlanillaDetalleItem extends Model
     public function concepto(): BelongsTo
     {
         return $this->belongsTo(PlanillaConcepto::class, 'concepto_id');
+    }
+
+    public function clasificador(): BelongsTo
+    {
+        return $this->belongsTo(MefClasificadorGasto::class, 'clasificador_id');
     }
 }

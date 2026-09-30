@@ -71,6 +71,10 @@
                                             class="cursor-pointer p-2 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 transition-all">
                                             <Eye class="w-4 h-4" />
                                         </button>
+                                        <button @click="onResumen(periodo)" title="Ver resumen"
+                                            class="cursor-pointer p-2 rounded-lg bg-cyan-50 text-cyan-600 hover:bg-cyan-100 transition-all">
+                                            <FileSpreadsheet class="w-4 h-4" />
+                                        </button>
                                         <button @click="onEliminar(periodo)" :disabled="!periodo.editable || saving" title="Eliminar"
                                             class="cursor-pointer p-2 rounded-lg bg-rose-50 text-rose-600 hover:bg-rose-100 disabled:opacity-40 disabled:cursor-not-allowed transition-all">
                                             <Trash2 class="w-4 h-4" />
@@ -90,6 +94,9 @@
         <PeriodoDetalleModal v-if="showDetalleModal && detalle" :detalle="detalle"
             @close="showDetalleModal = false" @refresh="onRefreshDetalle" />
 
+        <ResumenModal v-if="showResumenModal && resumenPeriodo" :periodo="resumenPeriodo"
+            @close="showResumenModal = false" />
+
         <ParametrosPlanillaModal v-if="showParametrosModal" @close="showParametrosModal = false" />
 
         <ParametrosAfpModal v-if="showParametrosAfpModal" @close="showParametrosAfpModal = false" />
@@ -98,11 +105,12 @@
 
 <script setup>
 import { ref, onMounted } from 'vue';
-import { Wallet, Plus, Play, Eye, Trash2, Loader2, Landmark, Percent } from 'lucide-vue-next';
+import { Wallet, Plus, Play, Eye, Trash2, Loader2, Landmark, Percent, FileSpreadsheet } from 'lucide-vue-next';
 
 import BaseTableCard from '@/Components/Common/BaseTableCard.vue';
 import PeriodoModal from '@/Components/Planillas/Periodos/PeriodoModal.vue';
 import PeriodoDetalleModal from '@/Components/Planillas/Periodos/PeriodoDetalleModal.vue';
+import ResumenModal from '@/Components/Planillas/Periodos/ResumenModal.vue';
 import ParametrosPlanillaModal from '@/Components/Planillas/ParametrosPlanillaModal.vue';
 import ParametrosAfpModal from '@/Components/Planillas/ParametrosAfpModal.vue';
 import { usePlanillaPeriodos } from '@/Composables/usePlanillaPeriodos';
@@ -121,6 +129,8 @@ const {
 
 const showPeriodoModal = ref(false);
 const showDetalleModal = ref(false);
+const showResumenModal = ref(false);
+const resumenPeriodo = ref(null);
 const showParametrosModal = ref(false);
 const showParametrosAfpModal = ref(false);
 
@@ -192,6 +202,11 @@ const onVer = async (periodo) => {
     } catch (error) {
         notify('error', 'No se pudo cargar el detalle');
     }
+};
+
+const onResumen = (periodo) => {
+    resumenPeriodo.value = periodo;
+    showResumenModal.value = true;
 };
 
 const onRefreshDetalle = async (id) => {

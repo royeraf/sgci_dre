@@ -19,7 +19,17 @@
 
                 <form @submit.prevent="onSubmit" class="p-6 space-y-5">
                     <div>
-                        <label class="block text-sm font-bold text-slate-700 mb-2">Sistema de Pensiones</label>
+                        <label class="block text-sm font-bold text-slate-700 mb-2">Fecha de Nacimiento</label>
+                        <input v-model="fechaNacimiento" type="date"
+                            class="w-full px-4 py-2.5 border-2 border-slate-200 rounded-xl text-slate-900 focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none bg-white cursor-pointer" />
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-bold text-slate-700 mb-2">
+                            Sistema de Pensiones
+                            <span v-if="esReja"
+                                class="ml-2 text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 align-middle">REJA</span>
+                        </label>
                         <div class="flex gap-2">
                             <select v-model="regimen_pensionario_id"
                                 class="flex-1 px-4 py-2.5 border-2 border-slate-200 rounded-xl bg-white text-slate-900 focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none">
@@ -33,6 +43,19 @@
                                 <Settings class="w-5 h-5" />
                             </button>
                         </div>
+
+                        <p v-if="esReja"
+                            class="mt-2 flex items-start gap-2 text-xs font-semibold text-amber-800 bg-amber-50 border-2 border-amber-200 rounded-xl px-3 py-2">
+                            <ShieldOff class="w-4 h-4 shrink-0 mt-0.5" />
+                            <span>Régimen <strong>REJA</strong>: este empleado <strong>no estará sujeto a descuentos
+                                AFP/ONP</strong> en la planilla (sí se aporta EsSalud).</span>
+                        </p>
+                        <p v-else-if="sinRegimen"
+                            class="mt-2 flex items-start gap-2 text-xs font-semibold text-rose-700 bg-rose-50 border-2 border-rose-200 rounded-xl px-3 py-2">
+                            <CircleAlert class="w-4 h-4 shrink-0 mt-0.5" />
+                            <span><strong>Sin régimen pensionario</strong>: no se aplicarán descuentos AFP/ONP. Asigne un
+                                sistema de pensiones para que la planilla lo descuente.</span>
+                        </p>
                     </div>
 
                     <div>
@@ -103,7 +126,7 @@ import { ref, computed, watch, onMounted } from 'vue';
 import { useForm } from 'vee-validate';
 import { toTypedSchema } from '@vee-validate/yup';
 import * as yup from 'yup';
-import { Landmark, X, Loader2, Settings } from 'lucide-vue-next';
+import { Landmark, X, Loader2, Settings, ShieldOff, CircleAlert } from 'lucide-vue-next';
 import BancosManagerModal from '@/Components/Planillas/Remuneraciones/BancosManagerModal.vue';
 import RegimenesManagerModal from '@/Components/Planillas/Remuneraciones/RegimenesManagerModal.vue';
 import { usePlanillaBancos } from '@/Composables/usePlanillaBancos';
@@ -121,6 +144,7 @@ const props = defineProps({
 const emit = defineEmits(['close', 'submit', 'changed']);
 
 const schema = toTypedSchema(yup.object({
+    fecha_nacimiento: yup.string().transform((value) => value || null).nullable(),
     regimen_pensionario_id: yup.string().nullable(),
     cuspp: yup.string().nullable(),
     tipo_comision: yup.string().nullable().oneOf(['', 'FLUJO', 'MIXTA', 'SALDO']),
@@ -130,9 +154,10 @@ const schema = toTypedSchema(yup.object({
 
 const { defineField, handleSubmit: validateForm, setValues } = useForm({
     validationSchema: schema,
-    initialValues: { regimen_pensionario_id: '', cuspp: '', tipo_comision: '', banco_id: '', cuenta_ahorro: '' },
+    initialValues: { fecha_nacimiento: '', regimen_pensionario_id: '', cuspp: '', tipo_comision: '', banco_id: '', cuenta_ahorro: '' },
 });
 
+const [fechaNacimiento] = defineField('fecha_nacimiento');
 const [regimen_pensionario_id] = defineField('regimen_pensionario_id');
 const [cuspp] = defineField('cuspp');
 const [tipo_comision] = defineField('tipo_comision');
@@ -144,6 +169,13 @@ const esAfp = computed(() => {
     return regimen?.tipo === 'AFP';
 });
 
+const regimenSel = computed(() =>
+    props.regimenes.find((r) => r.id === regimen_pensionario_id.value) || null);
+
+// Empleados fuera de descuento AFP/ONP: régimen REJA o sin régimen asignado.
+const esReja = computed(() => regimenSel.value?.es_reja === true);
+const sinRegimen = computed(() => !regimen_pensionario_id.value);
+
 watch(esAfp, (afp) => {
     if (!afp) {
         tipo_comision.value = '';
@@ -152,6 +184,7 @@ watch(esAfp, (afp) => {
 
 watch(() => props.row, (row) => {
     setValues({
+        fecha_nacimiento: row?.fecha_nacimiento ? row.fecha_nacimiento.split('T')[0] : '',
         regimen_pensionario_id: row?.regimen_pensionario_id || '',
         cuspp: row?.cuspp || '',
         tipo_comision: row?.tipo_comision || '',
@@ -162,6 +195,7 @@ watch(() => props.row, (row) => {
 
 const onSubmit = validateForm((values) => {
     emit('submit', {
+        fecha_nacimiento: values.fecha_nacimiento || null,
         regimen_pensionario_id: values.regimen_pensionario_id || null,
         cuspp: values.cuspp || null,
         tipo_comision: values.tipo_comision || null,

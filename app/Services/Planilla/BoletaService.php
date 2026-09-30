@@ -297,7 +297,8 @@ class BoletaService
 
     /**
      * Días laborados de todos los trabajadores del periodo en una sola
-     * consulta: jornada de referencia menos las faltas no justificadas.
+     * consulta: días pagados del detalle (contrato a mitad de mes reduce la
+     * base) menos las faltas no justificadas.
      *
      * @return array<string, int> indexado por employee_id
      */
@@ -309,10 +310,19 @@ class BoletaService
             ->selectRaw('employee_id, SUM(dias) as total_dias')
             ->pluck('total_dias', 'employee_id');
 
+        $diasPagados = PlanillaDetalle::where('periodo_id', $periodo->id)
+            ->pluck('dias_pagados', 'employee_id');
+
         $mapa = [];
 
+        foreach ($diasPagados as $employeeId => $dias) {
+            $mapa[$employeeId] = max(0, (int) $dias - (int) ($faltas[$employeeId] ?? 0));
+        }
+
         foreach ($faltas as $employeeId => $totalDias) {
-            $mapa[$employeeId] = max(0, self::DIAS_MES - (int) $totalDias);
+            if (!isset($mapa[$employeeId])) {
+                $mapa[$employeeId] = max(0, self::DIAS_MES - (int) $totalDias);
+            }
         }
 
         return $mapa;

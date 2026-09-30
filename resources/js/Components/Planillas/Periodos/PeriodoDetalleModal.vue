@@ -75,17 +75,39 @@
                                         : 'hover:bg-slate-50/70'">
                                     <td class="px-4 py-3 text-slate-400 font-bold">{{ index + 1 }}</td>
                                     <td class="px-4 py-3 font-mono text-xs text-slate-500">{{ d.dni || '—' }}</td>
-                                    <td class="px-4 py-3 font-semibold text-slate-800">{{ d.nombre_completo }}</td>
+                                    <td class="px-4 py-3 font-semibold text-slate-800">
+                                        {{ d.nombre_completo }}
+                                        <span v-if="d.dias_pagados < 30"
+                                            title="Contrato con días limitados en este periodo: la básica se paga proporcional"
+                                            class="ml-1.5 inline-flex items-center text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 align-middle tabular-nums">
+                                            {{ d.dias_pagados }}/30 días
+                                        </span>
+                                    </td>
                                     <td class="px-4 py-3 text-right text-slate-600">{{ formatMoney(d.remuneracion_base) }}</td>
                                     <td class="px-4 py-3 text-right text-emerald-700 font-semibold">{{ formatMoney(d.total_ingresos) }}</td>
                                     <td class="px-4 py-3 text-right text-rose-700 font-semibold">{{ formatMoney(d.total_descuentos) }}</td>
                                     <td class="px-4 py-3 text-right text-indigo-700 font-semibold">{{ formatMoney(d.total_aportaciones) }}</td>
                                     <td class="px-4 py-3 text-right font-bold text-slate-900">{{ formatMoney(d.neto_pagar) }}</td>
                                     <td class="px-4 py-3 text-right whitespace-nowrap">
+                                        <button v-if="detalle.periodo.editable" @click="openAsignaciones(d)"
+                                            title="Asignar conceptos (Sub CAFAE, etc.)"
+                                            class="relative cursor-pointer p-1.5 rounded-lg text-rose-600 hover:bg-rose-50 hover:text-rose-700 transition-all mr-1 align-middle">
+                                            <ListPlus class="w-4 h-4" />
+                                            <span v-if="asignacionesCount(d) > 0"
+                                                class="absolute -top-0.5 -right-0.5 w-2 h-2 bg-emerald-600 rounded-full ring-2 ring-white"></span>
+                                        </button>
                                         <button v-if="detalle.periodo.editable" @click="openRegistros(d.employee_id)"
                                             title="Tardanzas del empleado"
-                                            class="cursor-pointer p-1.5 rounded-lg text-rose-600 hover:bg-rose-50 hover:text-rose-700 transition-all mr-1 align-middle">
+                                            class="relative cursor-pointer p-1.5 rounded-lg text-rose-600 hover:bg-rose-50 hover:text-rose-700 transition-all mr-1 align-middle">
                                             <Clock class="w-4 h-4" />
+                                            <span v-if="tardanzasCount(d.employee_id) > 0"
+                                                class="absolute -top-0.5 -right-0.5 w-2 h-2 bg-rose-600 rounded-full ring-2 ring-white"></span>
+                                        </button>
+                                        <button @click="openNotas(d)" title="Notas del empleado"
+                                            class="relative cursor-pointer p-1.5 rounded-lg text-amber-600 hover:bg-amber-50 hover:text-amber-700 transition-all mr-1 align-middle">
+                                            <NotebookText class="w-4 h-4" />
+                                            <span v-if="notasCount(d.employee_id) > 0"
+                                                class="absolute -top-0.5 -right-0.5 w-2 h-2 bg-amber-500 rounded-full ring-2 ring-white"></span>
                                         </button>
                                         <button @click="toggle(d.id)" :disabled="d.items.length === 0"
                                             class="cursor-pointer p-1.5 rounded-lg text-slate-500 hover:bg-slate-100 disabled:opacity-30 transition-all align-middle"
@@ -193,15 +215,38 @@
             @close="closeTardanza"
             @submit="onSubmitTardanza"
         />
+
+        <AsignacionesEmpleadoModal
+            v-if="showAsignacionesModal && filaAsignaciones"
+            :row="filaAsignaciones"
+            :auto-recalcular="true"
+            @close="closeAsignaciones"
+            @changed="asignacionesSucias = true"
+        />
+
+        <NotasModal
+            v-if="showNotasModal"
+            ref="notasModalRef"
+            :empleado="notasEmpleado"
+            :notas="notas"
+            :loading="loadingNotas"
+            :saving="savingNotas"
+            @close="closeNotas"
+            @submit="onSubmitNota"
+            @remove="onRemoveNota"
+        />
     </div>
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue';
-import { CalendarRange, X, ChevronDown, ChevronUp, Clock, Search } from 'lucide-vue-next';
+import { ref, computed, watch, onMounted } from 'vue';
+import { CalendarRange, X, ChevronDown, ChevronUp, Clock, Search, ListPlus, NotebookText } from 'lucide-vue-next';
 import TardanzaModal from '@/Components/Planillas/Tardanzas/TardanzaModal.vue';
 import RegistrosModal from '@/Components/Planillas/Tardanzas/RegistrosModal.vue';
+import NotasModal from '@/Components/Planillas/Notas/NotasModal.vue';
+import AsignacionesEmpleadoModal from '@/Components/Planillas/Remuneraciones/AsignacionesEmpleadoModal.vue';
 import { usePlanillaTardanzas } from '@/Composables/usePlanillaTardanzas';
+import { usePlanillaNotas } from '@/Composables/usePlanillaNotas';
 import { usePlanillaPeriodos } from '@/Composables/usePlanillaPeriodos';
 
 const emit = defineEmits(['close', 'refresh']);
@@ -213,6 +258,9 @@ const props = defineProps({
 const expanded = ref([]);
 const showTardanzaModal = ref(false);
 const showRegistrosModal = ref(false);
+const showAsignacionesModal = ref(false);
+const filaAsignaciones = ref(null);
+const asignacionesSucias = ref(false);
 const selectedEmployeeId = ref('');
 const editingTardanza = ref(null);
 const flashEmployeeId = ref(null);
@@ -231,6 +279,21 @@ const {
     eliminarTardanza,
 } = usePlanillaTardanzas();
 const { generarPeriodo } = usePlanillaPeriodos();
+
+const {
+    notas,
+    loading: loadingNotas,
+    saving: savingNotas,
+    fetchNotas,
+    crearNota,
+    actualizarNota,
+    eliminarNota,
+} = usePlanillaNotas();
+
+const showNotasModal = ref(false);
+const notasEmpleado = ref(null);
+const notasModalRef = ref(null);
+const notasCounts = ref({});
 
 const notify = (icon, title) => {
     window.Swal?.fire({
@@ -264,6 +327,93 @@ const matchLabel = computed(() => {
 const filaSeleccionada = computed(() =>
     filasTardanzas.value.find((f) => f.employee_id === selectedEmployeeId.value) || null
 );
+
+const tardanzasCount = (employeeId) => {
+    const fila = filasTardanzas.value.find((f) => f.employee_id === employeeId);
+    return fila?.registros?.length || 0;
+};
+
+const asignacionesCount = (fila) => Number(fila?.asignaciones_count || 0);
+
+onMounted(async () => {
+    if (!props.detalle.periodo.editable) return;
+    try {
+        await fetchTardanzas(props.detalle.periodo.id);
+    } catch (error) {
+        // el badge simplemente no se muestra si no se pudo cargar
+    }
+});
+
+watch(() => props.detalle?.detalles, (filas) => {
+    const counts = {};
+    (filas || []).forEach((d) => {
+        counts[d.employee_id] = d.notas_count || 0;
+    });
+    notasCounts.value = counts;
+}, { immediate: true });
+
+const notasCount = (employeeId) => notasCounts.value[employeeId] || 0;
+
+const openNotas = async (d) => {
+    notasEmpleado.value = d;
+    notasCounts.value[d.employee_id] = notasCounts.value[d.employee_id] || 0;
+    showNotasModal.value = true;
+    try {
+        await fetchNotas(d.employee_id);
+    } catch (error) {
+        notify('error', 'No se pudieron cargar las notas del empleado');
+    }
+};
+
+const closeNotas = () => {
+    showNotasModal.value = false;
+    notasEmpleado.value = null;
+    notasModalRef.value?.cancelEdit();
+};
+
+const onSubmitNota = async ({ texto, id }) => {
+    const employeeId = notasEmpleado.value?.employee_id;
+    if (!employeeId) return;
+
+    try {
+        if (id) {
+            await actualizarNota(id, { texto }, employeeId);
+            notify('success', 'Nota actualizada correctamente');
+        } else {
+            await crearNota({ employee_id: employeeId, texto });
+            notasCounts.value[employeeId] = (notasCounts.value[employeeId] || 0) + 1;
+            notify('success', 'Nota registrada correctamente');
+        }
+        notasModalRef.value?.cancelEdit();
+    } catch (error) {
+        notify('error', error.response?.data?.message || 'No se pudo guardar la nota');
+    }
+};
+
+const onRemoveNota = async (nota) => {
+    const employeeId = notasEmpleado.value?.employee_id;
+    if (!employeeId) return;
+
+    const result = await window.Swal?.fire({
+        icon: 'warning',
+        title: '¿Eliminar nota?',
+        html: '<p>Esta anotación se borrará permanentemente.</p>',
+        showCancelButton: true,
+        confirmButtonText: 'Sí, eliminar',
+        cancelButtonText: 'Cancelar',
+        confirmButtonColor: '#d97706',
+    });
+
+    if (!result?.isConfirmed) return;
+
+    try {
+        await eliminarNota(nota.id, employeeId);
+        notasCounts.value[employeeId] = Math.max(0, (notasCounts.value[employeeId] || 0) - 1);
+        notify('success', 'Nota eliminada correctamente');
+    } catch (error) {
+        notify('error', error.response?.data?.message || 'No se pudo eliminar la nota');
+    }
+};
 
 watch(search, () => {
     matchIndex.value = -1;
@@ -306,6 +456,27 @@ const openRegistros = async (employeeId) => {
 const closeRegistros = () => {
     showRegistrosModal.value = false;
     selectedEmployeeId.value = '';
+};
+
+const openAsignaciones = (d) => {
+    filaAsignaciones.value = {
+        id: d.employee_id,
+        nombre_completo: d.nombre_completo,
+        dni: d.dni,
+    };
+    asignacionesSucias.value = false;
+    showAsignacionesModal.value = true;
+};
+
+const closeAsignaciones = async () => {
+    const employeeId = filaAsignaciones.value?.id;
+    showAsignacionesModal.value = false;
+    filaAsignaciones.value = null;
+
+    if (!asignacionesSucias.value) return;
+    asignacionesSucias.value = false;
+
+    await afterMutation(employeeId, 'Concepto actualizado y planilla recalculada');
 };
 
 const openCreateTardanza = () => {

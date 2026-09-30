@@ -5,6 +5,9 @@ export interface PlanillaRegimen {
     id: string;
     nombre: string;
     tipo: 'AFP' | 'ONP';
+    // Régimen REJA: el empleado no está sujeto a descuentos AFP/ONP
+    // (solo se aporta EsSalud). Se fija en el catálogo, no en el payload.
+    es_reja?: boolean;
     aporte_obligatorio: number;
     prima_seguro: number;
     activo: boolean;

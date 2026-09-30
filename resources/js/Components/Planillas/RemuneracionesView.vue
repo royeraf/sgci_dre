@@ -13,6 +13,16 @@
                     <Coins class="w-4 h-4 mr-2" />
                     Remuneraciones (Ingresos)
                 </button>
+                <button @click="showMefModal = true"
+                    class="cursor-pointer inline-flex items-center px-4 py-2.5 text-sm font-bold rounded-xl border-2 border-indigo-200 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 transition-all duration-200">
+                    <Network class="w-4 h-4 mr-2" />
+                    Clasificador MEF
+                </button>
+                <button @click="showNuevoEmpleadoModal = true"
+                    class="cursor-pointer inline-flex items-center px-5 py-2.5 text-sm font-bold rounded-xl shadow-lg shadow-violet-500/30 text-white bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 transition-all duration-300 hover:-translate-y-0.5">
+                    <UserPlus class="w-4 h-4 mr-2" />
+                    Nuevo Empleado
+                </button>
                 <button @click="openRemuneracion()"
                     class="cursor-pointer inline-flex items-center px-5 py-2.5 text-sm font-bold rounded-xl shadow-lg shadow-teal-500/30 text-white bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 transition-all duration-300 hover:-translate-y-0.5">
                     <Plus class="w-4 h-4 mr-2" />
@@ -94,6 +104,12 @@
                                             class="cursor-pointer p-2 rounded-lg bg-sky-50 text-sky-600 hover:bg-sky-100 transition-all">
                                             <CalendarRange class="w-4 h-4" />
                                         </button>
+                                        <button @click="openAsignaciones(row)" title="Asignar conceptos (Sub CAFAE, etc.)"
+                                            class="relative cursor-pointer p-2 rounded-lg bg-rose-50 text-rose-600 hover:bg-rose-100 transition-all">
+                                            <ListPlus class="w-4 h-4" />
+                                            <span v-if="row.asignaciones_count > 0"
+                                                class="absolute -top-0.5 -right-0.5 w-2 h-2 bg-emerald-600 rounded-full ring-2 ring-white"></span>
+                                        </button>
                                     </div>
                                 </td>
                             </tr>
@@ -108,6 +124,9 @@
 
         <ConceptosModal v-if="showConceptosModal" tipo="INGRESO" @close="showConceptosModal = false" />
 
+        <NuevoEmpleadoModal v-if="showNuevoEmpleadoModal" :regimenes="regimenes" :saving="saving"
+            @close="showNuevoEmpleadoModal = false" @submit="submitNuevoEmpleado" />
+
         <RemuneracionModal v-if="showRemuneracionModal" :employees="rows" :preset-employee-id="presetEmployeeId"
             :saving="saving" @close="closeRemuneracion" @submit="submitRemuneracion" />
 
@@ -116,28 +135,39 @@
 
         <ContratoModal v-if="showContratoModal && selectedRow" :row="selectedRow" :saving="saving"
             @close="closeContrato" @submit="submitContrato" />
+
+        <AsignacionesEmpleadoModal v-if="showAsignacionesModal && selectedRow" :row="selectedRow"
+            @close="closeAsignaciones" @changed="fetchAll" />
+
+        <MefClasificadorModal v-if="showMefModal" @close="showMefModal = false" />
     </div>
 </template>
 
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue';
-import { Plus, Wallet, Landmark, Loader2, Coins, CalendarRange } from 'lucide-vue-next';
+import { Plus, Wallet, Landmark, Loader2, Coins, CalendarRange, ListPlus, Network, UserPlus } from 'lucide-vue-next';
 
 import BaseTableCard from '@/Components/Common/BaseTableCard.vue';
 import ClientPagination from '@/Components/Common/ClientPagination.vue';
 import ConceptosModal from '@/Components/Planillas/Conceptos/ConceptosModal.vue';
 import RemuneracionModal from '@/Components/Planillas/Remuneraciones/RemuneracionModal.vue';
+import NuevoEmpleadoModal from '@/Components/Planillas/Remuneraciones/NuevoEmpleadoModal.vue';
 import PerfilPensionModal from '@/Components/Planillas/Remuneraciones/PerfilPensionModal.vue';
 import ContratoModal from '@/Components/Planillas/Remuneraciones/ContratoModal.vue';
+import AsignacionesEmpleadoModal from '@/Components/Planillas/Remuneraciones/AsignacionesEmpleadoModal.vue';
+import MefClasificadorModal from '@/Components/Planillas/Remuneraciones/MefClasificadorModal.vue';
 import { useRemuneraciones } from '@/Composables/useRemuneraciones';
 
-const { rows, regimenes, loading, saving, fetchAll, crearRemuneracion, actualizarPerfil, actualizarContrato } = useRemuneraciones();
+const { rows, regimenes, loading, saving, fetchAll, crearEmpleado, crearRemuneracion, actualizarPerfil, actualizarContrato } = useRemuneraciones();
 
 const search = ref('');
+const showNuevoEmpleadoModal = ref(false);
 const showRemuneracionModal = ref(false);
 const showPerfilModal = ref(false);
 const showContratoModal = ref(false);
 const showConceptosModal = ref(false);
+const showAsignacionesModal = ref(false);
+const showMefModal = ref(false);
 const selectedRow = ref(null);
 const presetEmployeeId = ref(null);
 const currentPage = ref(1);
@@ -191,6 +221,20 @@ const notify = (icon, title) => {
         icon,
         title,
     });
+};
+
+const submitNuevoEmpleado = async (payload) => {
+    try {
+        await crearEmpleado(payload);
+        showNuevoEmpleadoModal.value = false;
+        notify('success', 'Empleado registrado. Vuelva a generar la planilla para incluirlo');
+    } catch (error) {
+        const errores = error.response?.data?.errors;
+        const msg = error.response?.data?.message
+            || (errores ? Object.values(errores)[0][0] : null)
+            || 'No se pudo registrar el empleado';
+        notify('error', msg);
+    }
 };
 
 const openRemuneracion = (row = null) => {
@@ -251,6 +295,16 @@ const submitContrato = async (payload) => {
     } catch (error) {
         notify('error', error.response?.data?.message || 'No se pudieron actualizar las fechas de contrato');
     }
+};
+
+const openAsignaciones = (row) => {
+    selectedRow.value = row;
+    showAsignacionesModal.value = true;
+};
+
+const closeAsignaciones = () => {
+    showAsignacionesModal.value = false;
+    selectedRow.value = null;
 };
 
 onMounted(fetchAll);
