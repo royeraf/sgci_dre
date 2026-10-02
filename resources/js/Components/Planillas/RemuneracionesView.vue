@@ -104,6 +104,10 @@
                                             class="cursor-pointer p-2 rounded-lg bg-sky-50 text-sky-600 hover:bg-sky-100 transition-all">
                                             <CalendarRange class="w-4 h-4" />
                                         </button>
+                                        <button @click="openLicencias(row)" title="Licencias del empleado (sin/con goce)"
+                                            class="cursor-pointer p-2 rounded-lg bg-amber-50 text-amber-600 hover:bg-amber-100 transition-all">
+                                            <CalendarOff class="w-4 h-4" />
+                                        </button>
                                         <button @click="openAsignaciones(row)" title="Asignar conceptos (Sub CAFAE, etc.)"
                                             class="relative cursor-pointer p-2 rounded-lg bg-rose-50 text-rose-600 hover:bg-rose-100 transition-all">
                                             <ListPlus class="w-4 h-4" />
@@ -136,6 +140,9 @@
         <ContratoModal v-if="showContratoModal && selectedRow" :row="selectedRow" :saving="saving"
             @close="closeContrato" @submit="submitContrato" />
 
+        <LicenciasModal v-if="showLicenciasModal && selectedRow" :row="selectedRow"
+            @close="closeLicencias" @changed="fetchAll" />
+
         <AsignacionesEmpleadoModal v-if="showAsignacionesModal && selectedRow" :row="selectedRow"
             @close="closeAsignaciones" @changed="fetchAll" />
 
@@ -145,7 +152,7 @@
 
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue';
-import { Plus, Wallet, Landmark, Loader2, Coins, CalendarRange, ListPlus, Network, UserPlus } from 'lucide-vue-next';
+import { Plus, Wallet, Landmark, Loader2, Coins, CalendarRange, CalendarOff, ListPlus, Network, UserPlus } from 'lucide-vue-next';
 
 import BaseTableCard from '@/Components/Common/BaseTableCard.vue';
 import ClientPagination from '@/Components/Common/ClientPagination.vue';
@@ -154,6 +161,7 @@ import RemuneracionModal from '@/Components/Planillas/Remuneraciones/Remuneracio
 import NuevoEmpleadoModal from '@/Components/Planillas/Remuneraciones/NuevoEmpleadoModal.vue';
 import PerfilPensionModal from '@/Components/Planillas/Remuneraciones/PerfilPensionModal.vue';
 import ContratoModal from '@/Components/Planillas/Remuneraciones/ContratoModal.vue';
+import LicenciasModal from '@/Components/Planillas/Remuneraciones/LicenciasModal.vue';
 import AsignacionesEmpleadoModal from '@/Components/Planillas/Remuneraciones/AsignacionesEmpleadoModal.vue';
 import MefClasificadorModal from '@/Components/Planillas/Remuneraciones/MefClasificadorModal.vue';
 import { useRemuneraciones } from '@/Composables/useRemuneraciones';
@@ -165,6 +173,7 @@ const showNuevoEmpleadoModal = ref(false);
 const showRemuneracionModal = ref(false);
 const showPerfilModal = ref(false);
 const showContratoModal = ref(false);
+const showLicenciasModal = ref(false);
 const showConceptosModal = ref(false);
 const showAsignacionesModal = ref(false);
 const showMefModal = ref(false);
@@ -304,6 +313,16 @@ const openAsignaciones = (row) => {
 
 const closeAsignaciones = () => {
     showAsignacionesModal.value = false;
+    selectedRow.value = null;
+};
+
+const openLicencias = (row) => {
+    selectedRow.value = row;
+    showLicenciasModal.value = true;
+};
+
+const closeLicencias = () => {
+    showLicenciasModal.value = false;
     selectedRow.value = null;
 };
 

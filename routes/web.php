@@ -360,6 +360,13 @@ Route::middleware('auth')->group(function () {
         Route::put('/notas/{id}', [App\Http\Controllers\PlanillaController::class, 'updateNota'])->name('notas.update');
         Route::delete('/notas/{id}', [App\Http\Controllers\PlanillaController::class, 'deleteNota'])->name('notas.destroy');
 
+        // Licencias por empleado (las sin goce APROBADAS descuentan días de
+        // planilla; si cubren el periodo completo, el empleado se excluye)
+        Route::get('/licencias', [App\Http\Controllers\PlanillaController::class, 'getLicencias'])->name('licencias.list');
+        Route::post('/licencias', [App\Http\Controllers\PlanillaController::class, 'storeLicencia'])->name('licencias.store');
+        Route::put('/licencias/{id}', [App\Http\Controllers\PlanillaController::class, 'updateLicencia'])->name('licencias.update');
+        Route::delete('/licencias/{id}', [App\Http\Controllers\PlanillaController::class, 'deleteLicencia'])->name('licencias.destroy');
+
         // Gratificaciones CAS (Ley 32563 / DS 142-2026-EF)
         Route::get('/gratificaciones', [App\Http\Controllers\GratificacionController::class, 'getGratificaciones'])->name('gratificaciones.list');
         Route::post('/gratificaciones/preview', [App\Http\Controllers\GratificacionController::class, 'previsualizarGratificaciones'])->name('gratificaciones.preview');

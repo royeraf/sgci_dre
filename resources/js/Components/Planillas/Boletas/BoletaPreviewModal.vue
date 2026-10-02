@@ -67,9 +67,6 @@
                                 <p class="text-center font-black text-[13px] py-1 tracking-wide">
                                     {{ boleta.trabajador.codigo_boleta }}
                                 </p>
-                                <p class="border-t border-slate-300 text-center py-0.5 text-[9px] text-slate-600">
-                                    DNI: <span class="font-bold text-slate-900">{{ dato(boleta.trabajador.dni) }}</span>
-                                </p>
                             </div>
                         </div>
 

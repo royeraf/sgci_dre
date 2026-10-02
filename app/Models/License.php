@@ -17,6 +17,7 @@ class License extends Model
         'motivo',
         'fecha_inicio',
         'fecha_fin',
+        'sin_goce',
         'dias_solicitados',
         'estado',
         'observaciones',
@@ -26,6 +27,8 @@ class License extends Model
     protected $casts = [
         'fecha_inicio' => 'date',
         'fecha_fin' => 'date',
+        'sin_goce' => 'boolean',
+        'dias_solicitados' => 'integer',
     ];
 
     /**

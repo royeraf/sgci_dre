@@ -16,20 +16,6 @@
                         </p>
                     </div>
                     <div class="flex items-center gap-2">
-                        <div v-if="pestana === 'planilla'" class="flex items-center gap-2">
-                            <button @click="onExportar('xlsx')" :disabled="exportando !== null"
-                                class="cursor-pointer inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 disabled:opacity-50 transition-all">
-                                <Loader2 v-if="exportando === 'xlsx'" class="w-4 h-4 animate-spin" />
-                                <FileSpreadsheet v-else class="w-4 h-4" />
-                                Excel
-                            </button>
-                            <button @click="onExportar('pdf')" :disabled="exportando !== null"
-                                class="cursor-pointer inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg bg-rose-50 text-rose-700 hover:bg-rose-100 disabled:opacity-50 transition-all">
-                                <Loader2 v-if="exportando === 'pdf'" class="w-4 h-4 animate-spin" />
-                                <FileText v-else class="w-4 h-4" />
-                                PDF
-                            </button>
-                        </div>
                         <button @click="$emit('close')" class="text-teal-100 hover:text-white transition-colors p-1">
                             <X class="w-6 h-6" />
                         </button>
@@ -294,7 +280,23 @@
                     </template>
                 </div>
 
-                <div class="px-6 py-4 border-t border-slate-100 bg-white shrink-0 flex justify-end">
+                <div class="px-6 py-4 border-t border-slate-100 bg-white shrink-0 flex items-center justify-between gap-3">
+                    <div class="flex items-center gap-2">
+                        <template v-if="pestana === 'planilla'">
+                            <button @click="onExportar('xlsx')" :disabled="exportando !== null"
+                                class="cursor-pointer inline-flex items-center gap-1.5 px-4 py-2.5 text-sm font-bold rounded-xl bg-emerald-50 text-emerald-700 hover:bg-emerald-100 disabled:opacity-50 transition-all">
+                                <Loader2 v-if="exportando === 'xlsx'" class="w-4 h-4 animate-spin" />
+                                <FileSpreadsheet v-else class="w-4 h-4" />
+                                Excel
+                            </button>
+                            <button @click="onExportar('pdf')" :disabled="exportando !== null"
+                                class="cursor-pointer inline-flex items-center gap-1.5 px-4 py-2.5 text-sm font-bold rounded-xl bg-rose-50 text-rose-700 hover:bg-rose-100 disabled:opacity-50 transition-all">
+                                <Loader2 v-if="exportando === 'pdf'" class="w-4 h-4 animate-spin" />
+                                <FileText v-else class="w-4 h-4" />
+                                PDF
+                            </button>
+                        </template>
+                    </div>
                     <button @click="$emit('close')"
                         class="cursor-pointer px-6 py-2.5 border-2 border-slate-300 text-slate-600 rounded-xl hover:bg-slate-50 font-bold">
                         Cerrar

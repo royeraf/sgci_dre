@@ -201,10 +201,6 @@
                 <tr>
                     <td class="codigo text-center" colspan="2">{{ $trabajador['codigo_boleta'] }}</td>
                 </tr>
-                <tr>
-                    <td class="codigo-label" style="width: 40%;">DNI</td>
-                    <td class="text-bold text-center">{{ $sinDato($trabajador['dni']) }}</td>
-                </tr>
             </table>
         </td>
     </tr>

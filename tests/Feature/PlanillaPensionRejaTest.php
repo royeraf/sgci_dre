@@ -175,6 +175,11 @@ class PlanillaPensionRejaTest extends TestCase
 
         return Employee::where('estado', 'ACTIVO')
             ->whereHas('contractType', fn ($query) => $query->whereRaw('UPPER(nombre) = ?', ['CAS']))
+            ->whereRaw('COALESCE(fecha_inicio_contrato, fecha_ingreso) <= ?', [$periodo->fecha_fin])
+            ->where(function ($query) use ($periodo) {
+                $query->whereNull('fecha_fin_contrato')
+                    ->orWhere('fecha_fin_contrato', '>=', $periodo->fecha_inicio);
+            })
             ->whereHas('remunerations', function ($query) use ($cierre) {
                 $query->where('monto', '>', 0)
                     ->where('desde', '<=', $cierre)

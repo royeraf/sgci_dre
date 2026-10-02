@@ -175,6 +175,14 @@
                                                         </div>
                                                     </td>
                                                 </tr>
+                                                <tr v-if="fila.registros.length === 0">
+                                                    <td colspan="9" class="px-4 py-8 text-center">
+                                                        <Clock class="w-6 h-6 mx-auto text-slate-300 mb-1.5" />
+                                                        <p class="text-xs font-medium text-slate-400">
+                                                            No hay registros de tardanza para este empleado
+                                                        </p>
+                                                    </td>
+                                                </tr>
                                             </tbody>
                                         </table>
                                     </div>

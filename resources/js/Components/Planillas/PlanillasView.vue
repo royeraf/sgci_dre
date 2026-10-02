@@ -151,9 +151,20 @@ const formatMoney = (value) => Number(value || 0).toLocaleString('es-PE', {
     maximumFractionDigits: 2,
 });
 
+const formatDate = (value) => {
+    if (!value) return null;
+    const fecha = String(value).slice(0, 10);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(fecha)) return value;
+    return new Date(`${fecha}T00:00:00`).toLocaleDateString('es-PE', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+    });
+};
+
 const rango = (periodo) => {
     if (!periodo.fecha_inicio || !periodo.fecha_fin) return '—';
-    return `${periodo.fecha_inicio} → ${periodo.fecha_fin}`;
+    return `${formatDate(periodo.fecha_inicio)} → ${formatDate(periodo.fecha_fin)}`;
 };
 
 const estadoClass = (estado) => ({

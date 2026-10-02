@@ -256,6 +256,7 @@ Solo se listan las columnas relevantes para planillas.
 | Tabla | Columnas relevantes | Uso en planillas |
 |---|---|---|
 | `employees` | `id`, `person_id`, `contract_type_id`, `direction_id`, `office_id`, `position_id`, `fecha_ingreso`, `estado` | Sujeto de planilla (se filtra `estado = ACTIVO` y `contract_type = CAS`) |
+| `licenses` | `id`, `employee_id`, `dni`, `tipo_licencia`, `motivo`, `fecha_inicio`, `fecha_fin`, `sin_goce`, `dias_solicitados`, `estado`, `observaciones`, `created_by` | **Licencias del empleado** (módulo Bienestar + API de planillas `GET/POST/PUT/DELETE /planillas/licencias`). Solo descuentan de la planilla las que son `sin_goce = true` **y** `estado = APROBADO`; se gestionan en el modal «Licencias» de Remuneraciones. La columna `sin_goce` se añadió en `2026_09_30_000001` |
 | `people` | `id`, `dni`, `nombres`, `apellidos`, `email` | Datos personales del empleado |
 | `hr_contract_types` | `id`, `nombre` | Régimen (`CAS`, `276`, `Nombrado`, …) |
 | `hr_directions`, `hr_offices`, `hr_positions` | `id`, `nombre` | Cargo/dependencia en la boleta |
@@ -342,11 +343,19 @@ automatizará sin cambiar el modelo de `planilla_tardanzas`:
 > **siempre**, con `0.00` cuando el empleado no tiene faltas (columna
 > «Falt/Tard.» del Excel). La automatización desde Asistencias corresponde a la
 > Fase 7.
+>
+> **Licencias.** Las licencias `sin_goce` **APROBADAS** (`licenses`, modal
+> «Licencias» de Remuneraciones) descuentan días en `diasPagados()`: si cubren
+> todo lo pagable el empleado **no figura en la planilla** (como en el Excel,
+> que muestra en 0 a los licenciados con la nota «Licencia S/Goce … (RDR …)»);
+> si son parciales, prorratean el resto. Las **con goce** y las no aprobadas
+> no afectan. La licencia sin goce no consume los 20 días de licencia
+> personal (`licencias_usadas`), que solo descuentan las con goce.
 
 | Concepto | Fórmula |
 |---|---|
 | Remuneración base | `employee_remunerations` vigente |
-| Días pagados | Solape periodo ∩ contrato, en convención de 30: mes completo ⇒ 30; a mitad de mes ⇒ días reales trabajados con tope 30 (cese el 29 ⇒ 29); `0` ⇒ empleado excluido |
+| Días pagados | Solape periodo ∩ contrato, en convención de 30: mes completo ⇒ 30; a mitad de mes ⇒ días reales trabajados con tope 30 (cese el 29 ⇒ 29); **menos los días de licencia `sin_goce` APROBADA** que solapen el periodo; `0` ⇒ empleado excluido |
 | Importe proporcional | `monto − (monto / 30 × días no pagados)`, fórmula del Excel (2285 − 76.17 = 2208.83 para 29 días). Se aplica a **todos** los ingresos fijos: `REM_DL1057`, `DS311_2022`, `DS313_2023`, `DS_265_2024`, `DS265_279_2024`, `DS_279_2024`, `DS327_2025` |
 | Ingresos sin prorratear | `GRATIFICACION`, `AGUINALDO`, `REM_VACACIONAL`, `VAC_TRUNCAS` y `REINTEGRO` (constante `INGRESOS_SIN_PRORRATEO`) |
 | Reintegro | Concepto `REINTEGRO` (INGRESO, afecto AFP/ONP/EsSalud) que devuelve el día no pagado del mes anterior; se asigna **manualmente** por empleado desde «Asignar conceptos» con su observación, y entra íntegro (nunca se proporcionaliza) |

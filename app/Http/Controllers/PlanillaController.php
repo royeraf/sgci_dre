@@ -10,6 +10,7 @@ use App\Models\HRContractType;
 use App\Models\HRPosition;
 use App\Models\HrDirection;
 use App\Models\HrOffice;
+use App\Models\License;
 use App\Models\Person;
 use App\Models\PlanillaBanco;
 use App\Models\PlanillaComisionAfp;
@@ -1189,6 +1190,165 @@ class PlanillaController extends Controller
         $nota->delete();
 
         return response()->json(['message' => 'Nota eliminada correctamente']);
+    }
+
+    // ========== LICENCIAS ==========
+    // Afectan la planilla solo cuando son `sin_goce` y están APROBADAS:
+    // el generador descuenta esos días (y si cubren el periodo completo el
+    // empleado se excluye de la planilla, igual que en el Excel).
+
+    public function getLicencias(Request $request)
+    {
+        $validated = $request->validate([
+            'employee_id' => 'required|string|exists:employees,id',
+        ]);
+
+        $hoy = now()->startOfDay();
+
+        $licencias = License::where('employee_id', $validated['employee_id'])
+            ->orderByDesc('fecha_inicio')
+            ->get()
+            ->map(fn (License $licencia) => [
+                'id' => $licencia->id,
+                'tipo_licencia' => $licencia->tipo_licencia,
+                'motivo' => $licencia->motivo,
+                'fecha_inicio' => $licencia->fecha_inicio->toDateString(),
+                'fecha_fin' => $licencia->fecha_fin->toDateString(),
+                'sin_goce' => (bool) $licencia->sin_goce,
+                'dias_solicitados' => (int) $licencia->dias_solicitados,
+                'estado' => $licencia->estado,
+                'observaciones' => $licencia->observaciones,
+                'vigente' => $licencia->fecha_inicio->lte($hoy) && $licencia->fecha_fin->gte($hoy),
+                'afecta_planilla' => $licencia->sin_goce && $licencia->estado === 'APROBADO',
+            ]);
+
+        return response()->json(['licencias' => $licencias]);
+    }
+
+    public function storeLicencia(Request $request)
+    {
+        $validated = $this->validarLicencia($request);
+
+        $empleado = Employee::findOrFail($validated['employee_id']);
+        $dias = Carbon::parse($validated['fecha_inicio'])->diffInDays(Carbon::parse($validated['fecha_fin'])) + 1;
+        $contada = !$validated['sin_goce'] && $validated['estado'] === 'APROBADO';
+
+        if ($contada) {
+            $disponibles = max(0, (int) $empleado->licencias_totales - (int) $empleado->licencias_usadas);
+            if ($dias > $disponibles) {
+                return response()->json(['message' => "El empleado solo cuenta con {$disponibles} días disponibles."], 422);
+            }
+        }
+
+        return DB::transaction(function () use ($validated, $empleado, $dias, $contada) {
+            $licencia = License::create([
+                'employee_id' => $empleado->id,
+                'dni' => $empleado->dni,
+                'tipo_licencia' => $validated['tipo_licencia'],
+                'motivo' => trim($validated['motivo'] ?? '') ?: null,
+                'fecha_inicio' => $validated['fecha_inicio'],
+                'fecha_fin' => $validated['fecha_fin'],
+                'sin_goce' => $validated['sin_goce'],
+                'dias_solicitados' => $dias,
+                'estado' => $validated['estado'],
+                'observaciones' => trim($validated['observaciones'] ?? '') ?: null,
+                'created_by' => auth()->user()?->name ?? 'Sistema',
+            ]);
+
+            if ($contada) {
+                $empleado->increment('licencias_usadas', $dias);
+            }
+
+            return response()->json([
+                'message' => 'Licencia registrada correctamente',
+                'licencia' => $licencia,
+            ], 201);
+        });
+    }
+
+    public function updateLicencia(Request $request, string $id)
+    {
+        $licencia = License::find($id);
+
+        if (!$licencia) {
+            return response()->json(['message' => 'Licencia no encontrada'], 404);
+        }
+
+        $validated = $this->validarLicencia($request);
+        $empleado = Employee::findOrFail($licencia->employee_id);
+
+        $diasAnteriores = (int) $licencia->dias_solicitados;
+        $contadaAnterior = !$licencia->sin_goce && $licencia->estado === 'APROBADO';
+        $diasNuevos = Carbon::parse($validated['fecha_inicio'])->diffInDays(Carbon::parse($validated['fecha_fin'])) + 1;
+        $contadaNueva = !$validated['sin_goce'] && $validated['estado'] === 'APROBADO';
+
+        if ($contadaNueva) {
+            $usados = (int) $empleado->licencias_usadas - ($contadaAnterior ? $diasAnteriores : 0);
+            $disponibles = max(0, (int) $empleado->licencias_totales - $usados);
+            if ($diasNuevos > $disponibles) {
+                return response()->json(['message' => "El empleado solo cuenta con {$disponibles} días disponibles."], 422);
+            }
+        }
+
+        return DB::transaction(function () use ($licencia, $empleado, $validated, $diasAnteriores, $contadaAnterior, $diasNuevos, $contadaNueva) {
+            $licencia->update([
+                'tipo_licencia' => $validated['tipo_licencia'],
+                'motivo' => trim($validated['motivo'] ?? '') ?: null,
+                'fecha_inicio' => $validated['fecha_inicio'],
+                'fecha_fin' => $validated['fecha_fin'],
+                'sin_goce' => $validated['sin_goce'],
+                'dias_solicitados' => $diasNuevos,
+                'estado' => $validated['estado'],
+                'observaciones' => trim($validated['observaciones'] ?? '') ?: null,
+            ]);
+
+            $delta = ($contadaNueva ? $diasNuevos : 0) - ($contadaAnterior ? $diasAnteriores : 0);
+            if ($delta !== 0) {
+                $nuevoUsado = max(0, (int) $empleado->licencias_usadas + $delta);
+                $empleado->update(['licencias_usadas' => $nuevoUsado]);
+            }
+
+            return response()->json([
+                'message' => 'Licencia actualizada correctamente',
+                'licencia' => $licencia->fresh(),
+            ]);
+        });
+    }
+
+    public function deleteLicencia(string $id)
+    {
+        $licencia = License::find($id);
+
+        if (!$licencia) {
+            return response()->json(['message' => 'Licencia no encontrada'], 404);
+        }
+
+        return DB::transaction(function () use ($licencia) {
+            $empleado = Employee::find($licencia->employee_id);
+
+            if ($empleado && !$licencia->sin_goce && $licencia->estado === 'APROBADO') {
+                $nuevoUsado = max(0, (int) $empleado->licencias_usadas - (int) $licencia->dias_solicitados);
+                $empleado->update(['licencias_usadas' => $nuevoUsado]);
+            }
+
+            $licencia->delete();
+
+            return response()->json(['message' => 'Licencia eliminada correctamente']);
+        });
+    }
+
+    private function validarLicencia(Request $request): array
+    {
+        return $request->validate([
+            'employee_id' => 'required|string|exists:employees,id',
+            'tipo_licencia' => 'required|string',
+            'fecha_inicio' => 'required|date',
+            'fecha_fin' => 'required|date|after_or_equal:fecha_inicio',
+            'sin_goce' => 'required|boolean',
+            'estado' => 'required|in:APROBADO,PENDIENTE,RECHAZADO',
+            'motivo' => 'nullable|string|max:255',
+            'observaciones' => 'nullable|string|max:1000',
+        ]);
     }
 
     // ========== PERIODOS ==========

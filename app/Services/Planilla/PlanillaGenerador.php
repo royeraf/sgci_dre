@@ -4,6 +4,7 @@ namespace App\Services\Planilla;
 
 use App\Models\Employee;
 use App\Models\Gratificacion;
+use App\Models\License;
 use App\Models\PlanillaComisionAfp;
 use App\Models\PlanillaConcepto;
 use App\Models\PlanillaConceptoAsignacion;
@@ -245,10 +246,12 @@ class PlanillaGenerador
 
     /**
      * Días a pagar del empleado en el periodo, en la jornada de 30 días:
-     * solape entre el periodo y la vigencia del contrato (ingreso/cese).
+     * solape entre el periodo y la vigencia del contrato (ingreso/cese),
+     * menos los días de licencia sin goce aprobada (ver `diasLicenciaSinGoce`).
      *
      * - Mes completo → 30 (aunque el mes tenga 28/31 días reales).
      * - Contrato que termina el día 15 de 30 → 15.
+     * - Licencia sin goce que cubre todo lo pagable → 0: se excluye.
      * - Sin solape (contrato vencido antes del periodo) → 0: se excluye.
      */
     public function diasPagados(Employee $empleado, PlanillaPeriodo $periodo): int
@@ -273,7 +276,7 @@ class PlanillaGenerador
         }
 
         if ($inicio->equalTo($inicioPeriodo) && $fin->equalTo($finPeriodo)) {
-            return self::DIAS_MES;
+            return $this->restarLicenciaSinGoce($empleado, $inicio, $fin, self::DIAS_MES);
         }
 
         // Convención del Excel (O = N / 30): se pagan los días reales
@@ -281,7 +284,50 @@ class PlanillaGenerador
         // 29 de agosto paga 29/30 (no se escala por los 31 días del mes).
         $diasReales = (int) $inicio->diffInDays($fin) + 1;
 
-        return max(1, min(self::DIAS_MES, $diasReales));
+        return $this->restarLicenciaSinGoce($empleado, $inicio, $fin, max(1, min(self::DIAS_MES, $diasReales)));
+    }
+
+    /**
+     * Resta del total de días pagables los días que caen dentro de licencias
+     * sin goce aprobadas (solo afecta a la remuneración si `sin_goce` es
+     * verdadero: las licencias con goce no descuentan). Si la licencia cubre
+     * todo lo pagable el empleado queda en 0 días y se excluye de la planilla.
+     */
+    private function restarLicenciaSinGoce(Employee $empleado, Carbon $inicio, Carbon $fin, int $diasPagados): int
+    {
+        if ($diasPagados <= 0) {
+            return 0;
+        }
+
+        $licencias = License::where('employee_id', $empleado->id)
+            ->where('estado', 'APROBADO')
+            ->where('sin_goce', true)
+            ->where('fecha_inicio', '<=', $fin->toDateString())
+            ->where('fecha_fin', '>=', $inicio->toDateString())
+            ->get();
+
+        foreach ($licencias as $licencia) {
+            $li = $licencia->fecha_inicio->copy()->startOfDay();
+            if ($li->lessThan($inicio)) {
+                $li = $inicio->copy();
+            }
+            $lf = $licencia->fecha_fin->copy()->startOfDay();
+            if ($lf->greaterThan($fin)) {
+                $lf = $fin->copy();
+            }
+
+            if ($li->greaterThan($lf)) {
+                continue;
+            }
+
+            $diasPagados -= ((int) $li->diffInDays($lf)) + 1;
+
+            if ($diasPagados <= 0) {
+                return 0;
+            }
+        }
+
+        return $diasPagados;
     }
 
     /**
