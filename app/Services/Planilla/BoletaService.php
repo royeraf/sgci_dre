@@ -31,7 +31,7 @@ class BoletaService
 
     /**
      * El módulo administra exclusivamente planillas CAS mensuales
-     * (ver PlanillaController::REGIMEN_PLANILLA).
+     * (ver Employee::REGIMEN_PLANILLA).
      */
     public const PERIODICIDAD = 'Mensual';
 

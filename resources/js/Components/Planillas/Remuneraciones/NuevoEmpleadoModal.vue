@@ -397,11 +397,14 @@ const [banco_id] = defineField('banco_id');
 const [cuenta_ahorro] = defineField('cuenta_ahorro');
 
 const casTypeId = computed(() => {
-    const tipo = tiposContrato.value.find((t) => (t.nombre || '').toUpperCase() === 'CAS');
+    const tipo = tiposContrato.value.find((t) => (t.nombre || '').toUpperCase().startsWith('CAS'));
     return tipo ? tipo.id : null;
 });
 
-const casTypeName = computed(() => (casTypeId.value ? 'CAS' : null));
+const casTypeName = computed(() => {
+    const tipo = tiposContrato.value.find((t) => t.id === casTypeId.value);
+    return tipo ? tipo.nombre : null;
+});
 
 const esAfp = computed(() => {
     const regimen = props.regimenes.find((r) => r.id === regimen_pensionario_id.value);
