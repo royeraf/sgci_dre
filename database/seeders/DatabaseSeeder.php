@@ -24,6 +24,13 @@ class DatabaseSeeder extends Seeder
         $this->seedPersonnel();
         $this->call(HrDirectionSeeder::class);
         $this->call(HrOfficeSeeder::class);
+        $this->call(PlanillaCatalogSeeder::class);
+        $this->call(MefCatalogoSeeder::class);
+        $this->call(GratificacionCasParametrosSeeder::class);
+        $this->call(PlanillaParametrosSeeder::class);
+        $this->call(PlanillaParametrosAfpSeeder::class);
+        $this->call(TipoComisionSeeder::class);
+        $this->call(DreConfiguracionSeeder::class);
     }
 
     private function seedRoles(): void
@@ -44,6 +51,7 @@ class DatabaseSeeder extends Seeder
                     'vehiculos' => ['crear', 'leer', 'editar', 'eliminar'],
                     'patrimonio' => ['crear', 'leer', 'editar', 'eliminar'],
                     'licencias' => ['crear', 'leer', 'editar', 'eliminar', 'aprobar'],
+                    'planillas' => ['crear', 'leer', 'editar', 'eliminar'],
                     'reportes' => ['ver', 'exportar'],
                     'configuracion' => ['leer', 'editar'],
                 ],
@@ -96,6 +104,7 @@ class DatabaseSeeder extends Seeder
                 'permisos_json' => [
                     'personal' => ['crear', 'leer', 'editar', 'eliminar'],
                     'recursos_humanos' => ['crear', 'leer', 'editar', 'eliminar'],
+                    'planillas' => ['crear', 'leer', 'editar', 'eliminar'],
                     'vacaciones' => ['crear', 'leer', 'editar', 'eliminar', 'aprobar'],
                     'areas' => ['crear', 'leer', 'editar', 'eliminar'],
                     'cargos' => ['crear', 'leer', 'editar', 'eliminar'],

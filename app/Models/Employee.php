@@ -6,10 +6,15 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Employee extends Model
 {
     use HasUuids;
+
+    public const MODALIDAD_INDETERMINADO = 'INDETERMINADO';
+
+    public const MODALIDAD_TRANSITORIO = 'TRANSITORIO';
 
     protected $fillable = [
         'person_id',
@@ -18,6 +23,9 @@ class Employee extends Model
         'office_id',
         'contract_type_id',
         'fecha_ingreso',
+        'fecha_inicio_contrato',
+        'fecha_fin_contrato',
+        'modalidad_cas',
         'estado',
         'observaciones',
         'licencias_totales',
@@ -26,6 +34,8 @@ class Employee extends Model
 
     protected $casts = [
         'fecha_ingreso' => 'date',
+        'fecha_inicio_contrato' => 'date',
+        'fecha_fin_contrato' => 'date',
     ];
 
     /**
@@ -116,6 +126,43 @@ class Employee extends Model
     }
 
     /**
+     * Historial de remuneraciones base con vigencia
+     */
+    public function remunerations(): HasMany
+    {
+        return $this->hasMany(EmployeeRemuneration::class, 'employee_id');
+    }
+
+    /**
+     * Perfil de planilla (pensión, CUSPP, cuenta de abono)
+     */
+    public function payrollProfile(): HasOne
+    {
+        return $this->hasOne(EmployeePayrollProfile::class, 'employee_id');
+    }
+
+    /**
+     * Conceptos de planilla asignados directamente al empleado
+     */
+    public function conceptoAsignaciones(): HasMany
+    {
+        return $this->hasMany(PlanillaConceptoAsignacion::class, 'employee_id');
+    }
+
+    /**
+     * Remuneración base vigente en una fecha (por defecto hoy).
+     */
+    public function remuneracionVigente($fecha = null): ?EmployeeRemuneration
+    {
+        $fecha = $fecha ?: now();
+
+        return $this->remunerations()
+            ->vigenteEn($fecha)
+            ->orderByDesc('desde')
+            ->first();
+    }
+
+    /**
      * Obtener el jefe inmediato: primero busca en office, luego fallback a direction
      */
     public function getJefeInmediatoAttribute(): ?Employee
@@ -193,6 +240,23 @@ class Employee extends Model
     public function getTipoContratoAttribute(): ?string
     {
         return $this->contractType?->nombre;
+    }
+
+    /**
+     * Modalidad CAS para la clasificación económica del gasto: usa el valor
+     * explícito si existe; si no, la deriva de la fecha fin del contrato.
+     */
+    public function modalidadCas(): string
+    {
+        $explicita = $this->modalidad_cas ? strtoupper(trim($this->modalidad_cas)) : null;
+
+        if (in_array($explicita, [self::MODALIDAD_INDETERMINADO, self::MODALIDAD_TRANSITORIO], true)) {
+            return $explicita;
+        }
+
+        return $this->fecha_fin_contrato
+            ? self::MODALIDAD_TRANSITORIO
+            : self::MODALIDAD_INDETERMINADO;
     }
 
     /**

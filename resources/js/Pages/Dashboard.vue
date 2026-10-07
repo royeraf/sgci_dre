@@ -122,6 +122,16 @@
           <ChevronRight class="hidden sm:block w-4 h-4 text-slate-300 group-hover:text-teal-500 group-hover:translate-x-1 transition-all duration-300 flex-shrink-0" />
         </Link>
 
+        <Link v-if="hasModulePermission('planillas')" href="/planillas"
+          class="group flex flex-col sm:flex-row items-center gap-1.5 sm:gap-4 p-1 sm:p-5 text-center sm:text-left rounded-2xl sm:bg-white hover:bg-teal-50/60 sm:hover:bg-teal-50/50 sm:border-2 sm:border-slate-100 sm:hover:border-teal-200 sm:shadow-sm sm:hover:shadow-md sm:hover:-translate-y-0.5 active:bg-teal-50 transition-all duration-300">
+          <div
+            class="w-10 h-10 sm:w-12 sm:h-12 bg-teal-600 rounded-2xl sm:rounded-xl flex items-center justify-center shadow-lg shadow-teal-600/30 group-hover:scale-110 transition-transform duration-300 flex-shrink-0">
+            <Wallet class="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+          </div>
+          <span class="text-[11px] sm:text-sm font-bold text-slate-800 sm:text-slate-900 leading-tight sm:leading-snug sm:flex-1">Planillas</span>
+          <ChevronRight class="hidden sm:block w-4 h-4 text-slate-300 group-hover:text-teal-500 group-hover:translate-x-1 transition-all duration-300 flex-shrink-0" />
+        </Link>
+
         <Link v-if="hasModulePermission('patrimonio')" href="/assets"
           class="group flex flex-col sm:flex-row items-center gap-1.5 sm:gap-4 p-1 sm:p-5 text-center sm:text-left rounded-2xl sm:bg-white hover:bg-slate-100/60 sm:hover:bg-slate-50/50 sm:border-2 sm:border-slate-100 sm:hover:border-slate-200 sm:shadow-sm sm:hover:shadow-md sm:hover:-translate-y-0.5 active:bg-slate-100 transition-all duration-300">
           <div
@@ -341,6 +351,7 @@ import {
   Heart,
   Box,
   GraduationCap,
+  Wallet,
   ChevronRight
 } from 'lucide-vue-next';
 
@@ -402,7 +413,7 @@ const hasModulePermission = (module, action = 'ver') => {
     return module === 'bienestar';
   }
   if (user.rol_id === 'ROL009' || user.customRole?.codigo === 'jefe_rrhh') {
-    return module === 'recursos_humanos';
+    return ['recursos_humanos', 'planillas'].includes(module);
   }
   if (user.rol_id === 'ROL010' || user.customRole?.codigo === 'gestor_citas') {
     return module === 'secretaria';
@@ -421,6 +432,7 @@ const hasModulePermission = (module, action = 'ver') => {
     'bienestar':        ['bienestar', 'licencias'],
     'patrimonio':       ['patrimonio', 'bienes'],
     'utilitarios':      ['utilitarios'],
+    'planillas':        ['planillas'],
   };
 
   const dbKeys = mapping[module];

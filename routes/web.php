@@ -281,6 +281,121 @@ Route::middleware('auth')->group(function () {
         Route::get('/{papeleta}/pdf', [PapeletaAdminController::class, 'generatePdf'])->name('pdf');
     });
 
+    // Planillas y Remuneraciones
+    Route::middleware('role:ROL001,ROL009')->prefix('planillas')->name('planillas.')->group(function () {
+        Route::get('/', [App\Http\Controllers\PlanillaController::class, 'index'])->name('index');
+
+        // Remuneraciones base
+        Route::get('/remuneraciones', [App\Http\Controllers\PlanillaController::class, 'getRemuneraciones'])->name('remuneraciones.list');
+        Route::post('/remuneraciones', [App\Http\Controllers\PlanillaController::class, 'storeRemuneracion'])->name('remuneraciones.store');
+        Route::put('/remuneraciones/{id}', [App\Http\Controllers\PlanillaController::class, 'updateRemuneracion'])->name('remuneraciones.update');
+        Route::delete('/remuneraciones/{id}', [App\Http\Controllers\PlanillaController::class, 'deleteRemuneracion'])->name('remuneraciones.delete');
+
+        // Perfil de planilla por empleado
+        Route::get('/consultar-dni', [App\Http\Controllers\PlanillaController::class, 'consultarDniEmpleado'])->name('consultar-dni');
+        Route::post('/empleados', [App\Http\Controllers\PlanillaController::class, 'storeEmpleado'])->name('empleados.store');
+        Route::put('/empleados/{employeeId}/perfil', [App\Http\Controllers\PlanillaController::class, 'updatePerfil'])->name('perfil.update');
+        Route::put('/empleados/{employeeId}/contrato', [App\Http\Controllers\PlanillaController::class, 'updateContrato'])->name('empleados.contrato');
+
+        // Catálogos
+        Route::get('/conceptos', [App\Http\Controllers\PlanillaController::class, 'getConceptos'])->name('conceptos.list');
+        Route::post('/conceptos', [App\Http\Controllers\PlanillaController::class, 'storeConcepto'])->name('conceptos.store');
+        Route::put('/conceptos/{id}', [App\Http\Controllers\PlanillaController::class, 'updateConcepto'])->name('conceptos.update');
+        Route::delete('/conceptos/{id}', [App\Http\Controllers\PlanillaController::class, 'deleteConcepto'])->name('conceptos.destroy');
+        Route::get('/regimenes-pensionarios', [App\Http\Controllers\PlanillaController::class, 'getRegimenes'])->name('regimenes.list');
+        Route::post('/regimenes-pensionarios', [App\Http\Controllers\PlanillaController::class, 'storeRegimen'])->name('regimenes.store');
+        Route::put('/regimenes-pensionarios/{id}', [App\Http\Controllers\PlanillaController::class, 'updateRegimen'])->name('regimenes.update');
+        Route::delete('/regimenes-pensionarios/{id}', [App\Http\Controllers\PlanillaController::class, 'deleteRegimen'])->name('regimenes.destroy');
+
+        // Parámetros de planilla (UIT, % tope EsSalud, RMV, tasa)
+        Route::get('/parametros', [App\Http\Controllers\PlanillaController::class, 'getParametros'])->name('parametros.list');
+        Route::put('/parametros/{id}', [App\Http\Controllers\PlanillaController::class, 'updateParametro'])->name('parametros.update');
+
+        // Parámetros SBS AFP (aporte, prima, RMA y comisiones por mes de devengue)
+        Route::get('/parametros-afp', [App\Http\Controllers\PlanillaController::class, 'getParametrosAfp'])->name('parametros-afp.list');
+        Route::put('/parametros-afp/{id}', [App\Http\Controllers\PlanillaController::class, 'updateParametroAfp'])->name('parametros-afp.update');
+        Route::put('/comisiones-afp/{id}', [App\Http\Controllers\PlanillaController::class, 'updateComisionAfp'])->name('comisiones-afp.update');
+
+        // Asignaciones de conceptos (por régimen o por empleado)
+        Route::get('/asignaciones', [App\Http\Controllers\PlanillaController::class, 'getAsignaciones'])->name('asignaciones.list');
+        Route::get('/asignaciones/parametros', [App\Http\Controllers\PlanillaController::class, 'getAsignacionParametros'])->name('asignaciones.parametros');
+        Route::post('/asignaciones', [App\Http\Controllers\PlanillaController::class, 'storeAsignacion'])->name('asignaciones.store');
+        Route::put('/asignaciones/{id}', [App\Http\Controllers\PlanillaController::class, 'updateAsignacion'])->name('asignaciones.update');
+        Route::delete('/asignaciones/{id}', [App\Http\Controllers\PlanillaController::class, 'deleteAsignacion'])->name('asignaciones.destroy');
+
+        // Bancos (catálogo administrable)
+        Route::get('/catalogos-empleados', [App\Http\Controllers\PlanillaController::class, 'getCatalogosEmpleados'])->name('catalogos-empleados.list');
+        Route::get('/bancos', [App\Http\Controllers\PlanillaController::class, 'getBancos'])->name('bancos.list');
+        Route::post('/bancos', [App\Http\Controllers\PlanillaController::class, 'storeBanco'])->name('bancos.store');
+        Route::put('/bancos/{id}', [App\Http\Controllers\PlanillaController::class, 'updateBanco'])->name('bancos.update');
+        Route::delete('/bancos/{id}', [App\Http\Controllers\PlanillaController::class, 'deleteBanco'])->name('bancos.destroy');
+
+        // Clasificador Económico de Gastos MEF/DGPP (catálogo y reglas)
+        Route::get('/mef/clasificador-gasto', [App\Http\Controllers\MefClasificadorGastoController::class, 'index'])->name('mef.catalogo.index');
+        Route::post('/mef/clasificador-gasto', [App\Http\Controllers\MefClasificadorGastoController::class, 'store'])->name('mef.catalogo.store');
+        Route::get('/mef/clasificador-gasto/{anio}/validar/{codigo}', [App\Http\Controllers\MefClasificadorGastoController::class, 'validar'])
+            ->where(['anio' => '\d{4}', 'codigo' => '[\d.]+'])->name('mef.catalogo.validar');
+        Route::get('/mef/clasificador-gasto/{anio}/{codigo}/hijos', [App\Http\Controllers\MefClasificadorGastoController::class, 'hijos'])
+            ->where(['anio' => '\d{4}', 'codigo' => '[\d.]+'])->name('mef.catalogo.hijos');
+        Route::get('/mef/clasificador-gasto/{id}/historial', [App\Http\Controllers\MefClasificadorGastoController::class, 'historial'])->name('mef.catalogo.historial');
+        Route::get('/mef/clasificador-gasto/{anio}/{codigo}', [App\Http\Controllers\MefClasificadorGastoController::class, 'show'])
+            ->where(['anio' => '\d{4}', 'codigo' => '[\d.]+'])->name('mef.catalogo.show');
+        Route::put('/mef/clasificador-gasto/{id}', [App\Http\Controllers\MefClasificadorGastoController::class, 'update'])->name('mef.catalogo.update');
+        Route::delete('/mef/clasificador-gasto/{id}', [App\Http\Controllers\MefClasificadorGastoController::class, 'destroy'])->name('mef.catalogo.destroy');
+
+        Route::get('/mef/reglas', [App\Http\Controllers\MefClasificadorGastoController::class, 'reglas'])->name('mef.reglas.list');
+        Route::post('/mef/reglas', [App\Http\Controllers\MefClasificadorGastoController::class, 'storeRegla'])->name('mef.reglas.store');
+        Route::put('/mef/reglas/{id}', [App\Http\Controllers\MefClasificadorGastoController::class, 'updateRegla'])->name('mef.reglas.update');
+        Route::delete('/mef/reglas/{id}', [App\Http\Controllers\MefClasificadorGastoController::class, 'destroyRegla'])->name('mef.reglas.destroy');
+
+        // Tardanzas (hoja «Dscto. Tard.»: registro manual por empleado/día)
+        Route::get('/tardanzas', [App\Http\Controllers\PlanillaController::class, 'getTardanzas'])->name('tardanzas.list');
+        Route::post('/tardanzas', [App\Http\Controllers\PlanillaController::class, 'storeTardanza'])->name('tardanzas.store');
+        Route::put('/tardanzas/{id}', [App\Http\Controllers\PlanillaController::class, 'updateTardanza'])->name('tardanzas.update');
+        Route::delete('/tardanzas/{id}', [App\Http\Controllers\PlanillaController::class, 'deleteTardanza'])->name('tardanzas.destroy');
+
+        // Notas/anotaciones por empleado (persisten entre planillas)
+        Route::get('/notas', [App\Http\Controllers\PlanillaController::class, 'getNotas'])->name('notas.list');
+        Route::post('/notas', [App\Http\Controllers\PlanillaController::class, 'storeNota'])->name('notas.store');
+        Route::put('/notas/{id}', [App\Http\Controllers\PlanillaController::class, 'updateNota'])->name('notas.update');
+        Route::delete('/notas/{id}', [App\Http\Controllers\PlanillaController::class, 'deleteNota'])->name('notas.destroy');
+
+        // Licencias por empleado (las sin goce APROBADAS descuentan días de
+        // planilla; si cubren el periodo completo, el empleado se excluye)
+        Route::get('/licencias', [App\Http\Controllers\PlanillaController::class, 'getLicencias'])->name('licencias.list');
+        Route::post('/licencias', [App\Http\Controllers\PlanillaController::class, 'storeLicencia'])->name('licencias.store');
+        Route::put('/licencias/{id}', [App\Http\Controllers\PlanillaController::class, 'updateLicencia'])->name('licencias.update');
+        Route::delete('/licencias/{id}', [App\Http\Controllers\PlanillaController::class, 'deleteLicencia'])->name('licencias.destroy');
+
+        // Gratificaciones CAS (Ley 32563 / DS 142-2026-EF)
+        Route::get('/gratificaciones', [App\Http\Controllers\GratificacionController::class, 'getGratificaciones'])->name('gratificaciones.list');
+        Route::post('/gratificaciones/preview', [App\Http\Controllers\GratificacionController::class, 'previsualizarGratificaciones'])->name('gratificaciones.preview');
+        Route::post('/gratificaciones/generar', [App\Http\Controllers\GratificacionController::class, 'generarGratificaciones'])->name('gratificaciones.generar');
+        Route::get('/gratificaciones/parametros', [App\Http\Controllers\GratificacionController::class, 'getParametros'])->name('gratificaciones.parametros');
+        Route::put('/gratificaciones/parametros/{id}', [App\Http\Controllers\GratificacionController::class, 'updateParametro'])->name('gratificaciones.parametros.update');
+
+        // Periodos y generación de planilla
+        Route::get('/summary', [App\Http\Controllers\PlanillaController::class, 'getSummary'])->name('summary');
+        Route::get('/resumen', [App\Http\Controllers\PlanillaController::class, 'getResumen'])->name('resumen');
+        Route::get('/resumen-planilla/export/{format}', [App\Http\Controllers\PlanillaController::class, 'exportResumenPlanilla'])->name('resumen-planilla.export');
+        Route::get('/resumen-planilla', [App\Http\Controllers\PlanillaController::class, 'getResumenPlanilla'])->name('resumen-planilla');
+        Route::get('/periodos', [App\Http\Controllers\PlanillaController::class, 'getPeriodos'])->name('periodos.list');
+        Route::post('/periodos', [App\Http\Controllers\PlanillaController::class, 'storePeriodo'])->name('periodos.store');
+        Route::post('/periodos/{id}/generar', [App\Http\Controllers\PlanillaController::class, 'generarPeriodo'])->name('periodos.generar');
+        Route::get('/periodos/{id}/detalle', [App\Http\Controllers\PlanillaController::class, 'getPeriodoDetalle'])->name('periodos.detalle');
+        Route::delete('/periodos/{id}', [App\Http\Controllers\PlanillaController::class, 'deletePeriodo'])->name('periodos.destroy');
+
+        // Boletas de pago. El orden importa: `configuracion` y `periodo/...`
+        // deben declararse antes que `{detalle}` para no ser capturados por él.
+        Route::get('/boletas', [App\Http\Controllers\BoletaController::class, 'index'])->name('boletas.index');
+        Route::get('/boletas/configuracion', [App\Http\Controllers\BoletaController::class, 'getConfiguracion'])->name('boletas.configuracion');
+        Route::put('/boletas/configuracion', [App\Http\Controllers\BoletaController::class, 'updateConfiguracion'])->name('boletas.configuracion.update');
+        Route::get('/boletas/periodo/{periodoId}', [App\Http\Controllers\BoletaController::class, 'listar'])->name('boletas.listar');
+        Route::get('/boletas/periodo/{periodoId}/pdf-zip', [App\Http\Controllers\BoletaController::class, 'pdfZip'])->name('boletas.pdf-zip');
+        Route::get('/boletas/{detalle}', [App\Http\Controllers\BoletaController::class, 'show'])->name('boletas.show');
+        Route::get('/boletas/{detalle}/pdf', [App\Http\Controllers\BoletaController::class, 'pdf'])->name('boletas.pdf');
+    });
+
     // Asistencia - Marcas de entrada/salida
     Route::middleware('role:ROL009,ROL012')->prefix('asistencia')->name('asistencia.')->group(function () {
         Route::get('/', [App\Http\Controllers\AsistenciaController::class, 'index'])->name('index');

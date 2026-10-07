@@ -1,0 +1,199 @@
+@startuml
+' SGCI DRE Huanuco - Esquema de Base de Datos - Modulo Planillas y Remuneraciones
+' Generado para la documentacion del desarrollo de planillas.
+
+title SGCI DRE Huanuco — Esquema de Planillas y Remuneraciones
+
+skinparam linetype ortho
+skinparam nodesep 45
+skinparam ranksep 55
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam entity {
+  BackgroundColor #FFFFFF
+  BorderColor #334155
+  FontColor #0F172A
+  FontSize 12
+}
+skinparam ArrowColor #64748B
+
+' =========================================================
+' Tablas del modulo (implementadas)
+' =========================================================
+
+entity "employee_remunerations" as employee_remunerations {
+  * id : char(36) <<PK>>
+  --
+  * employee_id : char(36) <<FK>>
+  * monto : decimal(10,2)
+  * tipo : varchar(191) = BASICA
+  * desde : date
+    hasta : date
+    motivo : varchar(191)
+    created_by : bigint <<FK>>
+  --
+    created_at : timestamp
+    updated_at : timestamp
+}
+
+entity "planilla_conceptos" as planilla_conceptos {
+  * id : char(36) <<PK>>
+  * codigo : varchar(191) <<UK>>
+  * nombre : varchar(191)
+  * tipo : enum(INGRESO, DESCUENTO, APORTACION)
+  --
+    categoria : varchar(191)
+    afecto_renta5 : boolean = false
+    afecto_essalud : boolean = true
+    afecto_onp : boolean = true
+    afecto_afp : boolean = true
+    es_porcentaje : boolean = false
+    valor : decimal(12,5)
+    orden : int = 0
+    activo : boolean = true
+}
+
+entity "planilla_concepto_asignaciones" as planilla_concepto_asignaciones {
+  * id : char(36) <<PK>>
+  --
+  * concepto_id : char(36) <<FK>>
+    employee_id : char(36) <<FK>>
+    contract_type_id : char(36) <<FK>>
+    monto : decimal(10,2)
+    porcentaje : decimal(8,5)
+    desde : date
+    hasta : date
+    activo : boolean = true
+}
+
+entity "employee_payroll_profiles" as employee_payroll_profiles {
+  * id : char(36) <<PK>>
+  * employee_id : char(36) <<FK>> <<UK>>
+  --
+    regimen_pensionario_id : char(36) <<FK>>
+    cuspp : varchar(191)
+    banco_id : char(36) <<FK>>
+    cuenta_ahorro : varchar(191)
+}
+
+entity "planilla_regimenes_pensionarios" as planilla_regimenes_pensionarios {
+  * id : char(36) <<PK>>
+  * nombre : varchar(191) <<UK>>
+  * tipo : enum(ONP, AFP) = AFP
+  --
+    aporte_obligatorio : decimal(8,5) = 0.10000
+    prima_seguro : decimal(8,5) = 0.01370
+    comision_flujo : decimal(8,5)
+    comision_mixta : decimal(8,5)
+    comision_fija : decimal(8,5)
+    activo : boolean = true
+}
+
+entity "planilla_bancos" as planilla_bancos {
+  * id : char(36) <<PK>>
+  * nombre : varchar(191) <<UK>>
+  --
+    codigo : varchar(20)
+    activo : boolean = true
+}
+
+entity "planilla_periodos" as planilla_periodos {
+  * id : char(36) <<PK>>
+  --
+  * anio : smallint
+  * mes : tinyint
+    fecha_inicio : date
+    fecha_fin : date
+  * estado : enum(BORRADOR, CALCULADA, APROBADA, PAGADA, CERRADA) = BORRADOR
+  * total_empleados : int = 0
+  * total_neto : decimal(12,2) = 0
+}
+
+entity "planilla_detalles" as planilla_detalles {
+  * id : char(36) <<PK>>
+  --
+  * periodo_id : char(36) <<FK>>
+  * employee_id : char(36) <<FK>>
+  * remuneracion_base : decimal(10,2) = 0
+  * total_ingresos : decimal(10,2) = 0
+  * total_descuentos : decimal(10,2) = 0
+  * total_aportaciones : decimal(10,2) = 0
+  * neto_pagar : decimal(10,2) = 0
+}
+
+entity "planilla_detalle_items" as planilla_detalle_items {
+  * id : char(36) <<PK>>
+  --
+  * detalle_id : char(36) <<FK>>
+    concepto_id : char(36) <<FK>>
+  * tipo : varchar(191)
+  * descripcion : varchar(191)
+  * base_calculo : decimal(10,2) = 0
+    porcentaje : decimal(8,5)
+  * monto : decimal(10,2) = 0
+  * orden : int = 0
+}
+
+' =========================================================
+' Tablas reutilizadas del sistema
+' =========================================================
+
+entity "employees" as employees {
+  * id : char(36) <<PK>>
+  --
+    person_id : char(36) <<FK>>
+    contract_type_id : char(36) <<FK>>
+    direction_id : char(36) <<FK>>
+    office_id : char(36) <<FK>>
+    position_id : char(36) <<FK>>
+    fecha_ingreso : date
+    estado : enum(ACTIVO, INACTIVO, LICENCIA, VACACIONES)
+}
+
+entity "people" as people {
+  * id : char(36) <<PK>>
+  * dni : varchar(8) <<UK>>
+  * nombres : varchar(100)
+  * apellidos : varchar(100)
+    email : varchar(150)
+}
+
+entity "hr_contract_types" as hr_contract_types {
+  * id : char(36) <<PK>>
+  * nombre : varchar(191) <<UK>>
+    activo : boolean = true
+}
+
+' =========================================================
+' Relaciones (crow's foot)
+' =========================================================
+
+people ||--o| employees : person_id
+hr_contract_types ||--o{ employees : contract_type_id
+
+employees ||--o{ employee_remunerations : employee_id
+employees ||--o| employee_payroll_profiles : employee_id
+employees ||--o{ planilla_concepto_asignaciones : employee_id
+
+hr_contract_types ||--o{ planilla_concepto_asignaciones : contract_type_id
+planilla_conceptos ||--o{ planilla_concepto_asignaciones : concepto_id
+
+planilla_regimenes_pensionarios ||--o{ employee_payroll_profiles : regimen_pensionario_id
+planilla_bancos ||--o{ employee_payroll_profiles : banco_id
+
+planilla_periodos ||--o{ planilla_detalles : periodo_id
+employees ||--o{ planilla_detalles : employee_id
+planilla_detalles ||--o{ planilla_detalle_items : detalle_id
+planilla_conceptos ||--o{ planilla_detalle_items : concepto_id
+
+' =========================================================
+' Nota
+' =========================================================
+note as N1
+  Las tablas existentes (employees, people, users, etc.) son MyISAM.
+  MyISAM no soporta FOREIGN KEY, por lo que las tablas del modulo
+  no declaran FK fisicas: las columnas *_id son indices con
+  integridad referencial a nivel de aplicacion.
+end note
+
+@enduml
