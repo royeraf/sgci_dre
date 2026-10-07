@@ -46,11 +46,6 @@ class PlanillaController extends Controller
     // ========== REMUNERACIONES ==========
 
     /**
-     * Régimen contractual administrado por el módulo de planillas.
-     */
-    private const REGIMEN_PLANILLA = 'CAS';
-
-    /**
      * Empleados CAS activos con su remuneración base vigente y perfil de pensión.
      */
     public function getRemuneraciones()
@@ -68,9 +63,7 @@ class PlanillaController extends Controller
         ])
             ->withCount(['conceptoAsignaciones as asignaciones_count'])
             ->where('estado', 'ACTIVO')
-            ->whereHas('contractType', function ($query) {
-                $query->whereRaw('UPPER(nombre) = ?', [self::REGIMEN_PLANILLA]);
-            })
+            ->delRegimenPlanilla()
             ->get()
             ->sortBy('apellidos', SORT_NATURAL | SORT_FLAG_CASE)
             ->values()
@@ -248,9 +241,7 @@ class PlanillaController extends Controller
 
         $employees = Employee::with('person')
             ->where('estado', 'ACTIVO')
-            ->whereHas('contractType', function ($query) {
-                $query->whereRaw('UPPER(nombre) = ?', [self::REGIMEN_PLANILLA]);
-            })
+            ->delRegimenPlanilla()
             ->get()
             ->sortBy('apellidos', SORT_NATURAL | SORT_FLAG_CASE)
             ->values()
@@ -923,9 +914,7 @@ class PlanillaController extends Controller
 
         $empleados = Employee::with('person', 'remunerations')
             ->where('estado', 'ACTIVO')
-            ->whereHas('contractType', function ($query) {
-                $query->whereRaw('UPPER(nombre) = ?', [self::REGIMEN_PLANILLA]);
-            })
+            ->delRegimenPlanilla()
             ->get()
             ->filter(fn (Employee $empleado) => $generador->remuneracionVigente($empleado, $cierre) > 0
                 && $generador->diasPagados($empleado, $periodo) > 0)
@@ -2041,9 +2030,7 @@ class PlanillaController extends Controller
         $fecha = $ultimo?->fechaCierre() ?? Carbon::now();
 
         $personal = Employee::where('estado', 'ACTIVO')
-            ->whereHas('contractType', function ($query) {
-                $query->whereRaw('UPPER(nombre) = ?', [self::REGIMEN_PLANILLA]);
-            })
+            ->delRegimenPlanilla()
             ->whereHas('remunerations', function ($query) use ($fecha) {
                 $query->where('monto', '>', 0)
                     ->where('desde', '<=', $fecha)

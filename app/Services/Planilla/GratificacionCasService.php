@@ -256,9 +256,7 @@ class GratificacionCasService
     {
         return Employee::with(['person', 'position', 'contractType', 'remunerations'])
             ->where('estado', 'ACTIVO')
-            ->whereHas('contractType', function ($query) {
-                $query->whereRaw('UPPER(nombre) = ?', ['CAS']);
-            })
+            ->delRegimenPlanilla()
             ->get()
             ->sortBy('apellidos', SORT_NATURAL | SORT_FLAG_CASE)
             ->values();

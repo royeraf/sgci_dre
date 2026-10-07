@@ -16,6 +16,13 @@ class Employee extends Model
 
     public const MODALIDAD_TRANSITORIO = 'TRANSITORIO';
 
+    /**
+     * Régimen al que aplica el módulo de planillas. El nombre real del tipo
+     * de contrato varía según la data ("CAS", "CAS N.° 1057"), por lo que
+     * el scope {@see scopeDelRegimenPlanilla} hace coincidencia por prefijo.
+     */
+    public const REGIMEN_PLANILLA = 'CAS';
+
     protected $fillable = [
         'person_id',
         'direction_id',
@@ -299,5 +306,16 @@ class Employee extends Model
     public function scopeWithAllRelations($query)
     {
         return $query->with(['person', 'direction', 'position', 'office', 'contractType']);
+    }
+
+    /**
+     * Empleados cuyo tipo de contrato pertenece al régimen de planillas.
+     * Coincide por prefijo para tolerar variantes como "CAS N.° 1057".
+     */
+    public function scopeDelRegimenPlanilla($query)
+    {
+        return $query->whereHas('contractType', function ($q) {
+            $q->whereRaw('UPPER(nombre) LIKE ?', [mb_strtoupper(self::REGIMEN_PLANILLA) . '%']);
+        });
     }
 }
