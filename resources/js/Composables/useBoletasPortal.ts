@@ -1,6 +1,5 @@
 import { ref } from 'vue';
 import axios from 'axios';
-import type { Boleta, EstadoPeriodoBoleta } from './usePlanillasBoletas';
 
 export interface EmpleadoPortal {
     dni: string;
@@ -13,7 +12,7 @@ export interface BoletaPortalPeriodo {
     anio: number;
     mes: number;
     nombre_periodo: string;
-    estado: EstadoPeriodoBoleta;
+    estado: string;
 }
 
 export interface BoletaPortalFila {
@@ -24,7 +23,7 @@ export interface BoletaPortalFila {
     total_ingresos: number;
     total_descuentos: number;
     neto_pagar: number;
-    /** 'YYYY-MM-DD HH:mm:ss' de la confirmación; null = pendiente de revisión. */
+    /** 'YYYY-MM-DD HH:mm:ss' de la confirmación; null = pendiente de recibido. */
     revisada_en: string | null;
 }
 
@@ -37,8 +36,6 @@ export interface BoletaPortalFila {
 export function useBoletasPortal() {
     const empleado = ref<EmpleadoPortal | null>(null);
     const boletas = ref<BoletaPortalFila[]>([]);
-    const boleta = ref<Boleta | null>(null);
-    const boletaSeleccionada = ref<BoletaPortalFila | null>(null);
     const loading = ref(false);
     const guardando = ref(false);
     const error = ref('');
@@ -66,45 +63,20 @@ export function useBoletasPortal() {
         } finally {
             empleado.value = null;
             boletas.value = [];
-            boleta.value = null;
-            boletaSeleccionada.value = null;
             error.value = '';
         }
     };
 
-    const fetchBoleta = async (fila: BoletaPortalFila): Promise<void> => {
-        loading.value = true;
-        boleta.value = null;
-        try {
-            const { data } = await axios.get(`/boletas/${fila.detalle_id}`);
-            boleta.value = data;
-            boletaSeleccionada.value = fila;
-        } catch (err) {
-            error.value = (err as { response?: { data?: { message?: string } } }).response?.data?.message
-                || 'No se pudo cargar la boleta. Consulte nuevamente con su DNI.';
-        } finally {
-            loading.value = false;
-        }
-    };
-
-    const cerrarBoleta = (): void => {
-        boleta.value = null;
-        boletaSeleccionada.value = null;
-    };
-
-    /** Confirmación de revisión; idempotente en el servidor. */
+    /** Confirmación de recibido; idempotente en el servidor. */
     const revisar = async (fila: BoletaPortalFila): Promise<string | null> => {
         guardando.value = true;
         try {
             const { data } = await axios.post(`/boletas/${fila.detalle_id}/revisar`);
             fila.revisada_en = data.revisada_en;
-            if (boletaSeleccionada.value?.detalle_id === fila.detalle_id) {
-                boletaSeleccionada.value.revisada_en = data.revisada_en;
-            }
             return data.revisada_en as string;
         } catch (err) {
             error.value = (err as { response?: { data?: { message?: string } } }).response?.data?.message
-                || 'No se pudo confirmar la revisión. Consulte nuevamente con su DNI.';
+                || 'No se pudo confirmar el recibido. Consulte nuevamente con su DNI.';
             return null;
         } finally {
             guardando.value = false;
@@ -116,15 +88,11 @@ export function useBoletasPortal() {
     return {
         empleado,
         boletas,
-        boleta,
-        boletaSeleccionada,
         loading,
         guardando,
         error,
         consultar,
         salir,
-        fetchBoleta,
-        cerrarBoleta,
         revisar,
         urlPdf,
     };

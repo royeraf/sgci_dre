@@ -9,10 +9,10 @@
             </template>
 
             <template #actions>
-                <a href="/boletas" target="_blank" rel="noopener" title="Consulta pública de boletas por DNI (abre en una pestaña nueva)"
+                <a href="/boletas" target="_blank" rel="noopener" title="Consulta pública de boletas electrónicas por DNI (abre en una pestaña nueva)"
                     class="cursor-pointer inline-flex items-center px-4 py-2.5 text-sm font-bold rounded-xl border-2 border-teal-200 bg-teal-50 text-teal-700 hover:bg-teal-100 transition-all duration-200">
                     <ExternalLink class="w-4 h-4 mr-2" />
-                    Portal de trabajadores
+                    Boletas electrónicas
                 </a>
                 <button @click="abrirConfiguracion"
                     class="cursor-pointer inline-flex items-center px-4 py-2.5 text-sm font-bold rounded-xl border-2 border-slate-200 bg-white text-slate-700 hover:bg-slate-50 transition-all duration-200">
@@ -70,7 +70,7 @@
                             <th class="text-right font-bold uppercase text-[11px] tracking-widest px-5 py-3">Remuneraciones</th>
                             <th class="text-right font-bold uppercase text-[11px] tracking-widest px-5 py-3">Retenciones</th>
                             <th class="text-right font-bold uppercase text-[11px] tracking-widest px-5 py-3">Neto</th>
-                            <th class="text-center font-bold uppercase text-[11px] tracking-widest px-5 py-3">Revisada</th>
+                            <th class="text-center font-bold uppercase text-[11px] tracking-widest px-5 py-3">Recibido</th>
                             <th class="text-center font-bold uppercase text-[11px] tracking-widest px-5 py-3">Acciones</th>
                         </tr>
                     </thead>

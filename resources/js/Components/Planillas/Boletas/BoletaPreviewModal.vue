@@ -35,10 +35,10 @@
                         {{ guardando ? 'Confirmando…' : 'Confirmar que revisé esta boleta' }}
                     </button>
                     <span v-else-if="mostrarConfirmacion && revisada"
-                        :title="`Revisada el ${fechaHora(revisada)}`"
+                        :title="`Recibida el ${fechaHora(revisada)}`"
                         class="inline-flex items-center px-4 py-2 text-sm font-bold rounded-xl bg-emerald-100 text-emerald-700">
                         <CheckCircle class="w-4 h-4 mr-2" />
-                        Revisada el {{ fecha(revisada) }}
+                        Recibida el {{ fecha(revisada) }}
                     </span>
                     <button @click="onPdf"
                         class="cursor-pointer inline-flex items-center px-4 py-2 text-sm font-bold rounded-xl border-2 border-slate-200 bg-white text-slate-700 hover:bg-slate-50 transition-all">
