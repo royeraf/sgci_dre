@@ -114,6 +114,8 @@ Route::middleware('throttle:examen-intento')->post('/utilitarios/examen/{evento:
 Route::middleware('throttle:30,1')->get('/boletas', [App\Http\Controllers\BoletaPortalController::class, 'index'])->name('boletas.portal');
 Route::middleware('throttle:boletas-consultar')->post('/boletas/consultar', [App\Http\Controllers\BoletaPortalController::class, 'consultar'])->name('boletas.portal.consultar');
 Route::post('/boletas/salir', [App\Http\Controllers\BoletaPortalController::class, 'salir'])->name('boletas.portal.salir');
+// Verificación pública por QR impreso en la boleta: no exige identificación.
+Route::middleware('throttle:30,1')->get('/boletas/verificar/{id}', [App\Http\Controllers\BoletaPortalController::class, 'verificar'])->name('boletas.portal.verificar')->whereUuid('id');
 Route::get('/boletas/{detalle}', [App\Http\Controllers\BoletaPortalController::class, 'show'])->name('boletas.portal.show');
 Route::get('/boletas/{detalle}/pdf', [App\Http\Controllers\BoletaPortalController::class, 'pdf'])->name('boletas.portal.pdf');
 Route::post('/boletas/{detalle}/revisar', [App\Http\Controllers\BoletaPortalController::class, 'revisar'])->name('boletas.portal.revisar');

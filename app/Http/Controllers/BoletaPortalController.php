@@ -92,6 +92,32 @@ class BoletaPortalController extends Controller
     }
 
     /**
+     * Verificación pública por QR (impreso en el PDF): no requiere
+     * identificación. Responde 200 siempre; si el identificador no corresponde
+     * a una boleta visible, se indica con `boleta: null` (página «No válida»).
+     */
+    public function verificar(string $id)
+    {
+        $detalle = PlanillaDetalle::with('periodo')->find($id);
+
+        $periodo = $detalle?->periodo;
+
+        $visible = $detalle !== null
+            && $periodo !== null
+            && in_array($periodo->estado, PlanillaPeriodo::ESTADOS_BOLETA_VISIBLE, true);
+
+        return Inertia::render('Boletas/Verificar', [
+            'boleta' => $visible ? [
+                'codigo_boleta' => $this->boletas->codigoDeDetalle($detalle),
+                'periodo' => $periodo->nombre_periodo,
+                'apellidos_nombres' => $detalle->employee?->nombre_completo,
+                'cargo' => $detalle->employee?->cargo,
+                'fecha_emision' => $detalle->created_at?->toDateTimeString(),
+            ] : null,
+        ]);
+    }
+
+    /**
      * Vista previa de una boleta propia.
      */
     public function show(Request $request, PlanillaDetalle $detalle)

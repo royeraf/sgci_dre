@@ -9,6 +9,8 @@ use App\Models\PlanillaPeriodo;
 use App\Models\PlanillaTardanza;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
+use Endroid\QrCode\Builder\Builder;
+use Endroid\QrCode\Writer\PngWriter;
 use Illuminate\Support\Collection;
 
 /**
@@ -264,6 +266,40 @@ class BoletaService
     }
 
     /**
+     * QR de verificación de la boleta (PNG data-URI) que apunta a la página
+     * pública /boletas/verificar/{id}. Se imprime en el PDF y en la vista
+     * previa: escanearlo permite comprobar la autenticidad del documento.
+     */
+    public function qrVerificacion(string $detalleId): string
+    {
+        $url = rtrim(config('app.url'), '/') . '/boletas/verificar/' . $detalleId;
+
+        return Builder::create()
+            ->writer(new PngWriter())
+            ->data($url)
+            ->size(150)
+            ->margin(4)
+            ->build()
+            ->getDataUri();
+    }
+
+    /**
+     * Código BOL-... de un detalle puntual, resolviendo su posición en el
+     * orden del periodo. Lo usa la verificación pública por QR.
+     */
+    public function codigoDeDetalle(PlanillaDetalle $detalle): string
+    {
+        $detalle->loadMissing('periodo');
+
+        $periodo = $detalle->periodo;
+
+        $indice = $this->detallesOrdenados($periodo)
+            ->search(fn (PlanillaDetalle $d) => $d->id === $detalle->id);
+
+        return $this->codigoBoleta($periodo, $indice === false ? 0 : $indice);
+    }
+
+    /**
      * Código correlativo dentro del periodo: BOL-2026-09-0001.
      * El correlativo es la posición del trabajador en el detalle del periodo.
      */
@@ -361,6 +397,7 @@ class BoletaService
                 'aportaciones' => (float) $detalle->total_aportaciones,
                 'neto_pagar' => (float) $detalle->neto_pagar,
             ],
+            'qr' => $this->qrVerificacion($detalle->id),
             'fecha_emision' => Carbon::now()->toDateTimeString(),
         ];
     }

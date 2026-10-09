@@ -226,17 +226,16 @@
                             </div>
                         </div>
 
-                        <!-- Firmas -->
-                        <div class="flex items-end gap-8 mt-8 mb-3">
-                            <div class="flex-1 text-center">
-                                <div class="border-t border-slate-900"></div>
-                                <p class="text-[9px] font-bold uppercase mt-1">Firma del trabajador</p>
-                                <p class="text-[9px] text-slate-500">{{ dato(boleta.trabajador.apellidos_nombres) }}</p>
-                            </div>
-                            <div class="flex-1 text-center">
-                                <div class="border-t border-slate-900"></div>
-                                <p class="text-[9px] font-bold uppercase mt-1">Firma del empleador</p>
-                                <p class="text-[9px] text-slate-500">{{ dato(boleta.empresa.razon_social) }}</p>
+                        <!-- Banda de verificación: QR público (idéntico al PDF) -->
+                        <div class="flex items-center gap-3 border-t border-slate-300 mt-3 pt-2">
+                            <img v-if="boleta.qr" :src="boleta.qr" alt="QR de verificación"
+                                class="w-12 h-12 shrink-0" />
+                            <div class="flex-1 min-w-0">
+                                <p class="text-[9px] font-bold uppercase text-slate-800">Verificación de autenticidad</p>
+                                <p class="text-[8px] text-slate-500 leading-snug">
+                                    Escanee el código QR para verificar que esta boleta fue emitida por la
+                                    Dirección Regional de Educación Huánuco.
+                                </p>
                             </div>
                         </div>
                     </div>

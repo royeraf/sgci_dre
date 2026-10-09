@@ -46,7 +46,7 @@
 
             <!-- Resultado: boletas del trabajador -->
             <div v-else class="bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden">
-                <div class="bg-gradient-to-r from-teal-600 to-cyan-600 px-5 sm:px-6 py-4 flex flex-wrap items-center justify-between gap-3">
+                <div class="bg-gradient-to-r from-teal-600 to-cyan-600 px-5 sm:px-6 py-4">
                     <div class="min-w-0">
                         <p class="text-white font-bold text-lg sm:text-xl truncate">{{ empleado.apellidos_nombres }}</p>
                         <p class="text-teal-50 text-sm mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5">
@@ -55,11 +55,6 @@
                             <span>{{ boletas.length }} {{ boletas.length === 1 ? 'boleta' : 'boletas' }}</span>
                         </p>
                     </div>
-                    <button @click="onSalir" :disabled="loading"
-                        class="cursor-pointer shrink-0 inline-flex items-center gap-2 px-4 py-2 text-sm font-bold rounded-xl border-2 border-white/30 text-white hover:bg-white/10 transition-all disabled:opacity-50">
-                        <LogOut class="w-4 h-4" />
-                        Otro DNI
-                    </button>
                 </div>
 
                 <div class="overflow-x-auto">
@@ -116,18 +111,36 @@
                                     </span>
                                 </td>
                                 <td class="px-4 py-3 text-right whitespace-nowrap">
-                                    <button @click="onVer(fila)" title="Ver boleta"
-                                        class="cursor-pointer p-1.5 rounded-lg text-teal-600 hover:bg-teal-50 hover:text-teal-700 transition-all mr-1">
-                                        <Eye class="w-4 h-4" />
+                                    <button v-if="!fila.revisada_en" @click="onConfirmar(fila)" :disabled="guardando"
+                                        title="Confirmar que revisé esta boleta"
+                                        class="cursor-pointer inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg shadow-sm bg-emerald-600 text-white hover:bg-emerald-700 transition-all disabled:opacity-50">
+                                        <Loader2 v-if="guardando" class="w-3.5 h-3.5 animate-spin" />
+                                        <CheckCircle v-else class="w-3.5 h-3.5" />
+                                        Confirmar revisión
                                     </button>
-                                    <button @click="onPdf(fila)" title="Descargar PDF"
-                                        class="cursor-pointer p-1.5 rounded-lg text-cyan-600 hover:bg-cyan-50 hover:text-cyan-700 transition-all">
-                                        <FileText class="w-4 h-4" />
-                                    </button>
+                                    <template v-else>
+                                        <button @click="onVer(fila)" title="Ver boleta"
+                                            class="cursor-pointer p-1.5 rounded-lg text-teal-600 hover:bg-teal-50 hover:text-teal-700 transition-all mr-1">
+                                            <Eye class="w-4 h-4" />
+                                        </button>
+                                        <button @click="onPdf(fila)" title="Descargar PDF"
+                                            class="cursor-pointer p-1.5 rounded-lg text-cyan-600 hover:bg-cyan-50 hover:text-cyan-700 transition-all">
+                                            <FileText class="w-4 h-4" />
+                                        </button>
+                                    </template>
                                 </td>
                             </tr>
                         </tbody>
                     </table>
+                </div>
+
+                <!-- Fuera del marco de la tabla, dentro de la tarjeta -->
+                <div class="px-4 sm:px-5 py-3.5 flex flex-wrap items-center justify-end gap-3">
+                    <button @click="onSalir" :disabled="loading"
+                        class="cursor-pointer inline-flex items-center gap-2 px-4 py-2 text-sm font-bold rounded-xl border-2 border-slate-300 bg-white text-slate-700 hover:bg-slate-100 transition-all disabled:opacity-50">
+                        <LogOut class="w-4 h-4" />
+                        Otro DNI
+                    </button>
                 </div>
             </div>
 
@@ -198,6 +211,45 @@ const onVer = async (fila) => {
 
 const onPdf = (fila) => {
     window.open(urlPdf(fila.detalle_id), '_blank');
+};
+
+/**
+ * El trabajador confirma desde la fila que revisó su boleta: recién entonces
+ * se muestran las acciones de ver/descargar.
+ */
+const onConfirmar = async (fila) => {
+    if (guardando.value) return;
+
+    const result = await window.Swal?.fire({
+        icon: 'question',
+        title: '¿Confirmar revisión?',
+        html: `<p>Quedará registrado que revisó la boleta <strong>${fila.codigo_boleta}</strong> (${fila.periodo.nombre_periodo}).</p>`,
+        showCancelButton: true,
+        confirmButtonText: 'Sí, confirmé mi revisión',
+        cancelButtonText: 'Cancelar',
+        confirmButtonColor: '#059669',
+    });
+
+    if (!result?.isConfirmed) return;
+
+    const fecha = await revisar(fila);
+    if (fecha) {
+        window.Swal?.fire({
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false,
+            timer: 3000,
+            timerProgressBar: true,
+            icon: 'success',
+            title: 'Boleta confirmada. Ya puede verla y descargarla',
+        });
+    } else {
+        window.Swal?.fire({
+            icon: 'error',
+            title: 'No se pudo confirmar',
+            text: error.value || 'Inténtelo nuevamente.',
+        });
+    }
 };
 
 const onRevisar = async () => {

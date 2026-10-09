@@ -209,6 +209,36 @@ class BoletaPortalTest extends TestCase
         $this->assertStringStartsWith('%PDF', $response->getContent());
     }
 
+    public function test_la_pagina_de_verificacion_por_qr_muestra_los_datos(): void
+    {
+        $codigo = app(\App\Services\Planilla\BoletaService::class)->codigoDeDetalle($this->detalle);
+
+        $this->get("/boletas/verificar/{$this->detalle->id}")
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Boletas/Verificar')
+                ->where('boleta.codigo_boleta', $codigo)
+                ->where('boleta.periodo', $this->periodo->nombre_periodo)
+                ->where('boleta.apellidos_nombres', $this->empleado->nombre_completo));
+    }
+
+    public function test_la_pagina_de_verificacion_no_valida_si_no_existe_o_no_es_visible(): void
+    {
+        // Identificador inexistente.
+        $this->get('/boletas/verificar/aaaaaaaa-bbbb-cccc-dddd-eeeeffff0000')
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Boletas/Verificar')
+                ->where('boleta', null));
+
+        // Periodo no visible: deja de ser una boleta vigente.
+        $this->periodo->update(['estado' => 'CALCULADA']);
+
+        $this->get("/boletas/verificar/{$this->detalle->id}")
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page->where('boleta', null));
+    }
+
     public function test_pdf_sin_identificacion_redirige_al_portal_y_no_a_login(): void
     {
         $this->get("/boletas/{$this->detalle->id}/pdf")

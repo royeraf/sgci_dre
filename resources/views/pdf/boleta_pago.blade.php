@@ -128,25 +128,18 @@
             padding: 2px 6px;
         }
 
-        /* Firmas */
-        .firmas td {
+        /* Banda de verificación por QR: 14 mm para que datos + banda sigan
+           cabiendo en una sola página del A5 apaisado (136 mm útiles). */
+        .verificacion td {
             border: none;
-            text-align: center;
-            vertical-align: bottom;
-            padding: 0 10px;
-            height: 15mm;
+            height: 14mm;
         }
-        .firma-linea {
-            display: block;
-            border-top: 0.8px solid #000;
-            margin: 0 4px 2px 4px;
-        }
-        .firma-nombre {
+        .verif-titulo {
             font-size: 6.5px;
             font-weight: bold;
             text-transform: uppercase;
         }
-        .firma-detalle { font-size: 6.2px; color: #475569; }
+        .verif-texto { font-size: 6px; color: #475569; }
     </style>
 </head>
 <body>
@@ -167,15 +160,14 @@
     ];
     $maxConceptos = max(array_map(fn ($c) => count($c['items']), $columnas));
 
-    // Altura reservada a los datos, para que el bloque de firmas caiga siempre
-    // en la misma posición haya uno o siete conceptos. La caja útil del A5
-    // apaisado es 148 - 6 - 6 = 136 mm; 120 mm de datos dejan 15 mm de firma
-    // más un pequeño aire. Si algún dia el contenido no cabe en 120 mm, la
-    // celda crece y las firmas bajan (nunca se cortan ni salen a otra pagina).
-    $altoDatos = 120;
+    // La boleta no lleva firmas: los datos ocupan 116 mm y la banda inferior
+    // de 18 mm aloja el QR de verificación. Caja útil del A5 apaisado:
+    // 148 - 6 - 6 = 136 mm. Si el contenido supera los 116 mm, la celda
+    // crece sin cortarse y la banda del QR baja (nunca sale de la pagina).
+    $altoDatos = 116;
 @endphp
 
-<!-- Todo lo anterior a las firmas, en un bloque de altura fija -->
+<!-- Todo el contenido en un bloque de altura fija -->
 <table style="width: 100%; border: none;">
     <tr>
         <td style="border: none; padding: 0; height: {{ $altoDatos }}mm; vertical-align: top;">
@@ -343,18 +335,16 @@
     </tr>
 </table>
 
-<!-- Firmas: banda fija de 15 mm anclada al fondo de la caja de contenido -->
-<table class="firmas" style="margin-top: 2px;">
+<!-- Banda de verificación: QR público + leyenda, en una sola línea de alto.
+     QR y textos van en la MISMA celda (DomPDF reparte columnas en partes
+     iguales) y los textos se alinean al centro del QR con vertical-align
+     para que la banda no crezca de 18 mm y quepa en una sola página. -->
+<table class="verificacion" style="margin-top: 0;">
     <tr>
-        <td style="width: 50%;">
-            <span class="firma-linea"></span>
-            <span class="firma-nombre">Firma del trabajador</span><br>
-            <span class="firma-detalle">{{ $sinDato($trabajador['apellidos_nombres']) }}</span>
-        </td>
-        <td style="width: 50%;">
-            <span class="firma-linea"></span>
-            <span class="firma-nombre">Firma del empleador</span><br>
-            <span class="firma-detalle">{{ $sinDato($empresa['razon_social']) }}</span>
+        <td style="border: none; padding: 0; vertical-align: middle;">
+            <img src="{{ $boleta['qr'] }}" style="width: 12mm; height: 12mm; vertical-align: middle; margin-right: 4px;"><span
+                style="vertical-align: middle; display: inline-block;"><span class="verif-titulo">Verificación de autenticidad</span><br><span
+                    class="verif-texto">Escanee el código QR para verificar que esta boleta fue emitida por la Dirección Regional de Educación Huánuco.</span></span>
         </td>
     </tr>
 </table>

@@ -278,6 +278,44 @@ class BoletaTest extends TestCase
         $this->assertContains($segundo->id, array_column($boletas, 'detalle_id'));
     }
 
+    public function test_arma_incluye_el_qr_de_verificacion(): void
+    {
+        $boleta = app(BoletaService::class)->armar($this->detalle);
+
+        $this->assertStringStartsWith('data:image/png;base64,', $boleta['qr']);
+
+        $png = base64_decode(substr($boleta['qr'], strlen('data:image/png;base64,')), true);
+
+        $this->assertIsString($png);
+        $this->assertStringStartsWith("\x89PNG", $png);
+    }
+
+    public function test_el_pdf_embebe_el_qr_de_verificacion(): void
+    {
+        $boleta = app(BoletaService::class)->armar($this->detalle);
+
+        $html = view('pdf.boleta_pago', [
+            'boleta' => $boleta,
+            'logo' => null,
+        ])->render();
+
+        $this->assertStringContainsString('src="' . $boleta['qr'] . '"', $html);
+        $this->assertStringContainsString('Verificación de autenticidad', $html);
+    }
+
+    public function test_el_pdf_no_incluye_firmas_de_trabajador_ni_empleador(): void
+    {
+        $boleta = app(BoletaService::class)->armar($this->detalle);
+
+        $html = view('pdf.boleta_pago', [
+            'boleta' => $boleta,
+            'logo' => null,
+        ])->render();
+
+        $this->assertStringNotContainsString('Firma del trabajador', $html);
+        $this->assertStringNotContainsString('Firma del empleador', $html);
+    }
+
     public function test_el_pdf_usa_una_sola_tipografia_dejavu(): void
     {
         // `font-weight: 900` no lo resuelve DomPDF y cae a la serif por
