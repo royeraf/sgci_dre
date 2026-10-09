@@ -59,6 +59,13 @@ class RouteServiceProvider extends ServiceProvider
             return Limit::perMinute(20)->by($request->ip() . '|' . $request->input('dni'));
         });
 
+        // Portal de boletas por DNI: misma lógica — varios trabajadores pueden
+        // consultar desde la misma red institucional, así que la cuota se lleva
+        // por IP + DNI consultado y no castiga a los demás.
+        RateLimiter::for('boletas-consultar', function (Request $request) {
+            return Limit::perMinute(10)->by($request->ip() . '|' . $request->input('dni'));
+        });
+
         $this->routes(function () {
             Route::middleware('api')
                 ->prefix('api')

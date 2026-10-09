@@ -99,6 +99,17 @@ export function usePlanillaPeriodos() {
         }
     };
 
+    /** Avanza el estado del periodo (aprobar / marcar pagada / cerrar). */
+    const cambiarEstadoPeriodo = async (id: string, estado: EstadoPeriodo): Promise<void> => {
+        saving.value = true;
+        try {
+            await axios.patch(`/planillas/periodos/${id}/estado`, { estado });
+            await fetchPeriodos();
+        } finally {
+            saving.value = false;
+        }
+    };
+
     const fetchDetalle = async (id: string): Promise<void> => {
         loading.value = true;
         try {
@@ -118,6 +129,7 @@ export function usePlanillaPeriodos() {
         crearPeriodo,
         generarPeriodo,
         eliminarPeriodo,
+        cambiarEstadoPeriodo,
         fetchDetalle,
     };
 }

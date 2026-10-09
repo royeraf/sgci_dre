@@ -26,6 +26,24 @@ class PlanillaPeriodo extends Model
         12 => 'Diciembre',
     ];
 
+    /**
+     * Estados en los que la boleta del trabajador queda visible fuera del
+     * módulo (portal público por DNI): nunca se exponen borradores ni
+     * periodos aún en cálculo.
+     */
+    public const ESTADOS_BOLETA_VISIBLE = ['APROBADA', 'PAGADA', 'CERRADA'];
+
+    /**
+     * Transiciones permitidas del estado del periodo. Solo hay avance (nunca
+     * retroceso): aprobar publica las boletas en el portal público por DNI y
+     * deja la planilla en solo lectura (editable = false).
+     */
+    public const TRANSICIONES_ESTADO = [
+        'CALCULADA' => ['APROBADA'],
+        'APROBADA' => ['PAGADA', 'CERRADA'],
+        'PAGADA' => ['CERRADA'],
+    ];
+
     protected $table = 'planilla_periodos';
 
     protected $fillable = [

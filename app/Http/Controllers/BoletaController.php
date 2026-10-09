@@ -6,7 +6,6 @@ use App\Models\DreConfiguracion;
 use App\Models\PlanillaDetalle;
 use App\Models\PlanillaPeriodo;
 use App\Services\Planilla\BoletaService;
-use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use ZipArchive;
@@ -86,7 +85,7 @@ class BoletaController extends Controller
     {
         $boleta = $this->boletas->armar($detalle);
 
-        $pdf = $this->render($boleta);
+        $pdf = $this->boletas->render($boleta);
 
         return $pdf->stream('boleta_' . $boleta['trabajador']['codigo_boleta'] . '.pdf');
     }
@@ -119,7 +118,7 @@ class BoletaController extends Controller
         $logo = $this->boletas->logoBase64();
 
         foreach ($this->boletas->armarTodas($periodo) as $boleta) {
-            $pdf = $this->render($boleta, $logo);
+            $pdf = $this->boletas->render($boleta, $logo);
 
             $zip->addFromString(
                 'boleta_' . $boleta['trabajador']['codigo_boleta'] . '.pdf',
@@ -162,25 +161,5 @@ class BoletaController extends Controller
             'message' => 'Datos de la empresa actualizados',
             'empresa' => $this->boletas->empresa(),
         ]);
-    }
-
-    /**
-     * Renderiza una boleta en A4 vertical.
-     *
-     * El subsetting de fuentes se activa sobre la misma instancia que carga la
-     * vista: sin él DomPDF embebe la fuente completa (~450 KB) en cada PDF.
-     * Encadenar sobre una única instancia es lo que hace que la opción
-     * sobreviva, porque el facade no la conserva entre llamadas estáticas.
-     *
-     * @param  array<string, mixed>  $boleta
-     * @param  string|null  $logo  base64 del logo; se resuelve si no se pasa
-     */
-    private function render(array $boleta, ?string $logo = null)
-    {
-        $logo ??= $this->boletas->logoBase64();
-
-        return Pdf::setOption('enable_font_subsetting', true)
-            ->loadView('pdf.boleta_pago', compact('boleta', 'logo'))
-            ->setPaper('a5', 'landscape');
     }
 }

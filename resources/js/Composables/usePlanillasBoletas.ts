@@ -27,6 +27,8 @@ export interface BoletaFila {
     total_ingresos: number;
     total_descuentos: number;
     neto_pagar: number;
+    /** 'YYYY-MM-DD HH:mm:ss' de la confirmación del trabajador; null = pendiente. */
+    revisada_en: string | null;
 }
 
 export interface BoletaConcepto {

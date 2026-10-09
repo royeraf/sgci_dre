@@ -24,9 +24,21 @@
                 </div>
 
                 <!-- Toolbar -->
-                <div class="px-4 sm:px-6 py-3 border-b border-slate-100 flex items-center justify-end gap-3 bg-slate-50 shrink-0">
+                <div class="px-4 sm:px-6 py-3 border-b border-slate-100 flex flex-wrap items-center justify-end gap-3 bg-slate-50 shrink-0">
                     <span class="text-xs text-slate-500 font-medium mr-auto hidden sm:inline">
                         Vista previa · A5 horizontal · el PDF se genera con el mismo contenido
+                    </span>
+                    <button v-if="mostrarConfirmacion && !revisada" @click="$emit('revisar')"
+                        :disabled="guardando"
+                        class="cursor-pointer inline-flex items-center px-4 py-2 text-sm font-bold rounded-xl border-2 border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-all disabled:opacity-50">
+                        <CheckCircle class="w-4 h-4 mr-2" />
+                        {{ guardando ? 'Confirmando…' : 'Confirmar que revisé esta boleta' }}
+                    </button>
+                    <span v-else-if="mostrarConfirmacion && revisada"
+                        :title="`Revisada el ${fechaHora(revisada)}`"
+                        class="inline-flex items-center px-4 py-2 text-sm font-bold rounded-xl bg-emerald-100 text-emerald-700">
+                        <CheckCircle class="w-4 h-4 mr-2" />
+                        Revisada el {{ fecha(revisada) }}
                     </span>
                     <button @click="onPdf"
                         class="cursor-pointer inline-flex items-center px-4 py-2 text-sm font-bold rounded-xl border-2 border-slate-200 bg-white text-slate-700 hover:bg-slate-50 transition-all">
@@ -236,15 +248,23 @@
 
 <script setup>
 import { computed } from 'vue';
-import { Receipt, X, Loader2, FileText } from 'lucide-vue-next';
+import { Receipt, X, Loader2, FileText, CheckCircle } from 'lucide-vue-next';
 import { DIAS_MES } from '@/Composables/usePlanillasBoletas';
 
 const props = defineProps({
     boleta: { type: Object, required: true },
     detalleId: { type: String, required: true },
+    /** URL del PDF; si no se pasa usa la del módulo admin (planillas/...). */
+    urlPdf: { type: String, default: null },
+    /** Portal del trabajador: muestra el botón de confirmar revisión. */
+    mostrarConfirmacion: { type: Boolean, default: false },
+    /** Fecha 'YYYY-MM-DD HH:mm:ss' de revisión; null = pendiente. */
+    revisada: { type: String, default: null },
+    /** Deshabilita el botón de confirmar mientras se persiste. */
+    guardando: { type: Boolean, default: false },
 });
 
-const emit = defineEmits(['close']);
+const emit = defineEmits(['close', 'revisar']);
 
 const columnas = computed(() => [
     {
@@ -289,7 +309,7 @@ const fechaHora = (value) => {
 };
 
 const onPdf = () => {
-    window.open(`/planillas/boletas/${props.detalleId}/pdf`, '_blank');
+    window.open(props.urlPdf || `/planillas/boletas/${props.detalleId}/pdf`, '_blank');
 };
 </script>
 

@@ -62,6 +62,21 @@
                                 <td class="px-5 py-3 text-right font-bold text-slate-900">S/ {{ formatMoney(periodo.total_neto) }}</td>
                                 <td class="px-5 py-3">
                                     <div class="flex items-center justify-center gap-2">
+                                        <button v-if="periodo.estado === 'CALCULADA'" @click="onCambiarEstado(periodo, 'APROBADA')"
+                                            :disabled="saving" title="Aprobar planilla (publica las boletas en el portal)"
+                                            class="cursor-pointer p-2 rounded-lg bg-emerald-50 text-emerald-600 hover:bg-emerald-100 disabled:opacity-40 disabled:cursor-not-allowed transition-all">
+                                            <BadgeCheck class="w-4 h-4" />
+                                        </button>
+                                        <button v-if="periodo.estado === 'APROBADA'" @click="onCambiarEstado(periodo, 'PAGADA')"
+                                            :disabled="saving" title="Marcar como pagada"
+                                            class="cursor-pointer p-2 rounded-lg bg-emerald-50 text-emerald-600 hover:bg-emerald-100 disabled:opacity-40 disabled:cursor-not-allowed transition-all">
+                                            <Banknote class="w-4 h-4" />
+                                        </button>
+                                        <button v-if="periodo.estado === 'APROBADA' || periodo.estado === 'PAGADA'"
+                                            @click="onCambiarEstado(periodo, 'CERRADA')" :disabled="saving" title="Cerrar planilla"
+                                            class="cursor-pointer p-2 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 disabled:opacity-40 disabled:cursor-not-allowed transition-all">
+                                            <Lock class="w-4 h-4" />
+                                        </button>
                                         <button @click="onGenerar(periodo)" :disabled="!periodo.editable || saving"
                                             title="Generar / recalcular"
                                             class="cursor-pointer p-2 rounded-lg bg-teal-50 text-teal-600 hover:bg-teal-100 disabled:opacity-40 disabled:cursor-not-allowed transition-all">
@@ -105,7 +120,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue';
-import { Wallet, Plus, Play, Eye, Trash2, Loader2, Landmark, Percent, FileSpreadsheet } from 'lucide-vue-next';
+import { Wallet, Plus, Play, Eye, Trash2, Loader2, Landmark, Percent, FileSpreadsheet, BadgeCheck, Banknote, Lock } from 'lucide-vue-next';
 
 import BaseTableCard from '@/Components/Common/BaseTableCard.vue';
 import PeriodoModal from '@/Components/Planillas/Periodos/PeriodoModal.vue';
@@ -124,6 +139,7 @@ const {
     crearPeriodo,
     generarPeriodo,
     eliminarPeriodo,
+    cambiarEstadoPeriodo,
     fetchDetalle,
 } = usePlanillaPeriodos();
 
@@ -203,6 +219,56 @@ const onGenerar = async (periodo) => {
         notify('success', `Planilla generada: ${resumen.empleados} empleados`);
     } catch (error) {
         notify('error', error.response?.data?.message || 'No se pudo generar la planilla');
+    }
+};
+
+const onCambiarEstado = async (periodo, destino) => {
+    const avisos = {
+        APROBADA: {
+            icon: 'question',
+            title: '¿Aprobar planilla?',
+            html: `<p>Al aprobar <strong>${periodo.nombre_periodo}</strong>, sus boletas quedan visibles en el portal público por DNI y la planilla deja de admitir cambios.</p>`,
+            confirmButtonText: 'Aprobar',
+            confirmButtonColor: '#059669',
+            success: 'Planilla aprobada. Boletas disponibles en el portal',
+        },
+        PAGADA: {
+            icon: 'question',
+            title: '¿Marcar como pagada?',
+            html: `<p>Se registrará <strong>${periodo.nombre_periodo}</strong> como pagada.</p>`,
+            confirmButtonText: 'Marcar pagada',
+            confirmButtonColor: '#059669',
+            success: 'Planilla marcada como pagada',
+        },
+        CERRADA: {
+            icon: 'warning',
+            title: '¿Cerrar planilla?',
+            html: `<p><strong>${periodo.nombre_periodo}</strong> quedará cerrada y no podrá modificarse.</p>`,
+            confirmButtonText: 'Sí, cerrar',
+            confirmButtonColor: '#475569',
+            success: 'Planilla cerrada',
+        },
+    };
+
+    const aviso = avisos[destino];
+
+    const result = await window.Swal?.fire({
+        icon: aviso.icon,
+        title: aviso.title,
+        html: aviso.html,
+        showCancelButton: true,
+        confirmButtonText: aviso.confirmButtonText,
+        cancelButtonText: 'Cancelar',
+        confirmButtonColor: aviso.confirmButtonColor,
+    });
+
+    if (!result?.isConfirmed) return;
+
+    try {
+        await cambiarEstadoPeriodo(periodo.id, destino);
+        notify('success', aviso.success);
+    } catch (error) {
+        notify('error', error.response?.data?.message || 'No se pudo actualizar el estado de la planilla');
     }
 };
 

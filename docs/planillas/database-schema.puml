@@ -115,10 +115,12 @@ entity "planilla_detalles" as planilla_detalles {
   * periodo_id : char(36) <<FK>>
   * employee_id : char(36) <<FK>>
   * remuneracion_base : decimal(10,2) = 0
+  * dias_pagados : tinyint = 30
   * total_ingresos : decimal(10,2) = 0
   * total_descuentos : decimal(10,2) = 0
   * total_aportaciones : decimal(10,2) = 0
   * neto_pagar : decimal(10,2) = 0
+    revisada_en : timestamp
 }
 
 entity "planilla_detalle_items" as planilla_detalle_items {

@@ -1399,6 +1399,52 @@ class PlanillaController extends Controller
         ], $resumen));
     }
 
+    /**
+     * Avanza el estado del periodo (aprobar / marcar pagada / cerrar).
+     *
+     * Solo hay avance, nunca retroceso (ver PlanillaPeriodo::TRANSICIONES_ESTADO).
+     * Al aprobar, las boletas quedan visibles en el portal público por DNI y la
+     * planilla deja de admitir cambios (editable = false).
+     */
+    public function cambiarEstadoPeriodo(Request $request, string $id)
+    {
+        $validated = $request->validate([
+            'estado' => ['required', 'in:APROBADA,PAGADA,CERRADA'],
+        ], [
+            'estado.required' => 'El estado es obligatorio.',
+            'estado.in' => 'Estado no válido para una planilla.',
+        ]);
+
+        $periodo = PlanillaPeriodo::find($id);
+
+        if (!$periodo) {
+            return response()->json(['message' => 'Periodo no encontrado'], 404);
+        }
+
+        $destino = $validated['estado'];
+
+        if ($periodo->estado === $destino) {
+            return response()->json([
+                'message' => "La planilla ya está en estado {$destino}",
+            ], 422);
+        }
+
+        $permitidas = PlanillaPeriodo::TRANSICIONES_ESTADO[$periodo->estado] ?? [];
+
+        if (!in_array($destino, $permitidas, true)) {
+            return response()->json([
+                'message' => "No se puede pasar de {$periodo->estado} a {$destino}",
+            ], 422);
+        }
+
+        $periodo->update(['estado' => $destino]);
+
+        return response()->json([
+            'message' => "Planilla en estado {$destino}",
+            'periodo' => $periodo->only(['id', 'estado', 'editable']),
+        ]);
+    }
+
     public function getPeriodoDetalle(string $id)
     {
         $periodo = PlanillaPeriodo::find($id);

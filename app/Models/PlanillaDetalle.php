@@ -22,6 +22,7 @@ class PlanillaDetalle extends Model
         'total_descuentos',
         'total_aportaciones',
         'neto_pagar',
+        'revisada_en',
     ];
 
     protected $casts = [
@@ -31,6 +32,7 @@ class PlanillaDetalle extends Model
         'total_descuentos' => 'decimal:2',
         'total_aportaciones' => 'decimal:2',
         'neto_pagar' => 'decimal:2',
+        'revisada_en' => 'datetime',
     ];
 
     public function periodo(): BelongsTo

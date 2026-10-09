@@ -3,9 +3,11 @@
 namespace App\Services\Planilla;
 
 use App\Models\DreConfiguracion;
+use App\Models\Employee;
 use App\Models\PlanillaDetalle;
 use App\Models\PlanillaPeriodo;
 use App\Models\PlanillaTardanza;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 
@@ -137,8 +139,56 @@ class BoletaService
                 'total_ingresos' => (float) $detalle->total_ingresos,
                 'total_descuentos' => (float) $detalle->total_descuentos,
                 'neto_pagar' => (float) $detalle->neto_pagar,
+                'revisada_en' => $detalle->revisada_en?->toDateTimeString(),
             ])
             ->all();
+    }
+
+    /**
+     * Todas las boletas de un trabajador, de más reciente a más antigua, para
+     * el portal público por DNI. Solo periodos publicables
+     * ({@see PlanillaPeriodo::ESTADOS_BOLETA_VISIBLE}); los borradores o en
+     * cálculo nunca se exponen fuera del módulo.
+     *
+     * Conserva el código `BOL-AAAA-MM-NNNN` resolviendo la posición del
+     * trabajador dentro de cada periodo (un detalle por periodo, así que las
+     * dos consultas por periodo se hacen una sola vez).
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function listarPorEmpleado(Employee $empleado): array
+    {
+        $detalles = PlanillaDetalle::where('employee_id', $empleado->id)
+            ->with('periodo')
+            ->get()
+            ->filter(fn (PlanillaDetalle $detalle) => $detalle->periodo
+                && in_array($detalle->periodo->estado, PlanillaPeriodo::ESTADOS_BOLETA_VISIBLE, true))
+            ->sortByDesc(fn (PlanillaDetalle $detalle) => ((int) $detalle->periodo->anio) * 100 + (int) $detalle->periodo->mes)
+            ->values();
+
+        return $detalles->map(function (PlanillaDetalle $detalle) {
+            $periodo = $detalle->periodo;
+
+            $indice = (int) $this->detallesOrdenados($periodo)
+                ->search(fn (PlanillaDetalle $d) => $d->id === $detalle->id);
+
+            return [
+                'detalle_id' => $detalle->id,
+                'codigo_boleta' => $this->codigoBoleta($periodo, $indice),
+                'periodo' => [
+                    'id' => $periodo->id,
+                    'anio' => (int) $periodo->anio,
+                    'mes' => (int) $periodo->mes,
+                    'nombre_periodo' => $periodo->nombre_periodo,
+                    'estado' => $periodo->estado,
+                ],
+                'dias_laborados' => $this->diasLaboradosPorEmpleado($periodo)[$detalle->employee_id] ?? self::DIAS_MES,
+                'total_ingresos' => (float) $detalle->total_ingresos,
+                'total_descuentos' => (float) $detalle->total_descuentos,
+                'neto_pagar' => (float) $detalle->neto_pagar,
+                'revisada_en' => $detalle->revisada_en?->toDateTimeString(),
+            ];
+        })->all();
     }
 
     /**
@@ -191,6 +241,26 @@ class BoletaService
             'nombre_abreviado' => $config->nombre_abreviado,
             'direccion' => (string) $config->direccion,
         ];
+    }
+
+    /**
+     * Renderiza una boleta en PDF (A5 horizontal).
+     *
+     * El subsetting de fuentes se activa sobre la misma instancia que carga la
+     * vista: sin él DomPDF embebe la fuente completa (~450 KB) en cada PDF.
+     * Encadenar sobre una única instancia es lo que hace que la opción
+     * sobreviva, porque el facade no la conserva entre llamadas estáticas.
+     *
+     * @param  array<string, mixed>  $boleta  view-model de {@see self::armar()}
+     * @param  string|null  $logo  base64 del logo; se resuelve si no se pasa
+     */
+    public function render(array $boleta, ?string $logo = null)
+    {
+        $logo ??= $this->logoBase64();
+
+        return Pdf::setOption('enable_font_subsetting', true)
+            ->loadView('pdf.boleta_pago', compact('boleta', 'logo'))
+            ->setPaper('a5', 'landscape');
     }
 
     /**

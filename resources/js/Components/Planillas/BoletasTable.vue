@@ -9,6 +9,11 @@
             </template>
 
             <template #actions>
+                <a href="/boletas" target="_blank" rel="noopener" title="Consulta pública de boletas por DNI (abre en una pestaña nueva)"
+                    class="cursor-pointer inline-flex items-center px-4 py-2.5 text-sm font-bold rounded-xl border-2 border-teal-200 bg-teal-50 text-teal-700 hover:bg-teal-100 transition-all duration-200">
+                    <ExternalLink class="w-4 h-4 mr-2" />
+                    Portal de trabajadores
+                </a>
                 <button @click="abrirConfiguracion"
                     class="cursor-pointer inline-flex items-center px-4 py-2.5 text-sm font-bold rounded-xl border-2 border-slate-200 bg-white text-slate-700 hover:bg-slate-50 transition-all duration-200">
                     <Building2 class="w-4 h-4 mr-2" />
@@ -65,24 +70,25 @@
                             <th class="text-right font-bold uppercase text-[11px] tracking-widest px-5 py-3">Remuneraciones</th>
                             <th class="text-right font-bold uppercase text-[11px] tracking-widest px-5 py-3">Retenciones</th>
                             <th class="text-right font-bold uppercase text-[11px] tracking-widest px-5 py-3">Neto</th>
+                            <th class="text-center font-bold uppercase text-[11px] tracking-widest px-5 py-3">Revisada</th>
                             <th class="text-center font-bold uppercase text-[11px] tracking-widest px-5 py-3">Acciones</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100">
                         <tr v-if="loading">
-                            <td colspan="9" class="py-16 text-center">
+                            <td colspan="10" class="py-16 text-center">
                                 <Loader2 class="w-7 h-7 text-cyan-500 animate-spin mx-auto" />
                             </td>
                         </tr>
 
                         <tr v-else-if="!periodoId">
-                            <td colspan="9" class="py-16 text-center text-slate-500 font-medium">
+                            <td colspan="10" class="py-16 text-center text-slate-500 font-medium">
                                 Seleccione un periodo para ver sus boletas de pago.
                             </td>
                         </tr>
 
                         <tr v-else-if="boletas.length === 0">
-                            <td colspan="9" class="py-16 text-center text-slate-500 font-medium">
+                            <td colspan="10" class="py-16 text-center text-slate-500 font-medium">
                                 Este periodo no tiene planilla generada. Genérela desde la pestaña Planillas.
                             </td>
                         </tr>
@@ -108,6 +114,18 @@
                                 </td>
                                 <td class="px-5 py-3 text-right font-bold text-slate-900 tabular-nums">
                                     S/ {{ money(fila.neto_pagar) }}
+                                </td>
+                                <td class="px-5 py-3 text-center">
+                                    <span v-if="fila.revisada_en"
+                                        :title="`Confirmada por el trabajador el ${fechaHora(fila.revisada_en)}`"
+                                        class="inline-flex items-center text-xs font-bold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700 whitespace-nowrap">
+                                        <CheckCircle class="w-3.5 h-3.5 mr-1" />
+                                        {{ fechaCorta(fila.revisada_en) }}
+                                    </span>
+                                    <span v-else
+                                        class="inline-flex items-center text-xs font-bold px-2.5 py-1 rounded-full bg-slate-100 text-slate-500 whitespace-nowrap">
+                                        Pendiente
+                                    </span>
                                 </td>
                                 <td class="px-5 py-3">
                                     <div class="flex items-center justify-center gap-2">
@@ -144,7 +162,7 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import axios from 'axios';
-import { Receipt, Building2, FileArchive, FileText, Eye, Loader2 } from 'lucide-vue-next';
+import { Receipt, Building2, FileArchive, FileText, Eye, Loader2, CheckCircle, ExternalLink } from 'lucide-vue-next';
 
 import BaseTableCard from '@/Components/Common/BaseTableCard.vue';
 import BoletaPreviewModal from '@/Components/Planillas/Boletas/BoletaPreviewModal.vue';
@@ -189,6 +207,19 @@ const money = (value) => Number(value || 0).toLocaleString('es-PE', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
 });
+
+/** 'YYYY-MM-DD [HH:mm:ss]' → 'DD/MM/YYYY' sin Date (evita correr el día por zona horaria). */
+const fechaCorta = (value) => {
+    if (!value) return '—';
+    const [y, m, d] = String(value).split(' ')[0].split('-');
+    return d ? `${d}/${m}/${y}` : value;
+};
+
+const fechaHora = (value) => {
+    if (!value) return '—';
+    const [dia, hora] = String(value).split(' ');
+    return `${fechaCorta(dia)} ${(hora ?? '').slice(0, 5)}`;
+};
 
 const cargarPeriodoInicial = async () => {
     if (periodoId.value) return;

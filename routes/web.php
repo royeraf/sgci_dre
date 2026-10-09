@@ -106,6 +106,18 @@ Route::middleware('throttle:examen-intento')->get('/utilitarios/examen/{evento:s
 Route::middleware('throttle:examen-intento')->post('/utilitarios/examen/{evento:slug}/{examen:slug}/{intento}/responder', [ExamenPublicoController::class, 'responder'])->name('utilitarios.examen.responder')->withoutScopedBindings();
 Route::middleware('throttle:examen-intento')->post('/utilitarios/examen/{evento:slug}/{examen:slug}/{intento}/finalizar', [ExamenPublicoController::class, 'finalizar'])->name('utilitarios.examen.finalizar')->withoutScopedBindings();
 
+// Portal público de boletas por DNI (sin sesión de usuario): el trabajador se
+// identifica con su DNI, consulta todas sus boletas de periodos aprobados,
+// descarga el PDF y confirma que las revisó. La identificación se limita con
+// throttle (IP + DNI) para mitigar enumeración; ver BoletaPortalController.
+// Orden: las rutas literales (consultar/salir) van antes de {detalle}.
+Route::middleware('throttle:30,1')->get('/boletas', [App\Http\Controllers\BoletaPortalController::class, 'index'])->name('boletas.portal');
+Route::middleware('throttle:boletas-consultar')->post('/boletas/consultar', [App\Http\Controllers\BoletaPortalController::class, 'consultar'])->name('boletas.portal.consultar');
+Route::post('/boletas/salir', [App\Http\Controllers\BoletaPortalController::class, 'salir'])->name('boletas.portal.salir');
+Route::get('/boletas/{detalle}', [App\Http\Controllers\BoletaPortalController::class, 'show'])->name('boletas.portal.show');
+Route::get('/boletas/{detalle}/pdf', [App\Http\Controllers\BoletaPortalController::class, 'pdf'])->name('boletas.portal.pdf');
+Route::post('/boletas/{detalle}/revisar', [App\Http\Controllers\BoletaPortalController::class, 'revisar'])->name('boletas.portal.revisar');
+
 // Protected routes
 Route::middleware('auth')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
@@ -382,6 +394,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/periodos', [App\Http\Controllers\PlanillaController::class, 'getPeriodos'])->name('periodos.list');
         Route::post('/periodos', [App\Http\Controllers\PlanillaController::class, 'storePeriodo'])->name('periodos.store');
         Route::post('/periodos/{id}/generar', [App\Http\Controllers\PlanillaController::class, 'generarPeriodo'])->name('periodos.generar');
+        Route::patch('/periodos/{id}/estado', [App\Http\Controllers\PlanillaController::class, 'cambiarEstadoPeriodo'])->name('periodos.estado');
         Route::get('/periodos/{id}/detalle', [App\Http\Controllers\PlanillaController::class, 'getPeriodoDetalle'])->name('periodos.detalle');
         Route::delete('/periodos/{id}', [App\Http\Controllers\PlanillaController::class, 'deletePeriodo'])->name('periodos.destroy');
 

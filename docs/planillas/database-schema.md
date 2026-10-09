@@ -222,9 +222,18 @@ Una fila por empleado dentro de un periodo (snapshots del cálculo).
 | `total_descuentos` | decimal(10,2) | No | 0 | Σ items `DESCUENTO` |
 | `total_aportaciones` | decimal(10,2) | No | 0 | Σ items `APORTACION` |
 | `neto_pagar` | decimal(10,2) | No | 0 | Ingresos − descuentos |
+| `revisada_en` | timestamp | Sí | NULL | Confirmación del trabajador desde el **portal público por DNI** (`POST /boletas/{detalle}/revisar`); NULL = pendiente |
 | `created_at` / `updated_at` | timestamp | Sí | NULL | |
 
 **Índices:** `employee_id`; UNIQUE `pd_periodo_employee_unique (periodo_id, employee_id)`.
+
+> **Portal público de boletas.** Rutas sin autenticación (fuera del grupo `auth`,
+> con `throttle` IP+DNI): `GET /boletas` (página Inertia `Boletas/Portal`),
+> `POST /boletas/consultar` (fija la identidad en sesión), `GET/POST
+> /boletas/{detalle}[/pdf|/revisar]`. Solo responden si la boleta pertenece a la
+> identidad de sesión y su periodo está en `APROBADA|PAGADA|CERRADA`
+> (`PlanillaPeriodo::ESTADOS_BOLETA_VISIBLE`). Al regenerar la planilla los
+> detalles se borran y recrean, por lo que `revisada_en` se resetea solo.
 
 ---
 
