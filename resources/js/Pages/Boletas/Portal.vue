@@ -45,29 +45,18 @@
             </div>
 
             <!-- Resultado: boletas del trabajador -->
-            <div v-else class="bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden">
-                <div class="bg-gradient-to-r from-teal-600 to-cyan-600 px-5 sm:px-6 py-4">
-                    <div class="min-w-0">
-                        <p class="text-white font-bold text-lg sm:text-xl truncate">{{ empleado.apellidos_nombres }}</p>
-                        <p class="text-teal-50 text-sm mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5">
-                            <span class="font-mono">DNI {{ empleado.dni }}</span>
-                            <span v-if="empleado.cargo">{{ empleado.cargo }}</span>
-                            <span>{{ boletas.length }} {{ boletas.length === 1 ? 'boleta' : 'boletas' }}</span>
-                        </p>
-                    </div>
-                </div>
-
-                <!-- Otro DNI, encima de la tabla -->
-                <div class="px-4 sm:px-5 py-3 flex justify-end border-b border-slate-100">
-                    <button @click="onSalir" :disabled="loading"
-                        class="cursor-pointer inline-flex items-center gap-2 px-4 py-2 text-sm font-bold rounded-xl border-2 border-slate-300 bg-white text-slate-700 hover:bg-slate-100 transition-all disabled:opacity-50">
-                        <LogOut class="w-4 h-4" />
-                        Otro DNI
-                    </button>
-                </div>
-
+            <template v-else>
+                <div class="bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden">
                 <div class="overflow-x-auto">
                     <table class="w-full text-sm">
+                        <thead class="bg-slate-50 text-slate-500">
+                            <tr>
+                                <th class="text-left font-bold uppercase text-[11px] tracking-widest px-4 py-3">Periodo</th>
+                                <th class="text-left font-bold uppercase text-[11px] tracking-widest px-4 py-3">Empleado</th>
+                                <th class="text-center font-bold uppercase text-[11px] tracking-widest px-4 py-3">Estado</th>
+                                <th class="text-right font-bold uppercase text-[11px] tracking-widest px-4 py-3">Acciones</th>
+                            </tr>
+                        </thead>
                         <tbody>
                             <tr v-if="boletas.length === 0">
                                 <td colspan="4" class="py-14 text-center text-slate-500 font-medium">
@@ -114,6 +103,16 @@
                     </table>
                 </div>
             </div>
+
+            <!-- Fuera del card -->
+            <div class="mt-4 flex justify-end">
+                <button @click="onSalir" :disabled="loading"
+                    class="cursor-pointer inline-flex items-center gap-2 px-4 py-2 text-sm font-bold rounded-xl border-2 border-yellow-500 bg-yellow-400 text-slate-900 hover:bg-yellow-500 transition-all disabled:opacity-50">
+                    <LogOut class="w-4 h-4" />
+                    Hacer otra consulta
+                </button>
+            </div>
+            </template>
 
             <p class="text-center text-xs text-slate-400 mt-8">
                 Dirección Regional de Educación Huánuco · SGCI
