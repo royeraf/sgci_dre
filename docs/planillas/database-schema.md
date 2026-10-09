@@ -338,6 +338,13 @@ automatizará sin cambiar el modelo de `planilla_tardanzas`:
 > genera fila de pensión alguna. La condición se comunica en el modal «Perfil de
 > Planilla» (aviso + badge `REJA`).
 >
+> **Prima de seguro a partir de los 65 años.** Los empleados **mayores de 65
+> años** ya no pagan la prima de seguro AFP: a partir del **mes siguiente** a
+> aquel en que cumplieron 65 (`people.fecha_nacimiento` + 65 años) la fila
+> `AFP_SEGURO` se emite en **0.00** (sin tasa ni base, como la fila REJA). El
+> mes del cumpleaños aún se cobra completo. Sin `fecha_nacimiento` registrada
+> se cobra con normalidad. Aplica solo a AFP; el ONP no tiene prima.
+>
 > El **descuento por tardanzas** se registra **manualmente** (días/minutos) y el
 > sistema calcula el monto con las fórmulas de abajo; la fila se emite
 > **siempre**, con `0.00` cuando el empleado no tiene faltas (columna
@@ -364,7 +371,7 @@ automatizará sin cambiar el modelo de `planilla_tardanzas`:
 | Base imponible | `remuneración − faltas/tardanzas` |
 | Faltas / Tardanzas | Suma de `planilla_tardanzas` no justificadas del periodo; **fila siempre presente** en descuentos (`0.00` si no hay), base guardada `N = E − L` |
 | AFP Fondo | `base × 10%` |
-| AFP Seguro | `base × 1.37%` |
+| AFP Seguro | `base × 1.37%`; **exento a partir del mes siguiente a cumplir 65 años** (`people.fecha_nacimiento` + 65) ⇒ la fila se emite en `0.00` con base y tasa nulas, sin alterar totales |
 | AFP Comisión | `planilla_comisiones_afp.comision_flujo` (por `mes` + régimen), solo si `employee_payroll_profiles.tipo_comision = FLUJO` |
 | ONP | `base × 13%` |
 | AFP REJA (empleados `es_reja`) | `0.00`, etiqueta `AFP <Administradora> REJA` (concepto `AFP_REJA`, solo lo genera el motor) |

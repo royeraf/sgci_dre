@@ -605,7 +605,13 @@ class PlanillaGenerador
 
         $tasaSeguro = $parametro !== null ? (float) $parametro->prima_seguro : self::AFP_PRIMA;
         if ($concepto = $conceptos->get('AFP_SEGURO')) {
-            $items[] = $this->registro($concepto, 'DESCUENTO', $base * $tasaSeguro, $base, $tasaSeguro);
+            // Prima de seguro: no se cobra a partir del mes siguiente a
+            // cumplir 65 años; la fila se emite igual en 0.00 (patrón REJA).
+            if ($this->primaSeguroExenta($empleado, $fecha)) {
+                $items[] = $this->registro($concepto, 'DESCUENTO', 0.0, 0.0, null);
+            } else {
+                $items[] = $this->registro($concepto, 'DESCUENTO', $base * $tasaSeguro, $base, $tasaSeguro);
+            }
         }
 
         $tasaComision = 0.0;
@@ -619,6 +625,27 @@ class PlanillaGenerador
         }
 
         return $items;
+    }
+
+    /**
+     * Prima de seguro AFP exenta a partir del mes siguiente a aquel en que el
+     * empleado cumple 65 años (`people.fecha_nacimiento`). Ej.: nacido el
+     * 1961-05-10 → desde la planilla de junio 2026 la fila sale en 0.00.
+     *
+     * Sin fecha de nacimiento no se puede determinar la edad: se cobra.
+     */
+    private function primaSeguroExenta(Employee $empleado, Carbon $fecha): bool
+    {
+        $nacimiento = $empleado->person?->fecha_nacimiento;
+
+        if (!$nacimiento) {
+            return false;
+        }
+
+        $cumple65 = $nacimiento->copy()->addYears(65);
+
+        // Mes del devengue estrictamente posterior al mes del cumpleaños 65.
+        return $fecha->copy()->startOfMonth()->gt($cumple65->startOfMonth());
     }
 
     /**

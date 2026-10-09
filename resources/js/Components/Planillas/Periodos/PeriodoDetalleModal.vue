@@ -1,9 +1,13 @@
 <template>
-    <div class="fixed inset-0 z-50 overflow-y-auto">
-        <div class="flex items-center justify-center min-h-screen px-4 py-8">
-            <div class="fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity" @click="$emit('close')"></div>
+    <div class="fixed inset-0 z-50" :class="isFullscreen ? 'overflow-hidden' : 'overflow-y-auto'">
+        <div class="flex items-center justify-center min-h-screen" :class="isFullscreen ? 'p-0' : 'px-4 py-8'">
+            <div class="fixed inset-0 backdrop-blur-sm transition-opacity" :class="isFullscreen ? 'bg-black/70' : 'bg-black/50'"
+                @click="!isFullscreen && $emit('close')"></div>
 
-            <div class="relative bg-white rounded-2xl shadow-2xl max-w-6xl w-full z-10 overflow-hidden flex flex-col max-h-[90vh]">
+            <div class="relative bg-white shadow-2xl z-10 overflow-hidden flex flex-col"
+                :class="isFullscreen
+                    ? 'w-full h-screen max-h-screen rounded-none'
+                    : 'rounded-2xl max-w-6xl w-full max-h-[90vh]'">
                 <div class="bg-gradient-to-r from-teal-600 to-cyan-600 px-6 py-4 flex justify-between items-center shrink-0">
                     <div>
                         <h3 class="text-xl font-bold text-white flex items-center gap-2">
@@ -15,9 +19,18 @@
                             Neto S/ {{ formatMoney(detalle.periodo.total_neto) }}
                         </p>
                     </div>
-                    <button @click="$emit('close')" class="text-teal-100 hover:text-white transition-colors p-1">
-                        <X class="w-6 h-6" />
-                    </button>
+                    <div class="flex items-center gap-1 shrink-0">
+                        <button type="button" @click="isFullscreen = !isFullscreen"
+                            :title="isFullscreen ? 'Salir de pantalla completa (Esc)' : 'Pantalla completa'"
+                            class="cursor-pointer text-teal-100 hover:text-white transition-colors p-1.5 rounded-lg hover:bg-white/10">
+                            <Minimize2 v-if="isFullscreen" class="w-5 h-5" />
+                            <Maximize2 v-else class="w-5 h-5" />
+                        </button>
+                        <button @click="$emit('close')" title="Cerrar"
+                            class="cursor-pointer text-teal-100 hover:text-white transition-colors p-1">
+                            <X class="w-6 h-6" />
+                        </button>
+                    </div>
                 </div>
 
                 <div class="px-4 sm:px-6 py-3 border-b border-slate-100 bg-white shrink-0 flex items-center gap-3">
@@ -47,7 +60,7 @@
                     </div>
                 </div>
 
-                <div ref="scrollContainer" class="overflow-auto">
+                <div ref="scrollContainer" class="overflow-auto flex-1 min-h-0">
                     <table class="w-full text-sm">
                         <thead class="bg-slate-50 text-slate-500 sticky top-0 z-10">
                             <tr>
@@ -239,8 +252,8 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted } from 'vue';
-import { CalendarRange, X, ChevronDown, ChevronUp, Clock, Search, ListPlus, NotebookText } from 'lucide-vue-next';
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
+import { CalendarRange, X, ChevronDown, ChevronUp, Clock, Search, ListPlus, NotebookText, Maximize2, Minimize2 } from 'lucide-vue-next';
 import TardanzaModal from '@/Components/Planillas/Tardanzas/TardanzaModal.vue';
 import RegistrosModal from '@/Components/Planillas/Tardanzas/RegistrosModal.vue';
 import NotasModal from '@/Components/Planillas/Notas/NotasModal.vue';
@@ -269,6 +282,14 @@ let flashTimer = null;
 const search = ref('');
 const matchIndex = ref(-1);
 const scrollContainer = ref(null);
+const isFullscreen = ref(false);
+
+const onKeydown = (e) => {
+    if (e.key === 'Escape' && isFullscreen.value) {
+        e.stopPropagation();
+        isFullscreen.value = false;
+    }
+};
 
 const {
     filas: filasTardanzas,
@@ -336,12 +357,18 @@ const tardanzasCount = (employeeId) => {
 const asignacionesCount = (fila) => Number(fila?.asignaciones_count || 0);
 
 onMounted(async () => {
+    window.addEventListener('keydown', onKeydown);
     if (!props.detalle.periodo.editable) return;
     try {
         await fetchTardanzas(props.detalle.periodo.id);
     } catch (error) {
         // el badge simplemente no se muestra si no se pudo cargar
     }
+});
+
+onUnmounted(() => {
+    window.removeEventListener('keydown', onKeydown);
+    if (flashTimer) clearTimeout(flashTimer);
 });
 
 watch(() => props.detalle?.detalles, (filas) => {
