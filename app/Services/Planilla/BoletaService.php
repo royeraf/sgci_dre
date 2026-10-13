@@ -246,7 +246,7 @@ class BoletaService
     }
 
     /**
-     * Renderiza una boleta en PDF (A5 horizontal).
+     * Renderiza una boleta en PDF (A5 vertical).
      *
      * El subsetting de fuentes se activa sobre la misma instancia que carga la
      * vista: sin él DomPDF embebe la fuente completa (~450 KB) en cada PDF.
@@ -262,7 +262,7 @@ class BoletaService
 
         return Pdf::setOption('enable_font_subsetting', true)
             ->loadView('pdf.boleta_pago', compact('boleta', 'logo'))
-            ->setPaper('a5', 'landscape');
+            ->setPaper('a5', 'portrait');
     }
 
     /**

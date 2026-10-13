@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use Illuminate\Http\Request;
 use Inertia\Middleware;
+use App\Models\Employee;
 
 class HandleInertiaRequests extends Middleware
 {
@@ -52,6 +53,11 @@ class HandleInertiaRequests extends Middleware
                         'modulos_json' => $user->modulos_json,
                         'tabs_json'    => $user->tabs_json,
                         'customRole'   => $user->customRole,
+                        // El apartado "Mis Boletas" se muestra a todo usuario
+                        // con empleado vinculado, sin exigir módulos del admin.
+                        'has_employee' => $user->person_id
+                            ? Employee::where('person_id', $user->person_id)->exists()
+                            : false,
                     ];
                 })() : null,
             ],

@@ -2,12 +2,16 @@
 
 namespace Tests\Feature;
 
+use App\Models\Employee;
+use App\Models\Person;
 use App\Models\User;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
 
 class AuthLoginTest extends TestCase
 {
+    use DatabaseTransactions;
     public function test_login_page_renders_successfully(): void
     {
         $response = $this->get('/login');
@@ -140,6 +144,56 @@ class AuthLoginTest extends TestCase
         ]);
 
         $response->assertStatus(401);
+    }
+
+    public function test_auto_provision_no_duplica_si_la_persona_ya_tiene_cuenta(): void
+    {
+        // Empleado activo cuya persona ya tiene cuenta con otro identificador:
+        // entrar con DNI como usuario y clave no debe lanzar 500 por
+        // users_person_id_unique, sino responder credenciales incorrectas.
+        $empleado = Employee::where('estado', 'ACTIVO')
+            ->whereHas('person')
+            ->whereNotIn('person_id', User::whereNotNull('person_id')->select('person_id'))
+            ->inRandomOrder()
+            ->firstOrFail();
+
+        $dni = $this->dniLibre();
+        $empleado->person->update(['dni' => $dni]);
+
+        $otro = $this->dniLibre();
+        User::create([
+            'person_id' => $empleado->person_id,
+            'username' => $otro,
+            'dni' => $otro,
+            'password' => Hash::make('otraclave123'),
+            'rol_id' => 'ROL012',
+            'is_active' => true,
+        ]);
+
+        $response = $this->from('/login')->post('/login', [
+            'dni' => $dni,
+            'password' => $dni,
+        ]);
+
+        $response->assertSessionHasErrors('credentials');
+        $this->assertGuest();
+        $this->assertSame(1, User::where('person_id', $empleado->person_id)->count());
+    }
+
+    /** DNI de 8 dígitos libre en people y users (columnas UNIQUE). */
+    private function dniLibre(): string
+    {
+        foreach (range(1, 50) as $intento) {
+            $dni = (string) random_int(48000000, 48999999);
+
+            if (!Person::where('dni', $dni)->exists()
+                && !User::where('dni', $dni)->exists()
+                && !User::where('username', $dni)->exists()) {
+                return $dni;
+            }
+        }
+
+        $this->fail('No se encontró un DNI libre para la prueba');
     }
 
     public function test_admin_can_update_user_password(): void

@@ -6,8 +6,8 @@
     <title>Boleta de Pago {{ $boleta['trabajador']['codigo_boleta'] }}</title>
     <style>
         @page {
-            size: A5 landscape;
-            margin: 6mm 7mm;
+            size: A5 portrait;
+            margin: 7mm 6mm;
         }
         /* La familia se fija en todos los descendientes: si un elemento se
            queda sin heredar, DomPDF cae a la fuente serif por defecto
@@ -34,19 +34,35 @@
             word-wrap: break-word;
         }
         .grid {
-            border: 1.2px solid #000;
+            border: 0.8px solid #000;
         }
         .grid td {
-            border: 0.6px solid #000;
+            border: 0.4px solid #000;
         }
-        /* Etiqueta de campo: fondo gris, versalitas, occupies ~26% de la celda */
+        /* Etiqueta de campo en formato vertical: una sola columna de
+           etiquetas a la izquierda (~34%) y valor a la derecha. */
         .label {
-            width: 24%;
+            width: 34%;
             background-color: #eceff3;
             font-weight: bold;
             font-size: 6.8px;
             text-transform: uppercase;
             letter-spacing: 0.1px;
+        }
+        /* Etiqueta apilada (Datos de la empresa): nombre arriba a ancho
+           completo y valor debajo, en filas separadas. */
+        .label-top {
+            background-color: #eceff3;
+            font-weight: bold;
+            font-size: 6.8px;
+            text-transform: uppercase;
+            letter-spacing: 0.1px;
+            text-align: center;
+        }
+        /* Valores de los bloques de datos en columnas: letra menor para que
+           los textos largos encajen sin alargar la hoja. */
+        .empresa-valor {
+            font-size: 6.6px;
         }
         /* Separador de sección dentro de la rejilla de datos */
         .sep {
@@ -60,7 +76,6 @@
         .text-center { text-align: center; }
         .text-right { text-align: right; }
         .text-bold { font-weight: bold; }
-        .v { width: 26%; }
 
         /* Encabezado */
         .header-title {
@@ -75,9 +90,9 @@
             margin-top: 1px;
         }
         .codigo {
-            font-size: 11px;
-            font-weight: bold;
+            font-size: 8px;
             letter-spacing: 0.4px;
+            color: #dc2626;
         }
         .codigo-label {
             background-color: #eceff3;
@@ -87,7 +102,7 @@
             text-align: center;
         }
 
-        /* Conceptos */
+        /* Conceptos apilados en vertical */
         .conceptos { font-size: 7.6px; }
         .conceptos td {
             border: none;
@@ -99,10 +114,10 @@
             white-space: nowrap;
         }
         .total-row td {
-            border-top: 1px solid #000;
+            border-top: 0.6px solid #000;
             padding: 2px 4px;
             font-size: 7.6px;
-            text-align: right;
+            text-align: left;
             white-space: nowrap;
         }
         .total-label {
@@ -113,36 +128,42 @@
 
         /* Neto */
         .neto {
-            border: 1.2px solid #000;
+            border: 0.8px solid #000;
             background-color: #eceff3;
-            font-size: 8.5px;
+            font-size: 7.5px;
             font-weight: bold;
             letter-spacing: 0.5px;
         }
         .neto-valor {
-            border: 1.2px solid #000;
-            font-size: 13px;
+            border: 0.8px solid #000;
+            font-size: 11px;
             font-weight: bold;
             text-align: right;
             white-space: nowrap;
             padding: 2px 6px;
         }
 
-        /* Banda de verificación por QR: 14 mm para que datos + banda sigan
-           cabiendo en una sola página del A5 apaisado (136 mm útiles). */
-        .verificacion td {
-            border: none;
-            height: 14mm;
+        /* Marca de agua con el logo de la DRE: imagen fija centrada,
+           tenue para no restar legibilidad. DomPDF no soporta
+           `transform`, así que se centra con márgenes negativos. */
+        .marca-agua {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            width: 90mm;
+            margin-left: -45mm;
+            margin-top: -45mm;
+            opacity: 0.07;
+            z-index: -1;
         }
-        .verif-titulo {
-            font-size: 6.5px;
-            font-weight: bold;
-            text-transform: uppercase;
-        }
-        .verif-texto { font-size: 6px; color: #475569; }
     </style>
 </head>
 <body>
+@if($logo)
+<div class="marca-agua">
+    <img src="data:image/png;base64,{{ $logo }}" style="width: 90mm; height: auto;">
+</div>
+@endif
 @php
     $empresa = $boleta['empresa'];
     $periodo = $boleta['periodo'];
@@ -158,13 +179,18 @@
         ['titulo' => 'Retenciones / Descuentos', 'items' => $boleta['retenciones'], 'total' => $totales['retenciones']],
         ['titulo' => 'Aportaciones del Empleador', 'items' => $boleta['aportaciones'], 'total' => $totales['aportaciones']],
     ];
-    $maxConceptos = max(array_map(fn ($c) => count($c['items']), $columnas));
+    // Fila superior: Remuneraciones + Retenciones lado a lado; la columna
+    // más larga fija la altura de ambas para que los totales queden parejos.
+    $filaSuperior = [$columnas[0], $columnas[1]];
+    $aportaciones = $columnas[2];
+    $maxFila = max(count($filaSuperior[0]['items']), count($filaSuperior[1]['items']));
 
-    // La boleta no lleva firmas: los datos ocupan 116 mm y la banda inferior
-    // de 18 mm aloja el QR de verificación. Caja útil del A5 apaisado:
-    // 148 - 6 - 6 = 136 mm. Si el contenido supera los 116 mm, la celda
-    // crece sin cortarse y la banda del QR baja (nunca sale de la pagina).
-    $altoDatos = 116;
+    // Formato vertical A5 retrato (148 x 210 mm): área útil aprox.
+    // 136 mm de ancho x 196 mm de alto con márgenes de 7/6 mm.
+    // Los datos ocupan ~172 mm y la banda inferior del QR el resto,
+    // todo en una sola página. Si el contenido supera esa altura, la
+    // celda crece sin cortarse y la banda del QR baja.
+    $altoDatos = 172;
 @endphp
 
 <!-- Todo el contenido en un bloque de altura fija -->
@@ -172,133 +198,147 @@
     <tr>
         <td style="border: none; padding: 0; height: {{ $altoDatos }}mm; vertical-align: top;">
 
-<!-- Encabezado: logo a la izquierda, título al centro, código a la derecha -->
+<!-- Encabezado: bloque institucional a la izquierda, título centrado, QR a la derecha -->
 <table style="border: none; margin-bottom: 2px;">
     <tr>
-        <td style="width: 13%; border: none; text-align: left;">
-            @if($logo)
-                <img src="data:image/png;base64,{{ $logo }}" style="width: 34px; height: auto;">
-            @endif
+        <td style="width: 32%; border: none; vertical-align: middle;">
+            <table style="border: none;">
+                <tr>
+                    <td style="width: 26%; border: none; vertical-align: middle;">
+                        @if($logo)
+                            <img src="data:image/png;base64,{{ $logo }}" style="display: block; width: 30px; height: auto;">
+                        @endif
+                    </td>
+                    <td style="border: none; vertical-align: middle;">
+                        <div style="font-size: 7.5px; font-weight: bold; line-height: 1.2;">Dirección Regional de Educación</div>
+                        <div style="font-size: 7px;">Huánuco</div>
+                    </td>
+                </tr>
+            </table>
         </td>
-        <td style="width: 62%; border: none; text-align: center;">
+        <td style="width: 40%; border: none; text-align: center; vertical-align: middle;">
             <div class="header-title">BOLETA DE PAGO</div>
             <div class="header-subtitle">Planilla de pago personal CAS</div>
             <div class="header-period">{{ $periodo['nombre_mes'] }} - {{ $periodo['anio'] }}</div>
         </td>
-        <td style="width: 25%; border: none;">
-            <table class="grid">
-                <tr>
-                    <td class="codigo-label" colspan="2">Código de boleta</td>
-                </tr>
-                <tr>
-                    <td class="codigo text-center" colspan="2">{{ $trabajador['codigo_boleta'] }}</td>
-                </tr>
-            </table>
+        <td style="width: 28%; border: none; text-align: center; vertical-align: middle;">
+            <img src="{{ $boleta['qr'] }}" style="display: block; margin: 0 auto; width: 22mm; height: 22mm;">
         </td>
     </tr>
 </table>
+<table class="grid" style="margin-bottom: 2px;">
+    <tr>
+        <td class="codigo-label" style="width: 34%;">Código de boleta</td>
+        <td class="codigo text-center">{{ $trabajador['codigo_boleta'] }}</td>
+    </tr>
+</table>
 
-<!-- Empresa + trabajador + relación laboral en una sola rejilla -->
+<!-- Empresa en 3 columnas (etiqueta arriba, valor debajo) + resto en rejilla de 2 columnas -->
 <table class="grid">
     <tr>
-        <td class="sep" colspan="4">Datos de la empresa</td>
+        <td class="sep" colspan="3">Datos de la empresa</td>
     </tr>
     <tr>
-        <td class="label">RUC</td>
-        <td class="text-bold" style="width: 26%;">{{ $sinDato($empresa['ruc']) }}</td>
-        <td class="label" style="width: 24%;">Razón Social</td>
-        <td class="text-bold">{{ $sinDato($empresa['razon_social']) }}</td>
+        <td class="label-top" style="width: 22%;">RUC</td>
+        <td class="label-top" style="width: 38%;">Razón Social</td>
+        <td class="label-top">Dirección</td>
     </tr>
     <tr>
-        <td class="label">Dirección</td>
-        <td colspan="3">{{ $sinDato($empresa['direccion']) }}</td>
+        <td class="text-center empresa-valor">{{ $sinDato($empresa['ruc']) }}</td>
+        <td class="text-center empresa-valor">{{ $sinDato($empresa['razon_social']) }}</td>
+        <td class="text-center empresa-valor">{{ $sinDato($empresa['direccion']) }}</td>
     </tr>
+</table>
+<table class="grid" style="margin-top: 2px;">
 
     <tr>
-        <td class="sep" colspan="4">Datos del trabajador</td>
+        <td class="sep text-center" colspan="3">Datos del trabajador</td>
     </tr>
     <tr>
-        <td class="label">Apellidos y Nombres</td>
-        <td colspan="3" class="text-bold">{{ $sinDato($trabajador['apellidos_nombres']) }}</td>
+        <td class="label-top">Apellidos y Nombres</td>
+        <td class="label-top">DNI</td>
+        <td class="label-top">Fecha de Ingreso</td>
     </tr>
     <tr>
-        <td class="label">DNI</td>
-        <td style="width: 26%;">{{ $sinDato($trabajador['dni']) }}</td>
-        <td class="label" style="width: 24%;">Código de boleta</td>
-        <td>{{ $trabajador['codigo_boleta'] }}</td>
+        <td class="text-center empresa-valor">{{ $sinDato($trabajador['apellidos_nombres']) }}</td>
+        <td class="text-center empresa-valor">{{ $sinDato($trabajador['dni']) }}</td>
+        <td class="text-center empresa-valor">{{ $fecha($trabajador['fecha_ingreso']) }}</td>
     </tr>
     <tr>
-        <td class="label">Fecha de Ingreso</td>
-        <td>{{ $fecha($trabajador['fecha_ingreso']) }}</td>
-        <td class="label">Fecha Inicio Contrato</td>
-        <td>{{ $fecha($trabajador['fecha_inicio_contrato']) }}</td>
+        <td class="label-top">Fecha Inicio Contrato</td>
+        <td class="label-top" colspan="2">{{ $esIndeterminado ? 'Contrato' : 'Fecha Fin Contrato' }}</td>
     </tr>
     <tr>
-        <td class="label">{{ $esIndeterminado ? 'Contrato' : 'Fecha Fin Contrato' }}</td>
-        <td colspan="3">
+        <td class="text-center empresa-valor">{{ $fecha($trabajador['fecha_inicio_contrato']) }}</td>
+        <td class="text-center empresa-valor" colspan="2">
             @if($esIndeterminado)
-                <span class="text-bold">Indeterminado</span>
+                <span>Indeterminado</span>
             @else
                 {{ $fecha($trabajador['fecha_fin_contrato']) }}
-                <span class="text-bold">(Contrato Fijo)</span>
+                <span>(Contrato Fijo)</span>
             @endif
         </td>
     </tr>
 
     <tr>
-        <td class="sep" colspan="4">Datos vinculados a la relación laboral</td>
+        <td class="sep text-center" colspan="3">Datos vinculados a la relación laboral</td>
     </tr>
     <tr>
-        <td class="label">Cargo</td>
-        <td style="width: 26%;" class="text-bold">{{ $sinDato($laboral['cargo']) }}</td>
-        <td class="label" style="width: 24%;">Régimen</td>
-        <td class="text-bold">{{ $sinDato($laboral['regimen']) }}</td>
+        <td class="label-top">Cargo</td>
+        <td class="label-top">Régimen</td>
+        <td class="label-top">Periodicidad</td>
     </tr>
     <tr>
-        <td class="label">Periodicidad</td>
-        <td class="text-bold">{{ $laboral['periodicidad'] }}</td>
-        <td class="label">Sistema de Pensiones</td>
-        <td class="text-bold">{{ $sinDato($laboral['sistema_pensiones']) }}</td>
+        <td class="text-center empresa-valor">{{ $sinDato($laboral['cargo']) }}</td>
+        <td class="text-center empresa-valor">{{ $sinDato($laboral['regimen']) }}</td>
+        <td class="text-center empresa-valor">{{ $laboral['periodicidad'] }}</td>
     </tr>
     <tr>
-        <td class="label">CUSPP</td>
-        <td>{{ $sinDato($laboral['cuspp']) }}</td>
-        <td class="label">Días Laborados</td>
-        <td class="text-bold">{{ $laboral['dias_laborados'] }} / {{ \App\Services\Planilla\BoletaService::DIAS_MES }}</td>
+        <td class="label-top">Sistema de Pensiones</td>
+        <td class="label-top">CUSPP</td>
+        <td class="label-top">Días Laborados</td>
     </tr>
     <tr>
-        <td class="label">Banco</td>
-        <td>{{ $sinDato($laboral['banco']) }}</td>
-        <td class="label">Cuenta de Ahorro</td>
-        <td>{{ $sinDato($laboral['cuenta_ahorro']) }}</td>
+        <td class="text-center empresa-valor">{{ $sinDato($laboral['sistema_pensiones']) }}</td>
+        <td class="text-center empresa-valor">{{ $sinDato($laboral['cuspp']) }}</td>
+        <td class="text-center empresa-valor">{{ $laboral['dias_laborados'] }} / {{ \App\Services\Planilla\BoletaService::DIAS_MES }}</td>
+    </tr>
+    <tr>
+        <td class="label-top">Banco</td>
+        <td class="label-top" colspan="2">Cuenta de Ahorro</td>
+    </tr>
+    <tr>
+        <td class="text-center empresa-valor">{{ $sinDato($laboral['banco']) }}</td>
+        <td class="text-center empresa-valor" colspan="2">{{ $sinDato($laboral['cuenta_ahorro']) }}</td>
     </tr>
 </table>
 
-<!-- Conceptos: la columna más larga fija la altura de las tres -->
+<!-- Conceptos: Remuneraciones y Retenciones en la misma fila,
+     Aportaciones a ancho completo debajo -->
 <table class="grid" style="margin-top: 2px;">
     <tr>
-        @foreach($columnas as $columna)
-            <th class="sep text-center" style="width: 33.33%;">{{ $columna['titulo'] }}</th>
+        @foreach($filaSuperior as $columna)
+            <th class="sep text-center" style="width: 50%;">{{ $columna['titulo'] }}</th>
         @endforeach
     </tr>
     <tr>
-        @foreach($columnas as $columna)
+        @foreach($filaSuperior as $columna)
             <td style="padding: 0; vertical-align: top;">
                 <table class="conceptos">
                     @foreach($columna['items'] as $item)
                         <tr>
-                            <td style="width: 66%;">
+                            <td>
                                 {{ $item['descripcion'] }}<span style="color: #64748b;">{{ $pct($item['porcentaje']) }}</span>
                             </td>
-                            <td class="monto">{{ number_format($item['monto'], 2) }}</td>
+                            <td class="monto" style="width: 30%;">{{ number_format($item['monto'], 2) }}</td>
                         </tr>
                     @endforeach
-                    @for($i = count($columna['items']); $i < $maxConceptos; $i++)
+                    @for($i = count($columna['items']); $i < $maxFila; $i++)
                         <tr>
                             <td colspan="2">&nbsp;</td>
                         </tr>
                     @endfor
-                    @if($maxConceptos === 0)
+                    @if($maxFila === 0)
                         <tr>
                             <td colspan="2" class="text-center" style="color: #94a3b8;">—</td>
                         </tr>
@@ -308,21 +348,62 @@
         @endforeach
     </tr>
     <tr class="total-row">
-        @foreach($columnas as $columna)
-            <td>
-                <span class="total-label">{{ $columna['titulo'] }}</span>
-                {{ number_format($columna['total'], 2) }}
+        @foreach($filaSuperior as $columna)
+            <td class="text-bold" style="padding: 0;">
+                <table style="border: none;">
+                    <tr>
+                        <td style="border: none; text-align: left;">Total {{ $columna['titulo'] }}:</td>
+                        <td style="border: none; text-align: right; white-space: nowrap;">{{ number_format($columna['total'], 2) }}</td>
+                    </tr>
+                </table>
             </td>
         @endforeach
     </tr>
 </table>
+<table class="grid" style="margin-top: 2px;">
+    <tr>
+        <th class="sep text-center">{{ $aportaciones['titulo'] }}</th>
+    </tr>
+    <tr>
+        <td style="padding: 0; vertical-align: top;">
+            <table class="conceptos">
+                @forelse($aportaciones['items'] as $item)
+                    <tr>
+                        <td>
+                            {{ $item['descripcion'] }}<span style="color: #64748b;">{{ $pct($item['porcentaje']) }}</span>
+                        </td>
+                        <td class="monto" style="width: 26%;">{{ number_format($item['monto'], 2) }}</td>
+                    </tr>
+                @empty
+                    <tr>
+                        <td class="text-center" style="color: #94a3b8;">—</td>
+                    </tr>
+                @endforelse
+            </table>
+        </td>
+    </tr>
+    <tr class="total-row">
+        <td class="text-bold" style="padding: 0;">
+            <table style="border: none;">
+                <tr>
+                    <td style="border: none; text-align: left;">Total {{ $aportaciones['titulo'] }}:</td>
+                    <td style="border: none; text-align: right; white-space: nowrap;">{{ number_format($aportaciones['total'], 2) }}</td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+</table>
 
-<!-- Neto y fecha de emisión -->
+<!-- Neto y fecha de emisión apilados -->
 <table style="border: none; margin-top: 2px;">
     <tr>
-        <td class="neto" style="width: 26%;">NETO A PAGAR</td>
-        <td class="neto-valor" style="width: 24%;">S/ {{ number_format($totales['neto_pagar'], 2) }}</td>
-        <td style="width: 30%; font-size: 6.5px;">Fecha de emisión:
+        <td class="neto" style="width: 34%;">NETO A PAGAR</td>
+        <td class="neto-valor">S/ {{ number_format($totales['neto_pagar'], 2) }}</td>
+    </tr>
+</table>
+<table style="border: none; margin-top: 1px;">
+    <tr>
+        <td style="font-size: 6.5px;">Fecha de emisión:
             <span class="text-bold">{{ \Carbon\Carbon::parse($boleta['fecha_emision'])->format('d/m/Y H:i') }}</span>
         </td>
         <td style="font-size: 6.5px; text-align: right;">
@@ -331,20 +412,6 @@
     </tr>
 </table>
 
-        </td>
-    </tr>
-</table>
-
-<!-- Banda de verificación: QR público + leyenda, en una sola línea de alto.
-     QR y textos van en la MISMA celda (DomPDF reparte columnas en partes
-     iguales) y los textos se alinean al centro del QR con vertical-align
-     para que la banda no crezca de 18 mm y quepa en una sola página. -->
-<table class="verificacion" style="margin-top: 0;">
-    <tr>
-        <td style="border: none; padding: 0; vertical-align: middle;">
-            <img src="{{ $boleta['qr'] }}" style="width: 12mm; height: 12mm; vertical-align: middle; margin-right: 4px;"><span
-                style="vertical-align: middle; display: inline-block;"><span class="verif-titulo">Verificación de autenticidad</span><br><span
-                    class="verif-texto">Escanee el código QR para verificar que esta boleta fue emitida por la Dirección Regional de Educación Huánuco.</span></span>
         </td>
     </tr>
 </table>

@@ -411,6 +411,16 @@ Route::middleware('auth')->group(function () {
         Route::get('/boletas/{detalle}/pdf', [App\Http\Controllers\BoletaController::class, 'pdf'])->name('boletas.pdf');
     });
 
+    // Mis Boletas del trabajador autenticado (apartado propio, sin los
+    // permisos del módulo admin de planillas): solo sus boletas de periodos
+    // visibles. El orden importa: `{detalle}` va al final.
+    Route::prefix('mis-boletas')->name('mis-boletas.')->group(function () {
+        Route::get('/', [App\Http\Controllers\MisBoletasController::class, 'index'])->name('index');
+        Route::get('/{detalle}', [App\Http\Controllers\MisBoletasController::class, 'show'])->name('show');
+        Route::get('/{detalle}/pdf', [App\Http\Controllers\MisBoletasController::class, 'pdf'])->name('pdf');
+        Route::post('/{detalle}/revisar', [App\Http\Controllers\MisBoletasController::class, 'revisar'])->name('revisar');
+    });
+
     // Asistencia - Marcas de entrada/salida
     Route::middleware('role:ROL009,ROL012')->prefix('asistencia')->name('asistencia.')->group(function () {
         Route::get('/', [App\Http\Controllers\AsistenciaController::class, 'index'])->name('index');

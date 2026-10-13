@@ -60,14 +60,25 @@ class AuthController extends Controller
                 ->first();
 
             if ($employee && $request->password === $identifier) {
-                $user = User::create([
-                    'person_id' => $employee->person_id,
-                    'username'  => $identifier,
-                    'dni'       => $identifier,
-                    'password'  => Hash::make($request->password),
-                    'rol_id'    => 'ROL012',
-                    'is_active' => true,
-                ]);
+                // La persona puede ya tener cuenta con otro identificador
+                // (users.person_id es UNIQUE): nunca duplicar.
+                $user = User::where('person_id', $employee->person_id)->first();
+
+                if (!$user) {
+                    try {
+                        $user = User::create([
+                            'person_id' => $employee->person_id,
+                            'username'  => $identifier,
+                            'dni'       => $identifier,
+                            'password'  => Hash::make($request->password),
+                            'rol_id'    => 'ROL012',
+                            'is_active' => true,
+                        ]);
+                    } catch (\Illuminate\Database\UniqueConstraintViolationException $e) {
+                        // Carrera (doble envío): la cuenta ya se creó.
+                        $user = User::where('person_id', $employee->person_id)->first();
+                    }
+                }
             }
         }
 

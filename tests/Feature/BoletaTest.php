@@ -300,7 +300,7 @@ class BoletaTest extends TestCase
         ])->render();
 
         $this->assertStringContainsString('src="' . $boleta['qr'] . '"', $html);
-        $this->assertStringContainsString('Verificación de autenticidad', $html);
+        $this->assertStringNotContainsString('Verificación de autenticidad', $html);
     }
 
     public function test_el_pdf_no_incluye_firmas_de_trabajador_ni_empleador(): void
