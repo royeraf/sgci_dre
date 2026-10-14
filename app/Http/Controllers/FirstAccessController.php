@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Middleware\EnsurePasswordIsChanged;
 use App\Models\AuditLog;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -18,13 +19,12 @@ class FirstAccessController extends Controller
     public function show()
     {
         $user = Auth::user();
-        $person = $user->person;
 
         return Inertia::render('Auth/FirstAccess', [
             'nombre' => $user->full_name,
             'dni'    => $user->dni,
-            // El paso 2 solo aplica si faltan AMBOS datos (correo y celular).
-            'datos_pendientes' => blank($person?->email) && blank($person?->telefono),
+            // Si falta correo o celular, se pedirán en un segundo paso.
+            'datos_pendientes' => EnsurePasswordIsChanged::requiereCompletarDatos($user),
         ]);
     }
 
@@ -50,8 +50,8 @@ class FirstAccessController extends Controller
             ]);
         }
 
-        // Solo se pide completar datos si faltan AMBOS (correo y celular).
-        $datosFaltantes = blank($user->person?->email) && blank($user->person?->telefono);
+        // Se pide completar datos si falta correo o celular (excepto admin).
+        $datosFaltantes = EnsurePasswordIsChanged::requiereCompletarDatos($user);
 
         $user->password             = Hash::make($validated['password']);
         $user->must_change_password = false;

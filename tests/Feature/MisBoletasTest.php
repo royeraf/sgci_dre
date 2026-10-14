@@ -64,6 +64,11 @@ class MisBoletasTest extends TestCase
         $this->ajeno = $this->crearDetalle($this->otro, $this->periodo);
         $this->crearItems($this->detalle);
 
+        // Datos de contacto completos: evita que el middleware de primer acceso
+        // desvíe la navegación autenticada a /completar-datos.
+        $this->empleado->person->update(['email' => 'misboletas.' . uniqid() . '@test.local', 'telefono' => '999000111']);
+        $this->otro->person->update(['email' => 'misboletas.otro.' . uniqid() . '@test.local', 'telefono' => '999000222']);
+
         $this->actingAs($this->usuario);
     }
 

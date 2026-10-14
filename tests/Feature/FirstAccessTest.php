@@ -153,30 +153,56 @@ class FirstAccessTest extends TestCase
         $this->assertSame('999111222', $user->person->telefono);
     }
 
-    public function test_no_pide_completar_datos_si_solo_falta_uno(): void
+    public function test_pide_completar_datos_si_falta_solo_uno(): void
     {
         $user = $this->crearUsuarioEmpleado(['must_change_password' => true]);
         $email = 'soloemail.' . uniqid() . '@drehuanuco.gob.pe';
         $user->person->update(['email' => $email]); // el celular sigue vacío
 
-        // Al faltar solo uno, no hay paso 2.
+        // Al faltar uno, el paso 1 anuncia datos pendientes.
         $this->actingAs($user)->get('/primer-acceso')
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
                 ->component('Auth/FirstAccess')
-                ->where('datos_pendientes', false));
+                ->where('datos_pendientes', true));
 
-        $response = $this->actingAs($user)->post('/primer-acceso', [
+        // Paso 1 -> deriva al paso 2.
+        $this->actingAs($user)->post('/primer-acceso', [
             'password' => 'NuevaClave123',
             'password_confirmation' => 'NuevaClave123',
+        ])->assertRedirect('/completar-datos');
+
+        // El paso 2 solo pide el celular (el correo ya está).
+        $this->actingAs($user->fresh())->get('/completar-datos')
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Auth/CompleteProfile')
+                ->where('requiere_email', false)
+                ->where('requiere_telefono', true));
+
+        $response = $this->actingAs($user->fresh())->post('/completar-datos', [
+            'telefono' => '987654321',
         ]);
 
         $response->assertRedirect('/dashboard');
 
         $user->refresh();
-        $this->assertFalse($user->must_change_password);
-        $this->assertFalse($user->must_complete_profile);
         $this->assertSame($email, $user->person->email);
+        $this->assertSame('987654321', $user->person->telefono);
+        $this->assertFalse($user->must_complete_profile);
+    }
+
+    public function test_admin_no_es_obligado_a_completar_datos(): void
+    {
+        $admin = User::where('rol_id', 'ROL001')->first();
+        if (!$admin) {
+            $this->markTestSkipped('No hay usuario administrador en la base.');
+        }
+
+        // Aun sin datos de contacto, el admin navega con normalidad.
+        $admin->person?->update(['email' => null, 'telefono' => null]);
+
+        $this->actingAs($admin)->get('/api/server-time')->assertOk();
     }
 
     public function test_paso_2_exige_que_los_correos_coincidan(): void

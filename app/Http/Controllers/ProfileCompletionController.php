@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Middleware\EnsurePasswordIsChanged;
 use App\Models\AuditLog;
 use App\Models\Person;
 use App\Models\User;
@@ -13,35 +14,29 @@ use Inertia\Inertia;
 class ProfileCompletionController extends Controller
 {
     /**
-     * Paso 2 del primer acceso: registro de los datos de contacto faltantes
-     * (correo y celular).
+     * Paso 2: registro de los datos de contacto faltantes (correo y celular).
      */
     public function show()
     {
         $user = Auth::user();
 
-        if (!$user->must_complete_profile) {
+        if (!EnsurePasswordIsChanged::requiereCompletarDatos($user)) {
+            if ($user->must_complete_profile) {
+                $user->update(['must_complete_profile' => false]);
+            }
+
             return redirect($this->homeSegunRol($user));
         }
 
         $person = $user->person;
-        $requiereEmail    = blank($person?->email);
-        $requiereTelefono = blank($person?->telefono);
-
-        // Si ya no falta nada, no hay nada que completar.
-        if (!$requiereEmail && !$requiereTelefono) {
-            $user->update(['must_complete_profile' => false]);
-
-            return redirect($this->homeSegunRol($user));
-        }
 
         return Inertia::render('Auth/CompleteProfile', [
             'nombre'   => $user->full_name,
             'dni'      => $user->dni,
             'email'    => $person?->email,
             'telefono' => $person?->telefono,
-            'requiere_email'    => $requiereEmail,
-            'requiere_telefono' => $requiereTelefono,
+            'requiere_email'    => blank($person?->email),
+            'requiere_telefono' => blank($person?->telefono),
         ]);
     }
 
@@ -52,7 +47,11 @@ class ProfileCompletionController extends Controller
     {
         $user = Auth::user();
 
-        if (!$user->must_complete_profile) {
+        if (!EnsurePasswordIsChanged::requiereCompletarDatos($user)) {
+            if ($user->must_complete_profile) {
+                $user->update(['must_complete_profile' => false]);
+            }
+
             return redirect($this->homeSegunRol($user));
         }
 

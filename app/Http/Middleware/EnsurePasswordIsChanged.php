@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\User;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -21,7 +22,7 @@ class EnsurePasswordIsChanged
     ];
 
     /**
-     * Rutas accesibles mientras se completan los datos pendientes del perfil.
+     * Rutas accesibles mientras se completan los datos de contacto.
      *
      * @var array<int, string>
      */
@@ -33,8 +34,8 @@ class EnsurePasswordIsChanged
     ];
 
     /**
-     * Orquesta el primer acceso en dos pasos: primero el cambio de contraseña y,
-     * luego, si faltan datos de contacto, su registro.
+     * Orquesta el primer acceso: primero el cambio de contraseña y, luego, el
+     * registro de los datos de contacto que falten.
      */
     public function handle(Request $request, Closure $next): Response
     {
@@ -44,17 +45,41 @@ class EnsurePasswordIsChanged
             return $next($request);
         }
 
-        // Paso 1: cambio obligatorio de contraseña.
-        if ($user->must_change_password && !$request->routeIs(self::RUTAS_PASSWORD)) {
+        // Paso 1: cambio obligatorio de contraseña (tiene prioridad absoluta).
+        if ($user->must_change_password) {
+            if ($request->routeIs(self::RUTAS_PASSWORD)) {
+                return $next($request);
+            }
+
             return $this->redirigir($request, 'password.force');
         }
 
-        // Paso 2: completar datos de contacto faltantes.
-        if ($user->must_complete_profile && !$request->routeIs(self::RUTAS_PERFIL)) {
+        // Paso 2: completar datos de contacto faltantes (correo o celular).
+        $requiereDatos = self::requiereCompletarDatos($user)
+            || ($user->rol_id !== 'ROL001' && $user->must_complete_profile);
+
+        if ($requiereDatos && !$request->routeIs(self::RUTAS_PERFIL)) {
             return $this->redirigir($request, 'profile.complete');
         }
 
         return $next($request);
+    }
+
+    /**
+     * Indica si al usuario le falta registrar el correo o el celular.
+     * El administrador queda excluido de este paso.
+     */
+    public static function requiereCompletarDatos(User $user): bool
+    {
+        if ($user->rol_id === 'ROL001') {
+            return false;
+        }
+
+        if (!$user->person_id) {
+            return false;
+        }
+
+        return blank($user->person?->email) || blank($user->person?->telefono);
     }
 
     /**

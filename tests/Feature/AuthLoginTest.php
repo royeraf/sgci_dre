@@ -156,18 +156,18 @@ class AuthLoginTest extends TestCase
         // Empleado activo cuya persona ya tiene cuenta con otro identificador:
         // entrar con DNI como usuario y clave no debe lanzar 500 por
         // users_person_id_unique, sino responder credenciales incorrectas.
-        $empleado = Employee::where('estado', 'ACTIVO')
-            ->whereHas('person')
-            ->whereNotIn('person_id', User::whereNotNull('person_id')->select('person_id'))
-            ->inRandomOrder()
-            ->firstOrFail();
-
         $dni = $this->dniLibre();
-        $empleado->person->update(['dni' => $dni]);
+        $person = Person::create([
+            'dni' => $dni,
+            'nombres' => 'Empleado',
+            'apellidos' => 'Prueba',
+            'tipo' => 'INTERNO',
+        ]);
+        Employee::create(['person_id' => $person->id, 'estado' => 'ACTIVO']);
 
         $otro = $this->dniLibre();
         User::create([
-            'person_id' => $empleado->person_id,
+            'person_id' => $person->id,
             'username' => $otro,
             'password' => Hash::make('otraclave123'),
             'rol_id' => 'ROL012',
@@ -181,7 +181,7 @@ class AuthLoginTest extends TestCase
 
         $response->assertSessionHasErrors('credentials');
         $this->assertGuest();
-        $this->assertSame(1, User::where('person_id', $empleado->person_id)->count());
+        $this->assertSame(1, User::where('person_id', $person->id)->count());
     }
 
     /** DNI de 8 dígitos libre en people y users (columnas UNIQUE). */
