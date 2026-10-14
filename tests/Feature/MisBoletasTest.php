@@ -54,7 +54,6 @@ class MisBoletasTest extends TestCase
         $this->usuario = User::create([
             'person_id' => $this->empleado->person_id,
             'username' => $this->dni,
-            'dni' => $this->dni,
             'password' => Hash::make($this->dni),
             'rol_id' => 'ROL012',
             'is_active' => true,
@@ -85,7 +84,6 @@ class MisBoletasTest extends TestCase
         $otroDni = $this->dniLibre();
         $sinVinculo = User::create([
             'username' => $otroDni,
-            'dni' => $otroDni,
             'password' => Hash::make('clave123'),
             'rol_id' => 'ROL012',
             'is_active' => true,
@@ -178,14 +176,32 @@ class MisBoletasTest extends TestCase
         // la cuenta ROL012 del empleado en el setUp.
         $conUsuario = User::whereNotNull('person_id')->select('person_id');
 
-        return Employee::where('estado', 'ACTIVO')
+        $empleado = Employee::where('estado', 'ACTIVO')
             ->whereHas('contractType', fn ($query) => $query->whereRaw('UPPER(nombre) = ?', ['CAS']))
             ->whereHas('person')
             ->whereNotIn('id', $conBoletasVisibles)
             ->whereNotIn('person_id', $conUsuario)
             ->when($exceptoId, fn ($query) => $query->where('id', '!=', $exceptoId))
             ->inRandomOrder()
-            ->firstOrFail();
+            ->first();
+
+        if ($empleado) {
+            return $empleado;
+        }
+
+        // La BD de desarrollo puede no tener empleados CAS sin cuenta; se crea uno
+        // para que la prueba no dependa de los datos semilla.
+        $person = Person::create([
+            'dni' => $this->dniLibre(),
+            'nombres' => 'Empleado',
+            'apellidos' => 'Prueba',
+            'tipo' => 'INTERNO',
+        ]);
+
+        return Employee::create([
+            'person_id' => $person->id,
+            'estado' => 'ACTIVO',
+        ]);
     }
 
     /** DNI de 8 dígitos libre en people y users (columnas UNIQUE). */
@@ -194,7 +210,7 @@ class MisBoletasTest extends TestCase
         foreach (range(1, 50) as $intento) {
             $dni = (string) random_int(48000000, 48999999);
 
-            if (!Person::where('dni', $dni)->exists() && !User::where('dni', $dni)->exists()) {
+            if (!Person::where('dni', $dni)->exists() && !User::where('username', $dni)->exists()) {
                 return $dni;
             }
         }

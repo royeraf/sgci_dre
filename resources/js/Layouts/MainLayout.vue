@@ -601,6 +601,11 @@ const hasModulePermission = (module, action = 'ver') => {
     // Dashboard always accessible
     if (module === 'dashboard') return true;
 
+    // "Papeletas de Salida" deshabilitado por ahora para el rol Empleado Portal
+    // (ROL012): la gestión se realiza desde el Portal de Empleados. Se ignora
+    // incluso si el módulo fue asignado explícitamente vía modulos_json.
+    if (module === 'papeletas' && user.rol_id === 'ROL012') return false;
+
     // Use explicitly assigned modules from user management
     if (user.modulos_json && user.modulos_json.length > 0) {
         return user.modulos_json.includes(module);

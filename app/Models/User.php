@@ -21,19 +21,16 @@ class User extends Authenticatable
     protected $fillable = [
         'person_id',
         'username',
-        'dni',
-        'name',
-        'email',
         'password',
-        'titulo',
-        'apellidos',
         'cargo',
         'area',
-        'telefono',
         'rol_id',
         'modulos_json',
         'tabs_json',
         'is_active',
+        'must_change_password',
+        'must_complete_profile',
+        'password_changed_at',
         'ultimo_acceso',
     ];
 
@@ -57,6 +54,9 @@ class User extends Authenticatable
         'password' => 'hashed',
         'ultimo_acceso' => 'datetime',
         'is_active' => 'boolean',
+        'must_change_password' => 'boolean',
+        'must_complete_profile' => 'boolean',
+        'password_changed_at' => 'datetime',
         'modulos_json' => 'array',
         'tabs_json'    => 'array',
     ];
@@ -104,51 +104,35 @@ class User extends Authenticatable
     ];
 
     /**
-     * Nombre del usuario: de people si está vinculado, si no del campo directo.
+     * Nombre del usuario (desde people).
      */
     public function getNameAttribute(): ?string
     {
-        if ($this->person_id) {
-            $person = $this->relationLoaded('person') ? $this->person : $this->person()->first();
-            return $person?->nombres ?? $this->attributes['name'] ?? null;
-        }
-        return $this->attributes['name'] ?? null;
+        return $this->person?->nombres;
     }
 
     /**
-     * Apellidos del usuario: de people si está vinculado, si no del campo directo.
+     * Apellidos del usuario (desde people).
      */
     public function getApellidosAttribute(): ?string
     {
-        if ($this->person_id) {
-            $person = $this->relationLoaded('person') ? $this->person : $this->person()->first();
-            return $person?->apellidos ?? $this->attributes['apellidos'] ?? null;
-        }
-        return $this->attributes['apellidos'] ?? null;
+        return $this->person?->apellidos;
     }
 
     /**
-     * Email del usuario: de people si está vinculado, si no del campo directo.
+     * Email del usuario (desde people).
      */
     public function getEmailAttribute(): ?string
     {
-        if ($this->person_id) {
-            $person = $this->relationLoaded('person') ? $this->person : $this->person()->first();
-            return $person?->email ?? $this->attributes['email'] ?? null;
-        }
-        return $this->attributes['email'] ?? null;
+        return $this->person?->email;
     }
 
     /**
-     * Título del usuario: de people si está vinculado, si no del campo directo.
+     * Título del usuario (desde people).
      */
     public function getTituloAttribute(): ?string
     {
-        if ($this->person_id) {
-            $person = $this->relationLoaded('person') ? $this->person : $this->person()->first();
-            return $person?->titulo ?? $this->attributes['titulo'] ?? null;
-        }
-        return $this->attributes['titulo'] ?? null;
+        return $this->person?->titulo;
     }
 
     /**
@@ -220,19 +204,41 @@ class User extends Authenticatable
     }
 
     /**
-     * Acceso al DNI a través de person con fallback
+     * Acceso al DNI a través de person
      */
     public function getDniAttribute(): ?string
     {
-        return $this->person?->dni ?? $this->attributes['dni'] ?? null;
+        return $this->person?->dni;
     }
 
     /**
-     * Acceso al teléfono a través de person con fallback
+     * Acceso al teléfono a través de person
      */
     public function getTelefonoAttribute(): ?string
     {
-        return $this->person?->telefono ?? $this->attributes['telefono'] ?? null;
+        return $this->person?->telefono;
+    }
+
+    /**
+     * Busca un usuario por nombre de usuario, DNI o correo electrónico.
+     *
+     * Los datos personales (incluido el DNI) viven en `people`, así que el DNI y
+     * el correo siempre se consultan en la persona vinculada.
+     */
+    public static function findByIdentifier(string $identifier): ?self
+    {
+        $identifier = trim($identifier);
+
+        if ($identifier === '') {
+            return null;
+        }
+
+        return static::query()
+            ->where('username', $identifier)
+            ->orWhereHas('person', function ($query) use ($identifier) {
+                $query->where('dni', $identifier)->orWhere('email', $identifier);
+            })
+            ->first();
     }
 
     /**

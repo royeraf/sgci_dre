@@ -229,9 +229,28 @@ class DatabaseSeeder extends Seeder
         ];
 
         foreach ($users as $user) {
-            User::updateOrCreate(
+            // Los datos personales viven en people.
+            $person = Person::updateOrCreate(
                 ['dni' => $user['dni']],
-                $user
+                [
+                    'nombres'   => $user['name'],
+                    'apellidos' => $user['apellidos'],
+                    'email'     => $user['email'],
+                    'tipo'      => 'INTERNO',
+                    'is_active' => true,
+                ]
+            );
+
+            User::updateOrCreate(
+                ['person_id' => $person->id],
+                [
+                    'username'  => strtolower(explode('@', $user['email'])[0]),
+                    'password'  => $user['password'],
+                    'rol_id'    => $user['rol_id'],
+                    'cargo'     => $user['cargo'] ?? null,
+                    'area'      => $user['area'] ?? null,
+                    'is_active' => $user['is_active'] ?? true,
+                ]
             );
         }
 

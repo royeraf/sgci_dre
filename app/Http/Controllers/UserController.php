@@ -29,28 +29,31 @@ class UserController extends Controller
     public function getUsers()
     {
         $users = User::with(['customRole', 'person', 'employee.position', 'employee.direction'])
-            ->select('id', 'person_id', 'username', 'dni', 'name', 'apellidos', 'email', 'titulo', 'cargo', 'area', 'telefono', 'rol_id', 'modulos_json', 'tabs_json', 'is_active', 'ultimo_acceso', 'created_at')
-            ->orderByRaw('COALESCE(name, (SELECT nombres FROM people WHERE people.id = users.person_id)) ASC')
+            ->select('id', 'person_id', 'username', 'cargo', 'area', 'rol_id', 'modulos_json', 'tabs_json', 'is_active', 'must_change_password', 'ultimo_acceso', 'created_at')
+            ->orderByRaw('(SELECT nombres FROM people WHERE people.id = users.person_id) ASC')
             ->get()
             ->map(function ($user) {
                 $p = $user->person;
+                $esRrhh = (bool) $user->employee;
                 return [
                     'id'          => $user->id,
                     'person_id'   => $user->person_id,
-                    'dni'         => $p?->dni ?? $user->getRawOriginal('dni'),
-                    'name'        => $p?->nombres ?? $user->getRawOriginal('name'),
-                    'apellidos'   => $p?->apellidos ?? $user->getRawOriginal('apellidos'),
+                    'dni'         => $p?->dni,
+                    'name'        => $p?->nombres,
+                    'apellidos'   => $p?->apellidos,
                     'full_name'   => $user->full_name,
-                    'email'       => $p?->email ?? $user->getRawOriginal('email'),
-                    'titulo'      => $user->titulo,
+                    'email'       => $p?->email,
+                    'titulo'      => $p?->titulo,
                     'cargo'       => $user->cargo,
                     'area'        => $user->area,
-                    'telefono'    => $p?->telefono ?? $user->getRawOriginal('telefono'),
+                    'telefono'    => $p?->telefono,
                     'rol_id'      => $user->rol_id,
                     'rol_nombre'  => $user->customRole?->nombre,
                     'modulos_json' => $user->modulos_json,
                     'tabs_json'   => $user->tabs_json,
                     'is_active'   => $user->is_active,
+                    'must_change_password' => (bool) $user->must_change_password,
+                    'es_rrhh'     => $esRrhh,
                     'ultimo_acceso' => $user->ultimo_acceso?->format('Y-m-d H:i:s'),
                     'created_at'  => $user->created_at->format('Y-m-d'),
                     'person'      => $p ? [
@@ -77,20 +80,22 @@ class UserController extends Controller
         return response()->json([
             'id'          => $user->id,
             'person_id'   => $user->person_id,
-            'dni'         => $p?->dni ?? $user->getRawOriginal('dni'),
-            'name'        => $p?->nombres ?? $user->getRawOriginal('name'),
-            'apellidos'   => $p?->apellidos ?? $user->getRawOriginal('apellidos'),
+            'dni'         => $p?->dni,
+            'name'        => $p?->nombres,
+            'apellidos'   => $p?->apellidos,
             'full_name'   => $user->full_name,
-            'email'       => $p?->email ?? $user->getRawOriginal('email'),
-            'titulo'      => $user->titulo,
+            'email'       => $p?->email,
+            'titulo'      => $p?->titulo,
             'cargo'       => $user->cargo,
             'area'        => $user->area,
-            'telefono'    => $p?->telefono ?? $user->getRawOriginal('telefono'),
+            'telefono'    => $p?->telefono,
             'rol_id'      => $user->rol_id,
             'rol_nombre'  => $user->customRole?->nombre,
             'modulos_json' => $user->modulos_json,
             'tabs_json'   => $user->tabs_json,
             'is_active'   => $user->is_active,
+            'must_change_password' => (bool) $user->must_change_password,
+            'es_rrhh'     => (bool) $user->employee,
             'ultimo_acceso' => $user->ultimo_acceso,
             'created_at'  => $user->created_at,
             'person'      => $p ? [
@@ -143,8 +148,9 @@ class UserController extends Controller
     /**
      * Store a new user.
      *
-     * Cuando se provee person_id los datos personales (dni, nombre, apellidos,
-     * email, teléfono) se leen de la tabla people y NO se duplican en users.
+     * Si se provee person_id se vincula a una persona existente (RRHH). Si no,
+     * se crea una nueva persona en `people` con los datos capturados. Los datos
+     * personales nunca se guardan en `users`.
      */
     public function store(Request $request)
     {
@@ -154,7 +160,7 @@ class UserController extends Controller
         $rules = [
             'person_id' => ['nullable', 'string', 'exists:people,id', 'unique:users,person_id'],
             'titulo'    => ['nullable', 'string', 'max:20'],
-            'email'     => ['nullable', 'email', 'unique:users,email'],
+            'email'     => ['nullable', 'email', 'max:150'],
             'password'  => ['required', 'string', 'min:8', 'confirmed'],
             'cargo'     => ['nullable', 'string', 'max:100'],
             'area'      => ['nullable', 'string', 'max:100'],
@@ -163,12 +169,12 @@ class UserController extends Controller
             'modulos_json.*' => ['string'],
             'tabs_json'      => ['nullable', 'array'],
             'is_active'      => ['boolean'],
+            'must_change_password' => ['boolean'],
         ];
 
         $messages = [
             'person_id.unique'  => 'Esta persona ya tiene un usuario del sistema asignado',
             'email.email'       => 'El email debe ser válido',
-            'email.unique'      => 'Este email ya está registrado',
             'password.required' => 'La contraseña es obligatoria',
             'password.min'      => 'La contraseña debe tener al menos 8 caracteres',
             'password.confirmed'=> 'Las contraseñas no coinciden',
@@ -176,56 +182,54 @@ class UserController extends Controller
             'rol_id.exists'     => 'El rol seleccionado no existe',
         ];
 
-        // Sin persona vinculada: los datos personales se capturan en el formulario
+        // Sin persona vinculada: se crea una persona nueva en people.
         if (!$hasPersonId) {
-            $rules['dni']      = ['required', 'string', 'size:8', 'unique:users,dni'];
+            $rules['dni']      = ['required', 'string', 'size:8', 'unique:people,dni'];
             $rules['name']     = ['required', 'string', 'max:255'];
             $rules['apellidos']= ['nullable', 'string', 'max:100'];
             $rules['telefono'] = ['nullable', 'string', 'max:20'];
             $messages += [
                 'dni.required' => 'El DNI es obligatorio',
                 'dni.size'     => 'El DNI debe tener 8 dígitos',
-                'dni.unique'   => 'Este DNI ya está registrado en usuarios',
+                'dni.unique'   => 'Este DNI ya está registrado',
                 'name.required'=> 'El nombre es obligatorio',
             ];
         }
 
         $validated = $request->validate($rules, $messages);
 
-        // Generar username único a partir del DNI (la clave de login)
-        $baseDni  = $hasPersonId
-            ? Person::findOrFail($validated['person_id'])->dni
-            : $validated['dni'];
-        $username = $this->generateUniqueUsername($baseDni);
-
-        $userData = [
-            'username'    => $username,
-            'password'    => Hash::make($validated['password']),
-            'rol_id'      => $validated['rol_id'],
-            'modulos_json'=> !empty($validated['modulos_json']) ? $validated['modulos_json'] : null,
-            'tabs_json'   => !empty($validated['tabs_json']) ? $validated['tabs_json'] : null,
-            'is_active'   => $validated['is_active'] ?? true,
-        ];
-
+        // Persona: existente (RRHH) o nueva.
         if ($hasPersonId) {
             $person = Person::findOrFail($validated['person_id']);
-            // Vinculado a RRHH: solo guardamos person_id y el DNI como clave de login
-            // Nombre, apellidos, email, teléfono, título, cargo y área vienen de RRHH (no se duplican)
-            $userData['person_id'] = $validated['person_id'];
-            $userData['dni']       = $person->dni;
         } else {
-            // Sin persona: guardar todos los datos directamente en users
-            $userData['titulo']   = $validated['titulo'] ?? null;
-            $userData['dni']      = $validated['dni'];
-            $userData['name']     = $validated['name'];
-            $userData['apellidos']= $validated['apellidos'] ?? null;
-            $userData['email']    = $validated['email'] ?? null;
-            $userData['telefono'] = $validated['telefono'] ?? null;
-            $userData['cargo']    = $validated['cargo'] ?? null;
-            $userData['area']     = $validated['area'] ?? null;
+            $person = Person::create([
+                'dni'       => $validated['dni'],
+                'nombres'   => $validated['name'],
+                'apellidos' => $validated['apellidos'] ?? '',
+                'titulo'    => $validated['titulo'] ?? null,
+                'email'     => $validated['email'] ?? null,
+                'telefono'  => $validated['telefono'] ?? null,
+                'tipo'      => 'INTERNO',
+                'is_active' => true,
+            ]);
         }
 
-        $user = User::create($userData);
+        // Generar username único a partir del DNI (la clave de login)
+        $username = $this->generateUniqueUsername($person->dni);
+
+        $user = User::create([
+            'person_id'    => $person->id,
+            'username'     => $username,
+            'password'     => Hash::make($validated['password']),
+            'rol_id'       => $validated['rol_id'],
+            'cargo'        => $validated['cargo'] ?? null,
+            'area'         => $validated['area'] ?? null,
+            'modulos_json' => !empty($validated['modulos_json']) ? $validated['modulos_json'] : null,
+            'tabs_json'    => !empty($validated['tabs_json']) ? $validated['tabs_json'] : null,
+            'is_active'    => $validated['is_active'] ?? true,
+            // Por defecto, todo usuario nuevo debe cambiar la contraseña en su primer acceso.
+            'must_change_password' => $validated['must_change_password'] ?? true,
+        ]);
 
         return response()->json([
             'message' => 'Usuario creado exitosamente',
@@ -251,13 +255,14 @@ class UserController extends Controller
     /**
      * Update an existing user.
      *
-     * Si el usuario tiene person_id, los datos personales (dni, nombre, apellidos,
-     * teléfono) NO se actualizan aquí — viven en la tabla people.
+     * Si la persona está vinculada a RRHH (tiene empleado), sus datos personales
+     * se editan desde el módulo de Recursos Humanos. Si no, se editan en `people`
+     * a través de este formulario.
      */
     public function update(Request $request, $id)
     {
         $user = User::findOrFail($id);
-        $hasPersonId = !empty($user->person_id);
+        $editaPersona = !$user->employee()->exists();
 
         // Reglas comunes
         $rules = [
@@ -269,6 +274,7 @@ class UserController extends Controller
             'modulos_json.*' => ['string'],
             'tabs_json'      => ['nullable', 'array'],
             'is_active'      => ['boolean'],
+            'must_change_password' => ['boolean'],
         ];
 
         $messages = [
@@ -276,12 +282,12 @@ class UserController extends Controller
             'rol_id.exists'  => 'El rol seleccionado no existe',
         ];
 
-        // Sin persona vinculada: puede editar sus datos personales (incluido email)
-        if (!$hasPersonId) {
-            $rules['dni']      = ['required', 'string', 'size:8', Rule::unique('users')->ignore($user->id)];
+        // Persona no vinculada a RRHH: puede editar sus datos personales.
+        if ($editaPersona) {
+            $rules['dni']      = ['required', 'string', 'size:8', Rule::unique('people', 'dni')->ignore($user->person_id)];
             $rules['name']     = ['required', 'string', 'max:255'];
             $rules['apellidos']= ['nullable', 'string', 'max:100'];
-            $rules['email']    = ['nullable', 'email', Rule::unique('users')->ignore($user->id)];
+            $rules['email']    = ['nullable', 'email', 'max:150'];
             $rules['telefono'] = ['nullable', 'string', 'max:20'];
             $messages += [
                 'dni.required' => 'El DNI es obligatorio',
@@ -289,14 +295,15 @@ class UserController extends Controller
                 'dni.unique'   => 'Este DNI ya está registrado',
                 'name.required'=> 'El nombre es obligatorio',
                 'email.email'  => 'El email debe ser válido',
-                'email.unique' => 'Este email ya está registrado',
             ];
         }
 
         $validated = $request->validate($rules, $messages);
 
-        $updateData = [
+        $user->update([
             'rol_id'      => $validated['rol_id'],
+            'cargo'       => array_key_exists('cargo', $validated) ? $validated['cargo'] : $user->cargo,
+            'area'        => array_key_exists('area', $validated) ? $validated['area'] : $user->area,
             'modulos_json'=> array_key_exists('modulos_json', $validated)
                 ? (!empty($validated['modulos_json']) ? $validated['modulos_json'] : null)
                 : $user->modulos_json,
@@ -304,20 +311,19 @@ class UserController extends Controller
                 ? (!empty($validated['tabs_json']) ? $validated['tabs_json'] : null)
                 : $user->tabs_json,
             'is_active'   => $validated['is_active'] ?? $user->is_active,
-        ];
+            'must_change_password' => $validated['must_change_password'] ?? $user->must_change_password,
+        ]);
 
-        if (!$hasPersonId) {
-            $updateData['titulo']   = $validated['titulo'] ?? null;
-            $updateData['dni']      = $validated['dni'];
-            $updateData['name']     = $validated['name'];
-            $updateData['apellidos']= $validated['apellidos'] ?? null;
-            $updateData['email']    = $validated['email'] ?? null;
-            $updateData['telefono'] = $validated['telefono'] ?? null;
-            $updateData['cargo']    = $validated['cargo'] ?? null;
-            $updateData['area']     = $validated['area'] ?? null;
+        if ($editaPersona && $user->person) {
+            $user->person->update([
+                'dni'       => $validated['dni'],
+                'nombres'   => $validated['name'],
+                'apellidos' => $validated['apellidos'] ?? '',
+                'titulo'    => $validated['titulo'] ?? null,
+                'email'     => $validated['email'] ?? null,
+                'telefono'  => $validated['telefono'] ?? null,
+            ]);
         }
-
-        $user->update($updateData);
 
         return response()->json([
             'message' => 'Usuario actualizado exitosamente',
@@ -342,10 +348,14 @@ class UserController extends Controller
 
         $user->update([
             'password' => Hash::make($validated['password']),
+            // Al resetear la contraseña desde el admin, el usuario deberá
+            // cambiarla en su siguiente inicio de sesión.
+            'must_change_password' => true,
+            'password_changed_at'  => null,
         ]);
 
         return response()->json([
-            'message' => 'Contraseña actualizada exitosamente',
+            'message' => 'Contraseña actualizada exitosamente. El usuario deberá cambiarla al iniciar sesión.',
         ]);
     }
 

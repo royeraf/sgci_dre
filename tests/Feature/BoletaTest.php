@@ -316,31 +316,31 @@ class BoletaTest extends TestCase
         $this->assertStringNotContainsString('Firma del empleador', $html);
     }
 
-    public function test_el_pdf_usa_una_sola_tipografia_dejavu(): void
+    public function test_el_pdf_usa_solo_source_sans_3(): void
     {
-        // `font-weight: 900` no lo resuelve DomPDF y cae a la serif por
-        // defecto (Times), dejando la boleta impresa con dos tipografías.
+        // Un peso que DomPDF no resuelve (p. ej. 900) cae a Times y la
+        // boleta queda impresa con dos tipografías.
         $pdf = $this->get("/planillas/boletas/{$this->detalle->id}/pdf")->getContent();
 
         preg_match_all('#/BaseFont\s*/([A-Za-z0-9+\-]+)#', $pdf, $coincidencias);
 
         $familias = array_values(array_unique($coincidencias[1]));
+        $nombres = array_map(
+            fn (string $f) => preg_replace('/^[A-Z]{6}\+/', '', $f),
+            $familias
+        );
 
         $ajenas = array_values(array_filter(
-            $familias,
-            fn (string $f) => ! str_contains($f, 'DejaVu')
+            $nombres,
+            fn (string $f) => ! str_contains($f, 'SourceSans3')
         ));
 
         $this->assertSame(
             [],
             $ajenas,
-            'El PDF incrusta tipografías ajenas a DejaVu Sans: ' . implode(', ', $ajenas)
+            'El PDF incrusta tipografías ajenas a Source Sans 3: ' . implode(', ', $ajenas)
         );
-
-        $this->assertContains('DejaVuSans', array_map(
-            fn (string $f) => preg_replace('/^[A-Z]{6}\+/', '', $f),
-            $familias
-        ));
+        $this->assertNotEmpty($nombres);
     }
 
     public function test_las_boletas_requieren_autenticacion(): void

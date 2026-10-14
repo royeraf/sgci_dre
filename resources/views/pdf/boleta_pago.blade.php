@@ -9,12 +9,24 @@
             size: A5 portrait;
             margin: 7mm 6mm;
         }
-        /* La familia se fija en todos los descendientes: si un elemento se
-           queda sin heredar, DomPDF cae a la fuente serif por defecto
-           (Times) y la boleta se imprime con dos tipografías distintas.
-           Tampoco usar `font-weight: 900`, que DomPDF no sabe resolver. */
+        /* Source Sans 3 (SIL OFL), regular y bold. La familia se fija en
+           todos los descendientes: si un elemento se queda sin heredar,
+           DomPDF cae a Times. No usar `font-weight: 900`: no hay archivo
+           para ese peso y DomPDF sustituye la familia. */
+        @font-face {
+            font-family: 'Source Sans 3';
+            font-style: normal;
+            font-weight: normal;
+            src: url('{{ str_replace('\\', '/', resource_path('fonts/SourceSans3-Regular.ttf')) }}') format('truetype');
+        }
+        @font-face {
+            font-family: 'Source Sans 3';
+            font-style: normal;
+            font-weight: bold;
+            src: url('{{ str_replace('\\', '/', resource_path('fonts/SourceSans3-Bold.ttf')) }}') format('truetype');
+        }
         body, body * {
-            font-family: 'DejaVu Sans', sans-serif;
+            font-family: 'Source Sans 3', sans-serif;
         }
         body {
             font-size: 7.6px;

@@ -234,6 +234,23 @@
                                 </label>
                             </div>
                         </div>
+
+                        <!-- Primer Acceso -->
+                        <div>
+                            <label class="block text-sm font-bold text-slate-700 mb-2">
+                                Primer Acceso
+                            </label>
+                            <div class="flex items-start h-10">
+                                <input type="checkbox" v-model="mustChangePassword" v-bind="mustChangePasswordProps" id="must_change_password"
+                                    class="mt-0.5 w-4 h-4 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500/20 cursor-pointer" />
+                                <label for="must_change_password" class="ml-2 text-sm text-slate-700 leading-tight">
+                                    Obligar a cambiar contraseña al ingresar
+                                </label>
+                            </div>
+                            <p class="mt-1 text-xs text-slate-400">
+                                El usuario deberá actualizar su contraseña y completar correo y celular.
+                            </p>
+                        </div>
                     </div>
 
                     <!-- Módulos Asignados -->
@@ -492,7 +509,9 @@ const ROLE_MODULE_PRESETS = {
     'ROL009': ['dashboard', 'recursos_humanos', 'planillas', 'papeletas', 'asistencia'],
     'ROL010': ['dashboard', 'secretaria'],
     'ROL011': ['dashboard', 'papeletas'],
-    'ROL012': ['dashboard', 'papeletas', 'asistencia', 'patrimonio'],
+    // ROL012 (Empleado Portal): "papeletas" deshabilitado por ahora; sus
+    // solicitudes se gestionan desde el Portal de Empleados (/portal/papeletas).
+    'ROL012': ['dashboard', 'asistencia', 'patrimonio'],
 };
 
 const MODULE_TABS = {
@@ -553,7 +572,7 @@ const showEmployeeDropdown = ref(false);
 
 // True cuando el usuario tiene o tendrá una persona de RRHH vinculada
 const hasLinkedPerson = computed(() => {
-    if (props.isEditing) return !!(props.user?.person_id);
+    if (props.isEditing) return !!(props.user?.es_rrhh);
     return !!selectedPersonId.value;
 });
 
@@ -658,6 +677,7 @@ const userSchema = computed(() => toTypedSchema(
         area: yup.string().transform((value) => value || null).nullable(),
         rol_id: yup.string().required('El rol es obligatorio'),
         is_active: yup.boolean(),
+        must_change_password: yup.boolean(),
         password: props.isEditing
             ? yup.string().transform((value) => value || null).nullable()
             : yup.string().required('La contraseña es obligatoria').min(8, 'La contraseña debe tener al menos 8 caracteres'),
@@ -680,6 +700,7 @@ const { errors: formErrors, defineField, handleSubmit: validateForm, setValues, 
         area: '',
         rol_id: '',
         is_active: true,
+        must_change_password: true,
         password: '',
         password_confirmation: ''
     },
@@ -695,6 +716,7 @@ const [cargo, cargoProps] = defineField('cargo');
 const [area, areaProps] = defineField('area');
 const [rolId, rolIdProps] = defineField('rol_id');
 const [isActive, isActiveProps] = defineField('is_active');
+const [mustChangePassword, mustChangePasswordProps] = defineField('must_change_password');
 const [password, passwordProps] = defineField('password');
 const [passwordConfirmation, passwordConfirmationProps] = defineField('password_confirmation');
 
@@ -736,6 +758,7 @@ watch(() => props.user, (newUser) => {
             area: newUser.area || '',
             rol_id: newUser.rol_id || '',
             is_active: newUser.is_active ?? true,
+            must_change_password: newUser.must_change_password ?? false,
             password: '',
             password_confirmation: ''
         });
@@ -830,6 +853,7 @@ const handleSubmit = validateForm((values) => {
         email:        values.email    || null,
         rol_id:       values.rol_id,
         is_active:    values.is_active,
+        must_change_password: values.must_change_password,
         modulos_json,
         tabs_json,
     };

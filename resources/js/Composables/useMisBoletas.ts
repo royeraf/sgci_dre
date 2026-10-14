@@ -4,20 +4,12 @@ import type { BoletaPortalFila } from '@/Composables/useBoletasPortal';
 
 /**
  * Apartado "Mis Boletas" del sistema principal (usuario autenticado): la
- * identidad es la sesión, así que no hay consulta por DNI ni salida. Las
- * filas tienen la misma forma que las del portal público y se reutiliza
- * `BoletaPreviewModal` con `urlPdf` apuntando a `/mis-boletas/.../pdf`.
+ * identidad es la sesión, así que no hay consulta por DNI ni salida. El PDF
+ * se abre en el visor integrado (`usePdfViewer`) con `urlPdf`.
  */
 export function useMisBoletas() {
     const guardando = ref(false);
     const error = ref('');
-
-    /** Vista previa de una boleta propia. */
-    const ver = async (detalleId: string) => {
-        error.value = '';
-        const { data } = await axios.get(`/mis-boletas/${detalleId}`);
-        return data;
-    };
 
     /** Confirmación de recibido; idempotente en el servidor. */
     const revisar = async (fila: BoletaPortalFila): Promise<string | null> => {
@@ -40,7 +32,6 @@ export function useMisBoletas() {
     return {
         guardando,
         error,
-        ver,
         revisar,
         urlPdf,
     };

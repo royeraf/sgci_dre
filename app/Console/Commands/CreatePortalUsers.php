@@ -32,9 +32,9 @@ class CreatePortalUsers extends Command
 
         foreach ($employees as $employee) {
             $dni = $employee->person->dni;
-            // Verificar si ya existe un usuario para esta persona o DNI
+            // Verificar si ya existe un usuario para esta persona (people.dni es la fuente canónica)
             $existingByPerson = User::where('person_id', $employee->person_id)->first();
-            $existingByDni    = User::where('dni', $dni)->first();
+            $existingByDni    = User::findByIdentifier($dni);
 
             if ($existingByPerson || $existingByDni) {
                 $skipped++;
@@ -60,11 +60,10 @@ class CreatePortalUsers extends Command
             }
 
             // Datos personales (nombre, email, tel) ya están en people a través de person_id
-            // Solo guardamos person_id y dni (clave de login) en users
+            // Solo guardamos person_id y el username (clave de login) en users
             User::create([
                 'person_id' => $employee->person_id,
                 'username'  => $username,
-                'dni'       => $dni,
                 'password'  => Hash::make($dni),
                 'rol_id'    => $role,
                 'is_active' => true,

@@ -32,13 +32,18 @@ class AuthLoginTest extends TestCase
 
     public function test_user_can_login_with_dni(): void
     {
-        $user = User::where('dni', '12345678')->first();
+        $user = User::findByIdentifier('12345678');
         if (!$user) {
-            $user = User::create([
+            $person = Person::create([
                 'dni' => '12345678',
-                'name' => 'Admin Test',
-                'username' => 'admintest',
+                'nombres' => 'Admin',
+                'apellidos' => 'Test',
+                'tipo' => 'INTERNO',
                 'email' => 'admintest@dre.gob.pe',
+            ]);
+            $user = User::create([
+                'person_id' => $person->id,
+                'username' => '12345678',
                 'password' => Hash::make('admin123'),
                 'rol_id' => 'ROL001',
                 'is_active' => true,
@@ -164,7 +169,6 @@ class AuthLoginTest extends TestCase
         User::create([
             'person_id' => $empleado->person_id,
             'username' => $otro,
-            'dni' => $otro,
             'password' => Hash::make('otraclave123'),
             'rol_id' => 'ROL012',
             'is_active' => true,
@@ -187,7 +191,6 @@ class AuthLoginTest extends TestCase
             $dni = (string) random_int(48000000, 48999999);
 
             if (!Person::where('dni', $dni)->exists()
-                && !User::where('dni', $dni)->exists()
                 && !User::where('username', $dni)->exists()) {
                 return $dni;
             }
@@ -207,7 +210,9 @@ class AuthLoginTest extends TestCase
         ]);
 
         $response->assertStatus(200);
-        $response->assertJson(['message' => 'Contraseña actualizada exitosamente']);
+        $response->assertJson(['message' => 'Contraseña actualizada exitosamente. El usuario deberá cambiarla al iniciar sesión.']);
         $this->assertTrue(Hash::check('nuevopassword123', $targetUser->fresh()->password));
+        // Al resetear desde el admin se obliga el cambio en el próximo acceso.
+        $this->assertTrue((bool) $targetUser->fresh()->must_change_password);
     }
 }

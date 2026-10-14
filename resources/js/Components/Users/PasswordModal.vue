@@ -28,6 +28,13 @@
                         </p>
                     </div>
 
+                    <div class="mb-4 bg-amber-50 border border-amber-200 rounded-lg p-3 flex items-start gap-2">
+                        <Info class="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
+                        <p class="text-xs text-amber-800">
+                            El usuario deberá cambiar esta contraseña en su siguiente inicio de sesión.
+                        </p>
+                    </div>
+
                     <div class="space-y-4">
                         <!-- Nueva Contraseña -->
                         <div>
@@ -71,7 +78,7 @@
 
 <script setup>
 import { ref } from 'vue';
-import { X, Key } from 'lucide-vue-next';
+import { X, Key, Info } from 'lucide-vue-next';
 
 defineProps({
     user: {

@@ -17,9 +17,8 @@ use Illuminate\Support\Collection;
  * Arma la boleta de pago de un trabajador a partir de la planilla ya
  * calculada (`planilla_detalles` + `planilla_detalle_items`).
  *
- * Es la única fuente de verdad del documento: tanto el JSON que consume la
- * vista previa en pantalla como la plantilla Blade del PDF se construyen
- * con {@see self::componer()}, de modo que nunca se desincronizan.
+ * Es la única fuente de verdad del documento: el JSON de consulta y la
+ * plantilla Blade del PDF se construyen con {@see self::componer()}.
  *
  * No persiste nada: el código de boleta se deriva de la posición del
  * trabajador en el detalle del periodo, así que recalcular la planilla
@@ -260,6 +259,12 @@ class BoletaService
     {
         $logo ??= $this->logoBase64();
 
+        // DomPDF escribe aquí las métricas de Source Sans 3 la primera vez.
+        $cacheFuentes = storage_path('fonts');
+        if (!is_dir($cacheFuentes)) {
+            mkdir($cacheFuentes, 0755, true);
+        }
+
         return Pdf::setOption('enable_font_subsetting', true)
             ->loadView('pdf.boleta_pago', compact('boleta', 'logo'))
             ->setPaper('a5', 'portrait');
@@ -267,8 +272,8 @@ class BoletaService
 
     /**
      * QR de verificación de la boleta (PNG data-URI) que apunta a la página
-     * pública /boletas/verificar/{id}. Se imprime en el PDF y en la vista
-     * previa: escanearlo permite comprobar la autenticidad del documento.
+     * pública /boletas/verificar/{id}. Se imprime en el PDF: escanearlo
+     * permite comprobar la autenticidad del documento.
      */
     public function qrVerificacion(string $detalleId): string
     {

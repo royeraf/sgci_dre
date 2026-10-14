@@ -33,6 +33,18 @@ class RoleAccessMiddleware
         'planillas'   => 'planillas',
     ];
 
+    /**
+     * Módulos deshabilitados temporalmente por rol (feature flag).
+     *
+     * ROL012 (Empleado Portal) no accede al módulo "Papeletas de Salida" del
+     * sistema principal: sus solicitudes se gestionan desde el Portal de
+     * Empleados (/portal/papeletas). Aplica incluso si el módulo fue otorgado
+     * explícitamente vía modulos_json.
+     */
+    private const ROLE_DISABLED_MODULES = [
+        'ROL012' => ['papeletas'],
+    ];
+
     public function handle(Request $request, Closure $next, ...$roles): Response
     {
         if (!Auth::check()) {
@@ -46,6 +58,15 @@ class RoleAccessMiddleware
             return $next($request);
         }
 
+        $prefix = explode('/', $request->path())[0];
+        $module = self::URL_MODULE_MAP[$prefix] ?? null;
+
+        // Módulos deshabilitados temporalmente para el rol, sin importar los
+        // permisos de rol o los módulos asignados al usuario.
+        if ($module && in_array($module, self::ROLE_DISABLED_MODULES[$user->rol_id] ?? [], true)) {
+            return redirect('/dashboard')->with('error', 'Esta sección está deshabilitada temporalmente para su rol.');
+        }
+
         // Check if user role is in the allowed roles for this route
         if (in_array($user->rol_id, $roles)) {
             return $next($request);
@@ -53,8 +74,6 @@ class RoleAccessMiddleware
 
         // Check modulos_json: if the user has been explicitly granted this module, allow access
         if (!empty($user->modulos_json)) {
-            $prefix = explode('/', $request->path())[0];
-            $module = self::URL_MODULE_MAP[$prefix] ?? null;
             if ($module && in_array($module, $user->modulos_json)) {
                 return $next($request);
             }

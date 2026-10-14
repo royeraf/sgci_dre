@@ -22,6 +22,7 @@ class RedirectIfAuthenticated
         foreach ($guards as $guard) {
             if (Auth::guard($guard)->check()) {
                 $user = Auth::guard($guard)->user();
+                if ($user->must_change_password) return redirect()->route('password.force');
                 if ($user->rol_id === 'ROL011') return redirect('/papeletas');
                 if ($user->rol_id === 'ROL010') return redirect('/citas');
                 if ($user->rol_id === 'ROL009') return redirect('/hr');

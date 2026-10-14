@@ -34,6 +34,19 @@
           <p class="text-slate-500 text-xs sm:text-sm font-medium">SGCI-DREH | Sistema de Gestión y Control Institucional</p>
         </div>
 
+        <!-- Success Alert -->
+        <div v-if="flashSuccess" class="mb-6 bg-emerald-50 border-2 border-emerald-200 rounded-xl p-4 flex items-start justify-between gap-3">
+          <div class="flex items-start gap-3 flex-1">
+            <div class="flex-shrink-0 mt-0.5">
+              <CheckCircle2 class="h-5 w-5 text-emerald-600" />
+            </div>
+            <p class="text-sm font-semibold text-emerald-800">{{ flashSuccess }}</p>
+          </div>
+          <button @click="successDismissed = true" type="button" class="text-emerald-400 hover:text-emerald-700 cursor-pointer p-0.5" title="Cerrar aviso">
+            <X class="w-4 h-4" />
+          </button>
+        </div>
+
         <!-- Error Alert -->
         <div v-if="form.errors.credentials || flashError" class="mb-6 bg-red-50 border-2 border-red-200 rounded-xl p-4 flex items-start justify-between gap-3">
           <div class="flex items-start gap-3 flex-1">
@@ -60,7 +73,7 @@
                   <IdCard class="h-5 w-5 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
                 </div>
                 <input v-model="form.dni" type="text" id="dni" maxlength="100" autocomplete="username"
-                  @input="dniError = ''; flashDismissed = true" :class="[
+                  @input="dniError = ''; flashDismissed = true; successDismissed = true" :class="[
                     'block w-full pl-10 pr-4 py-3 text-sm sm:text-base border-2 rounded-xl transition-all duration-200 ease-in-out focus:outline-none focus:ring-4 cursor-pointer',
                     dniError || form.errors.dni
                       ? 'border-red-300 bg-red-50 focus:border-red-500 focus:ring-red-500/20'
@@ -83,7 +96,7 @@
                   <Lock class="h-5 w-5 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
                 </div>
                 <input v-model="form.password" :type="showPassword ? 'text' : 'password'" id="password" autocomplete="current-password"
-                  @input="passwordError = ''; flashDismissed = true" :class="[
+                  @input="passwordError = ''; flashDismissed = true; successDismissed = true" :class="[
                   'block w-full pl-10 pr-12 py-3 text-sm sm:text-base border-2 rounded-xl transition-all duration-200 ease-in-out focus:outline-none focus:ring-4 cursor-pointer',
                   passwordError || form.errors.password
                     ? 'border-red-300 bg-red-50 focus:border-red-500 focus:ring-red-500/20'
@@ -103,12 +116,16 @@
             </div>
 
             <!-- Remember Me -->
-            <div class="flex items-center">
+            <div class="flex items-center justify-between gap-3">
               <label class="flex items-center gap-2 cursor-pointer select-none">
                 <input v-model="form.remember" type="checkbox"
                   class="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500 cursor-pointer" />
                 <span class="text-xs sm:text-sm font-medium text-slate-600 hover:text-slate-900">Recordar sesión</span>
               </label>
+              <a href="/recuperar-contrasena"
+                class="text-xs sm:text-sm font-semibold text-blue-700 hover:text-blue-900 hover:underline whitespace-nowrap">
+                ¿Olvidaste tu contraseña?
+              </a>
             </div>
 
             <!-- Submit Button -->
@@ -138,6 +155,7 @@ import { useForm, usePage } from '@inertiajs/vue3';
 import {
   Lock,
   AlertCircle,
+  CheckCircle2,
   IdCard,
   Eye,
   EyeOff,
@@ -148,9 +166,14 @@ import {
 
 const page = usePage();
 const flashDismissed = ref(false);
+const successDismissed = ref(false);
 const flashError = computed(() => {
   if (flashDismissed.value) return null;
   return page.props.flash?.error;
+});
+const flashSuccess = computed(() => {
+  if (successDismissed.value) return null;
+  return page.props.flash?.success;
 });
 
 const bgImages = [

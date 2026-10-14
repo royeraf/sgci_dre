@@ -146,11 +146,6 @@
             </div>
         </BaseTableCard>
 
-        <BoletaPreviewModal v-if="boleta && boletaSeleccionado"
-            :boleta="boleta"
-            :detalle-id="boletaSeleccionado.detalle_id"
-            @close="cerrarPreview" />
-
         <ConfiguracionEmpresaModal v-if="showConfigModal"
             :empresa="empresa"
             :saving="saving"
@@ -165,29 +160,28 @@ import axios from 'axios';
 import { Receipt, Building2, FileArchive, FileText, Eye, Loader2, CheckCircle, ExternalLink } from 'lucide-vue-next';
 
 import BaseTableCard from '@/Components/Common/BaseTableCard.vue';
-import BoletaPreviewModal from '@/Components/Planillas/Boletas/BoletaPreviewModal.vue';
 import ConfiguracionEmpresaModal from '@/Components/Planillas/Boletas/ConfiguracionEmpresaModal.vue';
 import { usePlanillasBoletas } from '@/Composables/usePlanillasBoletas';
+import { usePdfViewer } from '@/composables/usePdfViewer';
 
 const {
     periodos,
     periodoId,
     periodo,
     boletas,
-    boleta,
     empresa,
     loading,
     saving,
     fetchPeriodos,
     fetchBoletas,
-    fetchBoleta,
     fetchConfiguracion,
     updateConfiguracion,
     urlPdf,
     urlZip,
 } = usePlanillasBoletas();
 
-const boletaSeleccionado = ref(null);
+const { openPdf } = usePdfViewer();
+
 const showConfigModal = ref(false);
 const descargando = ref(false);
 
@@ -231,9 +225,6 @@ const cargarPeriodoInicial = async () => {
 };
 
 const onPeriodoChange = async () => {
-    boletaSeleccionado.value = null;
-    boleta.value = null;
-
     if (!periodoId.value) {
         boletas.value = [];
         periodo.value = null;
@@ -249,19 +240,11 @@ const onPeriodoChange = async () => {
     }
 };
 
-const onVer = async (fila) => {
-    boletaSeleccionado.value = fila;
-    try {
-        await fetchBoleta(fila.detalle_id);
-    } catch (error) {
-        boletaSeleccionado.value = null;
-        notify('error', error.response?.data?.message || 'No se pudo cargar la boleta');
-    }
-};
-
-const cerrarPreview = () => {
-    boleta.value = null;
-    boletaSeleccionado.value = null;
+const onVer = (fila) => {
+    openPdf({
+        src: urlPdf(fila.detalle_id),
+        filename: `boleta_${fila.codigo_boleta}.pdf`,
+    });
 };
 
 const onPdf = (fila) => {

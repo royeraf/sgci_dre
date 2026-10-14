@@ -43,18 +43,17 @@ class PapeletaPortalController extends Controller
 
         if (RateLimiter::tooManyAttempts($throttleKey, 5)) {
             $seconds = RateLimiter::availableIn($throttleKey);
+            $minutes = max(1, (int) ceil($seconds / 60));
             throw ValidationException::withMessages([
-                'credentials' => "Demasiados intentos fallidos. Por favor espere {$seconds} segundos antes de volver a intentar.",
+                'credentials' => 'Demasiados intentos fallidos. Por favor espere ' . $minutes . ' '
+                    . ($minutes === 1 ? 'minuto' : 'minutos') . ' antes de volver a intentar.',
             ]);
         }
 
-        $user = User::where('dni', $identifier)
-            ->orWhere('username', $identifier)
-            ->orWhere('email', $identifier)
-            ->first();
+        $user = User::findByIdentifier($identifier);
 
         if (!$user || !Hash::check($request->password, $user->password)) {
-            RateLimiter::hit($throttleKey, 300);
+            RateLimiter::hit($throttleKey, 120);
             throw ValidationException::withMessages([
                 'credentials' => 'Las credenciales proporcionadas son incorrectas.',
             ]);

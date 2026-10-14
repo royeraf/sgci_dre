@@ -1,6 +1,9 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\FirstAccessController;
+use App\Http\Controllers\ForgotPasswordController;
+use App\Http\Controllers\ProfileCompletionController;
 use App\Http\Controllers\OccurrenceController;
 use App\Http\Controllers\EntryExitController;
 use App\Http\Controllers\ExternalVisitController;
@@ -32,6 +35,7 @@ use Inertia\Inertia;
 Route::get('/', function () {
     if (auth()->check()) {
         $user = auth()->user();
+        if ($user->must_change_password) return redirect()->route('password.force');
         if ($user->rol_id === 'ROL011') return redirect('/papeletas');
         if ($user->rol_id === 'ROL010') return redirect('/citas');
         if ($user->rol_id === 'ROL009') return redirect('/hr');
@@ -48,6 +52,11 @@ Route::redirect('/home', '/dashboard');
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
     Route::post('/login', [AuthController::class, 'login']);
+
+    // Recuperación de contraseña: se envía una contraseña temporal al correo
+    // registrado y se obliga a cambiarla en el siguiente inicio de sesión.
+    Route::get('/recuperar-contrasena', [ForgotPasswordController::class, 'show'])->name('password.request');
+    Route::post('/recuperar-contrasena', [ForgotPasswordController::class, 'send'])->name('password.email');
 });
 
 // Fallback for non-GET/POST methods on /login (e.g. if a browser follows a redirect with PATCH/PUT/DELETE)
@@ -61,7 +70,7 @@ Route::prefix('portal')->group(function () {
         Route::get('/login', [PapeletaPortalController::class, 'showLogin'])->name('portal.login');
         Route::post('/login', [PapeletaPortalController::class, 'login'])->name('portal.login.submit');
     });
-    Route::middleware('auth')->group(function () {
+    Route::middleware(['auth', 'password.changed'])->group(function () {
         Route::post('/logout', [PapeletaPortalController::class, 'logout'])->name('portal.logout');
         Route::prefix('papeletas')->name('portal.papeletas.')->group(function () {
             Route::get('/', [PapeletaPortalController::class, 'index'])->name('index');
@@ -121,8 +130,14 @@ Route::get('/boletas/{detalle}/pdf', [App\Http\Controllers\BoletaPortalControlle
 Route::post('/boletas/{detalle}/revisar', [App\Http\Controllers\BoletaPortalController::class, 'revisar'])->name('boletas.portal.revisar');
 
 // Protected routes
-Route::middleware('auth')->group(function () {
+Route::middleware(['auth', 'password.changed'])->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+
+    // Primer acceso: paso 1 (contraseña) y paso 2 (datos de contacto faltantes).
+    Route::get('/primer-acceso', [FirstAccessController::class, 'show'])->name('password.force');
+    Route::post('/primer-acceso', [FirstAccessController::class, 'update'])->name('password.force.update');
+    Route::get('/completar-datos', [ProfileCompletionController::class, 'show'])->name('profile.complete');
+    Route::post('/completar-datos', [ProfileCompletionController::class, 'update'])->name('profile.complete.update');
 
     // Hora del servidor (usada por modales para evitar depender del reloj del cliente)
     Route::get('/api/server-time', fn() => response()->json([
@@ -277,8 +292,11 @@ Route::middleware('auth')->group(function () {
         Route::get('/summary', [HRController::class, 'getSummary'])->name('summary');
     });
 
-    // Papeletas de Salida (Empleado + Jefe Inmediato + RRHH)
-    Route::middleware('role:ROL011,ROL009,ROL012')->prefix('papeletas')->name('papeletas.')->group(function () {
+    // Papeletas de Salida (Jefe Inmediato + RRHH)
+    // Nota: el módulo está deshabilitado por ahora para el rol Empleado Portal
+    // (ROL012); sus papeletas se gestionan desde el Portal de Empleados
+    // (/portal/papeletas). Ver ROLE_DISABLED_MODULES en RoleAccessMiddleware.
+    Route::middleware('role:ROL011,ROL009')->prefix('papeletas')->name('papeletas.')->group(function () {
         Route::get('/', [PapeletaAdminController::class, 'index'])->name('index');
 
         // Auto-servicio del empleado (cualquiera con empleado vinculado)

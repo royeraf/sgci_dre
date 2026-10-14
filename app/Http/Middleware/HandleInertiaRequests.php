@@ -52,6 +52,7 @@ class HandleInertiaRequests extends Middleware
                         'rol_id'       => $user->rol_id,
                         'modulos_json' => $user->modulos_json,
                         'tabs_json'    => $user->tabs_json,
+                        'must_change_password' => (bool) $user->must_change_password,
                         'customRole'   => $user->customRole,
                         // El apartado "Mis Boletas" se muestra a todo usuario
                         // con empleado vinculado, sin exigir módulos del admin.

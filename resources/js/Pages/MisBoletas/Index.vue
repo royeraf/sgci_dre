@@ -72,11 +72,6 @@
                                     </span>
                                 </td>
                                 <td class="px-4 py-3 text-right whitespace-nowrap">
-                                    <button @click="onVer(fila)" title="Ver boleta"
-                                        class="cursor-pointer inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg shadow-sm border-2 border-slate-200 bg-white text-slate-700 hover:bg-slate-50 transition-all mr-1.5">
-                                        <Eye class="w-3.5 h-3.5" />
-                                        Ver
-                                    </button>
                                     <button v-if="!fila.revisada_en" @click="onConfirmar(fila)" :disabled="guardando"
                                         title="Confirmar que recibí esta boleta"
                                         class="cursor-pointer inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg shadow-sm bg-emerald-600 text-white hover:bg-emerald-700 transition-all disabled:opacity-50">
@@ -84,10 +79,10 @@
                                         <CheckCircle v-else class="w-3.5 h-3.5" />
                                         Confirmar recibido
                                     </button>
-                                    <button v-else @click="onPdf(fila)" title="Descargar PDF"
+                                    <button v-else @click="onVerPdf(fila)" title="Abrir el PDF de la boleta"
                                         class="cursor-pointer inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg shadow-sm border-2 border-cyan-200 bg-white text-cyan-700 hover:bg-cyan-50 transition-all">
                                         <FileText class="w-3.5 h-3.5" />
-                                        Descargar
+                                        PDF
                                     </button>
                                 </td>
                             </tr>
@@ -96,28 +91,17 @@
                 </div>
             </div>
         </div>
-
-        <!-- Vista previa -->
-        <BoletaPreviewModal v-if="modalAbierto && boletaDetalle"
-            :boleta="boletaDetalle"
-            :detalle-id="activa?.detalle_id ?? ''"
-            :url-pdf="activa ? urlPdf(activa.detalle_id) : null"
-            :mostrar-confirmacion="true"
-            :revisada="activa?.revisada_en ?? null"
-            :guardando="guardando"
-            @close="cerrarModal"
-            @revisar="onRevisarDesdeModal" />
     </MainLayout>
 </template>
 
 <script setup>
 import { ref } from 'vue';
 import {
-    Receipt, UserX, Loader2, Eye, FileText, CheckCircle,
+    Receipt, UserX, Loader2, FileText, CheckCircle,
 } from 'lucide-vue-next';
 import MainLayout from '@/Layouts/MainLayout.vue';
-import BoletaPreviewModal from '@/Components/Planillas/Boletas/BoletaPreviewModal.vue';
 import { useMisBoletas } from '@/Composables/useMisBoletas';
+import { usePdfViewer } from '@/composables/usePdfViewer';
 
 const props = defineProps({
     empleado: { type: Object, default: null },
@@ -128,11 +112,8 @@ const props = defineProps({
 const sinVinculo = ref(props.sin_vinculo);
 const boletas = ref([...props.boletas]);
 
-const { guardando, error, ver, revisar, urlPdf } = useMisBoletas();
-
-const modalAbierto = ref(false);
-const boletaDetalle = ref(null);
-const activa = ref(null);
+const { guardando, error, revisar, urlPdf } = useMisBoletas();
+const { openPdf } = usePdfViewer();
 
 const money = (value) => Number(value || 0).toLocaleString('es-PE', {
     minimumFractionDigits: 2,
@@ -152,28 +133,12 @@ const fechaHora = (value) => {
     return `${fecha(dia)} ${(hora ?? '').slice(0, 5)}`;
 };
 
-const onVer = async (fila) => {
-    try {
-        activa.value = fila;
-        boletaDetalle.value = await ver(fila.detalle_id);
-        modalAbierto.value = true;
-    } catch {
-        window.Swal?.fire({
-            icon: 'error',
-            title: 'No se pudo cargar la boleta',
-            text: error.value || 'Inténtelo nuevamente.',
-        });
-    }
-};
-
-const cerrarModal = () => {
-    modalAbierto.value = false;
-    boletaDetalle.value = null;
-    activa.value = null;
-};
-
-const onPdf = (fila) => {
-    window.open(urlPdf(fila.detalle_id), '_blank');
+/** Abre el PDF de la boleta en el visor integrado (incluye descarga). */
+const onVerPdf = (fila) => {
+    openPdf({
+        src: urlPdf(fila.detalle_id),
+        filename: `boleta_${fila.codigo_boleta}.pdf`,
+    });
 };
 
 const onConfirmar = async (fila) => {
@@ -209,9 +174,5 @@ const onConfirmar = async (fila) => {
             text: error.value || 'Inténtelo nuevamente.',
         });
     }
-};
-
-const onRevisarDesdeModal = () => {
-    if (activa.value) onConfirmar(activa.value);
 };
 </script>
