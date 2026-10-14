@@ -101,6 +101,13 @@ class FirstAccessTest extends TestCase
 
         $paso1->assertRedirect('/completar-datos');
 
+        // El paso 2 se identifica como tal (vino del cambio de contraseña).
+        $this->actingAs($user->fresh())->get('/completar-datos')
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Auth/CompleteProfile')
+                ->where('es_paso2', true));
+
         $user->refresh();
         $this->assertFalse($user->must_change_password);
         $this->assertTrue($user->must_complete_profile);
@@ -190,6 +197,35 @@ class FirstAccessTest extends TestCase
         $this->assertSame($email, $user->person->email);
         $this->assertSame('987654321', $user->person->telefono);
         $this->assertFalse($user->must_complete_profile);
+    }
+
+    public function test_datos_no_muestra_paso_2_si_no_hubo_cambio_de_contrasena(): void
+    {
+        // Cuenta existente (sin cambio de contraseña) a la que solo le faltan datos.
+        $user = $this->crearUsuarioEmpleado(['must_change_password' => false]);
+
+        $this->actingAs($user)->get('/completar-datos')
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Auth/CompleteProfile')
+                ->where('es_paso2', false));
+    }
+
+    public function test_usuario_puede_cerrar_sesion_desde_completar_datos(): void
+    {
+        $user = $this->crearUsuarioEmpleado(['must_change_password' => true]);
+
+        // Paso 1: llega al paso 2 (faltan datos).
+        $this->actingAs($user)->post('/primer-acceso', [
+            'password' => 'NuevaClave123',
+            'password_confirmation' => 'NuevaClave123',
+        ])->assertRedirect('/completar-datos');
+
+        // Cancelar en el paso 2 cierra la sesión y vuelve al login.
+        $response = $this->actingAs($user->fresh())->post('/logout');
+
+        $response->assertRedirect('/login');
+        $this->assertGuest();
     }
 
     public function test_admin_no_es_obligado_a_completar_datos(): void

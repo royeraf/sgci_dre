@@ -37,8 +37,8 @@
           </p>
         </div>
 
-        <!-- Paso 2 -->
-        <div class="mb-5 flex items-center gap-2">
+        <!-- Paso 2 (solo si vino del cambio de contraseña) -->
+        <div v-if="es_paso2" class="mb-5 flex items-center gap-2">
           <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-blue-700 text-white text-xs font-bold">2</span>
           <span class="text-xs font-bold text-slate-600 uppercase tracking-wide">Paso 2 de 2</span>
         </div>
@@ -135,6 +135,16 @@
           </form>
         </div>
 
+        <!-- Cancelar: cierra la sesión sin completar los datos -->
+        <div class="mt-4 text-center">
+          <button type="button" @click="cancelar" :disabled="saliendo"
+            class="inline-flex items-center gap-1.5 text-sm font-semibold text-slate-500 hover:text-red-600 transition-colors disabled:opacity-50 cursor-pointer">
+            <Loader2 v-if="saliendo" class="w-4 h-4 animate-spin" />
+            <LogOut v-else class="w-4 h-4" />
+            {{ saliendo ? 'Cerrando sesión...' : 'Cancelar y cerrar sesión' }}
+          </button>
+        </div>
+
         <!-- Footer -->
         <div class="mt-6 text-center">
           <p class="text-xs sm:text-sm text-slate-500">
@@ -147,9 +157,9 @@
 </template>
 
 <script setup>
-import { computed } from 'vue';
-import { useForm } from '@inertiajs/vue3';
-import { Mail, MailCheck, Phone, ShieldCheck, AlertCircle, Loader2 } from 'lucide-vue-next';
+import { computed, ref } from 'vue';
+import { useForm, router } from '@inertiajs/vue3';
+import { Mail, MailCheck, Phone, ShieldCheck, AlertCircle, Loader2, LogOut } from 'lucide-vue-next';
 
 const props = defineProps({
   nombre: { type: String, default: '' },
@@ -158,6 +168,7 @@ const props = defineProps({
   telefono: { type: String, default: '' },
   requiere_email: { type: Boolean, default: false },
   requiere_telefono: { type: Boolean, default: false },
+  es_paso2: { type: Boolean, default: false },
 });
 
 const form = useForm({
@@ -182,5 +193,12 @@ const submit = () => {
   }
 
   form.post('/completar-datos');
+};
+
+const saliendo = ref(false);
+
+const cancelar = () => {
+  saliendo.value = true;
+  router.post('/logout');
 };
 </script>

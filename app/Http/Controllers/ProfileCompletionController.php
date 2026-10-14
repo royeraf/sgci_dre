@@ -37,6 +37,8 @@ class ProfileCompletionController extends Controller
             'telefono' => $person?->telefono,
             'requiere_email'    => blank($person?->email),
             'requiere_telefono' => blank($person?->telefono),
+            // "Paso 2 de 2" solo si vino del cambio de contraseña (paso 1).
+            'es_paso2' => (bool) $user->must_complete_profile,
         ]);
     }
 
