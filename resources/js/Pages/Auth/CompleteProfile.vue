@@ -92,6 +92,7 @@
                   <MailCheck class="h-5 w-5 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
                 </div>
                 <input v-model="form.email_confirmation" type="email" id="email_confirmation" autocomplete="email"
+                  @blur="emailTouched = true"
                   class="block w-full pl-10 pr-4 py-3 text-sm sm:text-base border-2 rounded-xl transition-all duration-200 ease-in-out focus:outline-none focus:ring-4 cursor-pointer"
                   :class="form.errors.email_confirmation || emailMismatch
                     ? 'border-red-300 bg-red-50 focus:border-red-500 focus:ring-red-500/20'
@@ -157,7 +158,7 @@
 </template>
 
 <script setup>
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useForm, router } from '@inertiajs/vue3';
 import { Mail, MailCheck, Phone, ShieldCheck, AlertCircle, Loader2, LogOut } from 'lucide-vue-next';
 
@@ -177,14 +178,27 @@ const form = useForm({
   telefono: props.telefono || '',
 });
 
+// La comparación solo se evalúa al salir del campo (blur) o al enviar,
+// para no mostrar el aviso mientras el usuario escribe.
+const emailTouched = ref(false);
+
 const emailMismatch = computed(() => {
+  if (!emailTouched.value) return '';
   if (!form.email_confirmation) return '';
+
   const a = (form.email || '').trim().toLowerCase();
   const b = (form.email_confirmation || '').trim().toLowerCase();
+
   return a && a !== b ? 'Los correos electrónicos no coinciden.' : '';
 });
 
+// Al corregir los campos, se limpia el error anterior.
+watch(() => form.email, () => form.clearErrors('email', 'email_confirmation'));
+watch(() => form.email_confirmation, () => form.clearErrors('email', 'email_confirmation'));
+
 const submit = () => {
+  emailTouched.value = true;
+
   if (props.requiere_email) {
     form.email = (form.email || '').trim();
     form.email_confirmation = (form.email_confirmation || '').trim();

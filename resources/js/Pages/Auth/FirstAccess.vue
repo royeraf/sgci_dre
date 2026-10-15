@@ -90,16 +90,23 @@
                 <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <Lock class="h-5 w-5 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
                 </div>
-                <input v-model="form.password_confirmation" :type="showPassword ? 'text' : 'password'"
-                  id="password_confirmation" autocomplete="new-password"
-                  class="block w-full pl-10 pr-4 py-3 text-sm sm:text-base border-2 rounded-xl transition-all duration-200 ease-in-out focus:outline-none focus:ring-4 cursor-pointer"
-                  :class="form.errors.password_confirmation
+                <input v-model="form.password_confirmation" :type="showPasswordConfirmation ? 'text' : 'password'"
+                  id="password_confirmation" autocomplete="new-password" @blur="confirmTouched = true"
+                  class="block w-full pl-10 pr-12 py-3 text-sm sm:text-base border-2 rounded-xl transition-all duration-200 ease-in-out focus:outline-none focus:ring-4 cursor-pointer"
+                  :class="(form.errors.password_confirmation || passwordsMismatch)
                     ? 'border-red-300 bg-red-50 focus:border-red-500 focus:ring-red-500/20'
                     : 'border-slate-200 bg-white hover:border-blue-400 focus:border-blue-600 focus:ring-blue-500/20'"
                   placeholder="Repita la contraseña" />
+                <button type="button" @click="showPasswordConfirmation = !showPasswordConfirmation"
+                  class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-blue-700 transition-colors duration-200 cursor-pointer">
+                  <Eye v-if="!showPasswordConfirmation" class="h-5 w-5" />
+                  <EyeOff v-else class="h-5 w-5" />
+                </button>
               </div>
-              <p v-if="form.errors.password_confirmation" class="mt-1 text-xs sm:text-sm text-red-600 flex items-center gap-1">
-                <AlertCircle class="w-4 h-4" /> {{ form.errors.password_confirmation }}
+              <p v-if="form.errors.password_confirmation || passwordsMismatch"
+                class="mt-1 text-xs sm:text-sm text-red-600 flex items-center gap-1">
+                <AlertCircle class="w-4 h-4" />
+                {{ form.errors.password_confirmation || 'Las contraseñas no coinciden.' }}
               </p>
             </div>
 
@@ -135,7 +142,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { useForm, router } from '@inertiajs/vue3';
 import { Lock, ShieldCheck, AlertCircle, Eye, EyeOff, Loader2, ArrowRight, LogOut } from 'lucide-vue-next';
 
@@ -146,13 +153,35 @@ const props = defineProps({
 });
 
 const showPassword = ref(false);
+const showPasswordConfirmation = ref(false);
 
 const form = useForm({
   password: '',
   password_confirmation: '',
 });
 
+// La comparación solo se evalúa cuando el usuario termina de escribir (blur)
+// o al enviar, para no mostrar el aviso mientras escribe.
+const confirmTouched = ref(false);
+
+const passwordsMismatch = computed(() => {
+  if (!confirmTouched.value) return false;
+
+  const password = form.password || '';
+  const confirmation = form.password_confirmation || '';
+
+  return confirmation !== '' && password !== confirmation;
+});
+
+// Al corregir los campos, se limpia el error anterior.
+watch(() => form.password, () => form.clearErrors('password', 'password_confirmation'));
+watch(() => form.password_confirmation, () => form.clearErrors('password', 'password_confirmation'));
+
 const submit = () => {
+  confirmTouched.value = true;
+
+  if (passwordsMismatch.value) return;
+
   form.post('/primer-acceso', {
     onFinish: () => form.reset('password', 'password_confirmation'),
   });
