@@ -211,6 +211,17 @@ class FirstAccessTest extends TestCase
                 ->where('es_paso2', false));
     }
 
+    public function test_usuario_puede_cerrar_sesion_desde_cambio_de_contrasena(): void
+    {
+        $user = $this->crearUsuarioEmpleado(['must_change_password' => true]);
+
+        // Aun con el cambio de contraseña pendiente, se puede cancelar y salir.
+        $response = $this->actingAs($user)->post('/logout');
+
+        $response->assertRedirect('/login');
+        $this->assertGuest();
+    }
+
     public function test_usuario_puede_cerrar_sesion_desde_completar_datos(): void
     {
         $user = $this->crearUsuarioEmpleado(['must_change_password' => true]);

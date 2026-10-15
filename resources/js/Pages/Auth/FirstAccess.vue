@@ -113,6 +113,16 @@
           </form>
         </div>
 
+        <!-- Cancelar: cierra la sesión sin cambiar la contraseña -->
+        <div class="mt-4 text-center">
+          <button type="button" @click="cancelar" :disabled="saliendo"
+            class="inline-flex items-center gap-1.5 text-sm font-semibold text-slate-500 hover:text-red-600 transition-colors disabled:opacity-50 cursor-pointer">
+            <Loader2 v-if="saliendo" class="w-4 h-4 animate-spin" />
+            <LogOut v-else class="w-4 h-4" />
+            {{ saliendo ? 'Cerrando sesión...' : 'Cancelar y cerrar sesión' }}
+          </button>
+        </div>
+
         <!-- Footer -->
         <div class="mt-6 text-center">
           <p class="text-xs sm:text-sm text-slate-500">
@@ -126,8 +136,8 @@
 
 <script setup>
 import { ref } from 'vue';
-import { useForm } from '@inertiajs/vue3';
-import { Lock, ShieldCheck, AlertCircle, Eye, EyeOff, Loader2, ArrowRight } from 'lucide-vue-next';
+import { useForm, router } from '@inertiajs/vue3';
+import { Lock, ShieldCheck, AlertCircle, Eye, EyeOff, Loader2, ArrowRight, LogOut } from 'lucide-vue-next';
 
 const props = defineProps({
   nombre: { type: String, default: '' },
@@ -146,5 +156,12 @@ const submit = () => {
   form.post('/primer-acceso', {
     onFinish: () => form.reset('password', 'password_confirmation'),
   });
+};
+
+const saliendo = ref(false);
+
+const cancelar = () => {
+  saliendo.value = true;
+  router.post('/logout');
 };
 </script>
