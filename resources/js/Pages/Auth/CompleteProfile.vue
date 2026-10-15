@@ -70,7 +70,7 @@
                 <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <Mail class="h-5 w-5 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
                 </div>
-                <input v-model="form.email" type="email" id="email" autocomplete="email"
+                <input v-model="form.email" type="email" id="email" autocomplete="email" @input="clearEmailErrors"
                   class="block w-full pl-10 pr-4 py-3 text-sm sm:text-base border-2 rounded-xl transition-all duration-200 ease-in-out focus:outline-none focus:ring-4 cursor-pointer"
                   :class="form.errors.email
                     ? 'border-red-300 bg-red-50 focus:border-red-500 focus:ring-red-500/20'
@@ -92,7 +92,7 @@
                   <MailCheck class="h-5 w-5 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
                 </div>
                 <input v-model="form.email_confirmation" type="email" id="email_confirmation" autocomplete="email"
-                  @blur="emailTouched = true"
+                  @blur="emailTouched = true" @input="clearEmailErrors"
                   class="block w-full pl-10 pr-4 py-3 text-sm sm:text-base border-2 rounded-xl transition-all duration-200 ease-in-out focus:outline-none focus:ring-4 cursor-pointer"
                   :class="form.errors.email_confirmation || emailMismatch
                     ? 'border-red-300 bg-red-50 focus:border-red-500 focus:ring-red-500/20'
@@ -158,7 +158,7 @@
 </template>
 
 <script setup>
-import { computed, ref, watch } from 'vue';
+import { computed, ref } from 'vue';
 import { useForm, router } from '@inertiajs/vue3';
 import { Mail, MailCheck, Phone, ShieldCheck, AlertCircle, Loader2, LogOut } from 'lucide-vue-next';
 
@@ -192,9 +192,9 @@ const emailMismatch = computed(() => {
   return a && a !== b ? 'Los correos electrónicos no coinciden.' : '';
 });
 
-// Al corregir los campos, se limpia el error anterior.
-watch(() => form.email, () => form.clearErrors('email', 'email_confirmation'));
-watch(() => form.email_confirmation, () => form.clearErrors('email', 'email_confirmation'));
+// Al escribir se limpia el error anterior (evento @input, no un watcher, para
+// no borrar los mensajes de validación del servidor por cambios programáticos).
+const clearEmailErrors = () => form.clearErrors('email', 'email_confirmation');
 
 const submit = () => {
   emailTouched.value = true;

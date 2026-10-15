@@ -64,7 +64,7 @@
                   <Lock class="h-5 w-5 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
                 </div>
                 <input v-model="form.password" :type="showPassword ? 'text' : 'password'" id="password"
-                  autocomplete="new-password"
+                  autocomplete="new-password" @input="clearPasswordErrors"
                   class="block w-full pl-10 pr-12 py-3 text-sm sm:text-base border-2 rounded-xl transition-all duration-200 ease-in-out focus:outline-none focus:ring-4 cursor-pointer"
                   :class="form.errors.password
                     ? 'border-red-300 bg-red-50 focus:border-red-500 focus:ring-red-500/20'
@@ -92,6 +92,7 @@
                 </div>
                 <input v-model="form.password_confirmation" :type="showPasswordConfirmation ? 'text' : 'password'"
                   id="password_confirmation" autocomplete="new-password" @blur="confirmTouched = true"
+                  @input="clearPasswordErrors"
                   class="block w-full pl-10 pr-12 py-3 text-sm sm:text-base border-2 rounded-xl transition-all duration-200 ease-in-out focus:outline-none focus:ring-4 cursor-pointer"
                   :class="(form.errors.password_confirmation || passwordsMismatch)
                     ? 'border-red-300 bg-red-50 focus:border-red-500 focus:ring-red-500/20'
@@ -142,7 +143,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue';
+import { ref, computed } from 'vue';
 import { useForm, router } from '@inertiajs/vue3';
 import { Lock, ShieldCheck, AlertCircle, Eye, EyeOff, Loader2, ArrowRight, LogOut } from 'lucide-vue-next';
 
@@ -173,18 +174,17 @@ const passwordsMismatch = computed(() => {
   return confirmation !== '' && password !== confirmation;
 });
 
-// Al corregir los campos, se limpia el error anterior.
-watch(() => form.password, () => form.clearErrors('password', 'password_confirmation'));
-watch(() => form.password_confirmation, () => form.clearErrors('password', 'password_confirmation'));
+// Al escribir se limpia el error anterior. Se usa el evento @input (y no un
+// watcher) para que un reinicio programático del formulario no borre el mensaje
+// de validación que devuelve el servidor antes de que el usuario pueda verlo.
+const clearPasswordErrors = () => form.clearErrors('password', 'password_confirmation');
 
 const submit = () => {
   confirmTouched.value = true;
 
   if (passwordsMismatch.value) return;
 
-  form.post('/primer-acceso', {
-    onFinish: () => form.reset('password', 'password_confirmation'),
-  });
+  form.post('/primer-acceso');
 };
 
 const saliendo = ref(false);
