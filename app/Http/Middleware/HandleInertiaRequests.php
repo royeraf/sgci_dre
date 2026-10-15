@@ -41,14 +41,19 @@ class HandleInertiaRequests extends Middleware
             'csrf_token' => csrf_token(),
             'auth' => [
                 'user' => $request->user() ? (function () use ($request) {
-                    $user = $request->user()->loadMissing('person', 'customRole');
+                    $user = $request->user()->loadMissing('person', 'customRole', 'employee.position');
                     return [
                         'id'           => $user->id,
+                        'username'     => $user->username,
                         'name'         => $user->name,
                         'apellidos'    => $user->apellidos,
                         'full_name'    => $user->full_name,
                         'dni'          => $user->dni,
                         'email'        => $user->email,
+                        'telefono'     => $user->telefono,
+                        'titulo'       => $user->titulo,
+                        'cargo'        => $user->cargo,
+                        'area'         => $user->area,
                         'rol_id'       => $user->rol_id,
                         'modulos_json' => $user->modulos_json,
                         'tabs_json'    => $user->tabs_json,

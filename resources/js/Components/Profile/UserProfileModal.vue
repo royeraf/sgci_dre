@@ -63,6 +63,10 @@
                                         <p class="text-base font-medium text-gray-900 mt-1">{{ user?.dni || 'N/A' }}</p>
                                     </div>
                                     <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                                        <label class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Usuario</label>
+                                        <p class="text-base font-medium text-gray-900 mt-1">{{ user?.username || 'N/A' }}</p>
+                                    </div>
+                                    <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
                                         <label class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Título</label>
                                         <p class="text-base font-medium text-gray-900 mt-1">{{ user?.titulo || 'N/A' }}</p>
                                     </div>
