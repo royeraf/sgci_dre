@@ -1,17 +1,17 @@
 <template>
   <div
-    class="flex flex-col lg:flex-row min-h-screen lg:h-screen w-full overflow-y-auto lg:overflow-hidden bg-gradient-to-br from-slate-50 via-sky-50/40 to-blue-50/80">
+    class="flex flex-col lg:flex-row min-h-screen lg:h-screen w-full overflow-y-auto lg:overflow-hidden bg-gradient-to-br from-amber-50 via-orange-50/40 to-amber-100/70">
     <!-- Left Side Image -->
     <div class="w-full lg:w-1/2 hidden lg:flex h-full relative overflow-hidden flex-shrink-0">
       <img src="/images/login-bg.png" alt="Fondo" class="absolute inset-0 w-full h-full object-cover" />
-      <div class="absolute inset-0 bg-gradient-to-br from-slate-950/85 via-blue-950/75 to-sky-950/55"></div>
-      <div class="absolute top-10 right-10 w-32 h-32 bg-sky-400/5 rounded-full blur-3xl"></div>
-      <div class="absolute bottom-20 left-20 w-40 h-40 bg-blue-600/10 rounded-full blur-3xl"></div>
+      <div class="absolute inset-0 bg-gradient-to-br from-stone-950/85 via-amber-900/75 to-amber-600/55"></div>
+      <div class="absolute top-10 right-10 w-32 h-32 bg-amber-300/10 rounded-full blur-3xl"></div>
+      <div class="absolute bottom-20 left-20 w-40 h-40 bg-amber-500/20 rounded-full blur-3xl"></div>
 
       <div class="absolute inset-0 flex flex-col justify-end p-12">
         <div class="max-w-lg">
           <h2 class="text-4xl font-bold text-white mb-4 leading-tight drop-shadow-md">Complete sus datos</h2>
-          <p class="text-xl text-sky-100 leading-relaxed font-light drop-shadow">
+          <p class="text-xl text-amber-100 leading-relaxed font-light drop-shadow">
             Necesitamos su correo y número de celular para mantenerlo informado.
           </p>
         </div>
