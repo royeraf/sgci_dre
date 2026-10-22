@@ -50,7 +50,7 @@
             nueva contraseña temporal que deberás cambiar al ingresar.
           </p>
 
-          <form class="space-y-6" @submit.prevent="submit">
+          <form class="space-y-6" autocomplete="off" @submit.prevent="submit">
             <div class="group relative">
               <label for="identifier" class="block text-sm font-semibold text-slate-700 mb-2 cursor-pointer">
                 DNI, usuario o correo electrónico <span class="text-red-500">*</span>
@@ -59,7 +59,10 @@
                 <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <Mail class="h-5 w-5 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
                 </div>
-                <input v-model="form.identifier" type="text" id="identifier" maxlength="150" autocomplete="username"
+                <input v-model="form.identifier" type="text" id="identifier" name="identificador_recuperacion"
+                  maxlength="150" autocomplete="off" spellcheck="false" autocapitalize="none" autocorrect="off"
+                  data-1p-ignore data-bwignore="true" data-lpignore="true" data-protonpass-ignore="true"
+                  data-form-type="other"
                   class="block w-full pl-10 pr-4 py-3 text-sm sm:text-base border-2 rounded-xl transition-all duration-200 ease-in-out focus:outline-none focus:ring-4 cursor-pointer"
                   :class="form.errors.identifier
                     ? 'border-red-300 bg-red-50 focus:border-red-500 focus:ring-red-500/20'

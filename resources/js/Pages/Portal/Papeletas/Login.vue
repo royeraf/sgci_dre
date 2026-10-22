@@ -14,7 +14,7 @@
 
             <!-- Login Form -->
             <div class="bg-white/80 backdrop-blur-md rounded-2xl shadow-xl shadow-blue-950/5 border border-slate-200 p-8">
-                <form @submit.prevent="submit" class="space-y-5">
+                <form @submit.prevent="submit" class="space-y-5" autocomplete="off">
                     <!-- Error message -->
                     <div v-if="form.errors.credentials" class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm">
                         {{ form.errors.credentials }}
@@ -30,7 +30,11 @@
                         <label for="dni" class="block text-sm font-semibold text-slate-700 mb-1.5 cursor-pointer">DNI o Usuario</label>
                         <div class="relative">
                             <CreditCard class="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
-                            <input id="dni" v-model="form.dni" type="text" maxlength="100" autocomplete="username"
+                            <input id="dni" v-model="form.dni" type="text" name="identificador" maxlength="100"
+                                autocomplete="off" spellcheck="false" autocapitalize="none" autocorrect="off"
+                                data-1p-ignore data-bwignore="true" data-lpignore="true" data-protonpass-ignore="true"
+                                data-form-type="other" :readonly="dniLocked"
+                                @pointerdown="unlockDni" @focus="unlockDni"
                                 class="pl-10 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm focus:outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-500/20 transition-all cursor-pointer"
                                 placeholder="Ingrese su DNI o usuario" :class="{ 'border-red-300 bg-red-50 focus:border-red-500 focus:ring-red-500/20': form.errors.dni }" />
                         </div>
@@ -39,10 +43,13 @@
 
                     <!-- Password -->
                     <div>
-                        <label for="password" class="block text-sm font-semibold text-slate-700 mb-1.5 cursor-pointer">Contraseña</label>
+                        <label for="clave-acceso" class="block text-sm font-semibold text-slate-700 mb-1.5 cursor-pointer">Contraseña</label>
                         <div class="relative">
                             <Lock class="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
-                            <input id="password" v-model="form.password" :type="showPassword ? 'text' : 'password'" autocomplete="current-password"
+                            <input id="clave-acceso" v-model="form.password" :type="passwordType" name="clave"
+                                autocomplete="new-password" data-1p-ignore data-bwignore="true" data-lpignore="true"
+                                data-protonpass-ignore="true" data-form-type="other" :readonly="passwordLocked"
+                                @pointerdown="armPassword" @focus="armPassword"
                                 class="pl-10 pr-10 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm focus:outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-500/20 transition-all cursor-pointer"
                                 placeholder="Ingrese su contraseña" :class="{ 'border-red-300 bg-red-50 focus:border-red-500 focus:ring-red-500/20': form.errors.password }" />
                             <button type="button" @click="showPassword = !showPassword"
@@ -83,12 +90,29 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import { useForm, usePage } from '@inertiajs/vue3';
 import { CreditCard, Lock, Eye, EyeOff, Loader2 } from 'lucide-vue-next';
 
 const $page = usePage();
 const showPassword = ref(false);
+
+// Anti-autocompletado: los campos se renderizan de solo lectura y sin
+// apariencia de credenciales hasta que el usuario interactúa, para que el
+// navegador no rellene perfiles guardados en equipos compartidos.
+const dniLocked = ref(true);
+const passwordLocked = ref(true);
+const passwordArmed = ref(false);
+
+const unlockDni = () => { dniLocked.value = false; };
+const armPassword = () => {
+    passwordLocked.value = false;
+    passwordArmed.value = true;
+};
+
+const passwordType = computed(() =>
+    showPassword.value || !passwordArmed.value ? 'text' : 'password'
+);
 
 const form = useForm({
     dni: '',
