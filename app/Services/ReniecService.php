@@ -7,8 +7,8 @@ use Illuminate\Support\Facades\Log;
 
 class ReniecService
 {
-    protected string $apiUrl;
-    protected string $token;
+    protected ?string $apiUrl;
+    protected ?string $token;
     protected ?string $contingencyUrl1;
     protected ?string $contingencyToken1;
     protected ?string $contingencyUrl2;
@@ -167,7 +167,7 @@ class ReniecService
             }
             return null;
         } catch (\Exception $e) {
-            Log::error('PERUDEVS Contingency Exception', ['error' => $e->getMessage()]);
+            Log::error('PERUDEVS Contingency Exception', ['error' => $this->redactar($e->getMessage())]);
             return null;
         }
     }
@@ -208,9 +208,17 @@ class ReniecService
             }
             return null;
         } catch (\Exception $e) {
-            Log::error('APIPERU Contingency Exception', ['error' => $e->getMessage()]);
+            Log::error('APIPERU Contingency Exception', ['error' => $this->redactar($e->getMessage())]);
             return null;
         }
+    }
+
+    /**
+     * Oculta credenciales (p. ej. `key=...`) antes de escribir en el log.
+     */
+    private function redactar(string $mensaje): string
+    {
+        return preg_replace('/((?:key|token|api_key|apikey)=)[^&\s"\']+/i', '$1***', $mensaje) ?? $mensaje;
     }
 
     private function formatContingenciaNombreCompleto(array $data): string

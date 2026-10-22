@@ -143,20 +143,31 @@ do_sync_code() {
     print_step "PASO 2 — Sincronizando código al VPS"
     cd "$LOCAL_PROJECT_DIR"
     echo "  Subiendo código PHP, rutas, config..."
+    # IMPORTANTE: `storage/app` se excluye por completo. Con `--delete`, no
+    # excluirlo borraría los archivos subidos en producción (p. ej.
+    # storage/app/public/eventos) y subiría datos locales (papeletas,
+    # certificados digitales, venvs de firma). Igual criterio para cachés,
+    # logs y configuración propia del servidor.
     rsync -az --delete -e "ssh ${SSH_OPTS}" \
         --exclude='node_modules' \
         --exclude='vendor' \
         --exclude='.git' \
         --exclude='.env' \
-        --exclude='storage/logs/*' \
-        --exclude='storage/framework/cache/*' \
-        --exclude='storage/framework/sessions/*' \
-        --exclude='storage/framework/views/*' \
+        --exclude='.env.*' \
+        --exclude='storage/app' \
+        --exclude='storage/fonts' \
+        --exclude='storage/logs' \
+        --exclude='storage/framework' \
+        --exclude='storage/*.key' \
+        --exclude='bootstrap/cache/*.php' \
         --exclude='public/hot' \
         --exclude='public/build' \
+        --exclude='public/storage' \
         --exclude='*.xlsx' \
         --exclude='*.csv' \
         --exclude='*.pdf' \
+        --exclude='*.zip' \
+        --exclude='*.tar' \
         --exclude='composer.phar' \
         --exclude='.user.ini' \
         --exclude='error_log' \
@@ -165,6 +176,9 @@ do_sync_code() {
         --exclude='package-lock.json' \
         --exclude='bun.lock' \
         --exclude='bun.lockb' \
+        --exclude='pnpm-lock.yaml' \
+        --exclude='pnpm-workspace.yaml' \
+        --exclude='FETCH_HEAD' \
         ./ "${VPS_SSH}:${VPS_PATH}/"
     print_ok "Código sincronizado"
     echo ""

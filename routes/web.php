@@ -504,7 +504,10 @@ Route::middleware(['auth', 'password.changed'])->group(function () {
     });
 
     // Patrimonio / Activos
-    Route::middleware('auth')->prefix('assets')->name('assets.')->group(function () {
+    // El middleware `role` aplica el control por módulo (prefijo `assets` →
+    // módulo `patrimonio` de modulos_json). Sin él, cualquier usuario
+    // autenticado podía administrar activos y catálogos.
+    Route::middleware('role:ROL001')->prefix('assets')->name('assets.')->group(function () {
         Route::get('/', [App\Http\Controllers\AssetController::class, 'index'])->name('index');
         Route::get('/list', [App\Http\Controllers\AssetController::class, 'getAssets'])->name('list');
         Route::get('/summary', [App\Http\Controllers\AssetController::class, 'getStats'])->name('summary');
