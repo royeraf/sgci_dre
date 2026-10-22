@@ -34,7 +34,7 @@ fi
 VPS_USER="drehua5"
 VPS_HOST="drehuanuco.gob.pe"
 VPS_PORT="22"                    # Cambiar si el VPS usa otro puerto SSH
-VPS_PATH="~/documentos.drehuanuco.gob.pe"
+VPS_PATH="~/digital.drehuanuco.gob.pe"
 SSH_KEY="${HOME}/.ssh/dre_vps"
 VPS_SSH="${VPS_USER}@${VPS_HOST}"
 if [ -f "${SSH_KEY}" ]; then
@@ -42,7 +42,7 @@ if [ -f "${SSH_KEY}" ]; then
 else
     SSH_OPTS="-p ${VPS_PORT} -o StrictHostKeyChecking=no"
 fi
-DOMAIN="https://documentos.drehuanuco.gob.pe"
+DOMAIN="https://digital.drehuanuco.gob.pe"
 LOCAL_PROJECT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 # ─── Colores ─────────────────────────────────────────────────
@@ -71,7 +71,7 @@ confirm() {
 # MODO VPS — se ejecuta directamente en el servidor
 # ════════════════════════════════════════════════════════════
 do_vps_deploy() {
-    APP_DIR="${HOME}/documentos.drehuanuco.gob.pe"
+    APP_DIR="${HOME}/digital.drehuanuco.gob.pe"
     cd "$APP_DIR"
 
     # ── Git pull ──────────────────────────────────────────
@@ -203,7 +203,7 @@ do_remote_config() {
     print_step "PASO 4 — Configurando el VPS vía SSH"
     ssh ${SSH_OPTS} "${VPS_SSH}" bash -s << 'REMOTE_SCRIPT'
         set -e
-        cd ~/documentos.drehuanuco.gob.pe
+        cd ~/digital.drehuanuco.gob.pe
         echo "  [VPS] PHP $(php -v | head -1 | awk '{print $2}')"
         echo "  [VPS] Laravel $(php artisan --version | awk '{print $NF}')"
 
