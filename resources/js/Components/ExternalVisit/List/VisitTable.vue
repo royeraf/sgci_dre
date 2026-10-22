@@ -9,6 +9,7 @@ import ClientPagination from '@/Components/Common/ClientPagination.vue';
 const props = defineProps<{
     visits: PaginatedVisits;
     readonly?: boolean;
+    highlightPending?: boolean;
 }>();
 
 defineEmits<{
@@ -131,8 +132,12 @@ const closeDetails = () => {
                     </tr>
                 </thead>
                 <tbody class="bg-white divide-y divide-slate-100">
-                    <tr v-for="visit in visits.data" :key="visit.id"
-                        class="hover:bg-purple-50 transition-colors duration-200">
+                    <tr v-for="visit in visits.data" :key="visit.id" :class="[
+                        visit.is_pending && highlightPending
+                            ? 'bg-violet-50 hover:bg-violet-100'
+                            : 'hover:bg-purple-50',
+                        'transition-colors duration-200'
+                    ]">
                         <td class="px-3 py-3 whitespace-nowrap">
                             <div class="text-xs font-semibold text-slate-900">{{ formatDate(visit.fecha) }}</div>
                         </td>

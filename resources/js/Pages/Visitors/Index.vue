@@ -275,7 +275,7 @@ watch(activeTab, (newTab) => {
                             </div>
 
                             <!-- Table -->
-                            <VisitTable :visits="visits" @exit="openExitModal" @page-change="changePage" @update:perPage="updatePerPage" />
+                            <VisitTable :visits="visits" highlight-pending @exit="openExitModal" @page-change="changePage" @update:perPage="updatePerPage" />
                         </BaseTableCard>
                     </div>
 

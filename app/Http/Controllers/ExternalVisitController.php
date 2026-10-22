@@ -22,6 +22,11 @@ class ExternalVisitController extends Controller
     public function index(Request $request)
     {
         $query = ExternalVisit::with(['registrador', 'person', 'direction', 'office', 'employee.person'])
+            // Las visitas de hoy sin hora de salida se muestran primero
+            ->orderByRaw(
+                'CASE WHEN hora_salida IS NULL AND fecha = ? THEN 0 ELSE 1 END',
+                [now()->toDateString()]
+            )
             ->orderBy('fecha', 'desc')
             ->orderBy('hora_ingreso', 'desc');
 
