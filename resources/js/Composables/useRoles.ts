@@ -10,6 +10,7 @@ export interface Role {
     nivel_acceso: number;
     activo: boolean;
     users_count: number;
+    permisos_json?: Record<string, string[]> | null;
 }
 
 export function useRoles() {
@@ -24,6 +25,7 @@ export function useRoles() {
         descripcion: '',
         nivel_acceso: 5,
         activo: true,
+        resolution_access: null as string[] | null,
         errors: {} as Record<string, string>,
     });
 
@@ -41,7 +43,7 @@ export function useRoles() {
 
     const openCreateModal = () => {
         editingRole.value = null;
-        form.value = { nombre: '', descripcion: '', nivel_acceso: 5, activo: true, errors: {} };
+        form.value = { nombre: '', descripcion: '', nivel_acceso: 5, activo: true, resolution_access: null, errors: {} };
         showModal.value = true;
     };
 
@@ -52,6 +54,7 @@ export function useRoles() {
             descripcion: role.descripcion || '',
             nivel_acceso: role.nivel_acceso,
             activo: role.activo,
+            resolution_access: Object.prototype.hasOwnProperty.call(role.permisos_json || {}, 'resoluciones') ? [...(role.permisos_json?.resoluciones || [])] : null,
             errors: {},
         };
         showModal.value = true;
