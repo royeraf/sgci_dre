@@ -62,7 +62,7 @@
 
         <!-- Login Form Card -->
         <div class="bg-white rounded-2xl shadow-xl shadow-blue-950/5 border-2 border-slate-200 p-6 sm:p-8">
-          <form class="space-y-6 sm:space-y-8" @submit.prevent="handleLogin">
+          <form class="space-y-6 sm:space-y-8" autocomplete="off" @submit.prevent="handleLogin">
             <!-- Identifier Field (DNI o Usuario) -->
             <div class="group relative">
               <label for="dni" class="block text-sm font-semibold text-slate-700 mb-2 cursor-pointer">
@@ -72,7 +72,11 @@
                 <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <IdCard class="h-5 w-5 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
                 </div>
-                <input v-model="form.dni" type="text" id="dni" maxlength="100" autocomplete="username"
+                <input v-model="form.dni" type="text" id="dni" name="identificador" maxlength="100"
+                  autocomplete="off" spellcheck="false" autocapitalize="none" autocorrect="off"
+                  data-1p-ignore data-bwignore="true" data-lpignore="true" data-protonpass-ignore="true"
+                  data-form-type="other" :readonly="dniLocked"
+                  @pointerdown="unlockDni" @focus="unlockDni"
                   @input="dniError = ''; flashDismissed = true; successDismissed = true" :class="[
                     'block w-full pl-10 pr-4 py-3 text-sm sm:text-base border-2 rounded-xl transition-all duration-200 ease-in-out focus:outline-none focus:ring-4 cursor-pointer',
                     dniError || form.errors.dni
@@ -88,14 +92,17 @@
 
             <!-- Password Field -->
             <div class="group relative">
-              <label for="password" class="block text-sm font-semibold text-slate-700 mb-2 cursor-pointer">
+              <label for="clave-acceso" class="block text-sm font-semibold text-slate-700 mb-2 cursor-pointer">
                 Contraseña <span class="text-red-500">*</span>
               </label>
               <div class="relative">
                 <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <Lock class="h-5 w-5 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
                 </div>
-                <input v-model="form.password" :type="showPassword ? 'text' : 'password'" id="password" autocomplete="current-password"
+                <input v-model="form.password" :type="passwordType" id="clave-acceso" name="clave"
+                  autocomplete="new-password" data-1p-ignore data-bwignore="true" data-lpignore="true"
+                  data-protonpass-ignore="true" data-form-type="other" :readonly="passwordLocked"
+                  @pointerdown="armPassword" @focus="armPassword"
                   @input="passwordError = ''; flashDismissed = true; successDismissed = true" :class="[
                   'block w-full pl-10 pr-12 py-3 text-sm sm:text-base border-2 rounded-xl transition-all duration-200 ease-in-out focus:outline-none focus:ring-4 cursor-pointer',
                   passwordError || form.errors.password
@@ -225,6 +232,23 @@ onMounted(() => {
 const showPassword = ref(false);
 const dniError = ref('');
 const passwordError = ref('');
+
+// Anti-autocompletado: los campos se renderizan de solo lectura y sin
+// apariencia de credenciales hasta que el usuario interactúa, para que el
+// navegador no rellene perfiles guardados en equipos compartidos.
+const dniLocked = ref(true);
+const passwordLocked = ref(true);
+const passwordArmed = ref(false);
+
+const unlockDni = () => { dniLocked.value = false; };
+const armPassword = () => {
+  passwordLocked.value = false;
+  passwordArmed.value = true;
+};
+
+const passwordType = computed(() =>
+  showPassword.value || !passwordArmed.value ? 'text' : 'password'
+);
 
 const form = useForm({
   dni: '',
