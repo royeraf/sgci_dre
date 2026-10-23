@@ -147,6 +147,15 @@ Route::middleware(['auth', 'password.changed'])->group(function () {
 
     Route::get('/dashboard', [App\Http\Controllers\DashboardController::class, 'index'])->name('dashboard');
 
+    Route::middleware('role:ROL001')->prefix('resoluciones')->name('resoluciones.')->group(function () {
+        Route::get('/', [App\Http\Controllers\ResolutionController::class, 'index'])->name('index');
+        Route::get('/cobertura', [App\Http\Controllers\ResolutionController::class, 'coverage'])->name('coverage');
+        Route::post('/', [App\Http\Controllers\ResolutionController::class, 'upload'])->name('upload');
+        Route::post('/desde-archivo-local', [App\Http\Controllers\ResolutionController::class, 'uploadFromArchive'])->name('upload-local');
+        Route::get('/{resolution}/archivo', [App\Http\Controllers\ResolutionController::class, 'file'])->whereNumber('resolution')->name('file');
+        Route::patch('/{resolution}', [App\Http\Controllers\ResolutionController::class, 'update'])->whereNumber('resolution')->name('update');
+    });
+
     // Profile routes
     Route::post('/profile/password', [ProfileController::class, 'updatePassword'])->name('profile.password');
     

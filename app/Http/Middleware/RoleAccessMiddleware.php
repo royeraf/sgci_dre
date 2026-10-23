@@ -31,6 +31,7 @@ class RoleAccessMiddleware
         'asistencia'  => 'asistencia',
         'utilitarios' => 'utilitarios',
         'planillas'   => 'planillas',
+        'resoluciones' => 'resoluciones',
     ];
 
     /**
@@ -60,6 +61,13 @@ class RoleAccessMiddleware
 
         $prefix = explode('/', $request->path())[0];
         $module = self::URL_MODULE_MAP[$prefix] ?? null;
+
+        if ($module === 'resoluciones') {
+            $action = $request->isMethod('POST') ? 'subir' : ($request->isMethod('PATCH') ? 'editar' : 'ver');
+            if (app(\App\Services\ResolutionAccess::class)->allows($user, $action)) return $next($request);
+            if ($request->expectsJson()) abort(403, 'No tiene permiso para esta acción en Resoluciones.');
+            return redirect('/dashboard')->with('error', 'No tiene permiso para esta acción en Resoluciones.');
+        }
 
         // Módulos deshabilitados temporalmente para el rol, sin importar los
         // permisos de rol o los módulos asignados al usuario.

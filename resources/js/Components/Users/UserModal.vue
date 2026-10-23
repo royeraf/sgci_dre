@@ -488,6 +488,7 @@ onUnmounted(() => {
 });
 
 const ALL_MODULES = [
+    { key: 'resoluciones', label: 'Resoluciones (Archivo)', icon: FileText },
     { key: 'dashboard',        label: 'Dashboard',              icon: LayoutDashboard },
     { key: 'ocurrencias',      label: 'Cuaderno de Ocurrencias',   icon: ClipboardList },
     { key: 'control_personal', label: 'Control de Personal',    icon: UserCheck },

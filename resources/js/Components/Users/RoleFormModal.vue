@@ -25,9 +25,9 @@ const handleSubmit = () => { emit('submit'); };
 <template>
     <div v-if="show" class="fixed inset-0 z-50 flex items-center justify-center p-4">
         <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" @click="handleClose"></div>
-        <div class="relative bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden transform transition-all">
+        <div class="relative bg-white w-full max-w-lg max-h-[90dvh] flex flex-col rounded-2xl shadow-2xl overflow-hidden transform transition-all">
             <!-- Header -->
-            <div class="bg-gradient-to-r from-indigo-600 to-purple-600 px-6 py-4 flex justify-between items-center">
+            <div class="bg-gradient-to-r from-indigo-600 to-purple-600 px-6 py-4 flex shrink-0 justify-between items-center">
                 <div>
                     <h3 class="text-xl font-bold text-white flex items-center gap-2">
                         <Shield class="w-6 h-6" />
@@ -41,7 +41,7 @@ const handleSubmit = () => { emit('submit'); };
                 </button>
             </div>
 
-            <form @submit.prevent="handleSubmit" class="p-6 space-y-5">
+            <form @submit.prevent="handleSubmit" class="p-6 space-y-5 overflow-y-auto">
                 <!-- Nombre -->
                 <div>
                     <label class="block text-sm font-bold text-slate-700 mb-2">Nombre del Rol <span class="text-red-500">*</span></label>
@@ -70,11 +70,28 @@ const handleSubmit = () => { emit('submit'); };
                             class="flex-1 h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600" />
                         <span class="w-8 text-center text-lg font-bold text-indigo-600">{{ form.nivel_acceso }}</span>
                     </div>
-                    <p class="text-xs text-slate-400 mt-1">1 = acceso mínimo · 10 = acceso total</p>
+                    <p class="text-xs text-slate-500 mt-1">1 = mínimo · 10 = máximo. Los permisos de Resoluciones se configuran por separado.</p>
                     <p v-if="form.errors.nivel_acceso" class="mt-1.5 text-xs text-rose-500 font-bold flex items-center gap-1">
                         <AlertCircle class="w-4 h-4" /> {{ form.errors.nivel_acceso }}
                     </p>
                 </div>
+
+                <section class="rounded-xl border border-blue-200 bg-blue-50 p-4" aria-label="Permisos de Resoluciones">
+                    <h4 class="text-sm font-semibold text-slate-800">Resoluciones</h4>
+                    <p v-if="editingRole?.rol_id === 'ROL001'" class="mt-2 text-xs leading-relaxed text-slate-600">El administrador conserva acceso completo.</p>
+                    <template v-else>
+                        <label class="mt-3 flex items-start gap-2 text-sm text-slate-700"><input type="checkbox" class="mt-1 rounded border-slate-300 text-blue-600" :checked="form.resolution_access !== null" @change="form.resolution_access = ($event.target as HTMLInputElement).checked ? ['ver'] : null" /><span>Configurar permisos para este rol</span></label>
+                        <p v-if="form.resolution_access === null" class="mt-2 text-xs leading-relaxed text-slate-600">Se conserva el acceso actual mediante los módulos asignados a cada usuario.</p>
+                        <div v-else class="mt-3 space-y-3">
+                            <div class="flex flex-wrap gap-2"><button type="button" class="rounded-lg border border-blue-200 bg-white px-3 py-2 text-xs text-blue-800" @click="form.resolution_access = ['ver']">Solo consulta</button><button type="button" class="rounded-lg border border-blue-200 bg-white px-3 py-2 text-xs text-blue-800" @click="form.resolution_access = ['ver', 'subir', 'editar']">Encargado de archivo</button><button type="button" class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-600" @click="form.resolution_access = []">Sin acceso</button></div>
+                            <label class="flex items-center gap-2 text-sm text-slate-700"><input v-model="form.resolution_access" type="checkbox" value="ver" class="rounded border-slate-300 text-blue-600" @change="!form.resolution_access.includes('ver') && (form.resolution_access = [])" /> Consultar, visualizar y descargar</label>
+                            <label class="flex items-center gap-2 text-sm text-slate-700"><input v-model="form.resolution_access" type="checkbox" value="subir" :disabled="!form.resolution_access.includes('ver')" class="rounded border-slate-300 text-blue-600" /> Subir PDF</label>
+                            <label class="flex items-center gap-2 text-sm text-slate-700"><input v-model="form.resolution_access" type="checkbox" value="editar" :disabled="!form.resolution_access.includes('ver')" class="rounded border-slate-300 text-blue-600" /> Editar identificación</label>
+                            <p class="text-xs leading-relaxed text-slate-600">Se aplica a los usuarios de este rol. Una asignación personalizada de módulos que excluya Resoluciones sigue bloqueando su acceso. Los demás módulos conservan sus permisos.</p>
+                        </div>
+                        <p v-if="form.errors.resolution_access" class="mt-2 text-xs text-red-700">{{ form.errors.resolution_access }}</p>
+                    </template>
+                </section>
 
                 <!-- Estado (solo al editar) -->
                 <div v-if="editingRole"

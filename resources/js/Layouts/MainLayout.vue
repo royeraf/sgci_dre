@@ -268,6 +268,22 @@
                     </Link>
 
                     <!-- Utilitarios -->
+                    <Link v-if="hasModulePermission('resoluciones', 'ver')" href="/resoluciones"
+                        class="group flex items-center text-sm font-semibold rounded-xl transition-all duration-300 ease-in-out relative"
+                        :class="[
+                            $page.component.startsWith('Resoluciones/') ? 'bg-blue-800 text-white shadow-lg shadow-blue-950/40 ring-1 ring-blue-700/40' : 'text-slate-300 hover:bg-slate-800/80 hover:text-white',
+                            isCollapsed ? 'justify-center py-3' : 'px-4 py-3.5'
+                        ]" :title="isCollapsed ? 'Resoluciones' : ''">
+                        <div class="rounded-lg transition-all duration-300 ease-in-out flex-shrink-0" :class="[
+                            $page.component.startsWith('Resoluciones/') ? 'bg-white/20' : 'bg-slate-700/80 group-hover:bg-slate-600',
+                            isCollapsed ? 'p-2 mr-0' : 'mr-4 p-2'
+                        ]">
+                            <FileText class="h-5 w-5"
+                                :class="$page.component.startsWith('Resoluciones/') ? 'text-white' : 'text-slate-400 group-hover:text-white'" />
+                        </div>
+                        <span class="whitespace-nowrap transition-all duration-300 overflow-hidden" :class="isCollapsed ? 'opacity-0 max-w-0' : 'opacity-100 max-w-[200px]'">Resoluciones</span>
+                    </Link>
+
                     <Link v-if="hasModulePermission('utilitarios', 'ver')" href="/utilitarios"
                         class="group flex items-center text-sm font-semibold rounded-xl transition-all duration-300 ease-in-out relative"
                         :class="[
@@ -458,7 +474,15 @@
                             <Receipt class="h-5 w-5" />
                             Mis Boletas
                         </Link>
-                        <Link v-if="hasModulePermission('utilitarios', 'ver')" href="/utilitarios"
+                        <Link v-if="hasModulePermission('resoluciones', 'ver')" href="/resoluciones"
+                            @click="mobileMenuOpen = false"
+                            class="flex items-center gap-3 px-4 py-3 rounded-xl text-base font-semibold transition-all duration-200"
+                            :class="$page.component.startsWith('Resoluciones/') ? 'bg-blue-800 text-white shadow-lg' : 'text-slate-300 hover:bg-slate-700/50 hover:text-white'">
+                            <FileText class="h-5 w-5" />
+                            Resoluciones
+                        </Link>
+
+                    <Link v-if="hasModulePermission('utilitarios', 'ver')" href="/utilitarios"
                             @click="mobileMenuOpen = false"
                             class="flex items-center gap-3 px-4 py-3 rounded-xl text-base font-semibold transition-all duration-200"
                             :class="$page.component.startsWith('Utilitarios/') ? 'bg-blue-800 text-white shadow-lg' : 'text-slate-300 hover:bg-slate-700/50 hover:text-white'">
@@ -601,6 +625,11 @@ const hasModulePermission = (module, action = 'ver') => {
     // Dashboard always accessible
     if (module === 'dashboard') return true;
 
+    if (module === 'resoluciones' && Object.prototype.hasOwnProperty.call(user.customRole?.permisos_json || {}, 'resoluciones')) {
+        if (user.modulos_json?.length && !user.modulos_json.includes(module)) return false;
+        return Array.isArray(user.customRole.permisos_json.resoluciones) && user.customRole.permisos_json.resoluciones.includes(action);
+    }
+
     // "Papeletas de Salida" deshabilitado por ahora para el rol Empleado Portal
     // (ROL012): la gestión se realiza desde el Portal de Empleados. Se ignora
     // incluso si el módulo fue asignado explícitamente vía modulos_json.
@@ -627,6 +656,7 @@ const hasModulePermission = (module, action = 'ver') => {
         'asistencia':       ['asistencia'],
         'utilitarios':      ['utilitarios'],
         'planillas':        ['planillas'],
+        'resoluciones':     ['resoluciones'],
     };
 
     const dbKeys = mapping[module];

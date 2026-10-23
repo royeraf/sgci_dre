@@ -1,5 +1,6 @@
 import './bootstrap';
-import { createApp, h } from 'vue';
+import { createApp, h, Fragment } from 'vue';
+import ResolutionUploadHost from './Components/Resolutions/ResolutionUploadHost.vue';
 import { createInertiaApp, router } from '@inertiajs/vue3';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import '../css/app.css';
@@ -22,7 +23,7 @@ createInertiaApp({
     title: (title) => `${title} - SGCI DRE Huánuco`,
     resolve: (name) => resolvePageComponent(`./Pages/${name}.vue`, import.meta.glob('./Pages/**/*.vue')),
     setup({ el, App, props, plugin }) {
-        const app = createApp({ render: () => h(App, props) });
+        const app = createApp({ render: () => h(Fragment, [h(App, props), h(ResolutionUploadHost)]) });
         
         // Define standard sweetalert configurations globaly if needed, or just attach
         window.Swal = Swal; // Make it available on window for ease if needed

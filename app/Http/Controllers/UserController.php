@@ -403,7 +403,7 @@ class UserController extends Controller
     public function getAllRoles()
     {
         $roles = CustomRole::withCount('users')
-            ->select('rol_id', 'codigo', 'nombre', 'descripcion', 'nivel_acceso', 'activo', 'created_at')
+            ->select('rol_id', 'codigo', 'nombre', 'descripcion', 'nivel_acceso', 'activo', 'created_at', 'permisos_json')
             ->orderBy('nombre')
             ->get();
 
@@ -419,7 +419,11 @@ class UserController extends Controller
             'nombre'      => ['required', 'string', 'max:100', 'unique:custom_roles,nombre'],
             'descripcion' => ['nullable', 'string', 'max:255'],
             'nivel_acceso'=> ['required', 'integer', 'min:1', 'max:10'],
+            'resolution_access' => ['sometimes', 'nullable', 'array'],
+            'resolution_access.*' => ['string', Rule::in(['ver', 'subir', 'editar'])],
         ]);
+
+        $data = app(\App\Services\ResolutionAccess::class)->roleData($data);
 
         $last = CustomRole::orderByRaw("CAST(SUBSTRING(rol_id, 4) AS UNSIGNED) DESC")->first();
         $nextNum = $last ? ((int) substr($last->rol_id, 3)) + 1 : 1;
@@ -432,6 +436,7 @@ class UserController extends Controller
             'descripcion' => $data['descripcion'] ?? null,
             'nivel_acceso'=> $data['nivel_acceso'],
             'activo'      => true,
+            'permisos_json' => $data['permisos_json'] ?? null,
         ]);
 
         return response()->json(['message' => 'Rol creado exitosamente', 'role' => $role], 201);
@@ -449,8 +454,11 @@ class UserController extends Controller
             'descripcion' => ['nullable', 'string', 'max:255'],
             'nivel_acceso'=> ['required', 'integer', 'min:1', 'max:10'],
             'activo'      => ['boolean'],
+            'resolution_access' => ['sometimes', 'nullable', 'array'],
+            'resolution_access.*' => ['string', Rule::in(['ver', 'subir', 'editar'])],
         ]);
 
+        $data = app(\App\Services\ResolutionAccess::class)->roleData($data, $role->permisos_json);
         $role->update($data);
 
         return response()->json(['message' => 'Rol actualizado exitosamente', 'role' => $role]);
