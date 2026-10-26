@@ -124,8 +124,24 @@ class ResolutionController extends Controller
             'year' => 'nullable|integer|between:1900,'.now('America/Lima')->year,
         ]);
         abort_if($parser->isAuxiliary($data['filename']), 422, 'Archivo auxiliar excluido: no se carga como resolución.');
+        $relative = $archive->validateRelativePath($data['folder'] ?? '');
+        // An unreadable browser File can still be a completed retry. Confirm that
+        // identity before trying the optional archive on this server.
+        $uploadsRoot = realpath(config('resolutions.uploads_root'));
+        if ($uploadsRoot && DB::table('resolutions as r')
+            ->join('resolution_folders as f', 'f.id', '=', 'r.folder_id')
+            ->join('resolution_repositories as p', 'p.id', '=', 'f.repository_id')
+            ->where('p.code', 'cargas')->where('p.root_path', $uploadsRoot)
+            ->where('f.relative_path', $relative)->where('r.filename', $data['filename'])->exists()) {
+            abort(409, 'Este nombre ya existe en la carpeta. No se sobrescribió.');
+        }
         $root = config('resolutions.archive_root');
-        abort_unless($root && is_dir($root), 422, 'El archivo local no está disponible en el servidor. Seleccione el PDF desde una ruta más corta.');
+        if (!$root || !is_dir($root)) {
+            return response()->json([
+                'code' => 'LOCAL_SOURCE_UNREADABLE',
+                'message' => 'El navegador no pudo leer el PDF de su equipo. Vuelva a elegirlo desde una ruta corta; su carpeta de destino se conservará.',
+            ], 422);
+        }
         // Only this configured archive may supply files; never accept an absolute source from the browser.
         try {
             $source = $archive->resolveFile((object) [

@@ -55,15 +55,14 @@ class ResolutionFilenameParser
             $year = (int) $m[2];
             $series = $m[3];
         } elseif (preg_match('/^\s*(\d{1,6})\s+(?:(?:RDRR|RRDR|RER|DR|R)\s+)?((?:19|20)\d{2,4}(?!\d))(?:\s|$)/u', $name, $m)) {
-            // Preserve a clear number/year even when the series cannot be confirmed.
-            // RER, DR and spelling variants must never be silently converted to RDR.
+            // Preserve the identifier; an explicitly named folder can supply its series.
             $number = (int) $m[1];
             $year = (int) $m[2];
         } elseif (preg_match('/^\s*(RDR|ROI|RD)\s*(?:N[º°o.]?\s*)?[-\s]*(\d{1,6})(?:\s*[-–]\s*((?:19|20)\d{2,4}(?!\d)))?(?:\D|$)/ui', $name, $m)) {
             $series = $m[1];
             $number = (int) $m[2];
             $year = !empty($m[3]) ? (int) $m[3] : null;
-        } elseif (preg_match('/\b(RDR|ROI|RD)\b/u', $name, $m)) {
+        } elseif (preg_match('/^\s*(RDR|ROI|RD)\b/u', $name, $m)) {
             // RDR - (1).pdf may be an automatic rename, not a resolution number.
             $series = $m[1];
         }
@@ -80,7 +79,22 @@ class ResolutionFilenameParser
         if ($number === 0 || ($end !== null && $end < $number)) {
             $number = $end = null;
         }
+        // Subject references never classify this document. Use the nearest
+        // unambiguous series folder only when the primary identifier has none.
+        if ($series === null && !$this->isAuxiliary($filename)) $series = $this->folderSeries($folder);
         return ['series' => $series, 'year' => $year, 'number_start' => $number, 'number_end' => $end];
+    }
+
+    public function folderSeries(string $folder): ?string
+    {
+        foreach (array_reverse(explode('/', str_replace('\\', '/', $folder))) as $part) {
+            $part = mb_strtoupper($this->normalizeIdentifier($part));
+            preg_match_all('/(?<![\p{L}])(RDR|ROI|RD)(?=[\s._-]|\d|$)/u', $part, $matches);
+            $series = array_values(array_unique($matches[1]));
+            if (count($series) === 1) return $series[0];
+            if (count($series) > 1) return null;
+        }
+        return null;
     }
 
     /** Closest named annual folder wins; parent years and number ranges do not. */
