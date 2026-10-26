@@ -7,6 +7,7 @@ import ResolutionPreview from '@/Components/Resolutions/ResolutionPreview.vue';
 import { openResolutionUploads } from '@/Composables/useResolutionUploads';
 import ResolutionDashboard from '@/Components/Resolutions/ResolutionDashboard.vue';
 import ResolutionFolders from '@/Components/Resolutions/ResolutionFolders.vue';
+import ResolutionSkeleton from '@/Components/Resolutions/ResolutionSkeleton.vue';
 
 const props = defineProps({ records: Object, filters: Object, summary: Object, coverage: Object, years: Array, yearCounts: { type: Array, default: () => [] }, folders: { type: Array, default: () => [] }, currentFolder: Object, annualBySeries: { type: Array, default: () => [] }, seriesOptions: Array, maxUploadMb: Number, currentYear: Number, access: { type: Object, default: () => ({ ver: false, subir: false, editar: false }) } });
 const page = usePage();
@@ -14,6 +15,20 @@ const showDashboard = computed(() => !props.currentFolder && !['q', 'number', 'y
 const defaults = { q: '', number: '', year: '', series: '', folder: '', status: 'all', sort: 'recent' };
 const search = ref({ ...defaults, ...props.filters });
 const searching = ref(false), advanced = ref(false), help = ref(false);
+const pageLoading = ref(false), loadingView = ref('files');
+let loadingVisit = null;
+const stopLoadingStart = router.on('start', ({ detail: { visit } }) => {
+    const url = new URL(visit.url, window.location.origin);
+    if (visit.method !== 'get' || url.pathname !== '/resoluciones' || visit.only?.length) return;
+    loadingVisit = visit;
+    const filtered = ['q','number','year','series','folder'].some(key => url.searchParams.get(key)) || (url.searchParams.has('status') && url.searchParams.get('status') !== 'all');
+    loadingView.value = filtered ? 'files' : homeView.value;
+    pageLoading.value = true;
+});
+const stopLoadingNavigate = router.on('navigate', () => { pageLoading.value = false; loadingVisit = null; });
+const stopLoadingFinish = router.on('finish', ({ detail: { visit } }) => {
+    if (visit === loadingVisit) { pageLoading.value = false; loadingVisit = null; }
+});
 const notice = ref(''), editing = ref(null), preview = ref(null), searchInput = ref(null), resultsList = ref(null);
 const showHistory = ref(false), history = ref([]);
 const homeView = useRemember('summary', 'resolutions:home-view');
@@ -89,7 +104,7 @@ async function edit(row) {
     Object.assign(editForm, { series_id: row.series_id || props.seriesOptions.find(series => series.code === row.detected?.series)?.id || '', year: row.year || row.detected?.year || '', number_start: row.number_start || row.detected?.number_start || '', number_end: row.number_start ? (row.number_end || '') : (row.detected?.number_end || '') });
     await nextTick(); document.getElementById(`edit-resolution-${row.id}`)?.querySelector('select')?.focus();
 }
-function save() { editForm.patch(`/resoluciones/${editing.value}`, { preserveScroll: true, onSuccess: () => { editing.value = null; notice.value = 'Identificación guardada. El PDF original se conserva.'; } }); }
+function save() { editForm.patch(`/resoluciones/${editing.value}`, { preserveScroll: true, onSuccess: () => { editing.value = null; notice.value = 'Identificación guardada.'; } }); }
 function shortcut(event) {
     if (event.key === 'Escape' && !document.querySelector('dialog[open]') && !['INPUT', 'TEXTAREA', 'SELECT'].includes(event.target.tagName)) {
         selected.value = null; detailsOpen.value = false; editing.value = null; return;
@@ -104,7 +119,7 @@ onMounted(() => {
     try { const stored = JSON.parse(localStorage.getItem(historyKey) || '[]'); history.value = Array.isArray(stored) ? stored.filter(q => typeof q === 'string' && q.length <= 120).slice(0, 5) : []; } catch {}
     window.addEventListener('keydown', shortcut);
 });
-onBeforeUnmount(() => { clearTimeout(blurTimer); window.removeEventListener('keydown', shortcut); });
+onBeforeUnmount(() => { stopLoadingStart(); stopLoadingFinish(); stopLoadingNavigate(); clearTimeout(blurTimer); window.removeEventListener('keydown', shortcut); });
 </script>
 
 <template>
@@ -112,7 +127,7 @@ onBeforeUnmount(() => { clearTimeout(blurTimer); window.removeEventListener('key
     <MainLayout>
         <div class="resolution-workspace">
             <header class="drive-header">
-                <div class="drive-brand"><span class="brand-folder"><FolderOpen :size="25" /></span><div><h1>Resoluciones</h1><p>Archivo · DRE Huánuco</p></div></div>
+                <div class="drive-brand"><span class="brand-folder"><FolderOpen :size="25" /></span><div><h1>Resoluciones</h1></div></div>
                 <form class="drive-search" @submit.prevent="runSearch(true)">
                     <button type="submit" class="icon-button search-trigger" aria-label="Buscar resoluciones" :disabled="searching"><Loader2 v-if="searching" :size="20" class="animate-spin" /><Search v-else :size="21" /></button>
                     <label for="resolution-search" class="sr-only">Buscar en Resoluciones</label>
@@ -120,18 +135,18 @@ onBeforeUnmount(() => { clearTimeout(blurTimer); window.removeEventListener('key
                     <div v-if="showHistory && history.length" class="search-history"><div class="history-label">Búsquedas recientes<button type="button" @mousedown.prevent @click="clearHistory">Borrar</button></div><button v-for="query in history" :key="query" type="button" @mousedown.prevent @click="reuse(query)"><History :size="16" /><span>{{ query }}</span><ArrowUpRight :size="15" /></button></div>
                 </form>
                 <button v-if="access.subir" class="primary-button header-upload" @click="openResolutionUploads({ maxMb: maxUploadMb, currentYear })"><Upload :size="18" /><span>Subir resoluciones</span></button>
-                <button class="icon-button help-button" :aria-expanded="help" aria-controls="resolution-help" aria-label="Ayuda de búsqueda" @click="help = !help"><CircleHelp :size="21" /></button>
+                <button class="icon-button help-button" :aria-expanded="help" aria-controls="resolution-help" aria-label="Ayuda de Resoluciones" @click="help = !help"><CircleHelp :size="21" /></button>
             </header>
 
-            <section v-if="help" id="resolution-help" class="help-panel" aria-label="Ayuda de búsqueda"><div><strong>Busque por referencia o asunto</strong><p>Escriba «125-2024», «RDR 125-2024», apellidos o palabras del nombre del PDF. Pulse / para ir al buscador.</p></div><div><strong>Explore sus carpetas</strong><p>Abra una carpeta para ver sus archivos. Puede alternar entre lista y cuadrícula; use el botón de información para consultar los datos del documento.</p></div></section>
+            <section v-if="help" id="resolution-help" class="help-panel" aria-label="Ayuda de Resoluciones"><div><strong>Busque por referencia o asunto</strong><p>Escriba «125-2024», «RDR 125-2024», apellidos o palabras del nombre del PDF. Pulse / para ir al buscador.</p></div><div><strong>Archivos y numeración</strong><p>Se conservan los nombres originales. Los PDF repetidos se omiten. El control de numeración señala saltos entre el 1 y el mayor número cargado; no confirma que esas resoluciones hayan sido emitidas.</p></div></section>
             <p v-if="notice" class="notice" role="status"><Check :size="17" />{{ notice }}<button class="icon-button" aria-label="Cerrar aviso" @click="notice = ''"><X :size="16" /></button></p>
 
             <section class="drive-surface" :class="{ 'is-home': showDashboard }" aria-label="Repositorio de resoluciones">
                 <div v-if="!showDashboard" class="drive-titlebar">
-                    <div class="location-heading"><nav class="breadcrumbs" aria-label="Ubicación"><button :class="{ 'at-root': !currentFolder }" @click="openFolder(null)">{{ showDashboard ? 'Archivo institucional' : 'Inicio' }}</button><template v-if="currentFolder"><ChevronRight :size="19" /><h2 :title="currentFolder.path">{{ folderName(currentFolder) }}</h2></template></nav><p>{{ currentFolder ? currentFolder.repository : 'Repositorio documental de la DRE Huánuco' }}</p></div>
+                    <div class="location-heading"><nav class="breadcrumbs" aria-label="Ubicación"><button :class="{ 'at-root': !currentFolder }" @click="openFolder(null)">{{ showDashboard ? 'Archivo institucional' : 'Inicio' }}</button><template v-if="currentFolder"><ChevronRight :size="19" /><h2 :title="currentFolder.path">{{ folderName(currentFolder) }}</h2></template></nav></div>
                 </div>
 
-                <nav v-if="showDashboard" class="repository-tabs" role="tablist" aria-label="Vistas del repositorio"><button id="repository-tab-summary" role="tab" :aria-selected="homeView === 'summary'" aria-controls="repository-summary" :tabindex="homeView === 'summary' ? 0 : -1" @click="switchHome('summary')" @keydown.right.prevent="switchHome('folders', true)"><ChartColumn :size="17" /> Resumen</button><button id="repository-tab-folders" role="tab" :aria-selected="homeView === 'folders'" aria-controls="repository-folders" :tabindex="homeView === 'folders' ? 0 : -1" @click="switchHome('folders')" @keydown.left.prevent="switchHome('summary', true)"><FolderOpen :size="17" /> Carpetas <span>{{ number(folders.length) }}</span></button></nav>
+                <nav v-if="showDashboard" class="repository-tabs" role="tablist" aria-label="Vistas del repositorio"><button id="repository-tab-summary" role="tab" :aria-selected="homeView === 'summary'" aria-controls="repository-summary" :tabindex="homeView === 'summary' ? 0 : -1" @click="switchHome('summary')" @keydown.right.prevent="switchHome('folders', true)"><ChartColumn :size="17" /> Resumen</button><button id="repository-tab-folders" role="tab" :aria-selected="homeView === 'folders'" aria-controls="repository-folders" :tabindex="homeView === 'folders' ? 0 : -1" @click="switchHome('folders')" @keydown.left.prevent="switchHome('summary', true)"><FolderOpen :size="17" /> Carpetas <span v-if="folders.length">{{ number(folders.length) }}</span></button></nav>
                 <p v-for="key in ['q', 'number', 'year', 'series', 'folder']" v-show="page.props.errors?.[key]" :key="key" class="error-message" role="alert">{{ page.props.errors?.[key] }}</p>
 
                 <div v-if="!showDashboard" class="drive-toolbar">
@@ -146,12 +161,13 @@ onBeforeUnmount(() => { clearTimeout(blurTimer); window.removeEventListener('key
                 <div v-if="activeFilters.length" class="active-filters" aria-label="Filtros aplicados"><button v-for="filter in activeFilters" :key="filter.key" :aria-label="`Quitar filtro ${filter.text}`" @click="removeFilter(filter.key)">{{ filter.text }}<X :size="13" /></button><button class="clear-filters" @click="clearFilters">Limpiar filtros</button></div>
 
                 <div class="explorer-layout" :class="{ 'with-details': detailsOpen && selected }">
-                    <div class="explorer-content">
-                        <ResolutionDashboard v-if="showDashboard && homeView === 'summary'" id="repository-summary" role="tabpanel" aria-labelledby="repository-tab-summary" :year-counts="yearCounts" :annual-by-series="annualBySeries" :series-options="seriesOptions" :current-year="currentYear" :total="summary.total" :coverage="coverage" @year="openYear" />
-                        <ResolutionFolders v-if="showDashboard && homeView === 'folders'" id="repository-folders" role="tabpanel" aria-labelledby="repository-tab-folders" :folders="folders" :current-year="currentYear" @open="openFolder" />
+                    <div class="explorer-content" :aria-busy="pageLoading">
+                        <ResolutionSkeleton v-if="pageLoading" :variant="loadingView === 'files' && viewMode === 'grid' ? 'grid' : loadingView" />
+                        <ResolutionDashboard v-if="!pageLoading && showDashboard && homeView === 'summary'" id="repository-summary" role="tabpanel" aria-labelledby="repository-tab-summary" :year-counts="yearCounts" :annual-by-series="annualBySeries" :series-options="seriesOptions" :current-year="currentYear" :total="summary.total" :coverage="coverage" @year="openYear" />
+                        <ResolutionFolders v-if="!pageLoading && showDashboard && homeView === 'folders'" id="repository-folders" role="tabpanel" aria-labelledby="repository-tab-folders" :folders="folders" :current-year="currentYear" @open="openFolder" />
 
-                        <template v-if="!showDashboard">
-                        <div class="section-heading files-heading"><h2>{{ currentFolder ? 'Archivos de esta carpeta' : 'Archivos' }}<span role="status" aria-live="polite">{{ searching ? 'Buscando…' : number(records.total) }}</span></h2><label class="sort-control"><span class="sr-only">Ordenar archivos</span><select v-model="search.sort" @change="runSearch()"><option value="recent">Año más reciente</option><option value="oldest">Año más antiguo</option><option value="name">Nombre del archivo</option></select></label></div>
+                        <template v-if="!pageLoading && !showDashboard">
+                        <div class="section-heading files-heading"><h2>Archivos</h2><label class="sort-control"><span class="sr-only">Ordenar archivos</span><select v-model="search.sort" @change="runSearch()"><option value="recent">Año más reciente</option><option value="oldest">Año más antiguo</option><option value="name">Nombre del archivo</option></select></label></div>
                         <div v-if="!records.data.length" class="empty-state"><FolderOpen :size="42" /><h3>{{ summary.total ? 'No hay archivos que coincidan' : 'Su archivo empieza aquí' }}</h3><p>{{ summary.total ? 'Cambie los filtros o busque con otras palabras del nombre.' : 'Suba sus resoluciones en PDF para consultarlas desde este espacio.' }}</p><button v-if="summary.total" class="secondary-button" @click="clearFilters">Ver todos los archivos</button><button v-else-if="access.subir" class="primary-button" @click="openResolutionUploads({ maxMb: maxUploadMb, currentYear })">Subir primeros PDF</button></div>
                         <div v-if="records.data.length && viewMode === 'list'" class="list-columns" aria-hidden="true"><span>Nombre</span><span>Año</span><span>Tamaño</span><span></span></div>
                         <div v-if="records.data.length" ref="resultsList" class="files" :class="`files-${viewMode}`" :aria-busy="searching">
@@ -166,8 +182,8 @@ onBeforeUnmount(() => { clearTimeout(blurTimer); window.removeEventListener('key
                         </template>
                     </div>
 
-                    <aside v-if="detailsOpen && selected" class="details-panel" aria-label="Información del archivo"><div class="details-heading"><h2>Información</h2><button class="icon-button" aria-label="Cerrar información" @click="detailsOpen = false; editing = null"><X :size="19" /></button></div><div class="details-cover" aria-hidden="true"><FileText :size="48" :stroke-width="1.2" /><span>PDF</span></div><h3>{{ subject(selected) }}</h3><div v-if="incomplete(selected)" class="review-note"><strong>Datos por completar: {{ missingData(selected) }}</strong><p>La identificación guardada está incompleta. Las sugerencias del nombre se pueden revisar antes de guardar; el PDF no está rechazado.</p></div><dl><dt>Nombre original</dt><dd>{{ selected.filename }}</dd><dt>Referencia</dt><dd>{{ reference(selected) }}</dd><dt>Año</dt><dd>{{ selected.year || 'Sin identificar' }}</dd><dt>Tamaño</dt><dd>{{ size(selected.size_bytes) }}</dd><dt>Ubicación</dt><dd>{{ selected.repository }}<br />{{ selected.folder || 'Carpeta raíz' }}</dd></dl><a :href="`/resoluciones/${selected.id}/archivo?download=1`" class="secondary-button"><Download :size="16" /> Descargar</a><button v-if="access.editar" class="edit-link" @click="edit(selected)"><Pencil :size="14" />{{ editing === selected.id ? 'Cerrar edición' : 'Revisar identificación' }}</button>
-                        <form v-if="access.editar && editing === selected.id" :id="`edit-resolution-${selected.id}`" class="edit-form" @submit.prevent="save"><h3>Identificación</h3><label>Serie<select v-model="editForm.series_id"><option value="">Sin confirmar</option><option v-for="series in seriesOptions" :key="series.id" :value="series.id">{{ series.code }}</option></select></label><label>Año<input v-model="editForm.year" type="number" min="1900" :max="currentYear" /></label><label>Número inicial<input v-model="editForm.number_start" type="number" min="1" max="999999" :required="!!editForm.number_end" /></label><label>Número final (si agrupa)<input v-model="editForm.number_end" type="number" min="1" max="999999" /></label><p>Complete solo los datos que pueda confirmar con el PDF. Puede dejar los demás pendientes.</p><p v-for="(error, key) in editForm.errors" :key="key" class="error-message" role="alert">{{ error }}</p><button class="primary-button" :disabled="editForm.processing">{{ editForm.processing ? 'Guardando…' : 'Guardar' }}</button></form>
+                    <aside v-if="!pageLoading && detailsOpen && selected" class="details-panel" aria-label="Información del archivo"><div class="details-heading"><h2>Información</h2><button class="icon-button" aria-label="Cerrar información" @click="detailsOpen = false; editing = null"><X :size="19" /></button></div><div class="details-cover" aria-hidden="true"><FileText :size="48" :stroke-width="1.2" /><span>PDF</span></div><h3>{{ subject(selected) }}</h3><div v-if="incomplete(selected)" class="review-note"><strong>Datos por completar: {{ missingData(selected) }}</strong><p>Puede consultar el PDF y completar su identificación después.</p></div><dl><dt>Nombre original</dt><dd>{{ selected.filename }}</dd><dt>Referencia</dt><dd>{{ reference(selected) }}</dd><dt>Año</dt><dd>{{ selected.year || 'Sin identificar' }}</dd><dt>Tamaño</dt><dd>{{ size(selected.size_bytes) }}</dd><dt>Ubicación</dt><dd>{{ selected.repository }}<br />{{ selected.folder || 'Carpeta raíz' }}</dd></dl><a :href="`/resoluciones/${selected.id}/archivo?download=1`" class="secondary-button"><Download :size="16" /> Descargar</a><button v-if="access.editar" class="edit-link" @click="edit(selected)"><Pencil :size="14" />{{ editing === selected.id ? 'Cerrar edición' : 'Revisar identificación' }}</button>
+                        <form v-if="access.editar && editing === selected.id" :id="`edit-resolution-${selected.id}`" class="edit-form" @submit.prevent="save"><h3>Identificación</h3><label>Serie<select v-model="editForm.series_id"><option value="">Sin confirmar</option><option v-for="series in seriesOptions" :key="series.id" :value="series.id">{{ series.code }}</option></select></label><label>Año<input v-model="editForm.year" type="number" min="1900" :max="currentYear" /></label><label>Número inicial<input v-model="editForm.number_start" type="number" min="1" max="999999" :required="!!editForm.number_end" /></label><label>Número final (si agrupa)<input v-model="editForm.number_end" type="number" min="1" max="999999" /></label><p>Confirme los datos con el PDF; deje en blanco lo que desconozca.</p><p v-for="(error, key) in editForm.errors" :key="key" class="error-message" role="alert">{{ error }}</p><button class="primary-button" :disabled="editForm.processing">{{ editForm.processing ? 'Guardando…' : 'Guardar' }}</button></form>
                     </aside>
                 </div>
             </section>
