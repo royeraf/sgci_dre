@@ -1,7 +1,8 @@
 <script setup>
 import { computed } from 'vue';
 import { ChevronDown, ListChecks } from 'lucide-vue-next';
-const props = defineProps({ report: Object });
+const props = defineProps({ report: Object, canReview: Boolean });
+const emit = defineEmits(['repeated']);
 const groups = computed(() => props.report?.groups || []);
 const format = value => new Intl.NumberFormat('es-PE').format(value || 0);
 const identifier = value => String(value).padStart(5,'0');
@@ -13,7 +14,7 @@ const ranges = gaps => gaps.map(([first,last])=>first===last ? identifier(first)
         <summary><ListChecks :size="18" /><span>Control de numeración<strong>{{ report.missing ? `${format(report.missing)} números por comprobar` : 'Sin saltos en lo registrado' }}</strong></span><ChevronDown :size="17" /></summary>
         <p>Del 1 al mayor número cargado, por año y tipo. Un salto no confirma que el documento exista.</p>
         <p v-if="report.unidentified" class="coverage-warning">{{ format(report.unidentified) }} PDF tienen datos pendientes; pueden explicar algunos saltos.</p>
-        <section v-for="group in groups" :key="`${group.year}-${group.series}`"><header><strong>{{ group.series }} · {{ group.year }}</strong><span>Hasta {{ identifier(group.last) }}</span></header><p v-if="group.missing">{{ ranges(group.gaps) }}</p><p v-else class="coverage-ok">Sin saltos.</p></section>
+        <section v-for="group in groups" :key="`${group.year}-${group.series}`"><header><strong>{{ group.series }} · {{ group.year }}</strong><span>Hasta {{ identifier(group.last) }}</span></header><p v-if="group.unique != null">{{ format(group.unique) }} números distintos · {{ format(group.files) }} PDF<span v-if="group.extra_files"> · {{ format(group.extra_files) }} archivos adicionales con número repetido</span></p><button v-if="canReview && group.repeated_numbers" type="button" class="underline text-xs mt-2" @click="emit('repeated', group.year, group.series)">Revisar números repetidos</button><p v-if="group.missing">{{ ranges(group.gaps) }}</p><p v-else class="coverage-ok">Sin saltos.</p></section>
     </details>
 </template>
 

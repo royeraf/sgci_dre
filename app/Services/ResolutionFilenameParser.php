@@ -66,6 +66,11 @@ class ResolutionFilenameParser
             // RDR - (1).pdf may be an automatic rename, not a resolution number.
             $series = $m[1];
         }
+        // Number-year before the series is one resolution, not a range ending in that year.
+        if ($year === null && $end !== null && $end >= 1900 && $end <= $currentYear
+            && preg_match('/^\s*\d{1,6}\s*[-–]\s*((?:19|20)\d{2})\s+(?:RDR|ROI|RD)\b/u', $name)) {
+            $year = $end; $end = null;
+        }
         // A leading zero-padded number belongs to this file, even when its subject cites another resolution.
         if ($number === null && preg_match('/^\s*(0\d{2,5})\s+(?=\p{L})/u', $name, $m)) {
             $number = (int) $m[1];

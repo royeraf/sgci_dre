@@ -264,3 +264,12 @@ Cuando el mismo nombre y carpeta tienen versión normal y versión terminada en 
 Auditoría de 2026: 94 parejas exactas; retirando sus versiones normales quedan 2,696 PDF con 2,689 números distintos. Los siete casos restantes comparten número pero tienen asuntos diferentes, por lo que se preservan. No se modifican los originales del disco D:. Pruebas: 22 casos y 363 aserciones en base aislada, reglas de selección verificadas en Node y compilación correcta.
 
 La auditoría general de todos los años aplica la misma preferencia solo a parejas exactas dentro de una carpeta. La marca repetida [R][R] se interpreta como marcada y nunca convierte otra versión [R] en candidata para retirar. Se preservan ambas versiones marcadas si existen. Validación adicional de ese caso: 22 pruebas, 367 aserciones.
+
+### Conteo de resoluciones distintas y números repetidos (26/10/2026)
+El conteo anual y los gráficos cuentan una vez cada número por año y serie; los intervalos válidos se fusionan. La cantidad de PDF se mantiene aparte. El control muestra números distintos, archivos y copias con número repetido, con acceso a un filtro que permite revisar las coincidencias sin eliminarlas por suposición. Se conserva el diseño del resumen.
+
+Auditoría de los años completos subidos: 2024 tiene 4,380 números distintos en 4,606 PDF; 2025 tiene 3,930 en 3,964 PDF; 2026 tiene 2,689 en 2,697 PDF. En 2026 los ocho números repetidos son 166, 514, 539, 762, 898, 1316, 1373 y 1831. El último identificador es 2694 y no se encontraron nombres con los números 32, 282, 914, 920 y 1032 en la carpeta original revisada. El último número no es la cantidad de archivos.
+
+Se corrige el formato 01286-2026 RDR: corresponde al número 1286, año 2026, sin intervalo. La rectificación del registro existente se respalda y solo cambia number_end. No hay cambios de esquema ni eliminación de PDF.
+
+Validación: 23 pruebas y 386 aserciones en SQLite aislado; compilación correcta. Navegador con datos simulados: 2,689 números frente a 2,697 PDF, otros años sin contar duplicados, enlace al filtro por año/serie y vista móvil sin desbordamiento.

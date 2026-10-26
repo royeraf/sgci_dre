@@ -19,7 +19,7 @@ class ResolutionController extends Controller
             'q' => 'nullable|string|max:120', 'year' => 'nullable|integer|between:1900,'.now('America/Lima')->year,
             'number' => 'nullable|integer|min:1|max:999999', 'series' => 'nullable|integer|exists:resolution_series,id',
             'review' => 'nullable|in:1', 'page' => 'nullable|integer|min:1',
-            'status' => 'nullable|in:all,grouped,review,untyped',
+            'status' => 'nullable|in:all,grouped,review,untyped,repeated',
             'sort' => 'nullable|in:recent,oldest,name',
             'folder' => 'nullable|integer|exists:resolution_folders,id',
         ]);
@@ -55,6 +55,12 @@ class ResolutionController extends Controller
         }
         if ($filters['status'] === 'grouped') $query->whereNotNull('r.number_end');
         if ($filters['status'] === 'untyped') $query->whereNull('r.series_id');
+        if ($filters['status'] === 'repeated') {
+            $query->whereNotNull('r.year')->whereNotNull('r.series_id')->whereNotNull('r.number_start')
+                ->whereExists(fn($duplicates) => $duplicates->selectRaw('1')->from('resolutions as duplicate')
+                    ->whereColumn('duplicate.year', 'r.year')->whereColumn('duplicate.series_id', 'r.series_id')
+                    ->whereColumn('duplicate.number_start', 'r.number_start')->whereColumn('duplicate.id', '!=', 'r.id'));
+        }
         // Folder counts follow the search, but remain available when opening one folder.
         $folders = (clone $query)->select('f.id', 'f.relative_path as path', 'p.name as repository')
             ->selectRaw('COUNT(*) as total')->groupBy('f.id', 'f.relative_path', 'p.name')

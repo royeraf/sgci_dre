@@ -37,7 +37,7 @@ async function switchHome(view, focus = false) { homeView.value = view; advanced
 const folderName = folder => folder?.path?.split('/').filter(Boolean).pop() || folder?.repository || 'Archivos';
 function setView(mode) { viewMode.value = mode; try { localStorage.setItem('resolutions-view:drive', mode); } catch {} }
 function openFolder(folder) { if (!folder) search.value = { ...defaults }; else search.value.folder = folder.id; selected.value = null; detailsOpen.value = false; runSearch(); }
-function openYear(year, type = 'all') { search.value = { ...defaults, year, series: props.seriesOptions.find(series => series.code === type)?.id || '', status: type === 'unknown' ? 'untyped' : 'all' }; runSearch(); }
+function openYear(year, type = 'all', status = 'all') { search.value = { ...defaults, year, series: props.seriesOptions.find(series => series.code === type)?.id || '', status: type === 'unknown' ? 'untyped' : status }; runSearch(); }
 async function showDetails(row) { selected.value = row; detailsOpen.value = true; await nextTick(); if (window.matchMedia('(max-width:900px)').matches) document.querySelector('.details-panel')?.scrollIntoView({ block: 'start' }); }
 function reference(row) {
     const first = row.number_start || row.detected?.number_start;
@@ -152,7 +152,7 @@ onBeforeUnmount(() => { stopLoadingStart(); stopLoadingFinish(); stopLoadingNavi
                 <div v-if="!showDashboard" class="drive-toolbar">
                     <div class="quick-filters">
                         <label><span class="sr-only">Filtrar por año</span><select v-model="search.year" :class="{ 'has-value': search.year }" @change="runSearch()"><option value="">Todos los años</option><option v-for="year in years" :key="year" :value="year">{{ year }}</option></select></label>
-                        <label><span class="sr-only">Tipo de documentos</span><select v-model="search.status" :class="{ 'has-value': search.status !== 'all' }" @change="runSearch()"><option value="all">Todos los PDF</option><option value="grouped">PDF agrupados</option><option value="untyped">Tipo sin identificar</option><option value="review">Datos por completar ({{ number(summary.review) }})</option></select></label>
+                        <label><span class="sr-only">Tipo de documentos</span><select v-model="search.status" :class="{ 'has-value': search.status !== 'all' }" @change="runSearch()"><option value="all">Todos los PDF</option><option value="grouped">PDF agrupados</option><option value="repeated">Números repetidos</option><option value="untyped">Tipo sin identificar</option><option value="review">Datos por completar ({{ number(summary.review) }})</option></select></label>
                         <button class="filter-button" :class="{ active: advanced || filterCount }" :aria-expanded="advanced" aria-controls="resolution-filters" @click="advanced = !advanced"><SlidersHorizontal :size="15" /> Más filtros<span v-if="filterCount">{{ filterCount }}</span></button>
                     </div>
                     <div class="view-switch" role="group" aria-label="Vista de archivos"><button :class="{ selected: viewMode === 'list' }" :aria-pressed="viewMode === 'list'" aria-label="Vista de lista" @click="setView('list')"><List :size="19" /></button><button :class="{ selected: viewMode === 'grid' }" :aria-pressed="viewMode === 'grid'" aria-label="Vista de cuadrícula" @click="setView('grid')"><LayoutGrid :size="18" /></button></div>
@@ -163,7 +163,7 @@ onBeforeUnmount(() => { stopLoadingStart(); stopLoadingFinish(); stopLoadingNavi
                 <div class="explorer-layout" :class="{ 'with-details': detailsOpen && selected }">
                     <div class="explorer-content" :aria-busy="pageLoading">
                         <ResolutionSkeleton v-if="pageLoading" :variant="loadingView === 'files' && viewMode === 'grid' ? 'grid' : loadingView" />
-                        <ResolutionDashboard v-if="!pageLoading && showDashboard && homeView === 'summary'" id="repository-summary" role="tabpanel" aria-labelledby="repository-tab-summary" :year-counts="yearCounts" :annual-by-series="annualBySeries" :series-options="seriesOptions" :current-year="currentYear" :total="summary.total" :coverage="coverage" @year="openYear" />
+                        <ResolutionDashboard v-if="!pageLoading && showDashboard && homeView === 'summary'" id="repository-summary" role="tabpanel" aria-labelledby="repository-tab-summary" :year-counts="yearCounts" :annual-by-series="annualBySeries" :series-options="seriesOptions" :current-year="currentYear" :total="summary.total" :coverage="coverage" @year="openYear" @repeated="(year, type) => openYear(year, type, 'repeated')" />
                         <ResolutionFolders v-if="!pageLoading && showDashboard && homeView === 'folders'" id="repository-folders" role="tabpanel" aria-labelledby="repository-tab-folders" :folders="folders" :current-year="currentYear" @open="openFolder" />
 
                         <template v-if="!pageLoading && !showDashboard">

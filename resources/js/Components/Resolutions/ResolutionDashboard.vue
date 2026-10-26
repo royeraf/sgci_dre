@@ -4,13 +4,15 @@ import { CalendarDays, ChartColumn, FileText, Tags } from 'lucide-vue-next';
 import ResolutionCoverage from './ResolutionCoverage.vue';
 
 const props = defineProps({ yearCounts: { type: Array, default: () => [] }, annualBySeries: { type: Array, default: () => [] }, seriesOptions: { type: Array, default: () => [] }, currentYear: Number, total: Number, coverage: Object });
-const emit = defineEmits(['year']);
+const emit = defineEmits(['year', 'repeated']);
 const format = value => new Intl.NumberFormat('es-PE').format(Number(value) || 0);
 const types = computed(() => [...props.seriesOptions].sort((a, b) => ({ RDR: 0, RD: 1, ROI: 2 }[a.code] ?? 3) - ({ RDR: 0, RD: 1, ROI: 2 }[b.code] ?? 3)));
 const key = year => year == null ? 'unknown' : String(year);
 const counts = computed(() => {
     const map = {};
-    for (const row of props.annualBySeries) {
+    const identified = (props.coverage?.groups || []).filter(group => Number.isInteger(group.unique));
+    const source = props.coverage ? identified.map(group => ({ year: group.year, series: group.series, total: group.unique })) : props.annualBySeries;
+    for (const row of source) {
         const year = key(row.year), type = row.series || 'unknown';
         map[year] ||= {};
         map[year][type] = (map[year][type] || 0) + Number(row.total);
@@ -34,6 +36,7 @@ const totals = computed(() => {
     return result;
 });
 const currentCount = computed(() => rows.value.find(row => row.year === props.currentYear)?.total || 0);
+const currentFiles = computed(() => props.annualBySeries.filter(row => Number(row.year) === props.currentYear).reduce((sum, row) => sum + Number(row.total), 0));
 const yearsWithFiles = computed(() => rows.value.filter(row => row.year != null && row.total > 0).length);
 const chartType = ref('all');
 const color = code => ({ RDR: '#4285f4', RD: '#16a765', ROI: '#8e63ce', unknown: '#e9a72d' }[code] || '#4b8d99');
@@ -41,7 +44,7 @@ const categories = computed(() => [...types.value.map(type => ({ code: type.code
 const shownCount = row => chartType.value === 'all' ? row.total : (row.values[chartType.value] || 0);
 const maximum = computed(() => Math.max(1, ...rows.value.map(shownCount)));
 const segments = row => categories.value.filter(type => chartType.value === 'all' || type.code === chartType.value).map(type => ({ ...type, width: (row.values[type.code] || 0) / maximum.value * 100 }));
-const rowDescription = row => `${row.year || 'Sin año'} (${chartType.value === 'all' ? 'todos los tipos' : categories.value.find(type => type.code === chartType.value)?.label}): ${format(shownCount(row))} PDF. ${categories.value.map(type => `${type.label}: ${format(row.values[type.code])}`).join('; ')}`;
+const rowDescription = row => `${row.year || 'Sin año'} (${chartType.value === 'all' ? 'todos los tipos' : categories.value.find(type => type.code === chartType.value)?.label}): ${format(shownCount(row))} resoluciones. ${categories.value.map(type => `${type.label}: ${format(row.values[type.code])}`).join('; ')}`;
 const percentage = value => {
     const share = props.total ? value / props.total * 100 : 0;
     return share > 0 && share < 0.01 ? '< 0.01 %' : `${new Intl.NumberFormat('es-PE', { maximumFractionDigits: 2 }).format(share)} %`;
@@ -72,26 +75,26 @@ const donutSegments = computed(() => {
         <div class="annual-heading"><div><h2>El archivo en cifras</h2><p>Resoluciones de {{ allYears[allYears.length - 1] }} a {{ currentYear }}, en un solo lugar.</p></div><span class="current-label"><i></i>Hasta {{ currentYear }}</span></div>
         <div class="archive-totals">
             <div class="metric metric-total"><span class="metric-label"><FileText :size="17" />Documentos</span><strong>{{ format(total) }}</strong><span>PDF registrados en el archivo</span></div>
-            <div class="metric metric-current"><span class="metric-label"><CalendarDays :size="17" />Este año · {{ currentYear }}</span><strong>{{ format(currentCount) }}</strong><span>PDF registrados de {{ currentYear }}</span></div>
+            <div class="metric metric-current"><span class="metric-label"><CalendarDays :size="17" />Resoluciones · {{ currentYear }}</span><strong>{{ format(currentCount) }}</strong><span>Números distintos · {{ format(currentFiles) }} PDF</span></div>
             <div class="metric"><span class="metric-label"><ChartColumn :size="17" />Histórico</span><strong>{{ format(yearsWithFiles) }}<small> años</small></strong><span>Con documentos registrados</span></div>
-            <div class="metric"><span class="metric-label"><Tags :size="17" />Por identificar</span><strong>{{ format(totals.unknown) }}</strong><span>PDF pendientes de confirmar tipo</span></div>
+            <div class="metric"><span class="metric-label"><Tags :size="17" />Por identificar</span><strong>{{ format(coverage?.unidentified ?? totals.unknown) }}</strong><span>PDF con identificación pendiente</span></div>
         </div>
-        <ResolutionCoverage :report="coverage" />
+        <ResolutionCoverage :report="coverage" can-review @repeated="(year, series) => emit('repeated', year, series)" />
         <div class="chart-layout">
             <section class="year-chart" aria-label="Evolución y cantidades por año">
-                <div class="chart-heading"><div><h3>Evolución del archivo</h3><p>{{ chartType === 'all' ? 'Todos los documentos' : categories.find(type => type.code === chartType)?.label }} · {{ allYears[allYears.length - 1] }}–{{ currentYear }}</p></div><label><span class="sr-only">Tipo del gráfico</span><select v-model="chartType" aria-label="Tipo del gráfico"><option value="all">Todos los tipos</option><option v-for="type in categories" :key="type.code" :value="type.code">{{ type.label }}</option></select></label></div>
-                <div class="trend-caption"><span>Mayor cantidad registrada</span><strong>{{ peak.year || '—' }} <small>· {{ format(shownCount(peak)) }} PDF</small></strong></div>
-                <svg class="archive-trend" viewBox="0 0 660 187" role="img" :aria-label="`Evolución anual. Mayor cantidad: ${peak.year}, ${format(shownCount(peak))} PDF. Consulte las cantidades exactas debajo.`">
+                <div class="chart-heading"><div><h3>Resoluciones por año</h3><p>{{ chartType === 'all' ? 'Números distintos' : categories.find(type => type.code === chartType)?.label }} · {{ allYears[allYears.length - 1] }}–{{ currentYear }}</p></div><label><span class="sr-only">Tipo del gráfico</span><select v-model="chartType" aria-label="Tipo del gráfico"><option value="all">Todos los tipos</option><option v-for="type in categories" :key="type.code" :value="type.code">{{ type.label }}</option></select></label></div>
+                <div class="trend-caption"><span>Mayor cantidad registrada</span><strong>{{ peak.year || '—' }} <small>· {{ format(shownCount(peak)) }} resoluciones</small></strong></div>
+                <svg class="archive-trend" viewBox="0 0 660 187" role="img" :aria-label="`Evolución anual. Mayor cantidad: ${peak.year}, ${format(shownCount(peak))} resoluciones. Consulte las cantidades exactas debajo.`">
                     <defs><linearGradient id="archive-trend-fill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#4285f4" stop-opacity=".18"/><stop offset="100%" stop-color="#4285f4" stop-opacity=".01"/></linearGradient></defs>
                     <g v-for="fraction in [0, .5, 1]" :key="fraction"><line x1="45" x2="635" :y1="155 - fraction * 127" :y2="155 - fraction * 127" stroke="#e6edf6" stroke-dasharray="3 5"/><text x="36" :y="159 - fraction * 127" text-anchor="end">{{ format(Math.round(maximum * fraction)) }}</text></g>
                     <path v-if="trendPoints.length" :d="`${trendPath} L635,155 L45,155 Z`" fill="url(#archive-trend-fill)"/>
                     <path :d="trendPath" fill="none" stroke="#3675cf" stroke-width="2.5" stroke-linejoin="round"/>
-                    <circle v-for="point in trendPoints" :key="point.row.year" :cx="point.x" :cy="point.y" r="3" fill="#3675cf" stroke="white" stroke-width="1.5"><title>{{ point.row.year }}: {{ format(shownCount(point.row)) }} PDF</title></circle>
+                    <circle v-for="point in trendPoints" :key="point.row.year" :cx="point.x" :cy="point.y" r="3" fill="#3675cf" stroke="white" stroke-width="1.5"><title>{{ point.row.year }}: {{ format(shownCount(point.row)) }} resoluciones</title></circle>
                     <template v-for="(point,index) in trendPoints" :key="`label-${point.row.year}`"><text v-if="index === 0 || index === trendPoints.length - 1 || (point.row.year % 5 === 0 && index < trendPoints.length - 2)" :x="point.x" y="179" text-anchor="middle">{{ point.row.year }}</text></template>
                 </svg>
                 <div class="mosaic-heading"><h4>Explore por año</h4><span>Seleccione un año para abrir sus PDF</span></div>
-                <div class="year-mosaic"><button v-for="row in rows" :key="key(row.year)" class="year-tile" :class="{ 'is-current': row.year === currentYear, 'is-empty': !shownCount(row) }" :style="tileStyle(row)" :disabled="!row.year" :title="rowDescription(row)" :aria-label="`${rowDescription(row)}. Consultar documentos.`" @click="emit('year', row.year, chartType)"><span>{{ row.year || 'Sin año' }}<i v-if="row.year === currentYear">Actual</i></span><strong>{{ format(shownCount(row)) }}</strong><small>{{ shownCount(row) ? 'PDF' : 'Sin registros' }}</small></button></div>
-                <div class="mosaic-legend"><span>Menos PDF</span><i v-for="shade in scaleColors" :key="shade" :style="{ background: shade }"></i><span>Más PDF · {{ format(maximum) }}</span></div>
+                <div class="year-mosaic"><button v-for="row in rows" :key="key(row.year)" class="year-tile" :class="{ 'is-current': row.year === currentYear, 'is-empty': !shownCount(row) }" :style="tileStyle(row)" :disabled="!row.year" :title="rowDescription(row)" :aria-label="`${rowDescription(row)}. Consultar documentos.`" @click="emit('year', row.year, chartType)"><span>{{ row.year || 'Sin año' }}<i v-if="row.year === currentYear">Actual</i></span><strong>{{ format(shownCount(row)) }}</strong><small>{{ shownCount(row) ? 'resoluciones' : 'Sin registros' }}</small></button></div>
+                <div class="mosaic-legend"><span>Menos resoluciones</span><i v-for="shade in scaleColors" :key="shade" :style="{ background: shade }"></i><span>Más resoluciones · {{ format(maximum) }}</span></div>
                 <p class="chart-hint">El color compara cantidades del tipo elegido. «Sin registros» no confirma que falten resoluciones. {{ currentYear }} es un año en curso.</p>
             </section>
             <section class="type-chart" aria-label="Distribución de PDF por tipo"><div class="chart-heading"><div><h3>Distribución por tipo</h3><p>Todo el repositorio</p></div></div><div class="donut"><svg viewBox="0 0 120 120" role="img" aria-label="Proporción de PDF por tipo; cantidades y porcentajes en la leyenda"><circle cx="60" cy="60" r="46" fill="none" stroke="#edf1f7" stroke-width="13" /><circle v-for="type in donutSegments" v-show="type.total > 0" :key="type.code" cx="60" cy="60" r="46" fill="none" :stroke="type.color" stroke-width="13" pathLength="100" :stroke-dasharray="`${type.length} ${100 - type.length}`" :stroke-dashoffset="-type.offset" transform="rotate(-90 60 60)"><title>{{ type.label }}: {{ format(type.total) }} PDF ({{ percentage(type.total) }})</title></circle></svg><div class="donut-label"><strong>{{ format(total) }}</strong><span>PDF en total</span></div></div><dl class="type-breakdown"><div v-for="type in categories" :key="type.code"><dt :title="type.name"><i :style="{ background: type.color }"></i>{{ type.label }}</dt><dd><strong>{{ format(type.total) }}</strong><span>{{ percentage(type.total) }}</span></dd></div></dl><p class="type-note">«Sin identificar» agrupa los PDF cuyo tipo todavía no está confirmado.</p></section>
