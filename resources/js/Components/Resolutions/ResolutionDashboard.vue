@@ -3,7 +3,7 @@ import { computed, ref } from 'vue';
 import { CalendarDays, ChartColumn, FileText, Tags } from 'lucide-vue-next';
 import ResolutionCoverage from './ResolutionCoverage.vue';
 
-const props = defineProps({ yearCounts: { type: Array, default: () => [] }, annualBySeries: { type: Array, default: () => [] }, seriesOptions: { type: Array, default: () => [] }, currentYear: Number, total: Number, coverage: Object });
+const props = defineProps({ yearCounts: { type: Array, default: () => [] }, annualBySeries: { type: Array, default: () => [] }, seriesOptions: { type: Array, default: () => [] }, expectedYearTotals: { type: Object, default: () => ({}) }, currentYear: Number, total: Number, coverage: Object });
 const emit = defineEmits(['year', 'repeated']);
 const format = value => new Intl.NumberFormat('es-PE').format(Number(value) || 0);
 const types = computed(() => [...props.seriesOptions].sort((a, b) => ({ RDR: 0, RD: 1, ROI: 2 }[a.code] ?? 3) - ({ RDR: 0, RD: 1, ROI: 2 }[b.code] ?? 3)));
@@ -36,6 +36,8 @@ const totals = computed(() => {
     return result;
 });
 const currentCount = computed(() => rows.value.find(row => row.year === props.currentYear)?.total || 0);
+const currentExpected = computed(() => Number(props.expectedYearTotals[props.currentYear]) || null);
+const currentRemaining = computed(() => Math.max(0, (currentExpected.value || 0) - currentCount.value));
 const currentFiles = computed(() => props.annualBySeries.filter(row => Number(row.year) === props.currentYear).reduce((sum, row) => sum + Number(row.total), 0));
 const yearsWithFiles = computed(() => rows.value.filter(row => row.year != null && row.total > 0).length);
 const chartType = ref('all');
@@ -75,7 +77,7 @@ const donutSegments = computed(() => {
         <div class="annual-heading"><div><h2>El archivo en cifras</h2><p>Resoluciones de {{ allYears[allYears.length - 1] }} a {{ currentYear }}, en un solo lugar.</p></div><span class="current-label"><i></i>Hasta {{ currentYear }}</span></div>
         <div class="archive-totals">
             <div class="metric metric-total"><span class="metric-label"><FileText :size="17" />Documentos</span><strong>{{ format(total) }}</strong><span>PDF registrados en el archivo</span></div>
-            <div class="metric metric-current"><span class="metric-label"><CalendarDays :size="17" />Resoluciones · {{ currentYear }}</span><strong>{{ format(currentCount) }}</strong><span>Números distintos · {{ format(currentFiles) }} PDF</span></div>
+            <div class="metric metric-current"><span class="metric-label"><CalendarDays :size="17" />{{ currentExpected ? 'Total esperado' : 'Resoluciones' }} · {{ currentYear }}</span><strong>{{ format(currentExpected ?? currentCount) }}</strong><span v-if="currentExpected">{{ format(currentCount) }} identificadas · {{ format(currentRemaining) }} por comprobar</span><span v-else>Números distintos · {{ format(currentFiles) }} PDF</span></div>
             <div class="metric"><span class="metric-label"><ChartColumn :size="17" />Histórico</span><strong>{{ format(yearsWithFiles) }}<small> años</small></strong><span>Con documentos registrados</span></div>
             <div class="metric"><span class="metric-label"><Tags :size="17" />Por identificar</span><strong>{{ format(coverage?.unidentified ?? totals.unknown) }}</strong><span>PDF con identificación pendiente</span></div>
         </div>
