@@ -33,6 +33,8 @@ class IndexResolutions extends Command
             foreach ($iterator as $file) {
                 if ($file->isLink() || !$file->isFile() || !preg_match('/\.\s*pdf$/i', $file->getFilename())) { $skipped++; continue; }
                 if ($parser->isAuxiliary($file->getFilename())) { $skipped++; continue; }
+                $preferred = app(\App\Services\ResolutionRevisionPolicy::class)->preferredNames($file->getFilename());
+                if (array_filter($preferred, fn($name) => is_file($file->getPath().DIRECTORY_SEPARATOR.$name) && !is_link($file->getPath().DIRECTORY_SEPARATOR.$name))) { $skipped++; continue; }
                 $folder = str_replace('\\', '/', substr($file->getPath(), strlen($root)));
                 $folder = trim($folder, '/');
                 $folderId = $folders[$folder] ??= $archive->folder($repository->id, $folder);

@@ -2,7 +2,7 @@
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue';
 import axios from 'axios';
 import { acquireResolutionUploadSlot } from '@/Composables/useResolutionUploads';
-import { isAuxiliaryResolutionFile } from '@/Composables/resolutionFileRules';
+import { isAuxiliaryResolutionFile, isPreferredRevision, preferredRevisionKey } from '@/Composables/resolutionFileRules';
 import ResolutionCoverage from './ResolutionCoverage.vue';
 import { Check, CircleAlert, FileText, FolderOpen, Loader2, Minus, Pause, Play, RotateCcw, Trash2, Upload, X } from 'lucide-vue-next';
 
@@ -24,6 +24,7 @@ const minimized = ref(false);
 const motionEnabled = ref(false);
 const dropped = ref(0);
 const auxiliaryNames = ref([]);
+const revisionOmitted = ref(0);
 const sequenceReport = ref(null);
 const coverageMessage = ref('');
 const catalogDirty = ref(false);
@@ -98,11 +99,18 @@ function restore(event) { motionEnabled.value = event?.detail > 0; emit('reveal'
 function addFiles(files) {
     message.value = '';
     const input = Array.from(files || []);
+    const preferred = new Set([...queue.value.map(i => i.key), ...input.map(f => f.webkitRelativePath || f.name)].filter(isPreferredRevision).map(preferredRevisionKey));
+    queue.value = queue.value.filter(item => {
+        const omit = ['pending', 'error'].includes(item.status) && !isPreferredRevision(item.key) && preferred.has(preferredRevisionKey(item.key));
+        if (omit) revisionOmitted.value++;
+        return !omit;
+    });
     dropped.value = input.filter(f => !/\.pdf$/i.test(f.name)).length;
     const existing = new Set(queue.value.map(i => i.key));
     const additions = [];
     for (const file of input.filter(f => /\.pdf$/i.test(f.name))) {
         const key = file.webkitRelativePath || file.name;
+        if (!isPreferredRevision(key) && preferred.has(preferredRevisionKey(key))) { revisionOmitted.value++; continue; }
         if (isAuxiliaryResolutionFile(file.name)) { if (!auxiliaryNames.value.includes(key)) auxiliaryNames.value.push(key); continue; }
         if (existing.has(key)) continue;
         existing.add(key);
@@ -260,6 +268,7 @@ onBeforeUnmount(() => { windowVersion++; windowAnimation?.cancel(); window.remov
             </div>
             <label class="year-label">Año <span>Opcional</span><input v-model="year" type="number" min="1900" :max="currentYear" placeholder="Detectar del nombre o carpeta" /><small>Vacío: se detecta del nombre o carpeta. No cambia cargas ya iniciadas.</small></label>
             <p v-if="dropped" class="upload-notice">Se omitieron {{ dropped }} archivos que no son PDF.</p>
+            <p v-if="revisionOmitted" class="upload-notice">{{ format(revisionOmitted) }} copias omitidas: se conserva [R].</p>
             <p v-if="message" class="upload-notice" role="alert">{{ message }}</p>
             <details v-if="auxiliaryNames.length" class="upload-notice"><summary>{{ format(auxiliaryNames.length) }} archivos auxiliares omitidos</summary><p>Se omiten actuados, notificaciones, archivos temporales y nombres genéricos c.pdf/cx.pdf.</p><ul><li v-for="name in auxiliaryNames" :key="name">{{ name }}</li></ul></details>
             <section v-if="queue.length" class="queue" aria-label="Archivos seleccionados">

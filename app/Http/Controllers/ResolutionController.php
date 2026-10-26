@@ -136,6 +136,14 @@ class ResolutionController extends Controller
             abort(409, 'Este nombre ya existe en la carpeta. No se sobrescribió.');
         }
         $root = config('resolutions.archive_root');
+        if ($uploadsRoot && DB::table('resolutions as r')
+            ->join('resolution_folders as f', 'f.id', '=', 'r.folder_id')
+            ->join('resolution_repositories as p', 'p.id', '=', 'f.repository_id')
+            ->where('p.code', 'cargas')->where('p.root_path', $uploadsRoot)
+            ->where('f.relative_path', $relative)
+            ->whereIn('r.filename', app(\App\Services\ResolutionRevisionPolicy::class)->preferredNames($data['filename']))->exists()) {
+            abort(409, 'Se conserva la versión [R]; se omitió la copia sin [R].');
+        }
         if (!$root || !is_dir($root)) {
             return response()->json([
                 'code' => 'LOCAL_SOURCE_UNREADABLE',
@@ -186,6 +194,8 @@ class ResolutionController extends Controller
         abort_unless($target && ($target === $root || str_starts_with($target, $root.DIRECTORY_SEPARATOR)), 422);
         $repository = $archive->repository('cargas', 'Archivos cargados', $root);
         $folderId = $archive->folder($repository->id, $relative);
+        $revisions = app(\App\Services\ResolutionRevisionPolicy::class);
+        abort_if($revisions->preferredExists($folderId, $name), 409, 'Se conserva la versión [R]; se omitió la copia sin [R].');
         $meta = $parser->parse($name, $relative);
         if (!empty($data['year'])) $meta['year'] = (int) $data['year'];
         $path = $target.DIRECTORY_SEPARATOR.$name;
@@ -197,11 +207,17 @@ class ResolutionController extends Controller
             $written = stream_copy_to_stream($in, $out);
             if ($written !== $file->getSize()) throw new \RuntimeException('No se pudo completar la escritura del PDF.');
             fclose($out); $out = null;
-            $id = DB::table('resolutions')->insertGetId([
-                'folder_id' => $folderId, 'filename' => $name,
-                'series_id' => DB::table('resolution_series')->where('code', $meta['series'])->value('id'),
-                'year' => $meta['year'], 'number_start' => $meta['number_start'], 'number_end' => $meta['number_end'], 'size_bytes' => $written,
-            ]);
+            $id = DB::transaction(function () use ($folderId, $name, $meta, $written, $revisions, $target) {
+                DB::table('resolution_folders')->where('id', $folderId)->lockForUpdate()->first();
+                abort_if($revisions->preferredExists($folderId, $name), 409, 'Se conserva la versión [R]; se omitió la copia sin [R].');
+                $id = DB::table('resolutions')->insertGetId([
+                    'folder_id' => $folderId, 'filename' => $name,
+                    'series_id' => DB::table('resolution_series')->where('code', $meta['series'])->value('id'),
+                    'year' => $meta['year'], 'number_start' => $meta['number_start'], 'number_end' => $meta['number_end'], 'size_bytes' => $written,
+                ]);
+                $revisions->retireOriginal($folderId, $name, $target);
+                return $id;
+            });
         } catch (\Throwable $e) {
             if (is_resource($out)) fclose($out);
             @unlink($path);
