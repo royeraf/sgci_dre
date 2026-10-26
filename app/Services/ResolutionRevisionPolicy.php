@@ -20,7 +20,14 @@ class ResolutionRevisionPolicy
 
     public function preferredExists(int $folderId, string $name): bool
     {
-        return DB::table('resolutions')->where('folder_id', $folderId)->whereIn('filename', $this->preferredNames($name))->exists();
+        if ($this->originalName($name) !== null) return false;
+        $stem = preg_replace('/\.pdf$/iu', '', $name);
+        $prefix = str_replace(['!', '%', '_'], ['!!', '!%', '!_'], $stem).'%';
+        foreach (DB::table('resolutions')->where('folder_id', $folderId)->whereRaw("filename LIKE ? ESCAPE '!'", [$prefix])->pluck('filename') as $candidate) {
+            $original = $this->originalName($candidate);
+            if ($original !== null && mb_strtolower($original) === mb_strtolower($name)) return true;
+        }
+        return false;
     }
 
     /** Called in the upload transaction, only after the preferred PDF is saved. */
