@@ -104,6 +104,23 @@ class ResolutionsTest extends TestCase
         $this->assertSame(1, DB::table('resolutions')->count());
     }
 
+    public function test_completed_unreadable_file_is_a_duplicate_even_without_a_server_archive(): void
+    {
+        $this->actingAs($this->user());
+        $name = '00273 RDR 2026 '.str_repeat('ASUNTO ', 25).'.pdf';
+        $folder = '2026/'.str_repeat('a', 100).'/'.str_repeat('b', 100);
+        $this->postJson('/resoluciones', ['file'=>$this->pdf($name),'folder'=>$folder,'year'=>2026])->assertCreated();
+        $this->assertGreaterThan(290, strlen($this->root.'/uploads/'.$folder.'/'.$name));
+        $this->assertFileExists($this->root.'/uploads/'.$folder.'/'.$name);
+        config(['resolutions.archive_root'=>null]);
+        $this->postJson('/resoluciones/desde-archivo-local', ['filename'=>$name,'folder'=>$folder,'year'=>2026])->assertStatus(409);
+        $this->postJson('/resoluciones/desde-archivo-local', ['filename'=>'different.pdf','folder'=>$folder])
+            ->assertUnprocessable()->assertJsonPath('code','LOCAL_SOURCE_UNREADABLE');
+        $this->assertSame(1, DB::table('resolutions')->count());
+        $this->assertSame($folder, DB::table('resolution_folders')->value('relative_path'));
+        $this->assertSame($name, DB::table('resolutions')->value('filename'));
+    }
+
     public function test_local_archive_requires_upload_permission_and_confines_source_paths(): void
     {
         $url = '/resoluciones/desde-archivo-local';

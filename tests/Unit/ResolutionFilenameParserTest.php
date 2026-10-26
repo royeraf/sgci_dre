@@ -30,8 +30,8 @@ class ResolutionFilenameParserTest extends TestCase
             ['00779 2026 RDR NO INSTAURAR.pdf', '', 'RDR', 2026, 779, null],
             ['01040 DR 2026 RECONOCER.pdf', '', null, 2026, 1040, null],
             ['01540 RECTIFICAR LOS ALCANCES DE LA RDR 01404-2026, DE CAJALEON EULOGIO JOSE CARLOS RDR 2026.pdf', 'RDR DRE HCO. 2026', 'RDR', 2026, 1540, null],
-            ['01540 RECTIFICAR LA RD 01404-2025.pdf', 'RDR DRE HCO. 2026', 'RD', 2026, 1540, null],
-            ['01540 RECTIFICAR ALCANCES.pdf', 'RDR DRE HCO. 2026', null, 2026, 1540, null],
+            ['01540 RECTIFICAR LA RD 01404-2025.pdf', 'RDR DRE HCO. 2026', 'RDR', 2026, 1540, null],
+            ['01540 RECTIFICAR ALCANCES.pdf', 'RDR DRE HCO. 2026', 'RDR', 2026, 1540, null],
             ['00053 - 00003 RDR 2006.pdf', '', 'RDR', 2006, null, null],
             ['02653 RDR 2034 APROBAR PLAN HUANUCO 2024.pdf', 'RDR DRE HCO. 2024', 'RDR', 2024, 2653, null],
             ['03097 RDR 2027 DAR CUMPLIMIENTO.pdf', 'RDR DRE HCO. 2024', 'RDR', 2024, 3097, null],
@@ -46,6 +46,26 @@ class ResolutionFilenameParserTest extends TestCase
         ];
         foreach ($cases as [$name, $folder, $series, $year, $number, $end]) {
             $this->assertSame(['series' => $series, 'year' => $year, 'number_start' => $number, 'number_end' => $end], $parser->parse($name, $folder, 2026), $name);
+        }
+    }
+
+    public function test_inherits_explicit_folder_series_without_confusing_subject_references_or_auxiliaries(): void
+    {
+        $parser = new ResolutionFilenameParser;
+        foreach (['00172 RDRR 2026 DECLARAR.pdf','00466 rRDR 2026 AUTORIZAR.pdf','00531 R 2026 APROBAR.pdf','00534 RER 2026 APROBAR.pdf','00609 2026 INSCRIBIR.pdf','01040 DR 2026 RECONOCER.pdf','03427 MODIFICAR LA R.D.R. 03207-2025.pdf'] as $name) {
+            $this->assertSame('RDR',$parser->parse($name,'RDR DRE HCO. 2026',2026)['series'],$name);
+            $this->assertNull($parser->parse($name,'Resoluciones',2026)['series'],$name);
+        }
+        $this->assertSame('RDR',$parser->parse('00573 RD 2026 RECONOCER DEUDA.pdf','RDR DRE HCO. 2026',2026)['series']);
+        $this->assertSame('RDR',$parser->parse('00730 RD 2026 DAR CUMPLIMIENTO.pdf','RDR DRE HCO. 2026',2026)['series']);
+        $this->assertSame('RDR',$parser->parse('00001 ROI 2026 ASUNTO.pdf','RDR DRE HCO. 2026',2026)['series']);
+        $this->assertSame('RD',$parser->parse('00001 RD 2026 ASUNTO.pdf','Resoluciones',2026)['series']);
+        $this->assertSame('ROI',$parser->parse('00001 ROI 2026 ASUNTO.pdf','Resoluciones',2026)['series']);
+        $this->assertSame('RD',$parser->folderSeries('RDR 2026/RD 2025'));
+        $this->assertSame('RDR',$parser->folderSeries('R.D.R. 2026/Copias'));
+        $this->assertNull($parser->folderSeries('RDR y RD 2026'));
+        foreach (['291 ACTUADOS RDR 2024.pdf','NOTIFICACIÓN ROI 0003-2025.pdf','c.pdf','cx.pdf'] as $name) {
+            $this->assertNull($parser->parse($name,'RDR DRE HCO. 2024',2026)['series'],$name);
         }
     }
 

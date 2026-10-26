@@ -13,6 +13,7 @@ const emit = defineEmits(['close', 'busy', 'finished', 'reveal', 'dismiss', 'lab
 const dialog = ref(null);
 const fileInput = ref(null);
 const folderInput = ref(null);
+const retryInput = ref(null), retryTarget = ref(null);
 const queue = ref([]);
 const busy = ref(false);
 const paused = ref(false);
@@ -105,7 +106,8 @@ function addFiles(files) {
         if (isAuxiliaryResolutionFile(file.name)) { if (!auxiliaryNames.value.includes(key)) auxiliaryNames.value.push(key); continue; }
         if (existing.has(key)) continue;
         existing.add(key);
-        additions.push({ key, file, status: file.size > props.maxMb * 1024 ** 2 ? 'error' : 'pending', progress: 0, retrySeconds: 0, retryReason: '', batchYear: year.value, yearLocked: busy.value, error: file.size > props.maxMb * 1024 ** 2 ? `Supera el límite de ${props.maxMb} MB.` : '' });
+        const folder = key.includes('/') ? key.slice(0, key.lastIndexOf('/')) : '';
+        additions.push({ key, folder, file, sourceUnreadable: false, status: file.size > props.maxMb * 1024 ** 2 ? 'error' : 'pending', progress: 0, retrySeconds: 0, retryReason: '', batchYear: year.value, yearLocked: busy.value, error: file.size > props.maxMb * 1024 ** 2 ? `Supera el límite de ${props.maxMb} MB.` : '' });
     }
     // Keep the whole folder; only the visible list is paginated, never the upload queue.
     queue.value = queue.value.concat(additions);
@@ -114,6 +116,19 @@ function addFiles(files) {
     else nextTick(() => dialog.value?.querySelector('.upload-progress')?.scrollIntoView({ block: 'nearest' }));
 }
 function selected(event) { addFiles(event.target.files); event.target.value = ''; }
+function chooseRetrySource(item) { retryTarget.value = item; retryInput.value?.click(); }
+async function replaceRetrySource(event) {
+    const file = event.target.files?.[0], item = retryTarget.value;
+    event.target.value = ''; retryTarget.value = null;
+    if (!file || !item || busy.value || !queue.value.includes(item)) return;
+    if (file.name !== item.file.name) { message.value = 'Seleccione el mismo PDF, con su nombre original.'; return; }
+    if (file.size > props.maxMb * 1024 ** 2) { message.value = `Supera el límite de ${props.maxMb} MB.`; return; }
+    try { if ((await file.slice(0, 5).arrayBuffer()).byteLength < 5) throw new Error(); }
+    catch { message.value = 'No se pudo leer el archivo. Copie ese PDF a una carpeta corta, por ejemplo C:\\PDF, y vuelva a elegirlo.'; return; }
+    // Replace the local source only; the queue keeps its original folder, name and year.
+    item.file = file; item.status = 'pending'; item.error = ''; item.progress = 0; item.sourceUnreadable = false;
+    message.value = 'Archivo listo para reintentar en su carpeta original.';
+}
 function drop(event) { dragging.value = false; addFiles(event.dataTransfer.files); }
 function showFailure() {
     const index = queue.value.findIndex(item => item === lastFailure.value);
@@ -190,11 +205,11 @@ async function start() {
                 }
                 catch (cause) { fromArchive = true; }
                 item.fromArchive = fromArchive;
+                item.sourceUnreadable = fromArchive;
                 const data = new FormData();
                 if (fromArchive) data.append('filename', item.file.name);
                 else data.append('file', item.file);
-                const path = item.file.webkitRelativePath || '';
-                data.append('folder', path.includes('/') ? path.slice(0, path.lastIndexOf('/')) : '');
+                data.append('folder', item.folder);
                 if (item.batchYear) data.append('year', item.batchYear);
                 const response = await sendFile(data, item, fromArchive);
                 if (response.status !== 201 || !Number.isInteger(Number(response.data?.id)) || Number(response.data.id) < 1) {
@@ -235,6 +250,7 @@ onBeforeUnmount(() => { windowVersion++; windowAnimation?.cancel(); window.remov
     <dialog ref="dialog" class="upload-dialog" :aria-labelledby="`upload-title-${jobId}`" @cancel.prevent="close">
         <header class="upload-header"><div><h2 :id="`upload-title-${jobId}`">Subir resoluciones</h2><p>{{ label }}</p></div><div class="upload-window-actions"><button class="icon-btn" aria-label="Minimizar carga" @click="minimize"><Minus :size="20" /></button><button class="icon-btn" aria-label="Cerrar carga de archivos" @click="close"><X :size="20" /></button></div></header>
         <div class="upload-body">
+            <input ref="retryInput" class="sr-only" tabindex="-1" type="file" accept="application/pdf,.pdf" aria-label="Volver a elegir el PDF fallido" @change="replaceRetrySource" />
             <div class="drop-zone" :class="{ dragging, locked: busy }" @dragover.prevent="dragging = !busy" @dragleave.prevent="dragging = false" @drop.prevent="drop">
                 <Upload :size="28" class="mx-auto text-blue-600" /><h3>Arrastre sus PDF aquí</h3>
                 <div class="flex flex-wrap justify-center gap-2 mt-4"><button class="upload-primary" @click="fileInput.click()"><FileText :size="16" /> Elegir PDF</button><button class="upload-secondary" @click="folderInput.click()"><FolderOpen :size="16" /> Elegir carpeta</button></div>
@@ -251,7 +267,7 @@ onBeforeUnmount(() => { windowVersion++; windowAnimation?.cancel(); window.remov
                 <div class="queue-summary" role="status"><span v-if="counts.done"><Check :size="14" /> {{ counts.done }} registrados</span><span v-if="counts.duplicate">{{ counts.duplicate }} ya existían</span><span v-if="counts.error" class="text-red-700">{{ counts.error }} con error</span></div>
                 <ResolutionCoverage v-if="sequenceReport" :report="sequenceReport" />
                 <p v-if="coverageMessage" class="upload-notice">{{ coverageMessage }}</p>
-                <div v-if="lastFailure" class="failure-detail" role="status"><strong>{{ lastFailure.key }}</strong><p>{{ lastFailure.error }}</p><button :disabled="busy" @click="showFailure">Ver archivo con error</button><small v-if="busy">La carga continúa con los demás PDF.</small></div>
+                <div v-if="lastFailure" class="failure-detail" role="status"><strong>{{ lastFailure.key }}</strong><p>{{ lastFailure.error }}</p><button :disabled="busy" @click="showFailure">Ver archivo con error</button><button v-if="lastFailure.sourceUnreadable" :disabled="busy" @click="chooseRetrySource(lastFailure)">Volver a elegir PDF</button><small v-if="busy">La carga continúa con los demás PDF.</small></div>
                 <div v-if="busy || counts.processed || paused" class="upload-progress">
                     <div class="progress-heading"><strong>{{ busy ? 'Cargando'  : paused ? 'Carga pausada' : counts.processed === queue.length ? 'Lote procesado' : 'Progreso general' }}</strong><b>{{ overallProgress }} %</b></div>
                     <progress :value="overallProgress" max="100" aria-label="Progreso general de la carpeta" :aria-valuetext="`${format(counts.processed)} de ${format(queue.length)} archivos procesados; ${format(counts.done)} registrados`" />
