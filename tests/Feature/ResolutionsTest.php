@@ -74,6 +74,23 @@ class ResolutionsTest extends TestCase
         $this->assertSame(6, DB::table('resolutions')->count());
     }
 
+    public function test_distinct_counts_and_repeated_filter_separate_years_and_series(): void
+    {
+        $this->actingAs($this->user());
+        foreach (['00001 RDR 2026 ASUNTO A.pdf','00001 RDR 2026 ASUNTO B.pdf','00001 RD 2026 ASUNTO C.pdf','00001 RDR 2025 ASUNTO D.pdf'] as $name) {
+            $this->postJson('/resoluciones', ['file'=>$this->pdf($name), 'folder'=>'Resoluciones'])->assertCreated();
+        }
+        $response = $this->get('/resoluciones?status=repeated&year=2026', ['X-Inertia'=>'true'])->assertOk()->assertJsonPath('props.records.total', 2);
+        $this->assertSame(['ASUNTO A','ASUNTO B'], collect($response->json('props.records.data'))->pluck('title')->sort()->values()->all());
+        $this->get('/resoluciones?status=repeated&year=2025', ['X-Inertia'=>'true'])->assertOk()->assertJsonPath('props.records.total', 0);
+        $groups = collect($response->json('props.coverage.groups'));
+        $rdr = $groups->first(fn($g) => $g['year']===2026 && $g['series']==='RDR');
+        $this->assertSame(2, $rdr['files']);
+        $this->assertSame(1, $rdr['unique']);
+        $this->assertSame(1, $rdr['extra_files']);
+        $this->assertSame(1, $rdr['repeated_numbers']);
+    }
+
     public function test_upload_search_range_download_and_duplicate_protection(): void
     {
         $this->actingAs($this->user());

@@ -18,6 +18,8 @@ class ResolutionCoverageTest extends TestCase
         $this->assertSame(2,$rdr['missing']);
         $this->assertSame(10,$rdr['last']);
         $this->assertSame(5,$rdr['files']);
+        $this->assertSame(8,$rdr['unique']);
+        $this->assertSame(0,$rdr['repeated_numbers']);
         $this->assertSame([[1,3]],$groups['RD']['gaps']);
         $this->assertSame(['2026'=>1],$report['pending']);
         $this->assertSame(['groups'=>[],'pending'=>[]],(new ResolutionCoverage)->analyze([]));

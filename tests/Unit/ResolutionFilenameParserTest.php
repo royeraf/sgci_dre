@@ -22,6 +22,7 @@ class ResolutionFilenameParserTest extends TestCase
             ['RDR -  (1).pdf', 'RDR DRE HCO 2005', 'RDR', 2005, null, null],
             ['escaneo.pdf', '', null, null, null, null],
             ['00574 RDR2026 RECONOCER DEUDAS.pdf', '', 'RDR', 2026, 574, null],
+            ['01286-2026 RDR AUTORIZAR INCORPORAR.pdf', 'RDR DRE HCO. 2026', 'RDR', 2026, 1286, null],
             ['00172 RDRR 2026 DECLARAR.pdf', '', null, 2026, 172, null],
             ['00466 rRDR 2026 AUTORIZAR.pdf', '', null, 2026, 466, null],
             ['00531 R 2026 APROBAR.pdf', '', null, 2026, 531, null],

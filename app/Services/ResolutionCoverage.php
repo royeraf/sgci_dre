@@ -28,8 +28,9 @@ class ResolutionCoverage
             $end = (int) ($r->number_end ?? $start); $series = $r->series ?? null;
             if (!$year || !$series || $start < 1 || $end < $start) { $key = (string) $year; $pending[$key] = ($pending[$key] ?? 0) + 1; continue; }
             $key = $year.':'.$series;
-            $groups[$key] ??= ['year'=>$year,'series'=>$series,'files'=>0,'intervals'=>[]];
+            $groups[$key] ??= ['year'=>$year,'series'=>$series,'files'=>0,'intervals'=>[],'starts'=>[]];
             $groups[$key]['files']++; $groups[$key]['intervals'][] = [$start,$end];
+            $groups[$key]['starts'][$start] = ($groups[$key]['starts'][$start] ?? 0) + 1;
         }
         $result = [];
         foreach ($groups as $group) {
@@ -45,7 +46,10 @@ class ResolutionCoverage
                 if ($start > $next) { $gaps[] = [$next,$start-1]; $missing += $start-$next; }
                 $next = $end+1;
             }
-            $result[] = ['year'=>$group['year'],'series'=>$group['series'],'files'=>$group['files'],'last'=>$next-1,'missing'=>$missing,'gaps'=>$gaps];
+            $repeated = array_filter($group['starts'], fn($count) => $count > 1);
+            $result[] = ['year'=>$group['year'],'series'=>$group['series'],'files'=>$group['files'],'unique'=>$next-1-$missing,
+                'repeated_numbers'=>count($repeated),'extra_files'=>array_sum(array_map(fn($count) => $count-1, $repeated)),
+                'last'=>$next-1,'missing'=>$missing,'gaps'=>$gaps];
         }
         usort($result,fn($a,$b)=>$b['year']<=>$a['year'] ?: strcmp($a['series'],$b['series']));
         return ['groups'=>$result,'pending'=>$pending];
