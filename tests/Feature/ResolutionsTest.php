@@ -50,6 +50,23 @@ class ResolutionsTest extends TestCase
         return UploadedFile::fake()->createWithContent($name, "%PDF-1.4\n1 0 obj\n<< /Type /Catalog >>\nendobj\n%%EOF");
     }
 
+    public function test_revision_is_preferred_in_either_upload_order_without_affecting_unique_files_or_other_folders(): void
+    {
+        $this->actingAs($this->user());
+        $name = '00081 RDR 2026 ASUNTO.pdf';
+        $revision = '00081 RDR 2026 ASUNTO[R].pdf';
+        $this->postJson('/resoluciones', ['file'=>$this->pdf($name), 'folder'=>'2026'])->assertCreated();
+        $this->postJson('/resoluciones', ['file'=>$this->pdf($revision), 'folder'=>'2026'])->assertCreated();
+        $this->assertSame([$revision], DB::table('resolutions')->pluck('filename')->all());
+        $this->assertFileDoesNotExist($this->root.'/uploads/2026/'.$name);
+        $this->assertFileExists($this->root.'/uploads/2026/'.$revision);
+        $this->postJson('/resoluciones', ['file'=>$this->pdf($name), 'folder'=>'2026'])->assertStatus(409);
+        $this->postJson('/resoluciones', ['file'=>$this->pdf($name), 'folder'=>'otra'])->assertCreated();
+        $this->postJson('/resoluciones', ['file'=>$this->pdf('00081 RDR 2026 OTRO ASUNTO.pdf'), 'folder'=>'2026'])->assertCreated();
+        $this->postJson('/resoluciones', ['file'=>$this->pdf('00082 RDR 2026 UNICA.pdf'), 'folder'=>'2026'])->assertCreated();
+        $this->assertSame(4, DB::table('resolutions')->count());
+    }
+
     public function test_upload_search_range_download_and_duplicate_protection(): void
     {
         $this->actingAs($this->user());
