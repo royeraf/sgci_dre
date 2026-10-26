@@ -79,9 +79,9 @@ class ResolutionFilenameParser
         if ($number === 0 || ($end !== null && $end < $number)) {
             $number = $end = null;
         }
-        // Subject references never classify this document. Use the nearest
-        // unambiguous series folder only when the primary identifier has none.
-        if ($series === null && !$this->isAuxiliary($filename)) $series = $this->folderSeries($folder);
+        // The explicitly classified archive folder is authoritative, including
+        // abbreviated or mistyped identifiers. Generic folders keep the identifier.
+        if (!$this->isAuxiliary($filename) && ($folderSeries = $this->folderSeries($folder)) !== null) $series = $folderSeries;
         return ['series' => $series, 'year' => $year, 'number_start' => $number, 'number_end' => $end];
     }
 

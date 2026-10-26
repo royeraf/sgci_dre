@@ -56,8 +56,11 @@ class ResolutionFilenameParserTest extends TestCase
             $this->assertSame('RDR',$parser->parse($name,'RDR DRE HCO. 2026',2026)['series'],$name);
             $this->assertNull($parser->parse($name,'Resoluciones',2026)['series'],$name);
         }
-        $this->assertSame('RD',$parser->parse('00001 RD 2026 ASUNTO.pdf','RDR DRE HCO. 2026',2026)['series']);
-        $this->assertSame('ROI',$parser->parse('00001 ROI 2026 ASUNTO.pdf','RDR DRE HCO. 2026',2026)['series']);
+        $this->assertSame('RDR',$parser->parse('00573 RD 2026 RECONOCER DEUDA.pdf','RDR DRE HCO. 2026',2026)['series']);
+        $this->assertSame('RDR',$parser->parse('00730 RD 2026 DAR CUMPLIMIENTO.pdf','RDR DRE HCO. 2026',2026)['series']);
+        $this->assertSame('RDR',$parser->parse('00001 ROI 2026 ASUNTO.pdf','RDR DRE HCO. 2026',2026)['series']);
+        $this->assertSame('RD',$parser->parse('00001 RD 2026 ASUNTO.pdf','Resoluciones',2026)['series']);
+        $this->assertSame('ROI',$parser->parse('00001 ROI 2026 ASUNTO.pdf','Resoluciones',2026)['series']);
         $this->assertSame('RD',$parser->folderSeries('RDR 2026/RD 2025'));
         $this->assertSame('RDR',$parser->folderSeries('R.D.R. 2026/Copias'));
         $this->assertNull($parser->folderSeries('RDR y RD 2026'));
