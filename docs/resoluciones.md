@@ -241,3 +241,10 @@ El control de numeración aparece en Resumen y al terminar cada lote. Agrupa por
 Resultado comprobado en disco y catálogo: 7,396 PDF, 4,606 de 2024 y 2,790 de 2026. Saltos: 00649 (2024); 00032, 00282, 00914, 00920 y 01032 (2026). No se encontraron esos números en los nombres originales revisados. En la carpeta 2024 no quedó ningún PDF admitido sin registrar; se omitieron los ocho auxiliares y un temporal.
 
 Validación: 19 pruebas aisladas, 318 aserciones; compilación de producción correcta. Navegador con datos de lectura y respuestas simuladas: seis números visibles, nueve auxiliares omitidos sin envío, un PDF válido enviado y reporte final con saltos; vista móvil sin desbordamiento horizontal. Las pruebas de navegador no escribieron en el catálogo real.
+
+### Textos y estados de carga (26/10/2026)
+Se retiraron contadores, encabezados e instrucciones repetidas de carpetas, resumen, resultados y cargas. El catálogo vacío muestra un único mensaje y oculta filtros sin opciones; el resumen vacío no presenta gráficos ni cifras de relleno. Las aclaraciones sobre nombres, duplicados y numeración permanecen en Ayuda. Se conservan los errores accionables y las etiquetas accesibles.
+
+Un componente común muestra skeletons para resumen, carpetas, lista, cuadrícula y páginas PDF. La navegación de Inertia activa el estado durante solicitudes GET reales del módulo y lo retira al terminar o navegar; las actualizaciones parciales de cargas en segundo plano conservan el contenido. No hay esperas artificiales. La animación se desactiva con movimiento reducido.
+
+Comprobación en navegador con datos y respuestas de prueba: vacío correcto, ausencia de pies duplicados, skeletons de navegación y PDF, retorno al contenido, 390 px sin desbordamiento y movimiento reducido respetado. Compilación de producción correcta. Sin cargas de PDF ni cambios de esquema, permisos o datos.

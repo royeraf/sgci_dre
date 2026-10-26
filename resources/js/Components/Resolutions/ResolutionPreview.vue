@@ -1,6 +1,7 @@
 <script setup>
 import { nextTick, onBeforeUnmount, ref, watch } from 'vue';
-import { ChevronLeft, ChevronRight, Download, ExternalLink, Loader2, X, ZoomIn, ZoomOut } from 'lucide-vue-next';
+import ResolutionSkeleton from './ResolutionSkeleton.vue';
+import { ChevronLeft, ChevronRight, Download, ExternalLink, X, ZoomIn, ZoomOut } from 'lucide-vue-next';
 
 const props = defineProps({ record: { type: Object, default: null }, position: { type: Number, default: 0 }, total: { type: Number, default: 1 } });
 const emit = defineEmits(['close', 'previous', 'next']);
@@ -131,7 +132,7 @@ onBeforeUnmount(() => { cleanup(); dialog.value?.close(); });
     <dialog ref="dialog" class="resolution-preview" aria-labelledby="resolution-preview-title" @cancel.prevent="close">
         <div v-if="record" class="flex h-full flex-col">
             <header class="preview-header flex shrink-0 flex-wrap items-start justify-between gap-3 border-b border-slate-200 bg-white p-3 sm:p-4">
-                <div class="min-w-0 flex-1"><p class="mb-1 text-xs font-semibold text-blue-700">{{ record.series || 'Resolución' }}<template v-if="record.number_start"> N.º {{ record.number_start }}<template v-if="record.number_end">–{{ record.number_end }}</template></template> · {{ record.year || 'Año por identificar' }}</p><h2 id="resolution-preview-title" class="break-words text-sm font-semibold text-slate-900">{{ record.filename }}</h2><p class="mt-1 text-xs text-slate-500">{{ record.folder || 'Resoluciones' }}</p></div>
+                <div class="min-w-0 flex-1"><p class="mb-1 text-xs font-semibold text-blue-700">{{ record.series || 'Resolución' }}<template v-if="record.number_start"> N.º {{ record.number_start }}<template v-if="record.number_end">–{{ record.number_end }}</template></template> · {{ record.year || 'Año por identificar' }}</p><h2 id="resolution-preview-title" class="break-words text-sm font-semibold text-slate-900">{{ record.title || record.filename }}</h2><p v-if="record.folder" class="mt-1 text-xs text-slate-500">{{ record.folder }}</p></div>
                 <button type="button" class="preview-action" autofocus aria-label="Cerrar vista previa" @click="close"><X class="h-5 w-5" /></button>
                 <nav class="flex w-full flex-wrap gap-2 text-sm" aria-label="Acciones del documento">
                     <a :href="`/resoluciones/${record.id}/archivo?download=1`" class="preview-action"><Download class="h-4 w-4" /> Descargar PDF</a>
@@ -143,11 +144,11 @@ onBeforeUnmount(() => { cleanup(); dialog.value?.close(); });
                 <div class="flex items-center gap-1"><button class="preview-action" :disabled="zoom <= 0.5 || !pageCount" aria-label="Reducir zoom" @click="zoom = Math.max(0.5, zoom - 0.25)"><ZoomOut class="h-4 w-4" /></button><span class="w-12 text-center tabular-nums">{{ Math.round(zoom * 100) }} %</span><button class="preview-action" :disabled="zoom >= 2 || !pageCount" aria-label="Aumentar zoom" @click="zoom = Math.min(2, zoom + 0.25)"><ZoomIn class="h-4 w-4" /></button></div>
             </div>
             <div ref="viewport" class="relative min-h-0 w-full flex-1 overflow-auto bg-slate-200 p-4" :aria-busy="loading">
-                <p v-if="loading" class="sticky left-0 top-0 z-10 flex items-center justify-center gap-2 bg-slate-50 p-3 text-sm text-slate-600" role="status"><Loader2 class="h-4 w-4 animate-spin" /> Cargando página…</p>
+                <ResolutionSkeleton v-if="loading && !error" variant="document" />
                 <div v-if="error" role="alert" class="rounded-lg bg-white p-5 text-sm text-red-800"><p>{{ error }}</p><button class="preview-action mt-3" @click="load(record)">Reintentar</button></div>
                 <canvas v-show="!error && !loading && pageCount > 0" ref="canvas" class="mx-auto bg-white" role="img" :aria-label="`Página ${pageNumber} de ${record.filename}`" />
             </div>
-            <footer v-if="total > 1" class="document-navigation"><button class="preview-action" :disabled="position <= 0" @click="emit('previous')"><ChevronLeft :size="16" /><span>Resolución anterior</span></button><span class="navigation-position">{{ position + 1 }} de {{ total }}<small>en esta página de resultados</small></span><button class="preview-action" :disabled="position >= total - 1" @click="emit('next')"><span>Siguiente resolución</span><ChevronRight :size="16" /></button></footer>
+            <footer v-if="total > 1" class="document-navigation"><button class="preview-action" :disabled="position <= 0" @click="emit('previous')"><ChevronLeft :size="16" /><span>Resolución anterior</span></button><span class="navigation-position">Documento {{ position + 1 }} / {{ total }}</span><button class="preview-action" :disabled="position >= total - 1" @click="emit('next')"><span>Siguiente resolución</span><ChevronRight :size="16" /></button></footer>
         </div>
     </dialog>
 </template>

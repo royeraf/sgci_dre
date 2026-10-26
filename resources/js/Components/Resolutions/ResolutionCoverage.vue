@@ -11,9 +11,9 @@ const ranges = gaps => gaps.map(([first,last])=>first===last ? identifier(first)
 <template>
     <details v-if="report && groups.length" class="coverage-control">
         <summary><ListChecks :size="18" /><span>Control de numeración<strong>{{ report.missing ? `${format(report.missing)} números por comprobar` : 'Sin saltos en lo registrado' }}</strong></span><ChevronDown :size="17" /></summary>
-        <p>Compara desde el número 1 hasta el mayor cargado de cada año y tipo. Un salto no demuestra que la resolución haya sido emitida; puede faltar en el lote o estar pendiente de identificar.</p>
+        <p>Del 1 al mayor número cargado, por año y tipo. Un salto no confirma que el documento exista.</p>
         <p v-if="report.unidentified" class="coverage-warning">{{ format(report.unidentified) }} PDF tienen datos pendientes; pueden explicar algunos saltos.</p>
-        <section v-for="group in groups" :key="`${group.year}-${group.series}`"><header><strong>{{ group.series }} · {{ group.year }}</strong><span>Hasta {{ identifier(group.last) }} · {{ format(group.files) }} PDF</span></header><p v-if="group.missing"><b>Por comprobar ({{ format(group.missing) }}):</b> {{ ranges(group.gaps) }}</p><p v-else class="coverage-ok">Todos los números de este intervalo están cubiertos.</p></section>
+        <section v-for="group in groups" :key="`${group.year}-${group.series}`"><header><strong>{{ group.series }} · {{ group.year }}</strong><span>Hasta {{ identifier(group.last) }}</span></header><p v-if="group.missing">{{ ranges(group.gaps) }}</p><p v-else class="coverage-ok">Sin saltos.</p></section>
     </details>
 </template>
 
