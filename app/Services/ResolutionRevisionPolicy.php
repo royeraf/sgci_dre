@@ -8,7 +8,7 @@ class ResolutionRevisionPolicy
 {
     public function originalName(string $name): ?string
     {
-        return preg_match('/\[R\]\.pdf$/iu', $name) ? preg_replace('/\s*\[R\](?=\.pdf$)/iu', '', $name) : null;
+        return preg_match('/\[R\]\.pdf$/iu', $name) ? preg_replace('/(?:\s*\[R\])+(?=\.pdf$)/iu', '', $name) : null;
     }
 
     public function preferredNames(string $name): array

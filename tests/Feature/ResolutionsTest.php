@@ -65,6 +65,10 @@ class ResolutionsTest extends TestCase
         $this->postJson('/resoluciones', ['file'=>$this->pdf('00081 RDR 2026 OTRO ASUNTO.pdf'), 'folder'=>'2026'])->assertCreated();
         $this->postJson('/resoluciones', ['file'=>$this->pdf('00082 RDR 2026 UNICA.pdf'), 'folder'=>'2026'])->assertCreated();
         $this->assertSame(4, DB::table('resolutions')->count());
+        $this->postJson('/resoluciones', ['file'=>$this->pdf('00081 RDR 2026 ASUNTO[R][R].pdf'), 'folder'=>'2026'])->assertCreated();
+        $this->assertSame(5, DB::table('resolutions')->count());
+        $this->assertFileExists($this->root.'/uploads/2026/'.$revision);
+        $this->assertTrue(DB::table('resolutions')->where('filename', $revision)->exists());
     }
 
     public function test_upload_search_range_download_and_duplicate_protection(): void
