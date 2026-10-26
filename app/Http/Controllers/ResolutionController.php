@@ -136,12 +136,11 @@ class ResolutionController extends Controller
             abort(409, 'Este nombre ya existe en la carpeta. No se sobrescribió.');
         }
         $root = config('resolutions.archive_root');
-        if ($uploadsRoot && DB::table('resolutions as r')
-            ->join('resolution_folders as f', 'f.id', '=', 'r.folder_id')
+        $preferredFolder = $uploadsRoot ? DB::table('resolution_folders as f')
             ->join('resolution_repositories as p', 'p.id', '=', 'f.repository_id')
             ->where('p.code', 'cargas')->where('p.root_path', $uploadsRoot)
-            ->where('f.relative_path', $relative)
-            ->whereIn('r.filename', app(\App\Services\ResolutionRevisionPolicy::class)->preferredNames($data['filename']))->exists()) {
+            ->where('f.relative_path', $relative)->value('f.id') : null;
+        if ($preferredFolder && app(\App\Services\ResolutionRevisionPolicy::class)->preferredExists($preferredFolder, $data['filename'])) {
             abort(409, 'Se conserva la versión [R]; se omitió la copia sin [R].');
         }
         if (!$root || !is_dir($root)) {

@@ -27,14 +27,23 @@ class IndexResolutions extends Command
             $repository = $archive->repository('archivo', 'Archivo institucional', $root);
             $series = DB::table('resolution_series')->pluck('id', 'code')->all();
             $folders = [];
+            $preferredByDirectory = [];
+            $revisions = app(\App\Services\ResolutionRevisionPolicy::class);
             $batch = [];
             $count = $bytes = $review = $skipped = 0;
             $iterator = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($root, \FilesystemIterator::SKIP_DOTS));
             foreach ($iterator as $file) {
                 if ($file->isLink() || !$file->isFile() || !preg_match('/\.\s*pdf$/i', $file->getFilename())) { $skipped++; continue; }
                 if ($parser->isAuxiliary($file->getFilename())) { $skipped++; continue; }
-                $preferred = app(\App\Services\ResolutionRevisionPolicy::class)->preferredNames($file->getFilename());
-                if (array_filter($preferred, fn($name) => is_file($file->getPath().DIRECTORY_SEPARATOR.$name) && !is_link($file->getPath().DIRECTORY_SEPARATOR.$name))) { $skipped++; continue; }
+                $directory = $file->getPath();
+                if (!isset($preferredByDirectory[$directory])) {
+                    $preferredByDirectory[$directory] = [];
+                    foreach (scandir($directory) as $name) {
+                        $original = $revisions->originalName($name);
+                        if ($original !== null && is_file($directory.DIRECTORY_SEPARATOR.$name) && !is_link($directory.DIRECTORY_SEPARATOR.$name)) $preferredByDirectory[$directory][mb_strtolower($original)] = true;
+                    }
+                }
+                if ($revisions->originalName($file->getFilename()) === null && isset($preferredByDirectory[$directory][mb_strtolower($file->getFilename())])) { $skipped++; continue; }
                 $folder = str_replace('\\', '/', substr($file->getPath(), strlen($root)));
                 $folder = trim($folder, '/');
                 $folderId = $folders[$folder] ??= $archive->folder($repository->id, $folder);

@@ -1,5 +1,5 @@
 export function preferredRevisionKey(path) {
-    return path.replace(/\s*\[R\](?=\.pdf$)/iu, '').toLocaleLowerCase('es');
+    return path.replace(/(?:\s*\[R\])+(?=\.pdf$)/iu, '').toLocaleLowerCase('es');
 }
 export function isPreferredRevision(path) { return /\[R\]\.pdf$/iu.test(path); }
 
