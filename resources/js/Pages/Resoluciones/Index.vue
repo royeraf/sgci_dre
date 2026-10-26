@@ -9,7 +9,7 @@ import ResolutionDashboard from '@/Components/Resolutions/ResolutionDashboard.vu
 import ResolutionFolders from '@/Components/Resolutions/ResolutionFolders.vue';
 import ResolutionSkeleton from '@/Components/Resolutions/ResolutionSkeleton.vue';
 
-const props = defineProps({ records: Object, filters: Object, summary: Object, coverage: Object, years: Array, yearCounts: { type: Array, default: () => [] }, folders: { type: Array, default: () => [] }, currentFolder: Object, annualBySeries: { type: Array, default: () => [] }, seriesOptions: Array, maxUploadMb: Number, currentYear: Number, access: { type: Object, default: () => ({ ver: false, subir: false, editar: false }) } });
+const props = defineProps({ records: Object, filters: Object, summary: Object, coverage: Object, expectedYearTotals: { type: Object, default: () => ({}) }, years: Array, yearCounts: { type: Array, default: () => [] }, folders: { type: Array, default: () => [] }, currentFolder: Object, annualBySeries: { type: Array, default: () => [] }, seriesOptions: Array, maxUploadMb: Number, currentYear: Number, access: { type: Object, default: () => ({ ver: false, subir: false, editar: false }) } });
 const page = usePage();
 const showDashboard = computed(() => !props.currentFolder && !['q', 'number', 'year', 'series', 'folder'].some(key => props.filters?.[key]) && (!props.filters?.status || props.filters.status === 'all'));
 const defaults = { q: '', number: '', year: '', series: '', folder: '', status: 'all', sort: 'recent' };
@@ -163,7 +163,7 @@ onBeforeUnmount(() => { stopLoadingStart(); stopLoadingFinish(); stopLoadingNavi
                 <div class="explorer-layout" :class="{ 'with-details': detailsOpen && selected }">
                     <div class="explorer-content" :aria-busy="pageLoading">
                         <ResolutionSkeleton v-if="pageLoading" :variant="loadingView === 'files' && viewMode === 'grid' ? 'grid' : loadingView" />
-                        <ResolutionDashboard v-if="!pageLoading && showDashboard && homeView === 'summary'" id="repository-summary" role="tabpanel" aria-labelledby="repository-tab-summary" :year-counts="yearCounts" :annual-by-series="annualBySeries" :series-options="seriesOptions" :current-year="currentYear" :total="summary.total" :coverage="coverage" @year="openYear" @repeated="(year, type) => openYear(year, type, 'repeated')" />
+                        <ResolutionDashboard v-if="!pageLoading && showDashboard && homeView === 'summary'" id="repository-summary" role="tabpanel" aria-labelledby="repository-tab-summary" :year-counts="yearCounts" :annual-by-series="annualBySeries" :series-options="seriesOptions" :current-year="currentYear" :total="summary.total"  :expected-year-totals="expectedYearTotals" :coverage="coverage" @year="openYear" @repeated="(year, type) => openYear(year, type, 'repeated')" />
                         <ResolutionFolders v-if="!pageLoading && showDashboard && homeView === 'folders'" id="repository-folders" role="tabpanel" aria-labelledby="repository-tab-folders" :folders="folders" :current-year="currentYear" @open="openFolder" />
 
                         <template v-if="!pageLoading && !showDashboard">

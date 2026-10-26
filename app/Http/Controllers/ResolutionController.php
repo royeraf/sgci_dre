@@ -100,6 +100,7 @@ class ResolutionController extends Controller
             'seriesOptions' => DB::table('resolution_series')->get(['id', 'code', 'name']),
             'maxUploadMb' => (int) config('resolutions.max_upload_kb') / 1024,
             'currentYear' => now('America/Lima')->year,
+            'expectedYearTotals' => config('resolutions.expected_year_totals', []),
         ]);
     }
 

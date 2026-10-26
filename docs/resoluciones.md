@@ -273,3 +273,7 @@ Auditoría de los años completos subidos: 2024 tiene 4,380 números distintos e
 Se corrige el formato 01286-2026 RDR: corresponde al número 1286, año 2026, sin intervalo. La rectificación del registro existente se respalda y solo cambia number_end. No hay cambios de esquema ni eliminación de PDF.
 
 Validación: 23 pruebas y 386 aserciones en SQLite aislado; compilación correcta. Navegador con datos simulados: 2,689 números frente a 2,697 PDF, otros años sin contar duplicados, enlace al filtro por año/serie y vista móvil sin desbordamiento.
+
+### Total esperado de 2026 confirmado por el propietario
+Se configura únicamente para 2026 el total esperado de 2,694 resoluciones. La tarjeta lo identifica expresamente como esperado y mantiene aparte los números identificados y la diferencia por comprobar; no altera las cargas reales ni los gráficos de números registrados. No se deducen totales esperados para otros años ni se modifican datos de la base.
+Validación: 23 pruebas, 388 aserciones; compilación correcta y comprobación móvil de 2,694 esperadas, 2,689 identificadas y 5 por comprobar.
