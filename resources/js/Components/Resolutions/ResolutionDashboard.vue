@@ -37,16 +37,23 @@ const totals = computed(() => {
 });
 const currentCount = computed(() => rows.value.find(row => row.year === props.currentYear)?.total || 0);
 const currentExpected = computed(() => Number(props.expectedYearTotals[props.currentYear]) || null);
-const currentRemaining = computed(() => Math.max(0, (currentExpected.value || 0) - currentCount.value));
+const identifier = value => String(value).padStart(5, '0');
+const identifiedInLimit = year => {
+    const group = props.coverage?.groups?.find(group => Number(group.year) === Number(year) && group.series === 'RDR');
+    return group ? Number(group.within_limit_unique ?? group.unique) : (counts.value[key(year)]?.RDR || 0);
+};
+const currentIdentified = computed(() => currentExpected.value ? identifiedInLimit(props.currentYear) : currentCount.value);
+const currentRemaining = computed(() => Math.max(0, (currentExpected.value || 0) - currentIdentified.value));
 const currentFiles = computed(() => props.annualBySeries.filter(row => Number(row.year) === props.currentYear).reduce((sum, row) => sum + Number(row.total), 0));
 const yearsWithFiles = computed(() => rows.value.filter(row => row.year != null && row.total > 0).length);
 const chartType = ref('all');
 const color = code => ({ RDR: '#4285f4', RD: '#16a765', ROI: '#8e63ce', unknown: '#e9a72d' }[code] || '#4b8d99');
 const categories = computed(() => [...types.value.map(type => ({ code: type.code, label: type.code, name: type.name, color: color(type.code), total: totals.value[type.code] || 0 })), { code: 'unknown', label: 'Sin identificar', name: 'Tipo pendiente de identificar', color: color('unknown'), total: totals.value.unknown || 0 }]);
+const rowLimit = row => ['all', 'RDR'].includes(chartType.value) ? Number(props.expectedYearTotals[row.year]) || null : null;
 const shownCount = row => chartType.value === 'all' ? row.total : (row.values[chartType.value] || 0);
 const maximum = computed(() => Math.max(1, ...rows.value.map(shownCount)));
 const segments = row => categories.value.filter(type => chartType.value === 'all' || type.code === chartType.value).map(type => ({ ...type, width: (row.values[type.code] || 0) / maximum.value * 100 }));
-const rowDescription = row => `${row.year || 'Sin año'} (${chartType.value === 'all' ? 'todos los tipos' : categories.value.find(type => type.code === chartType.value)?.label}): ${format(shownCount(row))} resoluciones. ${categories.value.map(type => `${type.label}: ${format(row.values[type.code])}`).join('; ')}`;
+const rowDescription = row => `${row.year || 'Sin año'} (${chartType.value === 'all' ? 'todos los tipos' : categories.value.find(type => type.code === chartType.value)?.label}): ${format(shownCount(row))} resoluciones identificadas.${rowLimit(row) ? ` Límite de su carpeta: ${identifier(rowLimit(row))}.` : ''} ${categories.value.map(type => `${type.label}: ${format(row.values[type.code])}`).join('; ')}`;
 const percentage = value => {
     const share = props.total ? value / props.total * 100 : 0;
     return share > 0 && share < 0.01 ? '< 0.01 %' : `${new Intl.NumberFormat('es-PE', { maximumFractionDigits: 2 }).format(share)} %`;
@@ -77,7 +84,7 @@ const donutSegments = computed(() => {
         <div class="annual-heading"><div><h2>El archivo en cifras</h2><p>Resoluciones de {{ allYears[allYears.length - 1] }} a {{ currentYear }}, en un solo lugar.</p></div><span class="current-label"><i></i>Hasta {{ currentYear }}</span></div>
         <div class="archive-totals">
             <div class="metric metric-total"><span class="metric-label"><FileText :size="17" />Documentos</span><strong>{{ format(total) }}</strong><span>PDF registrados en el archivo</span></div>
-            <div class="metric metric-current"><span class="metric-label"><CalendarDays :size="17" />{{ currentExpected ? 'Total esperado' : 'Resoluciones' }} · {{ currentYear }}</span><strong>{{ format(currentExpected ?? currentCount) }}</strong><span v-if="currentExpected">{{ format(currentCount) }} identificadas · {{ format(currentRemaining) }} por comprobar</span><span v-else>Números distintos · {{ format(currentFiles) }} PDF</span></div>
+            <div class="metric metric-current"><span class="metric-label"><CalendarDays :size="17" />{{ currentExpected ? 'Última resolución' : 'Resoluciones' }} · {{ currentYear }}</span><strong>{{ currentExpected ? identifier(currentExpected) : format(currentCount) }}</strong><span v-if="currentExpected">{{ format(currentIdentified) }} identificadas · {{ format(currentRemaining) }} por comprobar</span><span v-else>Números distintos · {{ format(currentFiles) }} PDF</span></div>
             <div class="metric"><span class="metric-label"><ChartColumn :size="17" />Histórico</span><strong>{{ format(yearsWithFiles) }}<small> años</small></strong><span>Con documentos registrados</span></div>
             <div class="metric"><span class="metric-label"><Tags :size="17" />Por identificar</span><strong>{{ format(coverage?.unidentified ?? totals.unknown) }}</strong><span>PDF con identificación pendiente</span></div>
         </div>
@@ -95,9 +102,9 @@ const donutSegments = computed(() => {
                     <template v-for="(point,index) in trendPoints" :key="`label-${point.row.year}`"><text v-if="index === 0 || index === trendPoints.length - 1 || (point.row.year % 5 === 0 && index < trendPoints.length - 2)" :x="point.x" y="179" text-anchor="middle">{{ point.row.year }}</text></template>
                 </svg>
                 <div class="mosaic-heading"><h4>Explore por año</h4><span>Seleccione un año para abrir sus PDF</span></div>
-                <div class="year-mosaic"><button v-for="row in rows" :key="key(row.year)" class="year-tile" :class="{ 'is-current': row.year === currentYear, 'is-empty': !shownCount(row) }" :style="tileStyle(row)" :disabled="!row.year" :title="rowDescription(row)" :aria-label="`${rowDescription(row)}. Consultar documentos.`" @click="emit('year', row.year, chartType)"><span>{{ row.year || 'Sin año' }}<i v-if="row.year === currentYear">Actual</i></span><strong>{{ format(shownCount(row)) }}</strong><small>{{ shownCount(row) ? 'resoluciones' : 'Sin registros' }}</small></button></div>
+                <div class="year-mosaic"><button v-for="row in rows" :key="key(row.year)" class="year-tile" :class="{ 'is-current': row.year === currentYear, 'is-empty': !shownCount(row) }" :style="tileStyle(row)" :disabled="!row.year" :title="rowDescription(row)" :aria-label="`${rowDescription(row)}. Consultar documentos.`" @click="emit('year', row.year, chartType)"><span>{{ row.year || 'Sin año' }}<i v-if="row.year === currentYear">Actual</i></span><strong>{{ rowLimit(row) ? `Hasta ${identifier(rowLimit(row))}` : format(shownCount(row)) }}</strong><small>{{ rowLimit(row) ? `${format(identifiedInLimit(row.year))} identificadas` : (shownCount(row) ? 'resoluciones' : 'Sin registros') }}</small></button></div>
                 <div class="mosaic-legend"><span>Menos resoluciones</span><i v-for="shade in scaleColors" :key="shade" :style="{ background: shade }"></i><span>Más resoluciones · {{ format(maximum) }}</span></div>
-                <p class="chart-hint">El color compara cantidades del tipo elegido. «Sin registros» no confirma que falten resoluciones. {{ currentYear }} es un año en curso.</p>
+                <p class="chart-hint">El color compara números identificados. El límite corresponde al último PDF de su carpeta. {{ currentYear }} es un año en curso.</p>
             </section>
             <section class="type-chart" aria-label="Distribución de PDF por tipo"><div class="chart-heading"><div><h3>Distribución por tipo</h3><p>Todo el repositorio</p></div></div><div class="donut"><svg viewBox="0 0 120 120" role="img" aria-label="Proporción de PDF por tipo; cantidades y porcentajes en la leyenda"><circle cx="60" cy="60" r="46" fill="none" stroke="#edf1f7" stroke-width="13" /><circle v-for="type in donutSegments" v-show="type.total > 0" :key="type.code" cx="60" cy="60" r="46" fill="none" :stroke="type.color" stroke-width="13" pathLength="100" :stroke-dasharray="`${type.length} ${100 - type.length}`" :stroke-dashoffset="-type.offset" transform="rotate(-90 60 60)"><title>{{ type.label }}: {{ format(type.total) }} PDF ({{ percentage(type.total) }})</title></circle></svg><div class="donut-label"><strong>{{ format(total) }}</strong><span>PDF en total</span></div></div><dl class="type-breakdown"><div v-for="type in categories" :key="type.code"><dt :title="type.name"><i :style="{ background: type.color }"></i>{{ type.label }}</dt><dd><strong>{{ format(type.total) }}</strong><span>{{ percentage(type.total) }}</span></dd></div></dl><p class="type-note">«Sin identificar» agrupa los PDF cuyo tipo todavía no está confirmado.</p></section>
         </div>

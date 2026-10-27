@@ -110,6 +110,7 @@ class ResolutionsTest extends TestCase
 
     public function test_auxiliaries_are_not_saved_and_bulk_coverage_reports_missing_numbers(): void
     {
+        config(['resolutions.expected_year_totals'=>[2024=>7]]);
         $this->actingAs($this->user());
         foreach (['291 ACTUADOS RDR 2024.pdf','NOTIFICACIÓN ROI 0003-2025.pdf','c.pdf','cx.pdf'] as $name) {
             $this->postJson('/resoluciones',['file'=>$this->pdf($name),'folder'=>'2024'])->assertUnprocessable();
