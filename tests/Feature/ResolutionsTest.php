@@ -368,7 +368,7 @@ class ResolutionsTest extends TestCase
         $this->postJson('/resoluciones',['file'=>$this->pdf('sinfecha.pdf')])->assertCreated();
         $response = $this->get('/resoluciones',['X-Inertia'=>'true'])->assertOk()->assertJsonPath('props.summary.total',3)
             ->assertJsonCount(1,'props.yearCounts')->assertJsonPath('props.yearCounts.0.total',2)
-            ->assertJsonPath('props.expectedYearTotals.2026',2694)->assertJsonMissingPath('props.expectedYearTotals.2025');
+            ->assertJsonPath('props.expectedYearTotals.2026',2694)->assertJsonPath('props.expectedYearTotals.2025',3942);
         $this->assertSame(3,collect($response->json('props.annualBySeries'))->sum('total'));
         $this->assertSame(1,collect($response->json('props.annualBySeries'))->firstWhere('year',null)['total']);
     }

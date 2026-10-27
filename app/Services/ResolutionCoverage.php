@@ -11,7 +11,8 @@ class ResolutionCoverage
     {
         $report = Cache::remember('resolutions-coverage', 60, fn() => $this->analyze(
             DB::table('resolutions as r')->leftJoin('resolution_series as s','s.id','=','r.series_id')
-                ->select('r.year','r.number_start','r.number_end','s.code as series')->cursor()
+                ->select('r.year','r.number_start','r.number_end','s.code as series')->cursor(),
+            config('resolutions.expected_year_totals', [])
         ));
         $groups = array_values(array_filter($report['groups'], fn($group) => $year === null || $group['year'] === $year));
         return ['groups'=>$groups, 'missing'=>array_sum(array_column($groups,'missing')),
@@ -19,7 +20,7 @@ class ResolutionCoverage
     }
 
     /** Compare merged identifier intervals; never assume that the final uploaded number is the year's final issue. */
-    public function analyze(iterable $records): array
+    public function analyze(iterable $records, array $expectedYearTotals = []): array
     {
         $groups = []; $pending = [];
         foreach ($records as $record) {
@@ -46,10 +47,14 @@ class ResolutionCoverage
                 if ($start > $next) { $gaps[] = [$next,$start-1]; $missing += $start-$next; }
                 $next = $end+1;
             }
+            $unique = $next-1-$missing;
+            $expected = $group['series'] === 'RDR' ? (int) ($expectedYearTotals[$group['year']] ?? 0) : 0;
+            $target = max($next-1, $expected);
+            if ($target >= $next) { $gaps[] = [$next,$target]; $missing += $target-$next+1; }
             $repeated = array_filter($group['starts'], fn($count) => $count > 1);
-            $result[] = ['year'=>$group['year'],'series'=>$group['series'],'files'=>$group['files'],'unique'=>$next-1-$missing,
+            $result[] = ['year'=>$group['year'],'series'=>$group['series'],'files'=>$group['files'],'unique'=>$unique,
                 'repeated_numbers'=>count($repeated),'extra_files'=>array_sum(array_map(fn($count) => $count-1, $repeated)),
-                'last'=>$next-1,'missing'=>$missing,'gaps'=>$gaps];
+                'last'=>$next-1,'expected_last'=>$expected ?: null,'target'=>$target,'missing'=>$missing,'gaps'=>$gaps];
         }
         usort($result,fn($a,$b)=>$b['year']<=>$a['year'] ?: strcmp($a['series'],$b['series']));
         return ['groups'=>$result,'pending'=>$pending];

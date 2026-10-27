@@ -7,6 +7,23 @@ use PHPUnit\Framework\TestCase;
 
 class ResolutionCoverageTest extends TestCase
 {
+    public function test_confirmed_final_resolution_detects_missing_tail_without_inflating_uploaded_numbers(): void
+    {
+        $rows = [];
+        foreach ([1, 2, 2, 4] as $number) $rows[] = ['year'=>2025,'series'=>'RDR','number_start'=>$number];
+        $group = (new ResolutionCoverage)->analyze($rows, [2025=>6])['groups'][0];
+        $this->assertSame(4, $group['files']);
+        $this->assertSame(3, $group['unique']);
+        $this->assertSame(4, $group['last']);
+        $this->assertSame(6, $group['target']);
+        $this->assertSame(6, $group['expected_last']);
+        $this->assertSame([[3,3],[5,6]], $group['gaps']);
+        $this->assertSame(3, $group['missing']);
+        $rows[] = ['year'=>2025,'series'=>'RD','number_start'=>1];
+        $rd = array_values(array_filter((new ResolutionCoverage)->analyze($rows, [2025=>6])['groups'], fn($g)=>$g['series']==='RD'))[0];
+        $this->assertSame(0, $rd['missing']);
+    }
+
     public function test_gaps_merge_ranges_and_duplicates_and_separate_years_and_types(): void
     {
         $rows = [];
