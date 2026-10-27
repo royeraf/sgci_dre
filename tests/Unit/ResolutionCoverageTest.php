@@ -7,6 +7,19 @@ use PHPUnit\Framework\TestCase;
 
 class ResolutionCoverageTest extends TestCase
 {
+    public function test_disk_final_number_is_a_limit_even_when_an_uploaded_number_is_larger(): void
+    {
+        $rows = [];
+        foreach ([[1,2],[4,8],[20,null]] as [$first,$last]) $rows[] = ['year'=>2025,'series'=>'RDR','number_start'=>$first,'number_end'=>$last];
+        $group = (new ResolutionCoverage)->analyze($rows, [2025=>6])['groups'][0];
+        $this->assertSame(6, $group['target']);
+        $this->assertSame(20, $group['last']);
+        $this->assertSame(8, $group['unique']);
+        $this->assertSame(5, $group['within_limit_unique']);
+        $this->assertSame(3, $group['outside_limit']);
+        $this->assertSame([[3,3]], $group['gaps']);
+    }
+
     public function test_confirmed_final_resolution_detects_missing_tail_without_inflating_uploaded_numbers(): void
     {
         $rows = [];

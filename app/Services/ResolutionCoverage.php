@@ -42,19 +42,24 @@ class ResolutionCoverage
                 if ($last >= 0 && $start <= $merged[$last][1]+1) $merged[$last][1] = max($merged[$last][1],$end);
                 else $merged[] = [$start,$end];
             }
-            $next = 1; $gaps = []; $missing = 0;
+            $lastNumber = $merged[count($merged)-1][1];
+            $expected = $group['series'] === 'RDR' ? (int) ($expectedYearTotals[$group['year']] ?? 0) : 0;
+            $target = $expected ?: $lastNumber;
+            $next = 1; $gaps = []; $missing = 0; $unique = 0; $within = 0;
             foreach ($merged as [$start,$end]) {
+                $unique += $end-$start+1;
+                if ($start > $target) continue;
+                $end = min($end, $target);
                 if ($start > $next) { $gaps[] = [$next,$start-1]; $missing += $start-$next; }
+                $within += $end-$start+1;
                 $next = $end+1;
             }
-            $unique = $next-1-$missing;
-            $expected = $group['series'] === 'RDR' ? (int) ($expectedYearTotals[$group['year']] ?? 0) : 0;
-            $target = max($next-1, $expected);
             if ($target >= $next) { $gaps[] = [$next,$target]; $missing += $target-$next+1; }
             $repeated = array_filter($group['starts'], fn($count) => $count > 1);
             $result[] = ['year'=>$group['year'],'series'=>$group['series'],'files'=>$group['files'],'unique'=>$unique,
                 'repeated_numbers'=>count($repeated),'extra_files'=>array_sum(array_map(fn($count) => $count-1, $repeated)),
-                'last'=>$next-1,'expected_last'=>$expected ?: null,'target'=>$target,'missing'=>$missing,'gaps'=>$gaps];
+                'last'=>$lastNumber,'expected_last'=>$expected ?: null,'target'=>$target,
+                'within_limit_unique'=>$within,'outside_limit'=>$unique-$within,'missing'=>$missing,'gaps'=>$gaps];
         }
         usort($result,fn($a,$b)=>$b['year']<=>$a['year'] ?: strcmp($a['series'],$b['series']));
         return ['groups'=>$result,'pending'=>$pending];
