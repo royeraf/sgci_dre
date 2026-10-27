@@ -46,6 +46,7 @@ class ResolutionCoverageTest extends TestCase
     {
         $parser = new ResolutionFilenameParser;
         $this->assertTrue($parser->isAuxiliary('~$006 RDR 2024 DECLARAR IMPROCEDENTE.pdf'));
+        $this->assertTrue($parser->isAuxiliary('._01 RDR 2020.pdf'));
         foreach (['291 ACTUADOS RDR 2024.pdf','792 ACTUADORS RDR 2024.pdf','817 ACUTADOS RDR 2024.pdf','ACTUADOS RDR 2024.pdf','NOTIFICACIÓN ROI 0003-2025 HECTOR ARAGON.pdf','c.pdf','cx.pdf','OFICIO 23-2024.pdf'] as $name) $this->assertTrue($parser->isAuxiliary($name),$name);
         foreach (['00291 RDR 2024 APROBAR ACTUADOS.pdf','00003 RDR 2026 NOTIFICACION DE RESULTADOS.pdf','escaneo.pdf','001 RDR 2026.pdf'] as $name) $this->assertFalse($parser->isAuxiliary($name),$name);
     }
