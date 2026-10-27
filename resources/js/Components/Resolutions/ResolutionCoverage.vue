@@ -12,9 +12,9 @@ const ranges = gaps => gaps.map(([first,last])=>first===last ? identifier(first)
 <template>
     <details v-if="report && groups.length" class="coverage-control">
         <summary><ListChecks :size="18" /><span>Control de numeración<strong>{{ report.missing ? `${format(report.missing)} números por comprobar` : 'Sin saltos en lo registrado' }}</strong></span><ChevronDown :size="17" /></summary>
-        <p>Del 1 al mayor número cargado, por año y tipo. Un salto no confirma que el documento exista.</p>
+        <p>Del 00001 a la última resolución confirmada de cada año; si aún no se confirmó, hasta el mayor número cargado.</p>
         <p v-if="report.unidentified" class="coverage-warning">{{ format(report.unidentified) }} PDF tienen datos pendientes; pueden explicar algunos saltos.</p>
-        <section v-for="group in groups" :key="`${group.year}-${group.series}`"><header><strong>{{ group.series }} · {{ group.year }}</strong><span>Hasta {{ identifier(group.last) }}</span></header><p v-if="group.unique != null">{{ format(group.unique) }} números distintos · {{ format(group.files) }} PDF<span v-if="group.extra_files"> · {{ format(group.extra_files) }} archivos adicionales con número repetido</span></p><button v-if="canReview && group.repeated_numbers" type="button" class="underline text-xs mt-2" @click="emit('repeated', group.year, group.series)">Revisar números repetidos</button><p v-if="group.missing">{{ ranges(group.gaps) }}</p><p v-else class="coverage-ok">Sin saltos.</p></section>
+        <section v-for="group in groups" :key="`${group.year}-${group.series}`"><header><strong>{{ group.series }} · {{ group.year }}</strong><span>Hasta {{ identifier(group.target ?? group.last) }}</span></header><p v-if="group.unique != null">{{ format(group.unique) }} números distintos · {{ format(group.files) }} PDF<span v-if="group.extra_files"> · {{ format(group.extra_files) }} archivos adicionales con número repetido</span></p><button v-if="canReview && group.repeated_numbers" type="button" class="underline text-xs mt-2" @click="emit('repeated', group.year, group.series)">Revisar números repetidos</button><p v-if="group.missing">{{ ranges(group.gaps) }}</p><p v-else class="coverage-ok">{{ group.expected_last ? 'Secuencia completa hasta la última resolución confirmada.' : 'Sin saltos en lo cargado.' }}</p></section>
     </details>
 </template>
 
