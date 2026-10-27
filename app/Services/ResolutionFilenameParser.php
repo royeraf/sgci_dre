@@ -7,6 +7,7 @@ class ResolutionFilenameParser
     /** Reject clear auxiliary filenames, not words appearing inside a resolution's subject. */
     public function isAuxiliary(string $filename): bool
     {
+        if (str_starts_with($filename, '._')) return true; // AppleDouble metadata, never PDF content.
         $stem = mb_strtoupper(trim(preg_replace('/(?:\.\s*pdf)+$/ui', '', $filename)));
         return (bool) preg_match('/^(?:(?:\d{1,6}[\s._-]+)?(?:ACTUAD|ACUTAD)[\p{L}]*\b|NOTIFICACI[OÓ]N\b|C[ÉE]DULA\s+DE\s+NOTIFICACI[OÓ]N\b|OFICIO\b|MEMOR[AÁ]ND(?:O|UM)\b|INFORME\b|CARTA\b|~\$|CX?$)/u', $stem);
     }
@@ -73,6 +74,14 @@ class ResolutionFilenameParser
         }
         // A leading zero-padded number belongs to this file, even when its subject cites another resolution.
         if ($number === null && preg_match('/^\s*(0\d{2,5})\s+(?=\p{L})/u', $name, $m)) {
+            $number = (int) $m[1];
+        }
+        // An explicitly classified folder supplies the type when a leading
+        // identifier is joined to its subject or followed by a mistyped series.
+        // Never search the subject for references or reinterpret a reversed range.
+        if ($number === null && $end === null && !$this->isAuxiliary($filename)
+            && $this->folderSeries($folder) !== null
+            && preg_match('/^\s*(\d{1,6})(?!\d)[\s.:-]*(?=\p{L})/u', $name, $m)) {
             $number = (int) $m[1];
         }
         // Never truncate 20213 to 2021 or accept a future year. A valid year
